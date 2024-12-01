@@ -1,18 +1,23 @@
-import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
-import { LoginRequest, RegisterRequest } from '@app/common';
+import { Controller, Get, Post, Body, Param, Delete, HttpCode } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { ResponseMessage } from 'apps/auth/src/decorators/public.decorator';
+import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
+import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 
 @Controller('auth')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
   @Post('register')
-  register(@Body() registerDto: RegisterRequest) {
+  @ResponseMessage('User created successfully')
+  async register(@Body() registerDto: RegisterDto) {
     return this.usersService.register(registerDto);
   }
 
   @Post('login')
-  login(@Body() loginDto: LoginRequest) {
+  @ResponseMessage('User logged in successfully')
+  @HttpCode(200)
+  login(@Body() loginDto: LoginDto) {
     return this.usersService.login(loginDto);
   }
 

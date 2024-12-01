@@ -6,7 +6,7 @@ export type UserDocument = User & Document & {
   updatedAt: Date;
 };
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, versionKey: false })
 export class User {
   @Prop({ required: true, unique: true })
   email: string;
@@ -17,7 +17,7 @@ export class User {
   @Prop()
   phoneNumber: string;
 
-  @Prop()
+  @Prop({default: "https://res.cloudinary.com/dbvyexitw/image/upload/v1733047490/default%20avatar.jpg"})
   avatar: string;
 
   @Prop()

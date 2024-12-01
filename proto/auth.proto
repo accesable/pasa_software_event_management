@@ -25,7 +25,7 @@ message RegisterRequest{
 }
 
 message RegisterResponse{
-    repeated UserResponse user = 1;
+    UserResponse user = 1;
 }
 
 message UserResponse {

@@ -1,30 +1,23 @@
-import { LoginDto } from './dto/login';
-import { Controller, Post, Body, Request, UseGuards, HttpCode, Res } from '@nestjs/common';
+import { Controller, Body, Request, UseGuards, UseFilters } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { Public, ResponseMessage, User } from 'apps/auth/src/decorators/public.decorator';
-import { LocalAuthGuard } from 'apps/auth/src/users/guards/local-auth.guard';
-import { Response, Request as ExpressRequest } from 'express';
-import {RegisterRequest, UserResponse, UsersServiceController, UsersServiceControllerMethods } from '@app/common';
+import { Public, ResponseMessage, } from 'apps/auth/src/decorators/public.decorator';
+import { LoginRequest, LoginResponse, RegisterRequest, UsersServiceController, UsersServiceControllerMethods } from '@app/common';
+import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { Observable } from 'rxjs';
+import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 
-@Controller('auth')
+@Controller()
 @UsersServiceControllerMethods()
 export class UsersController implements UsersServiceController {
   constructor(private readonly usersService: UsersService) { }
 
   @Public()
-  @Post('register')
-  @ResponseMessage('User created successfully')
-  register(@Body() registerDto: RegisterRequest) {
+  register(@Body() registerDto: RegisterDto) {
     return this.usersService.register(registerDto);
   }
 
   @Public()
-  @UseGuards(LocalAuthGuard)
-  @Post('login')
-  @ResponseMessage('Login success')
-  @HttpCode(200)
-  login(@Request() req) {
-    return this.usersService.login(req.user);
+  login(@Body() loginDto: LoginDto) {
+    return this.usersService.login(loginDto);
   }
 }

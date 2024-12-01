@@ -3,7 +3,6 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { GoogleStrategy } from 'apps/auth/src/users/strategies/google.stategy';
 import { JwtStrategy } from 'apps/auth/src/users/strategies/jwt.strategy';
-import { LocalStrategy } from 'apps/auth/src/users/strategies/local.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -24,6 +23,6 @@ import { User, UserSchema } from 'apps/auth/src/users/schemas/user.schema';
     }),
   ],
   controllers: [UsersController],
-  providers: [UsersService, LocalStrategy, JwtStrategy, GoogleStrategy],
+  providers: [UsersService, JwtStrategy, GoogleStrategy],
 })
 export class UsersModule {}
