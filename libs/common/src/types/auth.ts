@@ -10,6 +10,27 @@ import { Observable } from "rxjs";
 
 export const protobufPackage = "auth";
 
+export interface Empty {
+}
+
+export interface AccessTokenRequest {
+  refreshToken: string;
+}
+
+export interface AccessTokenResponse {
+  user: UserResponse | undefined;
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface LogoutRequest {
+  accessToken: string;
+}
+
+export interface LogoutResponse {
+  user: UserResponse | undefined;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -50,17 +71,27 @@ export interface UsersServiceClient {
   login(request: LoginRequest): Observable<LoginResponse>;
 
   register(request: RegisterRequest): Observable<RegisterResponse>;
+
+  accessToken(request: AccessTokenRequest): Observable<AccessTokenResponse>;
+
+  handleLogout(request: LogoutRequest): Observable<LogoutResponse>;
 }
 
 export interface UsersServiceController {
   login(request: LoginRequest): Promise<LoginResponse> | Observable<LoginResponse> | LoginResponse;
 
   register(request: RegisterRequest): Promise<RegisterResponse> | Observable<RegisterResponse> | RegisterResponse;
+
+  accessToken(
+    request: AccessTokenRequest,
+  ): Promise<AccessTokenResponse> | Observable<AccessTokenResponse> | AccessTokenResponse;
+
+  handleLogout(request: LogoutRequest): Promise<LogoutResponse> | Observable<LogoutResponse> | LogoutResponse;
 }
 
 export function UsersServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ["login", "register"];
+    const grpcMethods: string[] = ["login", "register", "accessToken", "handleLogout"];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
       GrpcMethod("UsersService", method)(constructor.prototype[method], method, descriptor);

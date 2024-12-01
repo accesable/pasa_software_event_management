@@ -5,6 +5,28 @@ package auth;
 service UsersService{
     rpc Login(LoginRequest) returns (LoginResponse);
     rpc Register(RegisterRequest) returns (RegisterResponse);
+    rpc AccessToken(AccessTokenRequest) returns (AccessTokenResponse);
+    rpc handleLogout(LogoutRequest) returns (LogoutResponse);
+}
+
+message Empty{}
+
+message AccessTokenRequest{
+    string refreshToken = 1;
+}
+
+message AccessTokenResponse{
+    UserResponse user = 1;
+    string accessToken = 2;
+    string refreshToken = 3;
+}
+
+message LogoutRequest {
+    string accessToken = 1;
+}
+
+message LogoutResponse {
+    UserResponse user = 1;
 }
 
 message LoginRequest{

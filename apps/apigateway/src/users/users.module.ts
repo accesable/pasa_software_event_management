@@ -5,6 +5,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AUTH_SERVICE } from 'apps/apigateway/src/users/constants';
 import { AUTH_PACKAGE_NAME } from '@app/common';
 import { join } from 'path';
+import { APP_FILTER } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -20,6 +21,8 @@ import { join } from 'path';
     ]),
   ],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService, 
+    
+  ],
 })
 export class UsersModule {}

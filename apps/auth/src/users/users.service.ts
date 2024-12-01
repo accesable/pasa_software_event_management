@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common';
 import { RegisterDto, } from '../../../apigateway/src/users/dto/register';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
@@ -6,7 +6,7 @@ import { User, UserDocument } from 'apps/auth/src/users/schemas/user.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { UserResponse } from '@app/common';
+import { LogoutRequest, UserResponse } from '@app/common';
 import { RpcException } from '@nestjs/microservices';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 
@@ -25,7 +25,10 @@ export class UsersService {
   async register(registerDto: RegisterDto): Promise<any> {
     const isExistUser = await this.findByEmail(registerDto.email);
     if (isExistUser) {
-      throw new RpcException('Email is already registered');
+      throw new RpcException({
+        message: 'Email is already registered',
+        code: HttpStatus.BAD_REQUEST,
+      });
     }
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
     const user = await this.userModel.create({ ...registerDto, password: hashedPassword });
@@ -38,9 +41,48 @@ export class UsersService {
   async login(loginDto: LoginDto) {
     const user = await this.validateUser(loginDto);
     if (!user) {
-      throw new RpcException('Invalid email or password');
+      throw new RpcException({
+        message: 'Email or password is incorrect',
+        code: HttpStatus.BAD_REQUEST,
+      });
     }
     return this.handleToken(user);
+  }
+
+  async handleLogout(accessToken: LogoutRequest) {
+    const isValid = await this.validateToken(accessToken.accessToken, 'JWT_SECRET');
+
+    await this.setRefreshToken(isValid.sub, "");
+    return {
+      user: isValid.email,
+    };
+  }
+
+  async accessToken(refreshToken: string) {
+    this.validateToken(refreshToken, 'JWT_REFRESH_SECRET');
+    const user = await this.userModel.findOne({ refreshToken });
+    if (!user) {
+      throw new RpcException({
+        message: 'Invalid token',
+        code: HttpStatus.BAD_REQUEST,
+      });
+    }
+    const userResponse = this.transformUserDataResponse(user);
+    return this.handleToken(userResponse);
+  }
+
+  async validateToken(accessToken: string, KEY_NAME: 'JWT_SECRET' | 'JWT_REFRESH_SECRET') {
+    try {
+      const isValid = await this.jwtService.verify(accessToken, {
+        secret: this.configService.get<string>(KEY_NAME),
+      });
+      return isValid;
+    } catch (error) {
+      throw new RpcException({
+        message: 'Invalid token',
+        code: HttpStatus.BAD_REQUEST,
+      });
+    }
   }
 
   async validateUser(loginDto: LoginDto): Promise<any> {
@@ -57,7 +99,7 @@ export class UsersService {
   }
 
   async handleToken(user: UserResponse) {
-    const payload = { username: user.email, sub: user.id };
+    const payload = { email: user.email, sub: user.id };
     const accessToken = this.createAccessToken(payload);
     const refreshToken = this.createRefreshToken(payload);
 

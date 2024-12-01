@@ -1,10 +1,10 @@
 import { AUTH_SERVICE } from './constants';
-import { BadRequestException, Inject, Injectable, OnModuleInit, ValidationPipe } from '@nestjs/common';
-import { LoginRequest, RegisterRequest, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
-import { ClientGrpc } from '@nestjs/microservices';
-import { status } from '@grpc/grpc-js';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
+import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
+import { Request, Response } from 'express';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -19,42 +19,51 @@ export class UsersService implements OnModuleInit {
 
   async register(registerDto: RegisterDto) {
     try {
-      const register = await this.usersService.register(registerDto).toPromise();
-      return register;
+      return await this.usersService.register(registerDto).toPromise();
     } catch (error) {
-      if (error.code === status.INVALID_ARGUMENT) {
-        throw new BadRequestException(error.details || 'Invalid arguments provided');
-      } else if (error.details) {
-        throw new BadRequestException(error.details);
-      } else {
-        // throw new BadRequestException(error);
-        console.log('error', error);
-        throw new BadRequestException('Invalid arguments provided');
-      }
+      throw new RpcException(error);
     }
   }
 
-  login(loginDto: LoginDto) {
-    return this.usersService.login(loginDto);
+  async login(loginDto: LoginDto, response: Response) {
+    try {
+      const data = await this.usersService.login(loginDto).toPromise();
+      response.cookie('refreshToken', data.refreshToken, {
+        maxAge: 15 * 60 * 1000,
+        httpOnly: true,
+      });
+
+      return {
+        user: data.user,
+        accessToken: data.accessToken
+      };
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
 
-  findAll() {
-    return `This action returns all users`;
+
+  accessToken(refreshToken: string, response: Response) {
+    const request = { refreshToken };
+    try {
+      const data = this.usersService.accessToken(request).toPromise();
+      console.log(data);
+      return data;
+      // response.cookie('refreshToken', data.refreshToken, {
+      //   maxAge: ms('15m'),
+      //   httpOnly: true,
+      // });
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
-
-  // update(id: number, updateUserDto: UpdateUserDto) {
-  //   return `This action updates a #${id} user`;
-  // }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async handleLogout(accessToken: string) {
+    const request = { accessToken };
+    try {
+      return await this.usersService.handleLogout(request).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
 }
-function plainToClass(RegisterRequest: any, registerDto: RegisterDto) {
-  throw new Error('Function not implemented.');
-}
-
