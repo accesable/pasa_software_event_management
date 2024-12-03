@@ -5,7 +5,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AUTH_SERVICE } from 'apps/apigateway/src/users/constants';
 import { AUTH_PACKAGE_NAME } from '@app/common';
 import { join } from 'path';
-import { APP_FILTER } from '@nestjs/core';
+import { GoogleStrategy } from 'apps/auth/src/users/strategies/google.stategy';
 
 @Module({
   imports: [
@@ -19,10 +19,9 @@ import { APP_FILTER } from '@nestjs/core';
         },
       }
     ]),
+
   ],
   controllers: [UsersController],
-  providers: [UsersService, 
-    
-  ],
+  providers: [UsersService, GoogleStrategy ],
 })
 export class UsersModule {}

@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, HttpCode, Req, Res, Headers, UnauthorizedException, UseFilters } from '@nestjs/common';
+import { Controller, Get, Post, Body, HttpCode, Req, Res, Headers, UnauthorizedException, UseGuards, HttpStatus } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { ResponseMessage } from 'apps/auth/src/decorators/public.decorator';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 import { Response, Request as ExpressRequest } from 'express';
+import { GoogleAuthGuard } from 'apps/auth/src/users/guards/google-auth/google-auth.guard';
 
 @Controller('auth')
 export class UsersController {
@@ -17,7 +18,7 @@ export class UsersController {
 
   @Post('login')
   @ResponseMessage('User logged in successfully')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) response: Response) {
     return this.usersService.login(loginDto, response);  // Đảm bảo không cần toPromise()
   }
@@ -35,15 +36,16 @@ export class UsersController {
 
   @Post('logout')
   @ResponseMessage('Logout success')
-  async logout(@Headers('authorization') authHeader: string) {
+  async logout(@Headers('authorization') authHeader: string, @Res({ passthrough: true }) response: Response) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Token is required or invalid');
     }
     const accessToken = authHeader.split(' ')[1];
-    return this.usersService.handleLogout(accessToken);
+    return this.usersService.handleLogout(accessToken, response);
   }
 
   @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
   @ResponseMessage('Forgot password success')
   async forgotPassword(@Body('email') email: string) {
     // return this.authService.handleForgotPassword(email);
@@ -51,16 +53,17 @@ export class UsersController {
   }
 
   @Get("google/login")
+  @UseGuards(GoogleAuthGuard)
   @ResponseMessage('Login with google success')
   async googleLogin() {
-    // return this.authService.googleLogin();
   }
 
   @Get("google/callback")
+  @UseGuards(GoogleAuthGuard)
+  @HttpCode(HttpStatus.OK)
   @ResponseMessage('Login with google success')
   async googleCallback(@Req() req, @Res({ passthrough: true }) response: Response) {
-    const user = req.user; // Thông tin người dùng từ Google    
-    console.log(user);
-    // return this.usersService.handleGoogleAuth(user, response);
+    const user = req.user; 
+    return this.usersService.handleGoogleAuth(user, response);
   }
 }

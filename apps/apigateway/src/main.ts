@@ -5,6 +5,7 @@ import { RpcExceptionInterceptor } from 'apps/apigateway/src/users/core/rpc-exce
 import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
+  const PORT = process.env.PORT || 8080;
   const app = await NestFactory.create(AppModule);
 
   app.use(cookieParser());
@@ -15,13 +16,14 @@ async function bootstrap() {
       defaultVersion: "1",
     }
   );
-  app.useGlobalInterceptors(new RpcExceptionInterceptor());
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true, // Loại bỏ các field không định nghĩa trong DTO
     forbidNonWhitelisted: true, // Ném lỗi nếu có field không định nghĩa trong DTO
     transform: true, // Tự động chuyển đổi kiểu dữ liệu
   }));
-  await app.listen(8080);
+  app.useGlobalInterceptors(new RpcExceptionInterceptor());
+
+  await app.listen(PORT);
   console.log(`Application is running on: ${await app.getUrl()}/api/v1`);
 }
 bootstrap();

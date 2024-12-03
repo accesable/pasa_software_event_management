@@ -13,6 +13,13 @@ export const protobufPackage = "auth";
 export interface Empty {
 }
 
+export interface GoogleAuthRequest {
+  name: string;
+  email: string;
+  picture: string;
+  accessToken: string;
+}
+
 export interface AccessTokenRequest {
   refreshToken: string;
 }
@@ -28,7 +35,7 @@ export interface LogoutRequest {
 }
 
 export interface LogoutResponse {
-  user: UserResponse | undefined;
+  email: string;
 }
 
 export interface LoginRequest {
@@ -72,9 +79,11 @@ export interface UsersServiceClient {
 
   register(request: RegisterRequest): Observable<RegisterResponse>;
 
-  accessToken(request: AccessTokenRequest): Observable<AccessTokenResponse>;
+  accessToken(request: AccessTokenRequest): Observable<LoginResponse>;
 
   handleLogout(request: LogoutRequest): Observable<LogoutResponse>;
+
+  handleGoogleAuth(request: GoogleAuthRequest): Observable<LoginResponse>;
 }
 
 export interface UsersServiceController {
@@ -82,16 +91,16 @@ export interface UsersServiceController {
 
   register(request: RegisterRequest): Promise<RegisterResponse> | Observable<RegisterResponse> | RegisterResponse;
 
-  accessToken(
-    request: AccessTokenRequest,
-  ): Promise<AccessTokenResponse> | Observable<AccessTokenResponse> | AccessTokenResponse;
+  accessToken(request: AccessTokenRequest): Promise<LoginResponse> | Observable<LoginResponse> | LoginResponse;
 
   handleLogout(request: LogoutRequest): Promise<LogoutResponse> | Observable<LogoutResponse> | LogoutResponse;
+
+  handleGoogleAuth(request: GoogleAuthRequest): Promise<LoginResponse> | Observable<LoginResponse> | LoginResponse;
 }
 
 export function UsersServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ["login", "register", "accessToken", "handleLogout"];
+    const grpcMethods: string[] = ["login", "register", "accessToken", "handleLogout", "handleGoogleAuth"];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
       GrpcMethod("UsersService", method)(constructor.prototype[method], method, descriptor);

@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
-import { GoogleStrategy } from 'apps/auth/src/users/strategies/google.stategy';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'apps/auth/src/users/schemas/user.schema';
+import { GrpcJwtInterceptor } from 'apps/auth/src/core/jwt.interceptor';
 
 @Module({
   imports: [
@@ -16,12 +16,12 @@ import { User, UserSchema } from 'apps/auth/src/users/schemas/user.schema';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),  // Lấy biến từ .env
-        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRATION') },  // Lấy thời gian hết hạn từ .env
+        secret: configService.get<string>('JWT_SECRET'), 
+        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRATION') },  
       }),
     }),
   ],
   controllers: [UsersController],
-  providers: [UsersService, GoogleStrategy],
+  providers: [UsersService, GrpcJwtInterceptor],
 })
-export class UsersModule {}
+export class UsersModule { }

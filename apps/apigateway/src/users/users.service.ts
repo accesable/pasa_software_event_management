@@ -1,16 +1,19 @@
 import { AUTH_SERVICE } from './constants';
+import * as ms from 'ms';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
+import { GoogleAuthRequest, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 import { Request, Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
   private usersService: UsersServiceClient;
   constructor(
-    @Inject(AUTH_SERVICE) private client: ClientGrpc
+    @Inject(AUTH_SERVICE) private client: ClientGrpc,
+    private configService: ConfigService,
   ) { }
 
   onModuleInit() {
@@ -28,40 +31,57 @@ export class UsersService implements OnModuleInit {
   async login(loginDto: LoginDto, response: Response) {
     try {
       const data = await this.usersService.login(loginDto).toPromise();
-      response.cookie('refreshToken', data.refreshToken, {
-        maxAge: 15 * 60 * 1000,
-        httpOnly: true,
-      });
+      this.setRefreshTokenCookie(response, data.refreshToken);
 
       return {
         user: data.user,
-        accessToken: data.accessToken
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
       };
     } catch (error) {
       throw new RpcException(error);
     }
   }
 
-
-  accessToken(refreshToken: string, response: Response) {
+  async accessToken(refreshToken: string, response: Response) {
     const request = { refreshToken };
     try {
-      const data = this.usersService.accessToken(request).toPromise();
-      console.log(data);
+      const data = await this.usersService.accessToken(request).toPromise();
+      this.setRefreshTokenCookie(response, data.refreshToken);
       return data;
-      // response.cookie('refreshToken', data.refreshToken, {
-      //   maxAge: ms('15m'),
-      //   httpOnly: true,
-      // });
     } catch (error) {
       throw new RpcException(error);
     }
   }
 
-  async handleLogout(accessToken: string) {
+  async handleLogout(accessToken: string, response: Response) {
     const request = { accessToken };
     try {
+      response.clearCookie('refreshToken');
       return await this.usersService.handleLogout(request).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async handleGoogleAuth(user: GoogleAuthRequest, response: Response) {
+    try {
+      const data = await this.usersService.handleGoogleAuth(user).toPromise();
+      this.setRefreshTokenCookie(response, data.refreshToken);
+
+      return data;
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  setRefreshTokenCookie(response: Response, refreshToken: string) {
+    try {
+      response.clearCookie('refreshToken');
+      response.cookie('refreshToken', refreshToken, {
+        maxAge: ms(this.configService.get<string>('JWT_REFRESH_EXPIRATION')),
+        httpOnly: true,
+      });
     } catch (error) {
       throw new RpcException(error);
     }

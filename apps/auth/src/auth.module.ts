@@ -21,6 +21,5 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       envFilePath: 'apps/auth/.env',
     }),
   ],
-  
 })
 export class AuthModule {}

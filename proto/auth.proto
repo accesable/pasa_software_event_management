@@ -5,11 +5,19 @@ package auth;
 service UsersService{
     rpc Login(LoginRequest) returns (LoginResponse);
     rpc Register(RegisterRequest) returns (RegisterResponse);
-    rpc AccessToken(AccessTokenRequest) returns (AccessTokenResponse);
+    rpc AccessToken(AccessTokenRequest) returns (LoginResponse);
     rpc handleLogout(LogoutRequest) returns (LogoutResponse);
+    rpc handleGoogleAuth(GoogleAuthRequest) returns (LoginResponse);
 }
 
 message Empty{}
+
+message GoogleAuthRequest{
+    string name = 1;
+    string email = 2;
+    string picture = 3;
+    string accessToken = 4;
+}
 
 message AccessTokenRequest{
     string refreshToken = 1;
@@ -26,7 +34,7 @@ message LogoutRequest {
 }
 
 message LogoutResponse {
-    UserResponse user = 1;
+    string email = 1;
 }
 
 message LoginRequest{
