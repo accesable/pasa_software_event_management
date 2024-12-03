@@ -6,7 +6,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'apps/auth/src/users/schemas/user.schema';
-import { GrpcJwtInterceptor } from 'apps/auth/src/core/jwt.interceptor';
 
 @Module({
   imports: [
@@ -22,6 +21,6 @@ import { GrpcJwtInterceptor } from 'apps/auth/src/core/jwt.interceptor';
     }),
   ],
   controllers: [UsersController],
-  providers: [UsersService, GrpcJwtInterceptor],
+  providers: [UsersService],
 })
 export class UsersModule { }

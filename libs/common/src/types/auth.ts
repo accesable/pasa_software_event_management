@@ -24,7 +24,7 @@ export interface AccessTokenRequest {
   refreshToken: string;
 }
 
-export interface AccessTokenResponse {
+export interface GeneralResponse {
   user: UserResponse | undefined;
   accessToken: string;
   refreshToken: string;
@@ -41,12 +41,6 @@ export interface LogoutResponse {
 export interface LoginRequest {
   email: string;
   password: string;
-}
-
-export interface LoginResponse {
-  user: UserResponse | undefined;
-  accessToken: string;
-  refreshToken: string;
 }
 
 export interface RegisterRequest {
@@ -75,27 +69,29 @@ export interface UserResponse {
 export const AUTH_PACKAGE_NAME = "auth";
 
 export interface UsersServiceClient {
-  login(request: LoginRequest): Observable<LoginResponse>;
+  login(request: LoginRequest): Observable<GeneralResponse>;
 
   register(request: RegisterRequest): Observable<RegisterResponse>;
 
-  accessToken(request: AccessTokenRequest): Observable<LoginResponse>;
+  accessToken(request: AccessTokenRequest): Observable<GeneralResponse>;
 
   handleLogout(request: LogoutRequest): Observable<LogoutResponse>;
 
-  handleGoogleAuth(request: GoogleAuthRequest): Observable<LoginResponse>;
+  handleGoogleAuth(request: GoogleAuthRequest): Observable<GeneralResponse>;
 }
 
 export interface UsersServiceController {
-  login(request: LoginRequest): Promise<LoginResponse> | Observable<LoginResponse> | LoginResponse;
+  login(request: LoginRequest): Promise<GeneralResponse> | Observable<GeneralResponse> | GeneralResponse;
 
   register(request: RegisterRequest): Promise<RegisterResponse> | Observable<RegisterResponse> | RegisterResponse;
 
-  accessToken(request: AccessTokenRequest): Promise<LoginResponse> | Observable<LoginResponse> | LoginResponse;
+  accessToken(request: AccessTokenRequest): Promise<GeneralResponse> | Observable<GeneralResponse> | GeneralResponse;
 
   handleLogout(request: LogoutRequest): Promise<LogoutResponse> | Observable<LogoutResponse> | LogoutResponse;
 
-  handleGoogleAuth(request: GoogleAuthRequest): Promise<LoginResponse> | Observable<LoginResponse> | LoginResponse;
+  handleGoogleAuth(
+    request: GoogleAuthRequest,
+  ): Promise<GeneralResponse> | Observable<GeneralResponse> | GeneralResponse;
 }
 
 export function UsersServiceControllerMethods() {

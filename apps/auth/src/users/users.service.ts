@@ -83,7 +83,13 @@ export class UsersService {
         email: isValid.email
       };
     } catch (error) {
-      throw this.handleRpcException(error, 'Error during logout');
+      throw this.handleRpcException(
+        new RpcException({
+          message: 'Token expired',
+          code: HttpStatus.BAD_REQUEST,
+        })
+        , 'Error during logout'
+      );
     }
   }
 

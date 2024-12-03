@@ -33,21 +33,20 @@ export class UsersService implements OnModuleInit {
       const data = await this.usersService.login(loginDto).toPromise();
       this.setRefreshTokenCookie(response, data.refreshToken);
 
-      return {
-        user: data.user,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      };
+      data.refreshToken = undefined;
+      return data;
     } catch (error) {
       throw new RpcException(error);
     }
   }
 
   async accessToken(refreshToken: string, response: Response) {
-    const request = { refreshToken };
     try {
+      const request = { refreshToken };
       const data = await this.usersService.accessToken(request).toPromise();
       this.setRefreshTokenCookie(response, data.refreshToken);
+
+      data.refreshToken = undefined;
       return data;
     } catch (error) {
       throw new RpcException(error);

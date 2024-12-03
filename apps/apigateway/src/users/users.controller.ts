@@ -20,17 +20,13 @@ export class UsersController {
   @ResponseMessage('User logged in successfully')
   @HttpCode(HttpStatus.OK)
   login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) response: Response) {
-    return this.usersService.login(loginDto, response);  // Đảm bảo không cần toPromise()
+    return this.usersService.login(loginDto, response); 
   }
-
-
+  
   @Get('access-token')
   @ResponseMessage('Get access token success')
   async accessToken(@Req() req: ExpressRequest, @Res({ passthrough: true }) response: Response) {
     const refreshToken = req.cookies['refreshToken'];
-    if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token does not exist. Please login again');
-    }
     return this.usersService.accessToken(refreshToken, response);
   }
 

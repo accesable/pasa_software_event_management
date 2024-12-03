@@ -3,11 +3,11 @@ syntax = "proto3";
 package auth;
 
 service UsersService{
-    rpc Login(LoginRequest) returns (LoginResponse);
+    rpc Login(LoginRequest) returns (GeneralResponse);
     rpc Register(RegisterRequest) returns (RegisterResponse);
-    rpc AccessToken(AccessTokenRequest) returns (LoginResponse);
+    rpc AccessToken(AccessTokenRequest) returns (GeneralResponse);
     rpc handleLogout(LogoutRequest) returns (LogoutResponse);
-    rpc handleGoogleAuth(GoogleAuthRequest) returns (LoginResponse);
+    rpc handleGoogleAuth(GoogleAuthRequest) returns (GeneralResponse);
 }
 
 message Empty{}
@@ -23,7 +23,7 @@ message AccessTokenRequest{
     string refreshToken = 1;
 }
 
-message AccessTokenResponse{
+message GeneralResponse{
     UserResponse user = 1;
     string accessToken = 2;
     string refreshToken = 3;
@@ -40,12 +40,6 @@ message LogoutResponse {
 message LoginRequest{
     string email = 1;
     string password = 2;
-}
-
-message LoginResponse{
-    UserResponse user = 1;
-    string accessToken = 2;
-    string refreshToken = 3;
 }
 
 message RegisterRequest{
