@@ -8,6 +8,8 @@ service UsersService{
     rpc AccessToken(AccessTokenRequest) returns (GeneralResponse);
     rpc handleLogout(LogoutRequest) returns (LogoutResponse);
     rpc handleGoogleAuth(GoogleAuthRequest) returns (GeneralResponse);
+    rpc getProfile(ProfileRequest) returns (ProfileRespone);
+    rpc updateProfile(UpdateProfileRequest) returns (ProfileRespone);
 }
 
 message Empty{}
@@ -17,6 +19,14 @@ message GoogleAuthRequest{
     string email = 2;
     string picture = 3;
     string accessToken = 4;
+}
+
+message UpdateProfileRequest{
+    string name = 1;
+    string phoneNumber = 2;
+    string avatar = 3;
+    string password = 4;
+    string accessToken = 5;
 }
 
 message AccessTokenRequest{
@@ -50,6 +60,14 @@ message RegisterRequest{
 
 message RegisterResponse{
     UserResponse user = 1;
+}
+
+message ProfileRespone{
+    UserResponse user = 1;
+}
+
+message ProfileRequest{
+    string accessToken = 1;
 }
 
 message UserResponse {

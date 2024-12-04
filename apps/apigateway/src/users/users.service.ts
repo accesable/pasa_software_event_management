@@ -1,12 +1,13 @@
 import { AUTH_SERVICE } from './constants';
 import * as ms from 'ms';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { GoogleAuthRequest, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
+import { GoogleAuthRequest, UpdateProfileRequest, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import { ProfileDto } from 'apps/apigateway/src/users/dto/profile';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -69,6 +70,29 @@ export class UsersService implements OnModuleInit {
       this.setRefreshTokenCookie(response, data.refreshToken);
 
       return data;
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async getProfile(accessToken: string) {
+    try {
+      return await this.usersService.getProfile({ accessToken }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async updateProfile(accessToken: string, profileDto: ProfileDto) {
+    try {
+      const transformData: UpdateProfileRequest = { 
+        accessToken,
+        name: profileDto.name,
+        phoneNumber: profileDto.phoneNumber,
+        avatar: profileDto.avatar,
+        password: profileDto.password,
+      };
+      return await this.usersService.updateProfile(transformData).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }

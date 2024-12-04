@@ -1,13 +1,14 @@
-import { IsEmail, IsNotEmpty, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, Length, Max, Min } from 'class-validator';
 
 export class LoginDto {
     @IsNotEmpty({ message: 'Email is required' })
     @IsEmail({}, { message: 'Invalid email' })
-    @MaxLength(50, { message: 'Password must not exceed 50 characters' })
+    @IsString()
+    @Length(6, 50)
     email: string;
 
     @IsNotEmpty({ message: 'Password is required' })
-    @MinLength(6, { message: 'Password must be at least 6 characters long' })
-    @MaxLength(20, { message: 'Password must not exceed 20 characters' })
+    @IsString()
+    @Length(6, 50)
     password: string;
 }

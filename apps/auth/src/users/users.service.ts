@@ -1,4 +1,4 @@
-import { UserResponse } from './../../../../libs/common/src/types/auth';
+import { ProfileRequest, UpdateProfileRequest, UserResponse } from './../../../../libs/common/src/types/auth';
 import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common';
 import { RegisterDto, } from '../../../apigateway/src/users/dto/register';
 import * as bcrypt from 'bcrypt';
@@ -52,7 +52,6 @@ export class UsersService {
       }
       const hashedPassword = await this.hashPassword(registerDto.password);
       const user = await this.userModel.create({ ...registerDto, password: hashedPassword });
-      user.password = undefined;
       const userResponse = this.transformUserDataResponse(user);
       return { user: userResponse };
     } catch (error) {
@@ -93,6 +92,41 @@ export class UsersService {
     }
   }
 
+  async getProfile(accessToken: ProfileRequest) {
+    try {
+      const isValid = await this.jwtService.verify(accessToken.accessToken);
+      const user = await this.userModel.findById(isValid.sub);
+      const userRespone = this.transformUserDataResponse(user);
+      return {user: userRespone};
+    } catch (error) {
+      throw this.handleRpcException(
+        new RpcException({
+          message: 'Token expired',
+          code: HttpStatus.BAD_REQUEST,
+        })
+        , 'Error during get profile'
+      );
+    }
+  }
+
+  async updateProfile(data: UpdateProfileRequest) {
+    try {
+      const isValid = await this.jwtService.verify(data.accessToken);
+      const hashedPassword = await this.hashPassword(data.password);
+      const user = await this.userModel.findByIdAndUpdate(isValid.sub, { ...data, password: hashedPassword }, { new: true });
+      const userResponse = this.transformUserDataResponse(user);
+      return { user: userResponse };
+    } catch (error) {
+      throw this.handleRpcException(
+        new RpcException({
+          message: error.message,
+          code: HttpStatus.BAD_REQUEST,
+        })
+        , 'Error during update profile'
+      );
+    }
+  }
+
   async handleGoogleAuth(request: GoogleAuthRequest) {
     try {
       const isExistUser = await this.findByEmail(request.email);
@@ -127,7 +161,6 @@ export class UsersService {
       const hashedPassword = await bcrypt.hash(user.accessToken, 10);
       const newUser = await this.userModel.create({ email: user.email, name: user.name, password: hashedPassword, avatar: user.picture });
       // const message = await this.sendMail(newUser.name, newUser.username);
-      newUser.password = undefined;
       const userResponse = this.transformUserDataResponse(newUser);
       return this.handleToken(userResponse);
     } catch (error) {
@@ -218,5 +251,16 @@ export class UsersService {
       message: error.message || defaultMessage,
       code: HttpStatus.INTERNAL_SERVER_ERROR,
     });
+  }
+
+  async verifyAccessToken(accessToken: string) {
+    try {
+      return 
+    } catch (error) {
+      throw new RpcException({
+        message: 'Invalid token',
+        code: HttpStatus.BAD_REQUEST,
+      });
+    }
   }
 }

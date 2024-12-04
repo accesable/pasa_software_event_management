@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { UsersController } from './users.controller';
+import { GeneralUsersController, UsersController } from './users.controller';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AUTH_SERVICE } from 'apps/apigateway/src/users/constants';
 import { AUTH_PACKAGE_NAME } from '@app/common';
@@ -21,7 +21,7 @@ import { GoogleStrategy } from 'apps/auth/src/users/strategies/google.stategy';
     ]),
 
   ],
-  controllers: [UsersController],
+  controllers: [UsersController, GeneralUsersController],
   providers: [UsersService, GoogleStrategy ],
 })
 export class UsersModule {}

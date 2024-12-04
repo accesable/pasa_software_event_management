@@ -3,6 +3,7 @@ import { UsersService } from './users.service';
 import { GeneralResponse, GoogleAuthRequest, LogoutRequest, UsersServiceController, UsersServiceControllerMethods } from '@app/common';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
+import { ProfileRequest, UpdateProfileRequest } from '@app/common/types/auth';
 
 @Controller()
 @UsersServiceControllerMethods()
@@ -27,5 +28,13 @@ export class UsersController implements UsersServiceController {
 
   handleLogout(@Body() accessToken: LogoutRequest) {
     return this.usersService.handleLogout(accessToken);
+  }
+
+  getProfile(@Body() accessToken: ProfileRequest){
+    return this.usersService.getProfile(accessToken);
+  }
+
+  updateProfile(@Body() data: UpdateProfileRequest){
+    return this.usersService.updateProfile(data);
   }
 }

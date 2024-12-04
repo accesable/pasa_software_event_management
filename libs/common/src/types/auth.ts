@@ -20,6 +20,14 @@ export interface GoogleAuthRequest {
   accessToken: string;
 }
 
+export interface UpdateProfileRequest {
+  name: string;
+  phoneNumber: string;
+  avatar: string;
+  password: string;
+  accessToken: string;
+}
+
 export interface AccessTokenRequest {
   refreshToken: string;
 }
@@ -53,6 +61,14 @@ export interface RegisterResponse {
   user: UserResponse | undefined;
 }
 
+export interface ProfileRespone {
+  user: UserResponse | undefined;
+}
+
+export interface ProfileRequest {
+  accessToken: string;
+}
+
 export interface UserResponse {
   id: string;
   email: string;
@@ -78,6 +94,10 @@ export interface UsersServiceClient {
   handleLogout(request: LogoutRequest): Observable<LogoutResponse>;
 
   handleGoogleAuth(request: GoogleAuthRequest): Observable<GeneralResponse>;
+
+  getProfile(request: ProfileRequest): Observable<ProfileRespone>;
+
+  updateProfile(request: UpdateProfileRequest): Observable<ProfileRespone>;
 }
 
 export interface UsersServiceController {
@@ -92,11 +112,23 @@ export interface UsersServiceController {
   handleGoogleAuth(
     request: GoogleAuthRequest,
   ): Promise<GeneralResponse> | Observable<GeneralResponse> | GeneralResponse;
+
+  getProfile(request: ProfileRequest): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
+
+  updateProfile(request: UpdateProfileRequest): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
 }
 
 export function UsersServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ["login", "register", "accessToken", "handleLogout", "handleGoogleAuth"];
+    const grpcMethods: string[] = [
+      "login",
+      "register",
+      "accessToken",
+      "handleLogout",
+      "handleGoogleAuth",
+      "getProfile",
+      "updateProfile",
+    ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
       GrpcMethod("UsersService", method)(constructor.prototype[method], method, descriptor);
