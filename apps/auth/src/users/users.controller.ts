@@ -3,12 +3,16 @@ import { UsersService } from './users.service';
 import { GeneralResponse, GoogleAuthRequest, LogoutRequest, UsersServiceController, UsersServiceControllerMethods } from '@app/common';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
-import { ProfileRequest, UpdateProfileRequest } from '@app/common/types/auth';
+import { FindByIdRequest, ProfileRequest, UpdateProfileRequest, UserResponse } from '@app/common/types/auth';
 
 @Controller()
 @UsersServiceControllerMethods()
 export class UsersController implements UsersServiceController {
   constructor(private readonly usersService: UsersService) { }
+
+  findById(request: FindByIdRequest) {
+    return this.usersService.findById(request.id);
+  }
 
   handleGoogleAuth(request: GoogleAuthRequest) {
     return this.usersService.handleGoogleAuth(request);

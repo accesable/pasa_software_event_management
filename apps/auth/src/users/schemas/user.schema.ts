@@ -21,6 +21,9 @@ export class User {
   avatar: string;
 
   @Prop()
+  oldAvatarId: string;
+
+  @Prop()
   password: string;
 
   @Prop()

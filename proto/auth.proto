@@ -3,16 +3,20 @@ syntax = "proto3";
 package auth;
 
 service UsersService{
+    rpc findById(FindByIdRequest) returns (UserResponse);
     rpc Login(LoginRequest) returns (GeneralResponse);
     rpc Register(RegisterRequest) returns (RegisterResponse);
     rpc AccessToken(AccessTokenRequest) returns (GeneralResponse);
     rpc handleLogout(LogoutRequest) returns (LogoutResponse);
     rpc handleGoogleAuth(GoogleAuthRequest) returns (GeneralResponse);
-    rpc getProfile(ProfileRequest) returns (ProfileRespone);
     rpc updateProfile(UpdateProfileRequest) returns (ProfileRespone);
 }
 
 message Empty{}
+
+message FindByIdRequest{
+    string id = 1;
+}
 
 message GoogleAuthRequest{
     string name = 1;
@@ -24,7 +28,6 @@ message GoogleAuthRequest{
 message UpdateProfileRequest{
     string name = 1;
     string phoneNumber = 2;
-    string avatar = 3;
     string password = 4;
     string accessToken = 5;
 }
@@ -64,10 +67,6 @@ message RegisterResponse{
 
 message ProfileRespone{
     UserResponse user = 1;
-}
-
-message ProfileRequest{
-    string accessToken = 1;
 }
 
 message UserResponse {

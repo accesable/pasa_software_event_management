@@ -4,10 +4,12 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformInterceptor } from 'apps/auth/src/core/transform.interceptor';
 import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from 'apps/apigateway/src/config/env.validation';
+import { FilesModule } from 'apps/apigateway/src/files/files.module';
 
 @Module({
   imports: [
     UsersModule,
+    FilesModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: 'apps/apigateway/.env',

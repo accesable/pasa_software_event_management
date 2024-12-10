@@ -8,9 +8,4 @@ export class ProfileDto extends PartialType(OmitType(RegisterDto, ['email'] as c
     @IsString()
     @Length(3, 12)
     phoneNumber: string;
-
-    @IsOptional()
-    @IsNotEmpty({ message: 'Avatar is required' })
-    @IsUrl()
-    avatar: string;
 }

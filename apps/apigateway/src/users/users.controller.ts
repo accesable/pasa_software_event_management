@@ -1,11 +1,13 @@
 import { Controller, Get, Post, Body, HttpCode, Req, Res, Headers, UnauthorizedException, UseGuards, HttpStatus, Put, Patch } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { ResponseMessage } from 'apps/auth/src/decorators/public.decorator';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 import { Response, Request as ExpressRequest } from 'express';
-import { GoogleAuthGuard } from 'apps/auth/src/users/guards/google-auth/google-auth.guard';
 import { ProfileDto } from 'apps/apigateway/src/users/dto/profile';
+import { GoogleAuthGuard } from 'apps/apigateway/src/guards/google-auth/google-auth.guard';
+import { ResponseMessage, User } from 'apps/apigateway/src/decorators/public.decorator';
+import { JwtAuthGuard } from 'apps/apigateway/src/guards/jwt-auth.guard';
+import { UserResponse } from '@app/common';
 
 @Controller('auth')
 export class UsersController {
@@ -24,7 +26,7 @@ export class UsersController {
     return this.usersService.login(loginDto, response);
   }
 
-  @Get('access-token')
+  @Get('refresh')
   @ResponseMessage('Get access token success')
   async accessToken(@Req() req: ExpressRequest, @Res({ passthrough: true }) response: Response) {
     const refreshToken = req.cookies['refreshToken'];
@@ -70,16 +72,14 @@ export class GeneralUsersController {
   constructor(private readonly usersService: UsersService) { }
 
   @Get('profile')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('User profile fetched successfully')
-  async getProfile(@Headers('authorization') authHeader: string) {
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Token is required or invalid');
-    }
-    const accessToken = authHeader.split(' ')[1];
-    return this.usersService.getProfile(accessToken);
+  async getProfile(@User() user: UserResponse) {
+    return {user};
   }
 
   @Patch('profile')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('User profile updated successfully')
   async updateProfile(@Headers('authorization') authHeader: string, @Body() profileDto: ProfileDto) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

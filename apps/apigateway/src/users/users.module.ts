@@ -5,7 +5,11 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AUTH_SERVICE } from 'apps/apigateway/src/users/constants';
 import { AUTH_PACKAGE_NAME } from '@app/common';
 import { join } from 'path';
-import { GoogleStrategy } from 'apps/auth/src/users/strategies/google.stategy';
+import { GoogleStrategy } from 'apps/apigateway/src/strategies/google.stategy';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtStrategy } from 'apps/apigateway/src/strategies/jwt.strategy';
+import { FilesService } from 'apps/apigateway/src/files/files.service';
 
 @Module({
   imports: [
@@ -19,9 +23,16 @@ import { GoogleStrategy } from 'apps/auth/src/users/strategies/google.stategy';
         },
       }
     ]),
-
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),  // Lấy biến từ .env
+        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRATION') },  // Lấy thời gian hết hạn từ .env
+      }),
+    }),
   ],
   controllers: [UsersController, GeneralUsersController],
-  providers: [UsersService, GoogleStrategy ],
+  providers: [UsersService, GoogleStrategy, JwtStrategy ],
 })
 export class UsersModule {}

@@ -1,7 +1,7 @@
 import { AUTH_SERVICE } from './constants';
 import * as ms from 'ms';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { GoogleAuthRequest, UpdateProfileRequest, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
+import { GoogleAuthRequest, UpdateProfileRequest, UserResponse, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
@@ -69,6 +69,7 @@ export class UsersService implements OnModuleInit {
       const data = await this.usersService.handleGoogleAuth(user).toPromise();
       this.setRefreshTokenCookie(response, data.refreshToken);
 
+      data.refreshToken = undefined;
       return data;
     } catch (error) {
       throw new RpcException(error);
@@ -85,11 +86,10 @@ export class UsersService implements OnModuleInit {
 
   async updateProfile(accessToken: string, profileDto: ProfileDto) {
     try {
-      const transformData: UpdateProfileRequest = { 
+      const transformData: UpdateProfileRequest = {
         accessToken,
         name: profileDto.name,
         phoneNumber: profileDto.phoneNumber,
-        avatar: profileDto.avatar,
         password: profileDto.password,
       };
       return await this.usersService.updateProfile(transformData).toPromise();
@@ -105,6 +105,14 @@ export class UsersService implements OnModuleInit {
         maxAge: ms(this.configService.get<string>('JWT_REFRESH_EXPIRATION')),
         httpOnly: true,
       });
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  findUserById(id: string) {
+    try {
+      return this.usersService.findById({ id }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }

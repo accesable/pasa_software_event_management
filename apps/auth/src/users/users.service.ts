@@ -30,6 +30,21 @@ export class UsersService {
     }
   }
 
+  async findById(id: string): Promise<UserResponse> {
+    try {
+      const user = await this.userModel.findById(id);
+      if (!user) {
+        throw new RpcException({
+          message: 'User not found',
+          code: HttpStatus.NOT_FOUND,
+        });
+      }
+      return this.transformUserDataResponse(user);
+    } catch (error) {
+      throw this.handleRpcException(error, 'Error finding user by id');
+    }
+  }
+
   private async hashPassword(password: string): Promise<string> {
     try {
       return await bcrypt.hash(password, 10);
@@ -97,7 +112,7 @@ export class UsersService {
       const isValid = await this.jwtService.verify(accessToken.accessToken);
       const user = await this.userModel.findById(isValid.sub);
       const userRespone = this.transformUserDataResponse(user);
-      return {user: userRespone};
+      return { user: userRespone };
     } catch (error) {
       throw this.handleRpcException(
         new RpcException({
@@ -112,8 +127,15 @@ export class UsersService {
   async updateProfile(data: UpdateProfileRequest) {
     try {
       const isValid = await this.jwtService.verify(data.accessToken);
-      const hashedPassword = await this.hashPassword(data.password);
-      const user = await this.userModel.findByIdAndUpdate(isValid.sub, { ...data, password: hashedPassword }, { new: true });
+
+      let updateData = { ...data };
+      if (data.password) {
+        const hashedPassword = await this.hashPassword(data.password);
+        updateData.password = hashedPassword;
+      } else {
+        delete updateData.password; 
+      }
+      const user = await this.userModel.findByIdAndUpdate(isValid.sub, updateData, { new: true });
       const userResponse = this.transformUserDataResponse(user);
       return { user: userResponse };
     } catch (error) {
@@ -121,8 +143,8 @@ export class UsersService {
         new RpcException({
           message: error.message,
           code: HttpStatus.BAD_REQUEST,
-        })
-        , 'Error during update profile'
+        }),
+        'Error during update profile'
       );
     }
   }
@@ -255,7 +277,7 @@ export class UsersService {
 
   async verifyAccessToken(accessToken: string) {
     try {
-      return 
+      return
     } catch (error) {
       throw new RpcException({
         message: 'Invalid token',
