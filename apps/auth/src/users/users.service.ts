@@ -1,4 +1,4 @@
-import { ProfileRequest, UpdateProfileRequest, UserResponse } from './../../../../libs/common/src/types/auth';
+import { DecodeAccessResponse, UpdateAvatarRequest, UpdateProfileRequest, UserResponse } from './../../../../libs/common/src/types/auth';
 import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common';
 import { RegisterDto, } from '../../../apigateway/src/users/dto/register';
 import * as bcrypt from 'bcrypt';
@@ -30,7 +30,7 @@ export class UsersService {
     }
   }
 
-  async findById(id: string): Promise<UserResponse> {
+  async findById(id: string): Promise<DecodeAccessResponse> {
     try {
       const user = await this.userModel.findById(id);
       if (!user) {
@@ -39,7 +39,7 @@ export class UsersService {
           code: HttpStatus.NOT_FOUND,
         });
       }
-      return this.transformUserDataResponse(user);
+      return this.transformAccessResponse(user);
     } catch (error) {
       throw this.handleRpcException(error, 'Error finding user by id');
     }
@@ -107,23 +107,6 @@ export class UsersService {
     }
   }
 
-  async getProfile(accessToken: ProfileRequest) {
-    try {
-      const isValid = await this.jwtService.verify(accessToken.accessToken);
-      const user = await this.userModel.findById(isValid.sub);
-      const userRespone = this.transformUserDataResponse(user);
-      return { user: userRespone };
-    } catch (error) {
-      throw this.handleRpcException(
-        new RpcException({
-          message: 'Token expired',
-          code: HttpStatus.BAD_REQUEST,
-        })
-        , 'Error during get profile'
-      );
-    }
-  }
-
   async updateProfile(data: UpdateProfileRequest) {
     try {
       const isValid = await this.jwtService.verify(data.accessToken);
@@ -145,6 +128,22 @@ export class UsersService {
           code: HttpStatus.BAD_REQUEST,
         }),
         'Error during update profile'
+      );
+    }
+  }
+
+  async updateAvatar(data: UpdateAvatarRequest) {
+    try {
+      const user = await this.userModel.findByIdAndUpdate(data.id, { avatar: data.avatar, oldAvatarId: data.oldAvatarId }, { new: true });
+      const userResponse = this.transformUserDataResponse(user);
+      return { user: userResponse };
+    } catch (error) {
+      throw this.handleRpcException(
+        new RpcException({
+          message: error.message,
+          code: HttpStatus.BAD_REQUEST,
+        }),
+        'Error during update avatar'
       );
     }
   }
@@ -231,6 +230,22 @@ export class UsersService {
       email: user.email,
       name: user.name,
       avatar: user.avatar,
+      phoneNumber: user.phoneNumber || null,
+      isActive: user.isActive,
+      role: user.role,
+      lastLoginAt: user.lastLoginAt instanceof Date ? user.lastLoginAt.toISOString() : null,
+      createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : null,
+      updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : null,
+    };
+  }
+
+  transformAccessResponse(user: any): DecodeAccessResponse {
+    return {
+      id: user._id ? user._id.toString() : user.id.toString(),
+      email: user.email,
+      name: user.name,
+      avatar: user.avatar,
+      oldAvatarId: user.oldAvatarId || null,
       phoneNumber: user.phoneNumber || null,
       isActive: user.isActive,
       role: user.role,

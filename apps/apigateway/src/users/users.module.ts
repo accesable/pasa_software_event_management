@@ -20,6 +20,7 @@ import { FilesService } from 'apps/apigateway/src/files/files.service';
         options: {
           package: AUTH_PACKAGE_NAME,
           protoPath: join(__dirname, '../auth.proto'),
+          url: '0.0.0.0:50051'
         },
       }
     ]),
@@ -33,6 +34,6 @@ import { FilesService } from 'apps/apigateway/src/files/files.service';
     }),
   ],
   controllers: [UsersController, GeneralUsersController],
-  providers: [UsersService, GoogleStrategy, JwtStrategy ],
+  providers: [UsersService, GoogleStrategy, JwtStrategy, FilesService ],
 })
 export class UsersModule {}

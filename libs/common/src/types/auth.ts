@@ -17,6 +17,12 @@ export interface FindByIdRequest {
   id: string;
 }
 
+export interface UpdateAvatarRequest {
+  avatar: string;
+  oldAvatarId: string;
+  id: string;
+}
+
 export interface GoogleAuthRequest {
   name: string;
   email: string;
@@ -68,10 +74,6 @@ export interface ProfileRespone {
   user: UserResponse | undefined;
 }
 
-export interface ProfileRequest {
-  accessToken: string;
-}
-
 export interface UserResponse {
   id: string;
   email: string;
@@ -85,10 +87,24 @@ export interface UserResponse {
   updatedAt: string;
 }
 
+export interface DecodeAccessResponse {
+  id: string;
+  email: string;
+  name: string;
+  avatar: string;
+  oldAvatarId: string;
+  phoneNumber: string;
+  isActive: boolean;
+  role: string;
+  lastLoginAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const AUTH_PACKAGE_NAME = "auth";
 
 export interface UsersServiceClient {
-  findById(request: FindByIdRequest): Observable<UserResponse>;
+  findById(request: FindByIdRequest): Observable<DecodeAccessResponse>;
 
   login(request: LoginRequest): Observable<GeneralResponse>;
 
@@ -100,13 +116,15 @@ export interface UsersServiceClient {
 
   handleGoogleAuth(request: GoogleAuthRequest): Observable<GeneralResponse>;
 
-  getProfile(request: ProfileRequest): Observable<ProfileRespone>;
-
   updateProfile(request: UpdateProfileRequest): Observable<ProfileRespone>;
+
+  updateAvatar(request: UpdateAvatarRequest): Observable<ProfileRespone>;
 }
 
 export interface UsersServiceController {
-  findById(request: FindByIdRequest): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  findById(
+    request: FindByIdRequest,
+  ): Promise<DecodeAccessResponse> | Observable<DecodeAccessResponse> | DecodeAccessResponse;
 
   login(request: LoginRequest): Promise<GeneralResponse> | Observable<GeneralResponse> | GeneralResponse;
 
@@ -120,9 +138,9 @@ export interface UsersServiceController {
     request: GoogleAuthRequest,
   ): Promise<GeneralResponse> | Observable<GeneralResponse> | GeneralResponse;
 
-  getProfile(request: ProfileRequest): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
-
   updateProfile(request: UpdateProfileRequest): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
+
+  updateAvatar(request: UpdateAvatarRequest): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
 }
 
 export function UsersServiceControllerMethods() {
@@ -134,8 +152,8 @@ export function UsersServiceControllerMethods() {
       "accessToken",
       "handleLogout",
       "handleGoogleAuth",
-      "getProfile",
       "updateProfile",
+      "updateAvatar",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

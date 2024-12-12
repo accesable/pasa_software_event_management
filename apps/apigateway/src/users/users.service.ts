@@ -1,7 +1,7 @@
 import { AUTH_SERVICE } from './constants';
 import * as ms from 'ms';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { GoogleAuthRequest, UpdateProfileRequest, UserResponse, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
+import { GoogleAuthRequest, UpdateAvatarRequest, UpdateProfileRequest, UserResponse, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
@@ -76,14 +76,6 @@ export class UsersService implements OnModuleInit {
     }
   }
 
-  async getProfile(accessToken: string) {
-    try {
-      return await this.usersService.getProfile({ accessToken }).toPromise();
-    } catch (error) {
-      throw new RpcException(error);
-    }
-  }
-
   async updateProfile(accessToken: string, profileDto: ProfileDto) {
     try {
       const transformData: UpdateProfileRequest = {
@@ -93,6 +85,14 @@ export class UsersService implements OnModuleInit {
         password: profileDto.password,
       };
       return await this.usersService.updateProfile(transformData).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async updateAvatar(request: UpdateAvatarRequest){
+    try {
+      return await this.usersService.updateAvatar(request).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }

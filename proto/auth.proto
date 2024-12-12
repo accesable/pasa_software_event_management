@@ -3,19 +3,26 @@ syntax = "proto3";
 package auth;
 
 service UsersService{
-    rpc findById(FindByIdRequest) returns (UserResponse);
+    rpc findById(FindByIdRequest) returns (DecodeAccessResponse);
     rpc Login(LoginRequest) returns (GeneralResponse);
     rpc Register(RegisterRequest) returns (RegisterResponse);
     rpc AccessToken(AccessTokenRequest) returns (GeneralResponse);
     rpc handleLogout(LogoutRequest) returns (LogoutResponse);
     rpc handleGoogleAuth(GoogleAuthRequest) returns (GeneralResponse);
     rpc updateProfile(UpdateProfileRequest) returns (ProfileRespone);
+    rpc updateAvatar(UpdateAvatarRequest) returns (ProfileRespone);
 }
 
 message Empty{}
 
 message FindByIdRequest{
     string id = 1;
+}
+
+message UpdateAvatarRequest{
+    string avatar = 1;
+    string oldAvatarId = 2;
+    string id = 3;
 }
 
 message GoogleAuthRequest{
@@ -81,3 +88,17 @@ message UserResponse {
     string createdAt = 9;
     string updatedAt = 10;
 } 
+
+message DecodeAccessResponse{
+    string id = 1;
+    string email = 2;
+    string name = 3;
+    string avatar = 4;
+    string oldAvatarId = 5;
+    string phoneNumber = 6;
+    bool isActive = 7;
+    string role = 8;
+    string lastLoginAt = 9;
+    string createdAt = 10;
+    string updatedAt = 11;
+}

@@ -3,12 +3,17 @@ import { UsersService } from './users.service';
 import { GeneralResponse, GoogleAuthRequest, LogoutRequest, UsersServiceController, UsersServiceControllerMethods } from '@app/common';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
-import { FindByIdRequest, ProfileRequest, UpdateProfileRequest, UserResponse } from '@app/common/types/auth';
+import { FindByIdRequest, ProfileRespone, UpdateAvatarRequest, UpdateProfileRequest } from '@app/common/types/auth';
+import { Observable } from 'rxjs';
 
 @Controller()
 @UsersServiceControllerMethods()
 export class UsersController implements UsersServiceController {
   constructor(private readonly usersService: UsersService) { }
+
+  updateAvatar(request: UpdateAvatarRequest){
+    return this.usersService.updateAvatar(request);
+  }
 
   findById(request: FindByIdRequest) {
     return this.usersService.findById(request.id);
@@ -32,10 +37,6 @@ export class UsersController implements UsersServiceController {
 
   handleLogout(@Body() accessToken: LogoutRequest) {
     return this.usersService.handleLogout(accessToken);
-  }
-
-  getProfile(@Body() accessToken: ProfileRequest){
-    return this.usersService.getProfile(accessToken);
   }
 
   updateProfile(@Body() data: UpdateProfileRequest){

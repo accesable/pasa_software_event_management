@@ -1,3 +1,4 @@
+import { DecodeAccessResponse, UpdateAvatarRequest } from '@app/common';
 import { Injectable } from '@nestjs/common';
 import { CloudinaryResponse } from 'apps/apigateway/src/files/cloudinary/cloudinary-response';
 import { v2 as cloudinary } from 'cloudinary';
@@ -32,21 +33,7 @@ export class FilesService {
         });
     }
 
-    async uploadFile(file: Express.Multer.File) {
-        // const userId = req.user.id;  // Giả sử bạn lấy userId từ request
-        // const user = await this.userService.findOneById(userId);
-
-        // // Gọi service để upload ảnh mới và xóa ảnh cũ nếu có
-        // try {
-        //     const result = await this.uploadFile(file, user.avatarPublicId);
-
-        //     // Cập nhật avatar mới vào cơ sở dữ liệu
-        //     await this.userService.updateAvatar(userId, result.public_id);
-
-        //     return result;
-        // } catch (error) {
-        //     throw new BadRequestException('Error uploading file: ' + error.message);
-        // }
-        return;
+    async uploadFile(file: Express.Multer.File, user: DecodeAccessResponse) {
+        return this.handleUploadFile(file, user.oldAvatarId);
     }
 }

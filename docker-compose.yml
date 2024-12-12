@@ -1,0 +1,25 @@
+version: '3'
+services:
+  auth:
+    build:
+      context: .               # context là root của dự án
+      dockerfile: ./apps/auth/Dockerfile  # chỉ rõ Dockerfile cho auth
+    image: 521h0481/pasa_software_event_management_auth:latest
+    container_name: auth_service
+    restart: always
+    env_file:
+      - ./apps/auth/.env
+    ports:
+      - "50051:50051"
+
+  apigateway:
+    build:
+      context: .                    # context là root
+      dockerfile: ./apps/apigateway/Dockerfile  # Dockerfile cho apigateway
+    image: 521h0481/pasa_software_event_management_apigateway:latest
+    container_name: apigateway_service
+    restart: always
+    env_file:
+      - ./apps/apigateway/.env
+    ports:
+      - "8080:8080"
