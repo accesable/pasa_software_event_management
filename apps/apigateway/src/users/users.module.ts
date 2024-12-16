@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { GeneralUsersController, UsersController } from './users.controller';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { AUTH_SERVICE } from 'apps/apigateway/src/users/constants';
+import { AUTH_SERVICE } from 'apps/apigateway/src/constants/service.constant';
 import { AUTH_PACKAGE_NAME } from '@app/common';
 import { join } from 'path';
 import { GoogleStrategy } from 'apps/apigateway/src/strategies/google.stategy';
@@ -34,6 +34,7 @@ import { FilesService } from 'apps/apigateway/src/files/files.service';
     }),
   ],
   controllers: [UsersController, GeneralUsersController],
-  providers: [UsersService, GoogleStrategy, JwtStrategy, FilesService ],
+  providers: [UsersService, GoogleStrategy, JwtStrategy, FilesService],
+  exports: [UsersService],
 })
-export class UsersModule {}
+export class UsersModule { }

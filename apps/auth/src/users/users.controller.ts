@@ -1,10 +1,9 @@
-import { Controller, Body, UseInterceptors } from '@nestjs/common';
+import { Controller, Body } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { GeneralResponse, GoogleAuthRequest, LogoutRequest, UsersServiceController, UsersServiceControllerMethods } from '@app/common';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
-import { FindByIdRequest, ProfileRespone, UpdateAvatarRequest, UpdateProfileRequest } from '@app/common/types/auth';
-import { Observable } from 'rxjs';
+import { FindByIdRequest, UpdateAvatarRequest, UpdateProfileRequest } from '@app/common/types/auth';
 
 @Controller()
 @UsersServiceControllerMethods()

@@ -1,12 +1,12 @@
-import { validateEnv } from './config/env.validation';
 import { Module } from '@nestjs/common';
-import { UsersModule } from './users/users.module';
-import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+import { validateEnv } from 'apps/event-service/src/config/env.validation';
+import { EventModule } from 'apps/event-service/src/event/event.module';
 
 @Module({
   imports: [
-    UsersModule,
+    EventModule,
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -18,8 +18,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     ConfigModule.forRoot({
       isGlobal: true,
       validate: validateEnv,
-      envFilePath: 'apps/auth/.env',
+      envFilePath: 'apps/event-service/.env',
     }),
   ],
 })
-export class AuthModule {}
+export class EventServiceModule { }

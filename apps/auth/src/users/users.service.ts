@@ -1,5 +1,5 @@
 import { DecodeAccessResponse, UpdateAvatarRequest, UpdateProfileRequest, UserResponse } from './../../../../libs/common/src/types/auth';
-import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
 import { RegisterDto, } from '../../../apigateway/src/users/dto/register';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { GoogleAuthRequest, LogoutRequest } from '@app/common';
 import { RpcException } from '@nestjs/microservices';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
+import { handleRpcException } from '@app/common/filters/handleException';
 
 @Injectable()
 export class UsersService {
@@ -41,7 +42,7 @@ export class UsersService {
       }
       return this.transformAccessResponse(user);
     } catch (error) {
-      throw this.handleRpcException(error, 'Error finding user by id');
+      throw handleRpcException(error, 'Error finding user by id');
     }
   }
 
@@ -70,7 +71,7 @@ export class UsersService {
       const userResponse = this.transformUserDataResponse(user);
       return { user: userResponse };
     } catch (error) {
-      throw this.handleRpcException(error, 'Error during registration');
+      throw handleRpcException(error, 'Error during registration');
     }
   }
 
@@ -85,7 +86,7 @@ export class UsersService {
       }
       return this.handleToken(user);
     } catch (error) {
-      throw this.handleRpcException(error, 'Error during login');
+      throw handleRpcException(error, 'Error during login');
     }
   }
 
@@ -97,7 +98,7 @@ export class UsersService {
         email: isValid.email
       };
     } catch (error) {
-      throw this.handleRpcException(
+      throw handleRpcException(
         new RpcException({
           message: 'Token expired',
           code: HttpStatus.BAD_REQUEST,
@@ -122,7 +123,7 @@ export class UsersService {
       const userResponse = this.transformUserDataResponse(user);
       return { user: userResponse };
     } catch (error) {
-      throw this.handleRpcException(
+      throw handleRpcException(
         new RpcException({
           message: error.message,
           code: HttpStatus.BAD_REQUEST,
@@ -138,7 +139,7 @@ export class UsersService {
       const userResponse = this.transformUserDataResponse(user);
       return { user: userResponse };
     } catch (error) {
-      throw this.handleRpcException(
+      throw handleRpcException(
         new RpcException({
           message: error.message,
           code: HttpStatus.BAD_REQUEST,
@@ -157,7 +158,7 @@ export class UsersService {
       }
       return this.registerGoogle(request);
     } catch (error) {
-      throw this.handleRpcException(error, 'Error during google auth');
+      throw handleRpcException(error, 'Error during google auth');
     }
   }
 
@@ -173,7 +174,7 @@ export class UsersService {
       const userResponse = this.transformUserDataResponse(user);
       return this.handleToken(userResponse);
     } catch (error) {
-      throw this.handleRpcException(error, 'Error during access token');
+      throw handleRpcException(error, 'Error during access token');
     }
   }
 
@@ -185,7 +186,7 @@ export class UsersService {
       const userResponse = this.transformUserDataResponse(newUser);
       return this.handleToken(userResponse);
     } catch (error) {
-      throw this.handleRpcException(error, 'Error during google registration');
+      throw handleRpcException(error, 'Error during google registration');
     }
   }
 
@@ -202,7 +203,7 @@ export class UsersService {
       const userUpdated = await this.userModel.findByIdAndUpdate(user._id, { lastLoginAt: new Date() }, { new: true });
       return userUpdated;
     } catch (error) {
-      throw this.handleRpcException(error, 'Error validating user');
+      throw handleRpcException(error, 'Error validating user');
     }
   }
 
@@ -220,7 +221,7 @@ export class UsersService {
         refreshToken
       };
     } catch (error) {
-      throw this.handleRpcException(error, 'Error handling token');
+      throw handleRpcException(error, 'Error handling token');
     }
   }
 
@@ -277,16 +278,6 @@ export class UsersService {
     return this.jwtService.sign(payload, {
       secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
       expiresIn: this.configService.get<string>("JWT_REFRESH_EXPIRATION"),
-    });
-  }
-
-  handleRpcException(error: any, defaultMessage: string): RpcException {
-    if (error instanceof RpcException) {
-      return error;
-    }
-    return new RpcException({
-      message: error.message || defaultMessage,
-      code: HttpStatus.INTERNAL_SERVER_ERROR,
     });
   }
 

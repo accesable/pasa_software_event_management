@@ -5,7 +5,7 @@ import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 import { Response, Request as ExpressRequest } from 'express';
 import { ProfileDto } from 'apps/apigateway/src/users/dto/profile';
 import { GoogleAuthGuard } from 'apps/apigateway/src/guards/google-auth/google-auth.guard';
-import { ResponseMessage, User } from 'apps/apigateway/src/decorators/public.decorator';
+import { ResponseMessage, Roles, User } from 'apps/apigateway/src/decorators/public.decorator';
 import { JwtAuthGuard } from 'apps/apigateway/src/guards/jwt-auth.guard';
 import { DecodeAccessResponse, UpdateAvatarRequest, UserResponse } from '@app/common';
 import { FileInterceptor } from '@nestjs/platform-express';

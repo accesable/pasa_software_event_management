@@ -1,4 +1,4 @@
-import { AUTH_SERVICE } from './constants';
+import { AUTH_SERVICE } from '../constants/service.constant';
 import * as ms from 'ms';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { GoogleAuthRequest, UpdateAvatarRequest, UpdateProfileRequest, UserResponse, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
@@ -90,7 +90,7 @@ export class UsersService implements OnModuleInit {
     }
   }
 
-  async updateAvatar(request: UpdateAvatarRequest){
+  async updateAvatar(request: UpdateAvatarRequest) {
     try {
       return await this.usersService.updateAvatar(request).toPromise();
     } catch (error) {
