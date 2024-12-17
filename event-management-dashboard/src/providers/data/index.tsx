@@ -1,4 +1,4 @@
-import graphqlDataProiver,{ 
+import graphqlDataProvider,{ 
     GraphQLClient,
     liveProvider as graphqlLiveProvider
  } from "@refinedev/nestjs-query";
@@ -33,5 +33,5 @@ export const wsClient = typeof window !== 'undefined'
         },
     }) : undefined;
 
-export const dataProvider = graphqlDataProiver(client);
+export const dataProvider = graphqlDataProvider(client);
 export const liveProvider = wsClient ? graphqlLiveProvider(wsClient) : undefined;

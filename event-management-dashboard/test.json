@@ -1,0 +1,8 @@
+{
+    "query": "\n                mutation Login($email: String!) {\n                    login(loginInput: {\n                      email: $email\n                    }) {\n                      accessToken,\n                    }\n                  }\n                ",
+    "variables": {
+        "email": "michael.scott@dundermifflin.com",
+        "password": "demodemo"
+    },
+    "operationName": "Login"
+}
