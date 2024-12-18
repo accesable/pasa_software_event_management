@@ -32,7 +32,7 @@ const UpcomingEvents = () => {
     }
   });
 
-  console.log(data);
+  // console.log(data);
   return (
     <Card
         style={{height : '100%'}}
