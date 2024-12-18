@@ -15,7 +15,7 @@ export const authProvider: AuthProvider = {
       // dataProvider.custom is used to make a custom request to the GraphQL API
       // this will call dataProvider which will go through the fetchWrapper function
       const { data } = await dataProvider.custom({
-        url: API_URL,
+        url: `${API_URL}`,
         method: "post",
         headers: {},
         meta: {

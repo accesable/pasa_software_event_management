@@ -17,7 +17,6 @@ import {authProvider, dataProvider,liveProvider} from "./providers"
 import Layout from "./components/layout";
 import { resources } from "./config/resources";
 
-
 function App() {
   return (
     <BrowserRouter>
@@ -46,13 +45,13 @@ function App() {
                   <Route path="forgot-password" element={<ForgotPassword />} />
                   <Route
                     element={
-                    // <Authenticated
-                    //   key="authenticated-layout"
-                    //   fallback={<CatchAllNavigate to="/login" />}>
+                    <Authenticated
+                      key="authenticated-layout"
+                      fallback={<CatchAllNavigate to="/login" />}>
                           <Layout>
                             <Outlet/>
                           </Layout>
-                        // {/* </Authenticated> */}
+                        </Authenticated>
                       }>
                       <Route index element={<Home />} />
                   </Route>

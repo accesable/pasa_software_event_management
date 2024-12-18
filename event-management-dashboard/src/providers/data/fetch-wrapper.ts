@@ -45,7 +45,10 @@ const getGraphQLErrors = (body : Record<"errors",GraphQLFormattedError[] | undef
 }
 
 export const fetchWrapper = async (url:string,options : RequestInit) =>{
-    const response = await fetch(url,options);
+    // options.headers = {
+    //     Authorization: 'Bearer ' + localStorage.getItem('access_token'),
+    // }
+    const response = await customFetch(url,options);
     
     const responseClone = response.clone();
     const body = await responseClone.json();
