@@ -9,13 +9,17 @@ import { getDefaultFilter, useGo } from '@refinedev/core'
 import { Input, Space, Table } from 'antd';
 import React from 'react'
 
-const CompanyList = () => {
+type searchParams= {
+  name : string;
+}
+
+const CompanyList = ({children} : React.PropsWithChildren) => {
 
 
   const go = useGo();
   const {tableProps,filters} = useTable({
     resource : 'companies',
-    onSearch : (values) => {
+    onSearch : (values : searchParams) => {
       return [
         {
           field : 'name',
@@ -50,6 +54,7 @@ const CompanyList = () => {
   })
 
   return (
+    <div>
     <List
     breadcrumb={false}
     headerButtons={() => (
@@ -114,6 +119,8 @@ const CompanyList = () => {
             />
       </Table>
     </List>
+    {children}
+    </div>
   )
 }
 
