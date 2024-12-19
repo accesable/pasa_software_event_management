@@ -16,6 +16,7 @@ import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 import {authProvider, dataProvider,liveProvider} from "./providers"
 import Layout from "./components/layout";
 import { resources } from "./config/resources";
+import CompanyList from "./pages/company";
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
                         </Authenticated>
                       }>
                       <Route index element={<Home />} />
+                      <Route path="/companies" element={<CompanyList/>} />
                   </Route>
                 </Routes>
                 <RefineKbar />
