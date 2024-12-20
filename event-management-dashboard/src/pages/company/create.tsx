@@ -30,7 +30,7 @@ const Create = () => {
             gqlQuery : CREATE_COMPANY_MUTATION
         }
     })
-    const {selectProps,queryResult} = useSelect<GetFieldsFromList<UsersSelectQuery>>({
+    const {selectProps,query : queryResult} = useSelect<GetFieldsFromList<UsersSelectQuery>>({
         resource : 'users',
         optionLabel : 'name',
         meta : {
