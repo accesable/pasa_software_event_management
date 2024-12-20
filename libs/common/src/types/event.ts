@@ -13,6 +13,23 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+export interface GuestResponse {
+  guest?: Guest | undefined;
+}
+
+export interface AllGuestResponse {
+  guests: Guest[];
+  meta?: Meta | undefined;
+}
+
+export interface CreateGuestRequest {
+  name: string;
+  jobTitle: string;
+  organization?: string | undefined;
+  linkSocial?: string | undefined;
+  avatar?: string | undefined;
+}
+
 export interface CreateSpeakerRequest {
   name: string;
   email: string;
@@ -24,12 +41,12 @@ export interface CreateSpeakerRequest {
 }
 
 export interface SpeakerResponse {
-  speaker: Speaker | undefined;
+  speaker?: Speaker | undefined;
 }
 
 export interface AllSpeakerResponse {
   speakers: Speaker[];
-  meta: Meta | undefined;
+  meta?: Meta | undefined;
 }
 
 export interface FindByIdRequest {
@@ -92,20 +109,20 @@ export interface EventByIdRequest {
 
 export interface AllCategoryResponse {
   categories: Category[];
-  meta: Meta | undefined;
+  meta?: Meta | undefined;
 }
 
 export interface EventResponse {
-  event: EventType | undefined;
+  event?: EventType | undefined;
 }
 
 export interface AllEventResponse {
   events: EventType[];
-  meta: Meta | undefined;
+  meta?: Meta | undefined;
 }
 
 export interface CategoryResponse {
-  category: Category | undefined;
+  category?: Category | undefined;
 }
 
 export interface Category {
@@ -120,7 +137,6 @@ export interface CreateEventRequest {
   startDate: string;
   endDate: string;
   location: string;
-  /** Đổi từ guest thành guestIds */
   guestIds: string[];
   categoryId: string;
   isFree: boolean;
@@ -130,6 +146,9 @@ export interface CreateEventRequest {
   videoIntro: string;
   documents: string[];
   createdBy: string;
+  sponsors: SponsorType[];
+  budget?: BudgetType | undefined;
+  schedule: ScheduleType[];
 }
 
 export interface UpdateEventRequest {
@@ -138,10 +157,7 @@ export interface UpdateEventRequest {
   description?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | undefined;
-  location?:
-    | string
-    | undefined;
-  /** Đổi từ guest thành guestIds */
+  location?: string | undefined;
   guestIds: string[];
   categoryId?: string | undefined;
   isFree?: boolean | undefined;
@@ -151,6 +167,9 @@ export interface UpdateEventRequest {
   videoIntro?: string | undefined;
   documents: string[];
   status?: string | undefined;
+  sponsors: SponsorType[];
+  budget?: BudgetType | undefined;
+  schedule: ScheduleType[];
 }
 
 export interface EventType {
@@ -173,14 +192,8 @@ export interface EventType {
   createdAt: string;
   updatedAt: string;
   createdBy: string;
-}
-
-export interface ScheduleType {
-  title: string;
-  startTime: string;
-  endTime: string;
-  description: string;
-  speakerIds: string[];
+  sponsors: SponsorType[];
+  budget?: BudgetType | undefined;
 }
 
 export interface Speaker {
@@ -194,6 +207,44 @@ export interface Speaker {
   jobTitle: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Guest {
+  id: string;
+  name: string;
+  jobTitle: string;
+  organization?: string | undefined;
+  linkSocial?: string | undefined;
+  avatar: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SponsorType {
+  name: string;
+  logo: string;
+  website: string;
+  contribution: number;
+}
+
+export interface ExpenseOrRevenueType {
+  desc: string;
+  amount: number;
+  date: string;
+}
+
+export interface BudgetType {
+  totalBudget: number;
+  expenses: ExpenseOrRevenueType[];
+  revenue: ExpenseOrRevenueType[];
+}
+
+export interface ScheduleType {
+  title: string;
+  startTime: string;
+  endTime: string;
+  description: string;
+  speakerIds: string[];
 }
 
 export const EVENT_PACKAGE_NAME = "event";
@@ -220,6 +271,10 @@ export interface EventServiceClient {
   createSpeaker(request: CreateSpeakerRequest): Observable<SpeakerResponse>;
 
   getAllSpeaker(request: Empty): Observable<AllSpeakerResponse>;
+
+  getAllGuest(request: Empty): Observable<AllGuestResponse>;
+
+  createGuest(request: CreateGuestRequest): Observable<GuestResponse>;
 }
 
 export interface EventServiceController {
@@ -254,6 +309,10 @@ export interface EventServiceController {
   ): Promise<SpeakerResponse> | Observable<SpeakerResponse> | SpeakerResponse;
 
   getAllSpeaker(request: Empty): Promise<AllSpeakerResponse> | Observable<AllSpeakerResponse> | AllSpeakerResponse;
+
+  getAllGuest(request: Empty): Promise<AllGuestResponse> | Observable<AllGuestResponse> | AllGuestResponse;
+
+  createGuest(request: CreateGuestRequest): Promise<GuestResponse> | Observable<GuestResponse> | GuestResponse;
 }
 
 export function EventServiceControllerMethods() {
@@ -270,6 +329,8 @@ export function EventServiceControllerMethods() {
       "updateCategory",
       "createSpeaker",
       "getAllSpeaker",
+      "getAllGuest",
+      "createGuest",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

@@ -44,18 +44,22 @@ export class SpeakerService {
     }
 
     transformSpeaker(speaker: SpeakerDocument) {
-        const speakerResponse: SpeakerType = {
-            id: speaker._id.toString(),
-            name: speaker.name,
-            bio: speaker.bio,
-            avatar: speaker.avatar,
-            email: speaker.email,
-            linkFb: speaker.linkFb,
-            phone: speaker.phone,
-            jobTitle: speaker.jobTitle,
-            createdAt: speaker.createdAt.toISOString(),
-            updatedAt: speaker.updatedAt.toISOString(),
-        };
-        return speakerResponse;
+        try {
+            const speakerResponse: SpeakerType = {
+                id: speaker._id.toString(),
+                name: speaker.name,
+                bio: speaker.bio,
+                avatar: speaker.avatar,
+                email: speaker.email,
+                linkFb: speaker.linkFb,
+                phone: speaker.phone,
+                jobTitle: speaker.jobTitle,
+                createdAt: speaker.createdAt.toISOString(),
+                updatedAt: speaker.updatedAt.toISOString(),
+            };
+            return speakerResponse;
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to transform speaker');
+        }
     }
 }

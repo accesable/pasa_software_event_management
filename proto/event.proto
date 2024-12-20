@@ -14,9 +14,28 @@ service EventService{
   rpc UpdateCategory(UpdateCategoryRequest) returns (CategoryResponse);
   rpc CreateSpeaker(CreateSpeakerRequest) returns (SpeakerResponse);
   rpc GetAllSpeaker(Empty) returns (AllSpeakerResponse);
+  rpc getAllGuest(Empty) returns (AllGuestResponse);
+  rpc CreateGuest(CreateGuestRequest) returns (GuestResponse);
 }
 
 message Empty{}
+
+message GuestResponse{
+  Guest guest = 1;
+}
+
+message AllGuestResponse{
+  repeated Guest guests = 1;
+  Meta meta = 2;
+}
+
+message CreateGuestRequest{
+  string name = 1;
+  string jobTitle = 2;
+  optional string organization = 3;
+  optional string linkSocial = 4;
+  optional string avatar = 5;
+}
 
 message CreateSpeakerRequest{
   string name = 1;
@@ -120,7 +139,7 @@ message CreateEventRequest {
   string startDate = 3;
   string endDate = 4;
   string location = 5;
-  repeated string guestIds = 6; // Đổi từ guest thành guestIds
+  repeated string guestIds = 6;
   string categoryId = 7;
   bool isFree = 8;
   int32 price = 9;
@@ -129,16 +148,19 @@ message CreateEventRequest {
   string videoIntro = 12;
   repeated string documents = 13;
   string createdBy = 14;
+  repeated SponsorType sponsors = 15;
+  optional BudgetType budget = 16;
+  repeated ScheduleType schedule = 17;
 }
 
-message UpdateEventRequest{
+message UpdateEventRequest {
   string id = 1;
   optional string name = 2;
   optional string description = 3;
   optional string startDate = 4;
   optional string endDate = 5;
   optional string location = 6;
-  repeated string guestIds = 7; // Đổi từ guest thành guestIds
+  repeated string guestIds = 7;
   optional string categoryId = 8;
   optional bool isFree = 9;
   optional int32 price = 10;
@@ -147,14 +169,17 @@ message UpdateEventRequest{
   optional string videoIntro = 13;
   repeated string documents=14;
   optional string status=15;
+  repeated SponsorType sponsors = 16;
+  optional BudgetType budget = 17;
+  repeated ScheduleType schedule = 18;
 }
 
 message EventType {
   string id = 1;
   string name = 2;
   string description = 3;
-  string startDate = 4; 
-  string endDate = 5;     
+  string startDate = 4;
+  string endDate = 5;
   string location = 6;
   repeated ScheduleType schedule = 7;
   repeated string guestIds = 8;
@@ -162,21 +187,15 @@ message EventType {
   bool isFree = 10;
   int32 price = 11;
   int32 maxParticipants = 12;
-  string banner = 13;
-  string videoIntro = 14;
+  optional string banner = 13;
+  optional string videoIntro = 14;
   repeated string documents = 15;
   string status = 16;
   string createdAt = 17;
   string updatedAt = 18;
   string createdBy = 19;
-}
-
-message ScheduleType {
-  string title = 1;
-  string startTime = 2; 
-  string endTime = 3;    
-  string description = 4;
-  repeated string speakerIds = 5;
+  repeated SponsorType sponsors = 20;
+  optional BudgetType budget = 21;
 }
 
 message Speaker{
@@ -190,4 +209,42 @@ message Speaker{
   string jobTitle = 8;
   string createdAt = 9;
   string updatedAt = 10;
+}
+
+message Guest{
+  string id = 1;
+  string name = 2;
+  string jobTitle = 3;
+  optional string organization = 4;
+  optional string linkSocial = 5;
+  string avatar = 6;
+  string createdAt = 7;
+  string updatedAt = 8;
+}
+
+message SponsorType {
+  string name = 1;
+  string logo = 2;
+  string website = 3;
+  int32 contribution = 4;
+}
+
+message ExpenseOrRevenueType {
+  string desc = 1;
+  int32 amount = 2;
+  string date = 3;
+}
+
+message BudgetType {
+  int32 totalBudget = 1;
+  repeated ExpenseOrRevenueType expenses = 2;
+  repeated ExpenseOrRevenueType revenue = 3;
+}
+
+message ScheduleType {
+  string title = 1;
+  string startTime = 2;
+  string endTime = 3;
+  string description = 4;
+  repeated string speakerIds = 5;
 }

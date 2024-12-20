@@ -20,7 +20,7 @@ export class Guest {
     @Prop({ trim: true })
     linkSocial: string;
 
-    @Prop({ trim: true })
+    @Prop({ trim: true, default: 'https://res.cloudinary.com/dbvyexitw/image/upload/v1734692314/gtpu0cco23s7yy5moa3e.png' })
     avatar: string;
 }
 

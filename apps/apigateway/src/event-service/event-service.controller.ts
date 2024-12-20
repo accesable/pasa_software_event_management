@@ -7,6 +7,8 @@ import { RolesGuard } from 'apps/apigateway/src/guards/roles.guard';
 import { DecodeAccessResponse } from '@app/common';
 import { CreateEventCategoryDto } from 'apps/apigateway/src/event-service/dto/create-event-category.dtc';
 import { UpdateEventDto } from 'apps/apigateway/src/event-service/dto/update-event-service.dto';
+import { CreateGuestDto } from 'apps/apigateway/src/event-service/dto/create-guest.dto';
+import { CreateSpeakerDto } from 'apps/apigateway/src/event-service/dto/create-speaker.dto';
 
 @Controller('events')
 export class EventServiceController {
@@ -119,7 +121,26 @@ export class SpeakerServiceController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('organizer', 'admin')
   @ResponseMessage('Speaker created successfully')
-  createSpeaker(@Body() createSpeakerDto: any) {
+  createSpeaker(@Body() createSpeakerDto: CreateSpeakerDto) {
     return this.eventServiceService.createSpeaker(createSpeakerDto);
+  }
+}
+
+@Controller('guests')
+export class GuestServiceController {
+  constructor(private readonly eventServiceService: EventServiceService) { }
+
+  @Get()
+  @ResponseMessage('Get all guests success')
+  getAllGuest() {
+    return this.eventServiceService.getAllGuest();
+  }
+
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('organizer', 'admin')
+  @ResponseMessage('Guest created successfully')
+  createGuest(@Body() createGuestDto: CreateGuestDto) {
+    return this.eventServiceService.createGuest(createGuestDto);
   }
 }

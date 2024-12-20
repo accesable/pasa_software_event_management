@@ -31,11 +31,7 @@ export class EventCategoryService {
     async getAllCategory() {
         try {
             const categories  = await this.categoryModel.find();
-            const categoryResponses: Category[] = categories.map(category => ({
-                id: category._id.toString(),
-                name: category.name,
-                description: category.description,
-            }));
+            const categoryResponses: Category[] = categories.map(category => this.transformCategory(category));
 
             const meta = {
                 totalItems: categories.length,
@@ -87,11 +83,15 @@ export class EventCategoryService {
     }
 
     transformCategory(category: CategoryDocument) {
-        const res: Category = {
-            id: category.id,
-            name: category.name,
-            description: category.description
+        try {
+            const res: Category = {
+                id: category.id,
+                name: category.name,
+                description: category.description
+            }
+            return res;
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to transform category');
         }
-        return res;
     }
 }

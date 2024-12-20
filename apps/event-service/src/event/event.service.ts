@@ -27,7 +27,7 @@ export class EventService {
             const events = await this.eventModel
                 .find(filter)
                 .skip(skip)
-                .limit(limit) 
+                .limit(limit)
                 .sort(sort as any)
                 .populate(population)
                 .exec();
@@ -101,37 +101,58 @@ export class EventService {
 
     transformEvent(event: EventDocument): EventType {
         const schedule = event.schedule?.map(session => ({
-          title: session.title,
-          startTime: session.startTime ? session.startTime.toISOString() : '',
-          endTime: session.endTime ? session.endTime.toISOString() : '',
-          description: session.description || '',
-          speakerIds: session.speakerIds ? session.speakerIds.map(sid => sid.toString()) : []
+            title: session.title,
+            startTime: session.startTime ? session.startTime.toISOString() : '',
+            endTime: session.endTime ? session.endTime.toISOString() : '',
+            description: session.description || '',
+            speakerIds: session.speakerIds?.map(sid => sid.toString()) || []
         })) || [];
-      
-        const guestIds = event.guestIds ? event.guestIds.map(g => g.toString()) : [];
-      
-        const res: EventType = {
-          id: event._id.toString(),
-          name: event.name || '',
-          description: event.description || '',
-          startDate: event.startDate.toISOString(),
-          endDate: event.endDate.toISOString(),
-          location: event.location || '',
-          schedule: schedule,
-          guestIds: guestIds,
-          categoryId: event.categoryId.toString(),
-          isFree: event.isFree,
-          price: event.price,
-          maxParticipants: event.maxParticipants,
-          banner: event.banner || '',
-          videoIntro: event.videoIntro || '',
-          documents: event.documents || [],
-          status: event.status,
-          createdAt: event.createdAt.toISOString(),
-          updatedAt: event.updatedAt.toISOString(),
-          createdBy: event.createdBy.toString(),
+
+        const guestIds = event.guestIds?.map(g => g.toString()) || [];
+
+        const sponsors = event.sponsors?.map(s => ({
+            name: s.name || '',
+            logo: s.logo || '',
+            website: s.website || '',
+            contribution: s.contribution || 0
+        })) || [];
+
+        const budget = event.budget ? {
+            totalBudget: event.budget.totalBudget || 0,
+            expenses: event.budget.expenses?.map(e => ({
+                desc: e.desc || '',
+                amount: e.amount || 0,
+                date: e.date ? e.date.toISOString() : ''
+            })) || [],
+            revenue: event.budget.revenue?.map(r => ({
+                desc: r.desc || '',
+                amount: r.amount || 0,
+                date: r.date ? r.date.toISOString() : ''
+            })) || []
+        } : { totalBudget: 0, expenses: [], revenue: [] };
+
+        return {
+            id: event._id.toString(),
+            name: event.name || '',
+            description: event.description || '',
+            startDate: event.startDate.toISOString(),
+            endDate: event.endDate.toISOString(),
+            location: event.location || '',
+            schedule,
+            guestIds,
+            categoryId: event.categoryId.toString(),
+            isFree: event.isFree,
+            price: event.price,
+            maxParticipants: event.maxParticipants,
+            banner: event.banner || '',
+            videoIntro: event.videoIntro || '',
+            documents: event.documents || [],
+            status: event.status,
+            createdAt: event.createdAt.toISOString(),
+            updatedAt: event.updatedAt.toISOString(),
+            createdBy: event.createdBy.toString(),
+            sponsors,
+            budget
         };
-      
-        return res;
     }
 }

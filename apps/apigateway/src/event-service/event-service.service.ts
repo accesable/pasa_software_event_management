@@ -6,6 +6,7 @@ import { EVENT_SERVICE } from 'apps/apigateway/src/constants/service.constant';
 import { CreateEventCategoryDto } from 'apps/apigateway/src/event-service/dto/create-event-category.dtc';
 import { UpdateEventDto } from 'apps/apigateway/src/event-service/dto/update-event-service.dto';
 import { CreateSpeakerDto } from 'apps/apigateway/src/event-service/dto/create-speaker.dto';
+import { CreateGuestDto } from 'apps/apigateway/src/event-service/dto/create-guest.dto';
 
 @Injectable()
 export class EventServiceService implements OnModuleInit {
@@ -46,6 +47,21 @@ export class EventServiceService implements OnModuleInit {
 
   async createEvent(createEventDto: CreateEventDto, createdBy: string) {
     try {
+      const scheduleProto = createEventDto.schedule?.map(s => ({
+        title: s.title,
+        startTime: s.startTime.toString(),
+        endTime: s.endTime.toString(),
+        description: s.description || '',
+        speakerIds: s.speakerIds
+      })) || [];
+
+      const sponsorsProto = createEventDto.sponsors?.map(s => ({
+        name: s.name,
+        logo: s.logo || '',
+        website: s.website || '',
+        contribution: s.contribution || 0,
+      })) || [];
+
       const request: CreateEventRequest = {
         name: createEventDto.name,
         description: createEventDto.description ?? '',
@@ -61,6 +77,8 @@ export class EventServiceService implements OnModuleInit {
         videoIntro: createEventDto.videoIntro ?? '',
         documents: createEventDto.documents ?? [],
         createdBy,
+        schedule: scheduleProto,
+        sponsors: sponsorsProto,
       };
 
       return await this.eventService.createEvent(request).toPromise();
@@ -110,6 +128,35 @@ export class EventServiceService implements OnModuleInit {
 
   async updateEvent(id: string, updateEventDto: UpdateEventDto) {
     try {
+      const scheduleProto = updateEventDto.schedule?.map(s => ({
+          title: s.title,
+          startTime: s.startTime.toString(),
+          endTime: s.endTime.toString(),
+          description: s.description || '',
+          speakerIds: s.speakerIds
+        })) || [];
+
+      const sponsorsProto = updateEventDto.sponsors?.map(s => ({
+        name: s.name,
+        logo: s.logo || '',
+        website: s.website || '',
+        contribution: s.contribution || 0,
+      })) || [];
+
+      const budgetProto = updateEventDto.budget ? {
+        totalBudget: updateEventDto.budget.totalBudget || 0,
+        expenses: updateEventDto.budget.expenses?.map(e => ({
+          desc: e.desc || '',
+          amount: e.amount || 0,
+          date: e.date ? e.date.toISOString() : ''
+        })) || [],
+        revenue: updateEventDto.budget.revenue?.map(r => ({
+          desc: r.desc || '',
+          amount: r.amount || 0,
+          date: r.date ? r.date.toISOString() : ''
+        })) || []
+      } : { totalBudget: 0, expenses: [], revenue: [] };
+
       const request: UpdateEventRequest = {
         id: id,
         name: updateEventDto.name ?? undefined,
@@ -126,6 +173,9 @@ export class EventServiceService implements OnModuleInit {
         videoIntro: updateEventDto.videoIntro ?? undefined,
         documents: updateEventDto.documents ?? undefined,
         status: updateEventDto.status ?? undefined,
+        sponsors: sponsorsProto,
+        budget: budgetProto,
+        schedule: scheduleProto,
       }
       return await this.eventService.updateEvent(request).toPromise();
     } catch (error) {
@@ -133,7 +183,7 @@ export class EventServiceService implements OnModuleInit {
     }
   }
 
-  async getAllSpeaker(){
+  async getAllSpeaker() {
     try {
       return await this.eventService.getAllSpeaker({}).toPromise();
     } catch (error) {
@@ -144,6 +194,22 @@ export class EventServiceService implements OnModuleInit {
   async createSpeaker(createSpeakerDto: CreateSpeakerDto) {
     try {
       return await this.eventService.createSpeaker(createSpeakerDto).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async getAllGuest() {
+    try {
+      return await this.eventService.getAllGuest({}).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async createGuest(createGuestDto: CreateGuestDto) {
+    try {
+      return await this.eventService.createGuest(createGuestDto).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
