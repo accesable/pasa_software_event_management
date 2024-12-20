@@ -14,19 +14,19 @@ export class Speaker {
     @Prop({ required: true, trim: true })
     bio: string;
 
-    @Prop({ trim: true })
+    @Prop({ trim: true, default: 'https://www.facebook.com'})
     linkFb: string;
 
-    @Prop({ trim: true })
+    @Prop({ trim: true, default: 'https://res.cloudinary.com/dbvyexitw/image/upload/v1734692314/gtpu0cco23s7yy5moa3e.png' })
     avatar: string;
 
-    @Prop({ trim: true })
+    @Prop({required: true, trim: true })
     email: string
 
     @Prop({ trim: true })
     phone: string
 
-    @Prop({ trim: true })
+    @Prop({required: true, trim: true })
     jobTitle: string;
 }
 

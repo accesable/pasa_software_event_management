@@ -13,10 +13,68 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+export interface CreateSpeakerRequest {
+  name: string;
+  email: string;
+  avatar?: string | undefined;
+  phone?: string | undefined;
+  jobTitle: string;
+  bio?: string | undefined;
+  linkFb?: string | undefined;
+}
+
+export interface SpeakerResponse {
+  speaker: Speaker | undefined;
+}
+
+export interface AllSpeakerResponse {
+  speakers: Speaker[];
+  meta: Meta | undefined;
+}
+
+export interface FindByIdRequest {
+  id: string;
+}
+
+export interface DecodeAccessResponse {
+  id: string;
+  email: string;
+  name: string;
+  avatar: string;
+  oldAvatarId: string;
+  phoneNumber: string;
+  isActive: boolean;
+  role: string;
+  lastLoginAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Meta {
+  page?: number | undefined;
+  limit?: number | undefined;
+  totalPages?: number | undefined;
+  totalItems: number;
+  count: number;
+}
+
+export interface QueryParamsRequest {
+  query: { [key: string]: string };
+}
+
+export interface QueryParamsRequest_QueryEntry {
+  key: string;
+  value: string;
+}
+
 export interface UpdateCategoryRequest {
   id: string;
   name?: string | undefined;
   description?: string | undefined;
+}
+
+export interface CategoryNameRequest {
+  name: string;
 }
 
 export interface CreateCategoryRequest {
@@ -34,6 +92,7 @@ export interface EventByIdRequest {
 
 export interface AllCategoryResponse {
   categories: Category[];
+  meta: Meta | undefined;
 }
 
 export interface EventResponse {
@@ -42,6 +101,7 @@ export interface EventResponse {
 
 export interface AllEventResponse {
   events: EventType[];
+  meta: Meta | undefined;
 }
 
 export interface CategoryResponse {
@@ -60,15 +120,15 @@ export interface CreateEventRequest {
   startDate: string;
   endDate: string;
   location: string;
-  speaker: string[];
-  guest: string[];
+  /** Đổi từ guest thành guestIds */
+  guestIds: string[];
   categoryId: string;
   isFree: boolean;
   price: number;
   maxParticipants: number;
   banner: string;
   videoIntro: string;
-  otherDocument: string[];
+  documents: string[];
   createdBy: string;
 }
 
@@ -78,16 +138,18 @@ export interface UpdateEventRequest {
   description?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | undefined;
-  location?: string | undefined;
-  speaker: string[];
-  guest: string[];
+  location?:
+    | string
+    | undefined;
+  /** Đổi từ guest thành guestIds */
+  guestIds: string[];
   categoryId?: string | undefined;
   isFree?: boolean | undefined;
   price?: number | undefined;
   maxParticipants?: number | undefined;
   banner?: string | undefined;
   videoIntro?: string | undefined;
-  otherDocument: string[];
+  documents: string[];
   status?: string | undefined;
 }
 
@@ -98,27 +160,50 @@ export interface EventType {
   startDate: string;
   endDate: string;
   location: string;
-  speaker: string[];
-  guest: string[];
+  schedule: ScheduleType[];
+  guestIds: string[];
   categoryId: string;
   isFree: boolean;
   price: number;
   maxParticipants: number;
   banner: string;
   videoIntro: string;
-  otherDocument: string[];
+  documents: string[];
   status: string;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
 }
 
+export interface ScheduleType {
+  title: string;
+  startTime: string;
+  endTime: string;
+  description: string;
+  speakerIds: string[];
+}
+
+export interface Speaker {
+  id: string;
+  name: string;
+  bio: string;
+  linkFb: string;
+  avatar: string;
+  email: string;
+  phone?: string | undefined;
+  jobTitle: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const EVENT_PACKAGE_NAME = "event";
 
 export interface EventServiceClient {
-  getAllEvent(request: Empty): Observable<AllEventResponse>;
+  getAllEvent(request: QueryParamsRequest): Observable<AllEventResponse>;
 
   getEventById(request: EventByIdRequest): Observable<EventResponse>;
+
+  getAllEventByCategoryName(request: CategoryNameRequest): Observable<AllEventResponse>;
 
   getCategoryById(request: CategoryByIdRequest): Observable<CategoryResponse>;
 
@@ -131,12 +216,20 @@ export interface EventServiceClient {
   updateEvent(request: UpdateEventRequest): Observable<EventResponse>;
 
   updateCategory(request: UpdateCategoryRequest): Observable<CategoryResponse>;
+
+  createSpeaker(request: CreateSpeakerRequest): Observable<SpeakerResponse>;
+
+  getAllSpeaker(request: Empty): Observable<AllSpeakerResponse>;
 }
 
 export interface EventServiceController {
-  getAllEvent(request: Empty): Promise<AllEventResponse> | Observable<AllEventResponse> | AllEventResponse;
+  getAllEvent(request: QueryParamsRequest): Promise<AllEventResponse> | Observable<AllEventResponse> | AllEventResponse;
 
   getEventById(request: EventByIdRequest): Promise<EventResponse> | Observable<EventResponse> | EventResponse;
+
+  getAllEventByCategoryName(
+    request: CategoryNameRequest,
+  ): Promise<AllEventResponse> | Observable<AllEventResponse> | AllEventResponse;
 
   getCategoryById(
     request: CategoryByIdRequest,
@@ -155,6 +248,12 @@ export interface EventServiceController {
   updateCategory(
     request: UpdateCategoryRequest,
   ): Promise<CategoryResponse> | Observable<CategoryResponse> | CategoryResponse;
+
+  createSpeaker(
+    request: CreateSpeakerRequest,
+  ): Promise<SpeakerResponse> | Observable<SpeakerResponse> | SpeakerResponse;
+
+  getAllSpeaker(request: Empty): Promise<AllSpeakerResponse> | Observable<AllSpeakerResponse> | AllSpeakerResponse;
 }
 
 export function EventServiceControllerMethods() {
@@ -162,12 +261,15 @@ export function EventServiceControllerMethods() {
     const grpcMethods: string[] = [
       "getAllEvent",
       "getEventById",
+      "getAllEventByCategoryName",
       "getCategoryById",
       "getAllCategory",
       "createEvent",
       "createCategory",
       "updateEvent",
       "updateCategory",
+      "createSpeaker",
+      "getAllSpeaker",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

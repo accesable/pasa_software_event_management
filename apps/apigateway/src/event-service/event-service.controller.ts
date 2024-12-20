@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { EventServiceService } from './event-service.service';
 import { CreateEventDto } from 'apps/apigateway/src/event-service/dto/create-event-service.dto';
 import { ResponseMessage, Roles, User } from 'apps/apigateway/src/decorators/public.decorator';
@@ -8,43 +8,25 @@ import { DecodeAccessResponse } from '@app/common';
 import { CreateEventCategoryDto } from 'apps/apigateway/src/event-service/dto/create-event-category.dtc';
 import { UpdateEventDto } from 'apps/apigateway/src/event-service/dto/update-event-service.dto';
 
-
 @Controller('events')
 export class EventServiceController {
-  constructor(private readonly eventServiceService: EventServiceService) {}
+  constructor(private readonly eventServiceService: EventServiceService) { }
 
-  @Get('category')
-  @ResponseMessage('Get all category success')
-  getAllCategory() {
-    return this.eventServiceService.getAllCategory();
-  }
-
-  @Get('category/:id')
-  @ResponseMessage('Get category by id success')
-  getCategoryById(@Param('id') id: string) {
-    return this.eventServiceService.getCategoryById(id);
-  }
-
-  @Post('category')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('organizer', 'admin')
-  @ResponseMessage('Category created successfully')
-  createCategory(@Body() createEventCategoryDto: CreateEventCategoryDto, @User() user: DecodeAccessResponse) {
-    return this.eventServiceService.createCategory(createEventCategoryDto);
-  }
-
-  @Patch('category/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('organizer', 'admin')
-  @ResponseMessage('Update category success')
-  updateCategory(@Param('id') id: string, @Body() updateEventCategoryDto: CreateEventCategoryDto) {
-    return this.eventServiceService.updateCategory(id, updateEventCategoryDto);
-  }
+  // @Get()
+  // @ResponseMessage('Get all event success')
+  // getAllEvent(){
+  //   return this.eventServiceService.getAllEvent();
+  // } 
 
   @Get()
-  @ResponseMessage('Get all event success')
-  getAllEvent(){
-    return this.eventServiceService.getAllEvent();
+  @ResponseMessage('Get all events or filter by category success')
+  getAllEventByCategoryName(@Query() query: any, @Query("category") categoryName: string) {
+    if (categoryName) {
+      return this.eventServiceService.getEventByCategoryName(categoryName.toLocaleLowerCase());
+    }
+    return this.eventServiceService.getAllEvent(
+      { query }
+    );
   }
 
   @Get(':id')
@@ -88,4 +70,56 @@ export class EventServiceController {
   // remove(@Param('id') id: string) {
   //   return this.eventServiceService.remove(+id);
   // }
+}
+
+@Controller('categories')
+export class CategoryServiceController {
+  constructor(private readonly eventServiceService: EventServiceService) { }
+
+  @Get()
+  @ResponseMessage('Get all category success')
+  getAllCategory() {
+    return this.eventServiceService.getAllCategory();
+  }
+
+  @Get(':id')
+  @ResponseMessage('Get category by id success')
+  getCategoryById(@Param('id') id: string) {
+    return this.eventServiceService.getCategoryById(id);
+  }
+
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('organizer', 'admin')
+  @ResponseMessage('Category created successfully')
+  createCategory(@Body() createEventCategoryDto: CreateEventCategoryDto, @User() user: DecodeAccessResponse) {
+    return this.eventServiceService.createCategory(createEventCategoryDto);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('organizer', 'admin')
+  @ResponseMessage('Update category success')
+  updateCategory(@Param('id') id: string, @Body() updateEventCategoryDto: CreateEventCategoryDto) {
+    return this.eventServiceService.updateCategory(id, updateEventCategoryDto);
+  }
+}
+
+@Controller('speakers')
+export class SpeakerServiceController {
+  constructor(private readonly eventServiceService: EventServiceService) { }
+
+  @Get()
+  @ResponseMessage('Get all speakers success')
+  getAllSpeaker() {
+    return this.eventServiceService.getAllSpeaker();
+  }
+
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('organizer', 'admin')
+  @ResponseMessage('Speaker created successfully')
+  createSpeaker(@Body() createSpeakerDto: any) {
+    return this.eventServiceService.createSpeaker(createSpeakerDto);
+  }
 }

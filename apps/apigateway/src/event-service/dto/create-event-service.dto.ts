@@ -11,8 +11,8 @@ import {
     ValidatorConstraintInterface,
     ValidationArguments,
     Min,
+    IsArray,
 } from 'class-validator';
-
 import { Type } from 'class-transformer';
 
 @ValidatorConstraint({ name: "IsGreaterDate", async: false })
@@ -20,8 +20,7 @@ class IsGreaterDateConstraint implements ValidatorConstraintInterface {
     validate(value: any, args: ValidationArguments): boolean {
         const startDate = new Date(args.object['startDate']);
         const endDate = new Date(value);
-
-        return startDate < endDate; // Ensure startDate < endDate
+        return startDate < endDate;
     }
 
     defaultMessage(args: ValidationArguments): string {
@@ -32,12 +31,11 @@ class IsGreaterDateConstraint implements ValidatorConstraintInterface {
 @ValidatorConstraint({ name: 'IsPriceValid', async: false })
 export class IsPriceValidConstraint implements ValidatorConstraintInterface {
     validate(price: number, args: ValidationArguments): boolean {
-        const isFree = args.object['isFree']; // Lấy giá trị của `isFree` từ object đang được kiểm tra
-
+        const isFree = args.object['isFree'];
         if (isFree === true) {
-            return price === 0; // Nếu isFree = true, price phải = 0
+            return price === 0;
         } else {
-            return price > 0; // Nếu isFree = false, price phải > 0
+            return price > 0;
         }
     }
 
@@ -55,15 +53,15 @@ export class IsPriceValidConstraint implements ValidatorConstraintInterface {
 export class IsFutureDateConstraint implements ValidatorConstraintInterface {
     validate(value: Date): boolean {
         if (!value) {
-            return false; // Trường hợp giá trị không tồn tại
+            return false;
         }
 
-        const currentDate = new Date(); // Lấy ngày hiện tại
-        return value > currentDate; // Kiểm tra giá trị phải lớn hơn ngày hiện tại
+        const currentDate = new Date();
+        return value > currentDate;
     }
 
     defaultMessage(args: ValidationArguments): string {
-        return `${args.property} must be a future date`; // Thông báo lỗi
+        return `${args.property} must be a future date`;
     }
 }
 
@@ -72,9 +70,9 @@ export class CreateEventDto {
     @IsString({ message: 'Name must be string' })
     name: string;
 
-    @IsNotEmpty({ message: 'Description is required' })
+    @IsOptional()
     @IsString({ message: 'Description must be string' })
-    description: string;
+    description?: string;
 
     @IsNotEmpty({ message: 'Start Date is required' })
     @IsDate({ message: 'Start Date must be a date' })
@@ -89,17 +87,10 @@ export class CreateEventDto {
     endDate: Date;
 
     @IsNotEmpty({ message: 'Location is required' })
+    @IsString({ message: 'Location must be a string' })
     location: string;
 
-    @IsOptional()
-    @IsMongoId({ each: true, message: "Invalid id" })
-    speaker?: string[];
-
-    @IsOptional()
-    @IsMongoId({ each: true, message: "Invalid id" })
-    guest?: string[];
-
-    @IsNotEmpty({ message: "Category id  is required" })
+    @IsNotEmpty({ message: "Category id is required" })
     @IsMongoId({ message: "Invalid category Id" })
     categoryId: string;
 
@@ -111,12 +102,12 @@ export class CreateEventDto {
     @IsNumber({}, { message: 'Price must be a number' })
     @Min(0, { message: 'Price must be greater than or equal to 0' })
     @Validate(IsPriceValidConstraint)
-    price: number;
+    price?: number;
 
     @IsOptional()
     @IsNumber({}, { message: 'Max participants must be a number' })
     @Min(0, { message: 'Max participants must be greater than or equal to 0' })
-    maxParticipants: number;
+    maxParticipants?: number;
 
     @IsOptional()
     @IsString({ message: "banner url must be string" })
@@ -127,5 +118,36 @@ export class CreateEventDto {
     videoIntro?: string;
 
     @IsOptional()
-    otherDocument?: string[];
+    @IsArray({ message: 'Documents must be an array' })
+    documents?: string[];
+
+    @IsOptional()
+    @IsArray({ message: 'Guest IDs must be an array' })
+    guestIds?: string[];
+
+    @IsOptional()
+    @IsArray({ message: 'Schedule must be an array' })
+    schedule?: {
+        title: string;
+        startTime: Date;
+        endTime: Date;
+        description?: string;
+        speakerIds: string[];
+    }[];
+
+    @IsOptional()
+    @IsArray({ message: 'Sponsors must be an array' })
+    sponsors?: {
+        name: string;
+        logo?: string;
+        website?: string;
+        contribution: number;
+    }[];
+
+    @IsOptional()
+    budget?: {
+        totalBudget: number;
+        expenses: { desc?: string; amount?: number; date?: Date }[];
+        revenue: { desc?: string; amount?: number; date?: Date }[];
+    };
 }

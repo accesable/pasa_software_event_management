@@ -3,22 +3,78 @@ syntax = "proto3";
 package event;
 
 service EventService{
-  rpc GetAllEvent(Empty) returns (AllEventResponse); 
+  rpc GetAllEvent(QueryParamsRequest) returns (AllEventResponse); 
   rpc GetEventById(EventByIdRequest) returns (EventResponse);
+  rpc GetAllEventByCategoryName(CategoryNameRequest) returns (AllEventResponse);
   rpc GetCategoryById(CategoryByIdRequest) returns (CategoryResponse);
   rpc GetAllCategory(Empty) returns (AllCategoryResponse);
   rpc CreateEvent(CreateEventRequest) returns (EventResponse);
   rpc CreateCategory(CreateCategoryRequest) returns (CategoryResponse);
   rpc UpdateEvent(UpdateEventRequest) returns (EventResponse);
   rpc UpdateCategory(UpdateCategoryRequest) returns (CategoryResponse);
+  rpc CreateSpeaker(CreateSpeakerRequest) returns (SpeakerResponse);
+  rpc GetAllSpeaker(Empty) returns (AllSpeakerResponse);
 }
 
 message Empty{}
+
+message CreateSpeakerRequest{
+  string name = 1;
+  string email = 2;
+  optional string avatar = 3;
+  optional string phone = 4;
+  string jobTitle = 5;
+  optional string bio = 6;
+  optional string linkFb = 7;
+}
+
+message SpeakerResponse{
+  Speaker speaker = 1;
+}
+
+message AllSpeakerResponse{
+  repeated Speaker speakers = 1;
+  Meta meta = 2;
+}
+
+message FindByIdRequest{
+    string id = 1;
+}
+
+message DecodeAccessResponse{
+    string id = 1;
+    string email = 2;
+    string name = 3;
+    string avatar = 4;
+    string oldAvatarId = 5;
+    string phoneNumber = 6;
+    bool isActive = 7;
+    string role = 8;
+    string lastLoginAt = 9;
+    string createdAt = 10;
+    string updatedAt = 11;
+}
+
+message Meta{
+  optional int32 page = 1;
+  optional int32 limit = 2;
+  optional int32 totalPages = 3;
+  int32 totalItems = 4;
+  int32 count = 5;
+}
+
+message QueryParamsRequest{
+  map<string, string> query = 1;
+}
 
 message UpdateCategoryRequest{
   string id = 1;
   optional string name = 2;
   optional string description = 3;
+}
+
+message CategoryNameRequest{
+  string name = 1;
 }
 
 message CreateCategoryRequest{
@@ -36,6 +92,7 @@ message EventByIdRequest{
 
 message AllCategoryResponse{
   repeated Category categories = 1;
+  Meta meta = 2;
 }
 
 message EventResponse{
@@ -44,6 +101,7 @@ message EventResponse{
 
 message AllEventResponse{
   repeated EventType events = 1;
+  Meta meta = 2;
 }
 
 message CategoryResponse{
@@ -62,16 +120,15 @@ message CreateEventRequest {
   string startDate = 3;
   string endDate = 4;
   string location = 5;
-  repeated string speaker = 6;
-  repeated string guest = 7;
-  string categoryId = 8;
-  bool isFree = 9;
-  int32 price = 10;
-  int32 maxParticipants = 11;
-  string banner = 12;
-  string videoIntro = 13;
-  repeated string otherDocument=14;
-  string createdBy = 15;
+  repeated string guestIds = 6; // Đổi từ guest thành guestIds
+  string categoryId = 7;
+  bool isFree = 8;
+  int32 price = 9;
+  int32 maxParticipants = 10;
+  string banner = 11;
+  string videoIntro = 12;
+  repeated string documents = 13;
+  string createdBy = 14;
 }
 
 message UpdateEventRequest{
@@ -81,36 +138,56 @@ message UpdateEventRequest{
   optional string startDate = 4;
   optional string endDate = 5;
   optional string location = 6;
-  repeated string speaker = 7;
-  repeated string guest = 8;
-  optional string categoryId = 9;
-  optional bool isFree = 10;
-  optional int32 price = 11;
-  optional int32 maxParticipants= 12;
-  optional string banner=13;
-  optional string videoIntro = 14;
-  repeated string otherDocument=15;
-  optional string status=16;
+  repeated string guestIds = 7; // Đổi từ guest thành guestIds
+  optional string categoryId = 8;
+  optional bool isFree = 9;
+  optional int32 price = 10;
+  optional int32 maxParticipants= 11;
+  optional string banner=12;
+  optional string videoIntro = 13;
+  repeated string documents=14;
+  optional string status=15;
 }
 
 message EventType {
   string id = 1;
   string name = 2;
   string description = 3;
-  string startDate = 4;
-  string endDate = 5;
-  string location=6;
-  repeated string speaker=7;
-  repeated string guest=8;
-  string categoryId =9;
+  string startDate = 4; 
+  string endDate = 5;     
+  string location = 6;
+  repeated ScheduleType schedule = 7;
+  repeated string guestIds = 8;
+  string categoryId = 9;
   bool isFree = 10;
-  int32 price =11;
-  int32 maxParticipants= 12;
+  int32 price = 11;
+  int32 maxParticipants = 12;
   string banner = 13;
   string videoIntro = 14;
-  repeated string otherDocument =15;
-  string status=16;
-  string createdAt=17;
-  string updatedAt=18;
-  string createdBy=19;
+  repeated string documents = 15;
+  string status = 16;
+  string createdAt = 17;
+  string updatedAt = 18;
+  string createdBy = 19;
+}
+
+message ScheduleType {
+  string title = 1;
+  string startTime = 2; 
+  string endTime = 3;    
+  string description = 4;
+  repeated string speakerIds = 5;
+}
+
+message Speaker{
+  string id = 1;
+  string name = 2;
+  string bio = 3;
+  string linkFb = 4;
+  string avatar = 5;
+  string email = 6;
+  optional string phone = 7;
+  string jobTitle = 8;
+  string createdAt = 9;
+  string updatedAt = 10;
 }

@@ -1,19 +1,39 @@
-import { Controller, Post } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { EventService } from './event.service';
-import { CategoryByIdRequest, CategoryResponse, CreateCategoryRequest, CreateEventRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, UpdateCategoryRequest, UpdateEventRequest } from '@app/common/types/event';
+import { AllEventResponse, AllSpeakerResponse, CategoryByIdRequest, CategoryNameRequest, CategoryResponse, CreateCategoryRequest, CreateEventRequest, CreateSpeakerRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, QueryParamsRequest, SpeakerResponse, UpdateCategoryRequest, UpdateEventRequest } from '@app/common/types/event';
 import { Observable } from 'rxjs';
 import { EventCategoryService } from 'apps/event-service/src/event-category/event-category.service';
+import { SpeakerService } from 'apps/event-service/src/speaker/speaker.service';
+import { GuestService } from 'apps/event-service/src/guest/guest.service';
 
 @Controller()
 @EventServiceControllerMethods()
 export class EventController implements EventServiceController {
   constructor(
     private readonly eventService: EventService,
-    private readonly categoryService: EventCategoryService
+    private readonly categoryService: EventCategoryService,
+    private readonly speakerService: SpeakerService,
+    private readonly guestService: GuestService,
   ) { }
 
-  getAllEvent(request: Empty) {
-    return this.eventService.getAllEvent();
+  createSpeaker(request: CreateSpeakerRequest) {
+    return this.speakerService.createSpeaker(request);
+  }
+  getAllSpeaker(request: Empty) {
+    return this.speakerService.getAllSpeaker();
+  }
+  
+  getAllEventByCategoryName(request: CategoryNameRequest): Promise<AllEventResponse> | Observable<AllEventResponse> | AllEventResponse {
+    throw new Error('Method not implemented.');
+  }
+
+  // async getAllEventByCategoryName(request: CategoryNameRequest) {
+  //   const res = await this.categoryService.getCategoryByName(request.name);
+  //   return this.eventService.getAllEventByCategoryName(res.category.id);
+  // }
+
+  getAllEvent(request: QueryParamsRequest) {
+    return this.eventService.getAllEvent(request.query);
   }
 
   getEventById(request: EventByIdRequest) {
@@ -45,3 +65,4 @@ export class EventController implements EventServiceController {
     return this.categoryService.updateCategory(request);
   }
 }
+

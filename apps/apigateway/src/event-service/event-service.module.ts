@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { EventServiceService } from './event-service.service';
-import { EventServiceController } from './event-service.controller';
+import { CategoryServiceController, EventServiceController, SpeakerServiceController } from './event-service.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from 'apps/apigateway/src/strategies/jwt.strategy';
@@ -34,7 +34,7 @@ import { UsersModule } from 'apps/apigateway/src/users/users.module';
       }),
     }),
   ],
-  controllers: [EventServiceController],
+  controllers: [EventServiceController, CategoryServiceController, SpeakerServiceController],
   providers: [EventServiceService, JwtStrategy, RolesGuard],
 })
 export class EventServiceModule { }

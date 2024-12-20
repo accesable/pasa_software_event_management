@@ -19,8 +19,9 @@ export class Guest {
 
     @Prop({ trim: true })
     linkSocial: string;
-    
+
     @Prop({ trim: true })
-    avatar: string
+    avatar: string;
 }
-export const GuestSchema = SchemaFactory.createForClass(Guest)
+
+export const GuestSchema = SchemaFactory.createForClass(Guest);

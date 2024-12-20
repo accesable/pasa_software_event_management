@@ -1,5 +1,5 @@
 import { handleRpcException } from '@app/common/filters/handleException';
-import { Category, CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest } from '@app/common/types/event';
+import { Category, CreateCategoryRequest, UpdateCategoryRequest } from '@app/common/types/event';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
@@ -35,9 +35,17 @@ export class EventCategoryService {
                 id: category._id.toString(),
                 name: category.name,
                 description: category.description,
-              }));
+            }));
+
+            const meta = {
+                totalItems: categories.length,
+                count: categories.length,
+            }
         
-              return { categories: categoryResponses };
+              return { 
+                categories: categoryResponses,
+                meta: meta
+               };
         } catch (error) {
             throw handleRpcException(error, 'Failed to get all category');
         }
@@ -66,6 +74,15 @@ export class EventCategoryService {
             return { category: this.transformCategory(category) };
         } catch (error) {
             throw handleRpcException(error, 'Failed to update category');
+        }
+    }
+
+    async getCategoryByName(name: string) {
+        try {
+            const category = await this.categoryModel.findOne({ name });
+            return { category: this.transformCategory(category) };
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get category by name');
         }
     }
 

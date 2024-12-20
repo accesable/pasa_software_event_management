@@ -1,9 +1,15 @@
 import { Module } from '@nestjs/common';
 import { SpeakerService } from './speaker.service';
-import { SpeakerController } from './speaker.controller';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Speaker, SpeakerSchema } from 'apps/event-service/src/speaker/schemas/speaker.schema';
 
 @Module({
-  controllers: [SpeakerController],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Speaker.name, schema: SpeakerSchema },
+    ]),
+  ],
   providers: [SpeakerService],
+  exports: [SpeakerService],
 })
 export class SpeakerModule {}
