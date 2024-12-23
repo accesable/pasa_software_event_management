@@ -18,7 +18,7 @@ export class EventService {
             const { filter, limit, sort } = aqp(query);
             const page = parseInt(filter.page || '1', 10);
             delete filter.page;
-            console.log(filter);
+            
             const population = filter.population?.split(',').map(field => ({ path: field.trim() }));
             const skip = (page - 1) * (limit || 10);
             const totalItems = await this.eventModel.countDocuments(filter);

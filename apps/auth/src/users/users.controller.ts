@@ -3,12 +3,29 @@ import { UsersService } from './users.service';
 import { GeneralResponse, GoogleAuthRequest, LogoutRequest, UsersServiceController, UsersServiceControllerMethods } from '@app/common';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
-import { FindByIdRequest, UpdateAvatarRequest, UpdateProfileRequest } from '@app/common/types/auth';
+import { AllUserResponse, ChangePasswordRequest, EmailRequest, Empty, FindByIdRequest, ProfileRespone, QueryParamsRequest, UpdateAvatarRequest, UpdateProfileRequest, UpgradeUserRequest } from '@app/common/types/auth';
+import { Observable } from 'rxjs';
 
 @Controller()
 @UsersServiceControllerMethods()
 export class UsersController implements UsersServiceController {
   constructor(private readonly usersService: UsersService) { }
+
+  getAllUser(request: QueryParamsRequest) {
+    return this.usersService.getAllUser(request.query);
+  }
+
+  upgradeUser(request: UpgradeUserRequest) {
+    return this.usersService.upgradeUser(request);
+  }
+
+  forgotPassword(request: EmailRequest) {
+    return this.usersService.forgotPassword(request.email);
+  }
+
+  changePassword(request: ChangePasswordRequest) {
+    return this.usersService.changePassword(request);
+  }
 
   updateAvatar(request: UpdateAvatarRequest){
     return this.usersService.updateAvatar(request);

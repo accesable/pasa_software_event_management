@@ -1,4 +1,4 @@
-import { DecodeAccessResponse, UpdateAvatarRequest, UpdateProfileRequest, UserResponse } from './../../../../libs/common/src/types/auth';
+import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, UpdateAvatarRequest, UpdateProfileRequest, UpgradeUserRequest, UserResponse } from './../../../../libs/common/src/types/auth';
 import { Injectable, HttpStatus } from '@nestjs/common';
 import { RegisterDto, } from '../../../apigateway/src/users/dto/register';
 import * as bcrypt from 'bcrypt';
@@ -11,6 +11,8 @@ import { GoogleAuthRequest, LogoutRequest } from '@app/common';
 import { RpcException } from '@nestjs/microservices';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 import { handleRpcException } from '@app/common/filters/handleException';
+import { QueryParamsRequest, } from '@app/common/types/event';
+import aqp from 'api-query-params';
 
 @Injectable()
 export class UsersService {
@@ -111,15 +113,7 @@ export class UsersService {
   async updateProfile(data: UpdateProfileRequest) {
     try {
       const isValid = await this.jwtService.verify(data.accessToken);
-
-      let updateData = { ...data };
-      if (data.password) {
-        const hashedPassword = await this.hashPassword(data.password);
-        updateData.password = hashedPassword;
-      } else {
-        delete updateData.password; 
-      }
-      const user = await this.userModel.findByIdAndUpdate(isValid.sub, updateData, { new: true });
+      const user = await this.userModel.findByIdAndUpdate(isValid.sub, data, { new: true });
       const userResponse = this.transformUserDataResponse(user);
       return { user: userResponse };
     } catch (error) {
@@ -222,6 +216,78 @@ export class UsersService {
       };
     } catch (error) {
       throw handleRpcException(error, 'Error handling token');
+    }
+  }
+
+  async getAllUser(query: any) {
+    try {
+      const { filter, limit, sort } = aqp(query);
+      const page = parseInt(filter.page || '1', 10);
+      delete filter.page;
+
+      const population = filter.population?.split(',').map(field => ({ path: field.trim() }));
+      const skip = (page - 1) * (limit || 10);
+      const totalItems = await this.userModel.countDocuments(filter);
+      const totalPages = Math.ceil(totalItems / limit);
+
+      const users = await this.userModel
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort(sort as any)
+        .populate(population)
+        .exec();
+
+      const userResponses: UserResponse[] = users.map((user) => this.transformUserDataResponse(user));
+      return {
+        meta: {
+          page,
+          limit,
+          totalPages,
+          totalItems,
+          count: users.length,
+        },
+        users: userResponses,
+      };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get all user');
+    }
+  }
+
+  async upgradeUser(request: UpgradeUserRequest) {
+    try {
+      const user = await this.userModel.findByIdAndUpdate(request.id, { role: request.role }, { new: true });
+      const userResponse = this.transformUserDataResponse(user);
+      return { user: userResponse };
+    } catch (error) {
+      throw handleRpcException(error, 'Error upgrading user');
+    }
+  }
+
+  async forgotPassword(email: string) {
+  }
+
+  async changePassword(request: ChangePasswordRequest) {
+    try {
+      const user = await this.userModel.findById(request.id);
+      if (!user) {
+        throw new RpcException({
+          message: 'User not found',
+          code: HttpStatus.NOT_FOUND,
+        });
+      }
+      const isMatch = await bcrypt.compare(request.currentPassword, user.password);
+      if (!isMatch) {
+        throw new RpcException({
+          message: 'Current password is incorrect',
+          code: HttpStatus.BAD_REQUEST,
+        });
+      }
+      const hashedPassword = await this.hashPassword(request.newPassword);
+      await this.userModel.findByIdAndUpdate(request.id, { password: hashedPassword });
+      return
+    } catch (error) {
+      throw handleRpcException(error, 'Error changing password');
     }
   }
 

@@ -14,7 +14,7 @@ import { EventServiceModule } from 'apps/apigateway/src/event-service/event-serv
     EventServiceModule,
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: 'apps/apigateway/.env',
+      envFilePath: 'apps/apigateway/.env.example',
       validate: validateEnv,
     }),
   ],

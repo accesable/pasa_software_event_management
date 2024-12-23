@@ -13,8 +13,37 @@ export const protobufPackage = "auth";
 export interface Empty {
 }
 
+export interface QueryParamsRequest {
+  query: { [key: string]: string };
+}
+
+export interface QueryParamsRequest_QueryEntry {
+  key: string;
+  value: string;
+}
+
+export interface EmailRequest {
+  email: string;
+}
+
+export interface ChangePasswordRequest {
+  id: string;
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface AllUserResponse {
+  users: UserResponse[];
+  meta: Meta | undefined;
+}
+
 export interface FindByIdRequest {
   id: string;
+}
+
+export interface UpgradeUserRequest {
+  id: string;
+  role: string;
 }
 
 export interface UpdateAvatarRequest {
@@ -101,9 +130,19 @@ export interface DecodeAccessResponse {
   updatedAt: string;
 }
 
+export interface Meta {
+  page?: number | undefined;
+  limit?: number | undefined;
+  totalPages?: number | undefined;
+  totalItems: number;
+  count: number;
+}
+
 export const AUTH_PACKAGE_NAME = "auth";
 
 export interface UsersServiceClient {
+  getAllUser(request: QueryParamsRequest): Observable<AllUserResponse>;
+
   findById(request: FindByIdRequest): Observable<DecodeAccessResponse>;
 
   login(request: LoginRequest): Observable<GeneralResponse>;
@@ -119,9 +158,17 @@ export interface UsersServiceClient {
   updateProfile(request: UpdateProfileRequest): Observable<ProfileRespone>;
 
   updateAvatar(request: UpdateAvatarRequest): Observable<ProfileRespone>;
+
+  upgradeUser(request: UpgradeUserRequest): Observable<ProfileRespone>;
+
+  forgotPassword(request: EmailRequest): Observable<Empty>;
+
+  changePassword(request: ChangePasswordRequest): Observable<Empty>;
 }
 
 export interface UsersServiceController {
+  getAllUser(request: QueryParamsRequest): Promise<AllUserResponse> | Observable<AllUserResponse> | AllUserResponse;
+
   findById(
     request: FindByIdRequest,
   ): Promise<DecodeAccessResponse> | Observable<DecodeAccessResponse> | DecodeAccessResponse;
@@ -141,11 +188,18 @@ export interface UsersServiceController {
   updateProfile(request: UpdateProfileRequest): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
 
   updateAvatar(request: UpdateAvatarRequest): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
+
+  upgradeUser(request: UpgradeUserRequest): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
+
+  forgotPassword(request: EmailRequest): Promise<Empty> | Observable<Empty> | Empty;
+
+  changePassword(request: ChangePasswordRequest): Promise<Empty> | Observable<Empty> | Empty;
 }
 
 export function UsersServiceControllerMethods() {
   return function (constructor: Function) {
     const grpcMethods: string[] = [
+      "getAllUser",
       "findById",
       "login",
       "register",
@@ -154,6 +208,9 @@ export function UsersServiceControllerMethods() {
       "handleGoogleAuth",
       "updateProfile",
       "updateAvatar",
+      "upgradeUser",
+      "forgotPassword",
+      "changePassword",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

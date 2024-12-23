@@ -1,13 +1,14 @@
 import { AUTH_SERVICE } from '../constants/service.constant';
 import * as ms from 'ms';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { GoogleAuthRequest, UpdateAvatarRequest, UpdateProfileRequest, UserResponse, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
+import { ChangePasswordRequest, GoogleAuthRequest, UpdateAvatarRequest, UpdateProfileRequest, UpgradeUserRequest, UserResponse, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { ProfileDto } from 'apps/apigateway/src/users/dto/profile';
+import { QueryParamsRequest } from '@app/common/types/event';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -19,6 +20,14 @@ export class UsersService implements OnModuleInit {
 
   onModuleInit() {
     this.usersService = this.client.getService<UsersServiceClient>(USERS_SERVICE_NAME);
+  }
+
+  async getAllUser(request: QueryParamsRequest) {
+    try {
+      return await this.usersService.getAllUser(request).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
 
   async register(registerDto: RegisterDto) {
@@ -36,6 +45,22 @@ export class UsersService implements OnModuleInit {
 
       data.refreshToken = undefined;
       return data;
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async forgotPassword(email: string) {
+    try {
+      return await this.usersService.forgotPassword({ email }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async changePassword(request: ChangePasswordRequest) {
+    try {
+      return await this.usersService.changePassword(request).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -93,6 +118,14 @@ export class UsersService implements OnModuleInit {
   async updateAvatar(request: UpdateAvatarRequest) {
     try {
       return await this.usersService.updateAvatar(request).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async upgradeUser(request: UpgradeUserRequest) {
+    try {
+      return await this.usersService.upgradeUser(request).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }

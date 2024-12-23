@@ -21,7 +21,7 @@ async function bootstrap() {
     forbidNonWhitelisted: true, // Ném lỗi nếu có field không định nghĩa trong DTO
     transform: true, // Tự động chuyển đổi kiểu dữ liệu
   }));
-  // app.useGlobalInterceptors(new RpcExceptionInterceptor());
+  app.useGlobalInterceptors(new RpcExceptionInterceptor());
   app.enableCors(
     {
       "origin": "*",

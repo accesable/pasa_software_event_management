@@ -3,20 +3,48 @@ syntax = "proto3";
 package auth;
 
 service UsersService{
-    rpc findById(FindByIdRequest) returns (DecodeAccessResponse);
+    rpc GetAllUser(QueryParamsRequest) returns (AllUserResponse);
+    rpc FindById(FindByIdRequest) returns (DecodeAccessResponse);
     rpc Login(LoginRequest) returns (GeneralResponse);
     rpc Register(RegisterRequest) returns (RegisterResponse);
     rpc AccessToken(AccessTokenRequest) returns (GeneralResponse);
-    rpc handleLogout(LogoutRequest) returns (LogoutResponse);
-    rpc handleGoogleAuth(GoogleAuthRequest) returns (GeneralResponse);
-    rpc updateProfile(UpdateProfileRequest) returns (ProfileRespone);
-    rpc updateAvatar(UpdateAvatarRequest) returns (ProfileRespone);
+    rpc HandleLogout(LogoutRequest) returns (LogoutResponse);
+    rpc HandleGoogleAuth(GoogleAuthRequest) returns (GeneralResponse);
+    rpc UpdateProfile(UpdateProfileRequest) returns (ProfileRespone);
+    rpc UpdateAvatar(UpdateAvatarRequest) returns (ProfileRespone);
+    rpc UpgradeUser(UpgradeUserRequest) returns (ProfileRespone);
+    rpc ForgotPassword(EmailRequest) returns (Empty);
+    rpc ChangePassword(ChangePasswordRequest) returns (Empty);
 }
 
 message Empty{}
 
+message QueryParamsRequest{
+  map<string, string> query = 1;
+}
+
+message EmailRequest{
+    string email = 1;
+}
+
+message ChangePasswordRequest{
+    string id = 1;
+    string currentPassword = 2;
+    string newPassword = 3;
+}
+
+message AllUserResponse{
+    repeated UserResponse users = 1;
+    Meta meta = 2;
+}
+
 message FindByIdRequest{
     string id = 1;
+}
+
+message UpgradeUserRequest{
+    string id = 1;
+    string role = 2;
 }
 
 message UpdateAvatarRequest{
@@ -101,4 +129,12 @@ message DecodeAccessResponse{
     string lastLoginAt = 9;
     string createdAt = 10;
     string updatedAt = 11;
+}
+
+message Meta{
+  optional int32 page = 1;
+  optional int32 limit = 2;
+  optional int32 totalPages = 3;
+  int32 totalItems = 4;
+  int32 count = 5;
 }

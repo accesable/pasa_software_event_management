@@ -18,7 +18,7 @@ import { EventModule } from 'apps/event-service/src/event/event.module';
     ConfigModule.forRoot({
       isGlobal: true,
       validate: validateEnv,
-      envFilePath: 'apps/event-service/.env',
+      envFilePath: 'apps/event-service/.env.example',
     }),
   ],
 })

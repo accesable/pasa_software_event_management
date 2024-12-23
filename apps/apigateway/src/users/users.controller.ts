@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, HttpCode, Req, Res, Headers, UnauthorizedException, UseGuards, HttpStatus, Put, Patch, UseInterceptors, BadRequestException, UploadedFile, } from '@nestjs/common';
+import { Controller, Get, Post, Body, HttpCode, Req, Res, Headers, UnauthorizedException, UseGuards, HttpStatus, Put, Patch, UseInterceptors, BadRequestException, UploadedFile, Param, Query, } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
@@ -10,6 +10,9 @@ import { JwtAuthGuard } from 'apps/apigateway/src/guards/jwt-auth.guard';
 import { DecodeAccessResponse, UpdateAvatarRequest, UserResponse } from '@app/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesService } from 'apps/apigateway/src/files/files.service';
+import { RolesGuard } from 'apps/apigateway/src/guards/roles.guard';
+import { ChangePasswordDto } from 'apps/apigateway/src/users/dto/change-password';
+import { UpgradeDto } from 'apps/apigateway/src/users/dto/upgrade';
 
 @Controller('auth')
 export class UsersController {
@@ -49,8 +52,16 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Forgot password success')
   async forgotPassword(@Body('email') email: string) {
-    // return this.authService.handleForgotPassword(email);
-    return "asb"
+    return this.usersService.forgotPassword(email);
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Password changed successfully')
+  async changePassword(@User() user: UserResponse, @Body() body: ChangePasswordDto) {
+    const { currentPassword, newPassword } = body;
+    return this.usersService.changePassword({ id: user.id, currentPassword, newPassword });
   }
 
   @Get("google/login")
@@ -76,6 +87,14 @@ export class GeneralUsersController {
     private readonly filesService: FilesService,
   ) { }
 
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('organizer', 'admin')
+  @ResponseMessage('Users fetched successfully')
+  async getAllUser(@Query() query: any) {
+    return this.usersService.getAllUser({ query });
+  }
+
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('User profile fetched successfully')
@@ -92,6 +111,14 @@ export class GeneralUsersController {
     }
     const accessToken = authHeader.split(' ')[1];
     return this.usersService.updateProfile(accessToken, profileDto);
+  }
+
+  @Patch('upgrade/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ResponseMessage('User upgraded successfully')
+  async upgradeUser(@Param('id') id: string, @Body() body: UpgradeDto) {
+    return this.usersService.upgradeUser({ id, role: body.role });
   }
 
   @Post('upload/avatar')

@@ -18,8 +18,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     ConfigModule.forRoot({
       isGlobal: true,
       validate: validateEnv,
-      envFilePath: 'apps/auth/.env',
+      envFilePath: 'apps/auth/.env.example',
     }),
   ],
 })
-export class AuthModule {}
+export class AuthModule { }
