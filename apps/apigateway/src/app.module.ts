@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { UsersModule } from './users/users.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformInterceptor } from 'apps/auth/src/core/transform.interceptor';
-import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from 'apps/apigateway/src/config/env.validation';
+import { UsersModule } from './users/users.module';
 import { FilesModule } from 'apps/apigateway/src/files/files.module';
 import { EventServiceModule } from 'apps/apigateway/src/event-service/event-service.module';
 
@@ -26,4 +26,4 @@ import { EventServiceModule } from 'apps/apigateway/src/event-service/event-serv
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

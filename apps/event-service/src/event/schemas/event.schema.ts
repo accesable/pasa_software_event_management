@@ -47,8 +47,8 @@ export class Event {
   @Prop({ type: [String] })
   documents: string[];
 
-  @Prop({ type: [String] })
-  guestIds: string[];
+  @Prop({ type: [Types.ObjectId], ref: 'Guest' })
+  guestIds: Types.ObjectId[];
 
   @Prop({
     type: [{
@@ -56,7 +56,7 @@ export class Event {
       startTime: { type: Date, required: true },
       endTime: { type: Date, required: true },
       description: { type: String, trim: true },
-      speakerIds: { type: [String], default: [] }
+      speakerIds: [{ type: Types.ObjectId, ref: 'Speaker' }]
     }],
     default: []
   })
@@ -65,7 +65,7 @@ export class Event {
     startTime: Date;
     endTime: Date;
     description?: string;
-    speakerIds: string[];
+    speakerIds: Types.ObjectId[];
   }[];
 
   @Prop({
