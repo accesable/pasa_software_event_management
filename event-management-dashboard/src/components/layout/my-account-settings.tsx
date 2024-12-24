@@ -23,22 +23,7 @@ type Props = {
 };
 
 export const AccountSettings = ({ opened, setOpened, userId }: Props) => {
-  /**
-   * useForm in Refine is used to manage forms. It provides us with a lot of useful props and methods that we can use to manage forms.
-   * https://refine.dev/docs/data/hooks/use-form/#usage
-   */
-
-  /**
-   * saveButtonProps -> contains all the props needed by the "submit" button. For example, "loading", "disabled", "onClick", etc.
-   * https://refine.dev/docs/ui-integrations/ant-design/hooks/use-form/#savebuttonprops
-   *
-   * formProps -> It's an instance of HTML form that manages form state and actions like onFinish, onValuesChange, etc.
-   * https://refine.dev/docs/ui-integrations/ant-design/hooks/use-form/#form
-   *
-   * queryResult -> contains the result of the query. For example, isLoading, data, error, etc.
-   * https://refine.dev/docs/packages/react-hook-form/use-form/#queryresult
-   */
-  const { saveButtonProps, formProps, queryResult } = useForm<
+  const { saveButtonProps, formProps, query:queryResult } = useForm<
     /**
      * GetFields is used to get the fields of the mutation i.e., in this case, fields are name, email, jobTitle, and phone
      * https://refine.dev/docs/data/packages/nestjs-query/#getfields
@@ -60,7 +45,7 @@ export const AccountSettings = ({ opened, setOpened, userId }: Props) => {
      * specify on which resource the mutation should be performed
      * if not specified, Refine will determine the resource name by the current route
      */
-    resource: "users/profile",
+    resource: "users",
     /**
      * specify the action that should be performed on the resource. Behind the scenes, Refine calls useOne hook to get the data of the user for edit action.
      * https://refine.dev/docs/data/hooks/use-form/#edit

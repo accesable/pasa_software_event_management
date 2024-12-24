@@ -46,7 +46,8 @@ const CompanyList = ({children} : React.PropsWithChildren) => {
           operator : 'contains',
           value : undefined,
         }
-      ]
+      ],
+      mode: 'off'
     },
     meta : {
       gqlQuery : COMPANIES_LIST_QUERY

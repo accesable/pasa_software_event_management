@@ -5,3 +5,4 @@ export * from './register';
 export * from './company';
 export * from './company/create';
 export * from './company/edit';
+export * from './events';

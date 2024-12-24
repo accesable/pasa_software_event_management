@@ -2,15 +2,21 @@ import { Button, Popover } from 'antd'
 import React from 'react'
 import CustomAvatar from '../custom-avatar'
 import { useGetIdentity } from '@refinedev/core'
-import type { User} from '@/graphql/schema.types';
 import { Text } from '../text';
 import { SettingOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { AccountSettings } from './account-settings';
+
+type User = {
+    id: string;
+    name: string;
+    avatar: string;
+}
 // Popover
 const CurrentUser = () => {
     const [isOpen,setIsOpen] = useState(false);
     const {data:user} = useGetIdentity<User>()
+    console.log("user ", user);
 
     const content = (
         <div style={{
@@ -53,7 +59,7 @@ const CurrentUser = () => {
          >
             <CustomAvatar
                 name={user?.name}
-                src={user?.avatarUrl}
+                src={user?.avatar}
                 size={'default'}
                 style={{cursor:'pointer'}}
             />
