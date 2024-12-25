@@ -9,22 +9,73 @@ import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { ProfileDto } from 'apps/apigateway/src/users/dto/profile';
 import { QueryParamsRequest } from '@app/common/types/event';
+import { RedisService } from '@liaoliaots/nestjs-redis';
+import Redis from 'ioredis';
+import { NotificationService } from 'apps/apigateway/src/notification/notification.service';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
   private usersService: UsersServiceClient;
+  private readonly redisClient: Redis;
+
   constructor(
     @Inject(AUTH_SERVICE) private client: ClientGrpc,
     private configService: ConfigService,
-  ) { }
+    private readonly redisService: RedisService,
+    private readonly notificationService: NotificationService,
+  ) {
+    this.redisClient = this.redisService.getClient();
+  }
 
   onModuleInit() {
     this.usersService = this.client.getService<UsersServiceClient>(USERS_SERVICE_NAME);
   }
 
+  async setCacheData(key: string, value: any, ttl?: number) {
+    await this.redisClient.set(key, value, 'EX', ttl || this.configService.get<number>('CACHE_TTL'));
+  }
+
+  async getCacheData(key: string) {
+    return await this.redisClient.get(key);
+  }
+
+  calculateTTL(expiredAt: any): number {
+    const low = expiredAt.low;
+    const high = expiredAt.high;
+
+    const timestamp = (high << 32) + (low & 0xFFFFFFFF);
+    const currentTimestamp = Math.floor(Date.now() / 100);
+    const ttl = timestamp / 1000 - currentTimestamp; // chia 1000 ở đây nếu timestamp là mili giây
+    return Math.max(ttl, 0);
+  }
+
+  async validateResetToken(token: string) {
+    const key = `reset_password:${token}`;
+    const cacheData = await this.getCacheData(key);
+    if (!cacheData) {
+      throw new RpcException(
+        {
+          code: 410,
+          error: 'The reset password link has expired',
+        }
+      );
+    }
+    await this.redisClient.del(key);
+    return JSON.parse(cacheData);
+  }
+
   async getAllUser(request: QueryParamsRequest) {
     try {
-      return await this.usersService.getAllUser(request).toPromise();
+      const key = `getAllUser:${JSON.stringify(request)}`;
+      const cacheData = await this.getCacheData(key);
+      if (cacheData) {
+        return cacheData;
+      }
+      const data = await this.usersService.getAllUser(request).toPromise();
+      await this.setCacheData(key, data);
+      return data;
+
+      // return await this.usersService.getAllUser(request).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -50,9 +101,19 @@ export class UsersService implements OnModuleInit {
     }
   }
 
-  async forgotPassword(email: string) {
+  async sendMailForForgotPassword(email: string) {
     try {
-      return await this.usersService.forgotPassword({ email }).toPromise();
+      const user = await this.usersService.findByEmailWithoutPassword({ email }).toPromise();
+      const { id, name } = user.user;
+      const data = await this.notificationService.sendMailForForgotPassword(email, id, name);
+      if (data.status === 'success') {
+        const key = `reset_password:${data.token}`;
+        // const { expiredAt } = data.tokenData;
+        // const ttl = this.calculateTTL(expiredAt);
+        await this.setCacheData(key, JSON.stringify(data), 900);
+        return data;
+      }
+      return data;
     } catch (error) {
       throw new RpcException(error);
     }

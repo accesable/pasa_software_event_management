@@ -11,16 +11,16 @@ import { Observable } from 'rxjs';
 export class UsersController implements UsersServiceController {
   constructor(private readonly usersService: UsersService) { }
 
+  findByEmailWithoutPassword(request: EmailRequest) {
+    return this.usersService.findByEmailWithoutPassword(request.email);
+  }
+
   getAllUser(request: QueryParamsRequest) {
     return this.usersService.getAllUser(request.query);
   }
 
   upgradeUser(request: UpgradeUserRequest) {
     return this.usersService.upgradeUser(request);
-  }
-
-  forgotPassword(request: EmailRequest) {
-    return this.usersService.forgotPassword(request.email);
   }
 
   changePassword(request: ChangePasswordRequest) {

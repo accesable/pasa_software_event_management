@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package notification;
+
+service NotificationServiceProto{
+  rpc ForgotPassword(ForgotPasswordRequest) returns (ForgotPasswordResponse);
+}
+
+message ForgotPasswordRequest{
+    string id = 1;
+    string email = 2;
+    string name = 3;
+}
+
+message ForgotPasswordResponse{
+    string status = 1;
+    string message = 2;
+    optional string token = 3;
+    optional TokenData tokenData = 4;
+}
+
+message TokenData{
+    string id = 1;
+    string email = 2;
+    string name = 3;
+    bool used = 4;
+    string type = 5;
+    int64 expiredAt = 6;
+    int64 createdAt = 7;
+}

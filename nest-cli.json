@@ -6,6 +6,7 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
+    "webpackConfigPath": "webpack.config.js",
     "tsConfigPath": "apps/apigateway/tsconfig.app.json"
   },
   "monorepo": true,
@@ -67,9 +68,18 @@
       "compilerOptions": {
         "tsConfigPath": "apps/notification-service/tsconfig.app.json",
         "assets": [
-          "proto/*.proto"
+          "proto/*.proto",
+          {
+            "include": "src/mail/templates/**/*",
+            "outDir": "mail/templates"
+          },
+          {
+            "include": "src/**/*",
+            "outDir": "src"
+          }
         ],
-        "watchAssets": true
+        "watchAssets": true,
+        "deleteOutDir": true
       }
     }
   }

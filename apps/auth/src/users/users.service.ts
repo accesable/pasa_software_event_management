@@ -1,4 +1,4 @@
-import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, UpdateAvatarRequest, UpdateProfileRequest, UpgradeUserRequest, UserResponse } from './../../../../libs/common/src/types/auth';
+import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, ProfileRespone, UpdateAvatarRequest, UpdateProfileRequest, UpgradeUserRequest, UserResponse } from './../../../../libs/common/src/types/auth';
 import { Injectable, HttpStatus } from '@nestjs/common';
 import { RegisterDto, } from '../../../apigateway/src/users/dto/register';
 import * as bcrypt from 'bcrypt';
@@ -11,7 +11,6 @@ import { GoogleAuthRequest, LogoutRequest } from '@app/common';
 import { RpcException } from '@nestjs/microservices';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 import { handleRpcException } from '@app/common/filters/handleException';
-import { QueryParamsRequest, } from '@app/common/types/event';
 import aqp from 'api-query-params';
 
 @Injectable()
@@ -21,6 +20,21 @@ export class UsersService {
     private jwtService: JwtService,
     private configService: ConfigService,
   ) { }
+
+  async findByEmailWithoutPassword(email: string) {
+    try {
+      const user = await this.userModel.findOne({ email }).exec();
+      if (!user) {
+        throw new RpcException({
+          message: 'User not found',
+          code: HttpStatus.NOT_FOUND,
+        });
+      }
+      return { user: this.transformAccessResponse(user) }
+    } catch (error) {
+      throw handleRpcException(error, 'Error finding user by email');
+    }
+  }
 
   async findByEmail(email: string): Promise<UserDocument> {
     try {
@@ -176,7 +190,6 @@ export class UsersService {
     try {
       const hashedPassword = await bcrypt.hash(user.accessToken, 10);
       const newUser = await this.userModel.create({ email: user.email, name: user.name, password: hashedPassword, avatar: user.picture });
-      // const message = await this.sendMail(newUser.name, newUser.username);
       const userResponse = this.transformUserDataResponse(newUser);
       return this.handleToken(userResponse);
     } catch (error) {
@@ -262,9 +275,6 @@ export class UsersService {
     } catch (error) {
       throw handleRpcException(error, 'Error upgrading user');
     }
-  }
-
-  async forgotPassword(email: string) {
   }
 
   async changePassword(request: ChangePasswordRequest) {

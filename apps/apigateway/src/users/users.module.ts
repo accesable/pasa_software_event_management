@@ -10,9 +10,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from 'apps/apigateway/src/strategies/jwt.strategy';
 import { FilesService } from 'apps/apigateway/src/files/files.service';
+import { NotificationModule } from 'apps/apigateway/src/notification/notification.module';
 
 @Module({
   imports: [
+    NotificationModule,
     ClientsModule.register([
       {
         name: AUTH_SERVICE,

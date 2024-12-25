@@ -1,9 +1,26 @@
+import { ForgotPasswordRequest, ForgotPasswordResponse, NotificationServiceProtoController, NotificationServiceProtoControllerMethods } from '@app/common/types/notification';
 import { Controller, Get } from '@nestjs/common';
-import { NotificationServiceService } from './notification-service.service';
+import { NotificationServiceService } from 'apps/notification-service/src/notification-service.service';
+import { Observable } from 'rxjs';
 
 @Controller()
-export class NotificationServiceController {
-  constructor(private readonly notificationServiceService: NotificationServiceService) {}
+@NotificationServiceProtoControllerMethods()
+export class NotificationServiceController implements NotificationServiceProtoController {
+  constructor(private readonly notificationServiceService: NotificationServiceService) { }
 
-  
+  async forgotPassword(request: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+    const res = await this.notificationServiceService.sendMailForgotPassword(request);
+
+    if (res.status === 'error') {
+      return { status: 'error', message: res.message };
+    }
+
+    return {
+      status: 'success',
+      message: res.message,
+      token: res.token,
+      tokenData: res.tokenData
+    };
+  }
+
 }

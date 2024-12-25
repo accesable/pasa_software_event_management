@@ -5,6 +5,7 @@ package auth;
 service UsersService{
     rpc GetAllUser(QueryParamsRequest) returns (AllUserResponse);
     rpc FindById(FindByIdRequest) returns (DecodeAccessResponse);
+    rpc findByEmailWithoutPassword(EmailRequest) returns (ProfileRespone);
     rpc Login(LoginRequest) returns (GeneralResponse);
     rpc Register(RegisterRequest) returns (RegisterResponse);
     rpc AccessToken(AccessTokenRequest) returns (GeneralResponse);
@@ -13,7 +14,6 @@ service UsersService{
     rpc UpdateProfile(UpdateProfileRequest) returns (ProfileRespone);
     rpc UpdateAvatar(UpdateAvatarRequest) returns (ProfileRespone);
     rpc UpgradeUser(UpgradeUserRequest) returns (ProfileRespone);
-    rpc ForgotPassword(EmailRequest) returns (Empty);
     rpc ChangePassword(ChangePasswordRequest) returns (Empty);
 }
 

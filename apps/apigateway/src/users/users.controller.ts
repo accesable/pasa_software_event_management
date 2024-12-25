@@ -16,7 +16,9 @@ import { UpgradeDto } from 'apps/apigateway/src/users/dto/upgrade';
 
 @Controller('auth')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(
+    private readonly usersService: UsersService,
+  ) { }
 
   @Post('register')
   @ResponseMessage('User created successfully')
@@ -52,7 +54,13 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Forgot password success')
   async forgotPassword(@Body('email') email: string) {
-    return this.usersService.forgotPassword(email);
+    return this.usersService.sendMailForForgotPassword(email);
+  }
+
+  @Get('validate-reset-token')
+  @ResponseMessage('Validate reset token success')
+  async validateResetToken(@Query('token') token: string) {
+    return this.usersService.validateResetToken(token);
   }
 
   @Post('change-password')
