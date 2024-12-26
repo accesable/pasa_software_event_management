@@ -10,10 +10,12 @@ import { EVENT_SERVICE } from 'apps/apigateway/src/constants/service.constant';
 import { join } from 'path';
 import { EVENT_PACKAGE_NAME } from '@app/common/types/event';
 import { UsersModule } from 'apps/apigateway/src/users/users.module';
+import { RedisCacheModule } from 'apps/apigateway/src/redis/redis.module';
 
 @Module({
   imports: [
     UsersModule,
+    RedisCacheModule,
     ClientsModule.register([
       {
         name: EVENT_SERVICE,

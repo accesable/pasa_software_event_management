@@ -7,12 +7,16 @@ import { CreateEventCategoryDto } from 'apps/apigateway/src/event-service/dto/cr
 import { UpdateEventDto } from 'apps/apigateway/src/event-service/dto/update-event-service.dto';
 import { CreateSpeakerDto } from 'apps/apigateway/src/event-service/dto/create-speaker.dto';
 import { CreateGuestDto } from 'apps/apigateway/src/event-service/dto/create-guest.dto';
+import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
 
 @Injectable()
 export class EventServiceService implements OnModuleInit {
   private eventService: EventServiceClient;
+
   constructor(
     @Inject(EVENT_SERVICE) private client: ClientGrpc,
+    private readonly redisCacheService: RedisCacheService
+
   ) { }
 
   onModuleInit() {
@@ -23,7 +27,14 @@ export class EventServiceService implements OnModuleInit {
     request: QueryParamsRequest
   ) {
     try {
-      return await this.eventService.getAllEvent(request).toPromise();
+      const key = `getAllEvent:${JSON.stringify(request)}`;
+      const cacheData = await this.redisCacheService.get<any>(key);
+      if (cacheData) {
+        return cacheData;
+      }
+      const data = await this.eventService.getAllEvent(request).toPromise();
+      await this.redisCacheService.set(key, data, 60 * 5);
+      return data;
     } catch (error) {
       throw new RpcException(error);
     }
@@ -31,7 +42,14 @@ export class EventServiceService implements OnModuleInit {
 
   async getEventByCategoryName(categoryName: string) {
     try {
-      return await this.eventService.getAllEventByCategoryName({ name: categoryName }).toPromise();
+      const key = `getEventByCategoryName:${categoryName}`;
+      const cacheData = await this.redisCacheService.get<any>(key);
+      if (cacheData) {
+        return cacheData;
+      }
+      const data = await this.eventService.getAllEventByCategoryName({ name: categoryName }).toPromise();
+      await this.redisCacheService.set(key, data, 60 * 5);
+      return data;
     } catch (error) {
       throw new RpcException(error);
     }
@@ -129,12 +147,12 @@ export class EventServiceService implements OnModuleInit {
   async updateEvent(id: string, updateEventDto: UpdateEventDto) {
     try {
       const scheduleProto = updateEventDto.schedule?.map(s => ({
-          title: s.title,
-          startTime: s.startTime.toString(),
-          endTime: s.endTime.toString(),
-          description: s.description || '',
-          speakerIds: s.speakerIds
-        })) || [];
+        title: s.title,
+        startTime: s.startTime.toString(),
+        endTime: s.endTime.toString(),
+        description: s.description || '',
+        speakerIds: s.speakerIds
+      })) || [];
 
       const sponsorsProto = updateEventDto.sponsors?.map(s => ({
         name: s.name,

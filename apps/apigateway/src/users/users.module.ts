@@ -11,10 +11,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from 'apps/apigateway/src/strategies/jwt.strategy';
 import { FilesService } from 'apps/apigateway/src/files/files.service';
 import { NotificationModule } from 'apps/apigateway/src/notification/notification.module';
+import { RedisCacheModule } from 'apps/apigateway/src/redis/redis.module';
 
 @Module({
   imports: [
     NotificationModule,
+    RedisCacheModule,
     ClientsModule.register([
       {
         name: AUTH_SERVICE,

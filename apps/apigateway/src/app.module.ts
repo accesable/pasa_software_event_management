@@ -8,6 +8,7 @@ import { FilesModule } from 'apps/apigateway/src/files/files.module';
 import { EventServiceModule } from 'apps/apigateway/src/event-service/event-service.module';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { NotificationModule } from 'apps/apigateway/src/notification/notification.module';
+import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { NotificationModule } from 'apps/apigateway/src/notification/notificatio
     FilesModule,
     EventServiceModule,
     NotificationModule,
+    RedisModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: 'apps/apigateway/.env.example',
@@ -39,6 +41,8 @@ import { NotificationModule } from 'apps/apigateway/src/notification/notificatio
       provide: APP_INTERCEPTOR,
       useClass: TransformInterceptor,
     },
+    RedisCacheService,
   ],
+  exports: [RedisCacheService],
 })
 export class AppModule { }

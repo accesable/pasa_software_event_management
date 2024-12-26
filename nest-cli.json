@@ -81,6 +81,19 @@
         "watchAssets": true,
         "deleteOutDir": true
       }
+    },
+    "ticket-service": {
+      "type": "application",
+      "root": "apps/ticket-service",
+      "entryFile": "src/main",
+      "sourceRoot": "./",
+      "compilerOptions": {
+        "tsConfigPath": "apps/ticket-service/tsconfig.app.json",
+        "assets": [
+          "proto/*.proto"
+        ],
+        "watchAssets": true
+      }
     }
   }
 }

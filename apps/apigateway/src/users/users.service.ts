@@ -1,7 +1,7 @@
 import { AUTH_SERVICE } from '../constants/service.constant';
 import * as ms from 'ms';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { ChangePasswordRequest, GoogleAuthRequest, UpdateAvatarRequest, UpdateProfileRequest, UpgradeUserRequest, UserResponse, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
+import { AllUserResponse, ChangePasswordRequest, GoogleAuthRequest, UpdateAvatarRequest, UpdateProfileRequest, UpgradeUserRequest, UserResponse, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
@@ -9,39 +9,29 @@ import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { ProfileDto } from 'apps/apigateway/src/users/dto/profile';
 import { QueryParamsRequest } from '@app/common/types/event';
-import { RedisService } from '@liaoliaots/nestjs-redis';
-import Redis from 'ioredis';
+
 import { NotificationService } from 'apps/apigateway/src/notification/notification.service';
+import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
   private usersService: UsersServiceClient;
-  private readonly redisClient: Redis;
 
   constructor(
     @Inject(AUTH_SERVICE) private client: ClientGrpc,
     private configService: ConfigService,
-    private readonly redisService: RedisService,
     private readonly notificationService: NotificationService,
+    private readonly redisCacheService: RedisCacheService
   ) {
-    this.redisClient = this.redisService.getClient();
   }
 
   onModuleInit() {
     this.usersService = this.client.getService<UsersServiceClient>(USERS_SERVICE_NAME);
   }
 
-  async setCacheData(key: string, value: any, ttl?: number) {
-    await this.redisClient.set(key, value, 'EX', ttl || this.configService.get<number>('CACHE_TTL'));
-  }
-
-  async getCacheData(key: string) {
-    return await this.redisClient.get(key);
-  }
-
   async validateResetToken(token: string) {
     const key = `reset_password:${token}`;
-    const cacheData = await this.getCacheData(key);
+    const cacheData = await this.redisCacheService.get<string>(key);
     if (!cacheData) {
       throw new RpcException(
         {
@@ -50,19 +40,19 @@ export class UsersService implements OnModuleInit {
         }
       );
     }
-    await this.redisClient.del(key);
-    return JSON.parse(cacheData);
+    await this.redisCacheService.del(key);
+    return { message: 'Token is valid' };
   }
 
   async getAllUser(request: QueryParamsRequest) {
     try {
       const key = `getAllUser:${JSON.stringify(request)}`;
-      const cacheData = await this.getCacheData(key);
+      const cacheData = await this.redisCacheService.get<AllUserResponse>(key);
       if (cacheData) {
-        return JSON.parse(cacheData);
+        return cacheData;
       }
       const data = await this.usersService.getAllUser(request).toPromise();
-      await this.setCacheData(key, JSON.stringify(data), 60*5);
+      await this.redisCacheService.set(key, data, 60*5);
       return data;
     } catch (error) {
       throw new RpcException(error);
@@ -97,7 +87,7 @@ export class UsersService implements OnModuleInit {
       if (data.status === 'success') {
         const key = `reset_password:${data.token}`;
         const { tokenData } = data;
-        await this.setCacheData(key, JSON.stringify(tokenData), 900);
+        await this.redisCacheService.set(key, JSON.stringify(tokenData), 900);
         return data;
       }
       return data;

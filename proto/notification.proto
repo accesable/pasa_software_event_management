@@ -4,6 +4,7 @@ package notification;
 
 service NotificationServiceProto{
   rpc ForgotPassword(ForgotPasswordRequest) returns (ForgotPasswordResponse);
+  //rpc WelcomeEmail(WelcomeEmailRequest) returns (WelcomeEmailResponse);
 }
 
 message ForgotPasswordRequest{
