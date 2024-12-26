@@ -23,8 +23,5 @@ message TokenData{
     string id = 1;
     string email = 2;
     string name = 3;
-    bool used = 4;
-    string type = 5;
-    int64 expiredAt = 6;
-    int64 createdAt = 7;
+    string type = 4;
 }

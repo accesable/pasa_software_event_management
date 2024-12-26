@@ -28,18 +28,12 @@ export class NotificationServiceService {
           code: HttpStatus.INTERNAL_SERVER_ERROR,
         });
       }
-      const ttlSeconds = +this.configService.get<string>("TOKEN_PASSWORD_EXPIRATION"); // 15 minutes
-      const expiredAt = Date.now() + ttlSeconds * 1000;
-      const createdAt = Date.now();
   
       const tokenData: TokenData = {
         id: request.id,
         email: request.email,
         type: 'forgot-password',
         name: request.name,
-        used: false,
-        expiredAt,
-        createdAt,
       };
   
       return { status: 'success', message: "If this email exists, a reset link has been sent to your email.", token, tokenData };

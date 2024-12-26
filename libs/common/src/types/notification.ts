@@ -27,10 +27,7 @@ export interface TokenData {
   id: string;
   email: string;
   name: string;
-  used: boolean;
   type: string;
-  expiredAt: number;
-  createdAt: number;
 }
 
 export const NOTIFICATION_PACKAGE_NAME = "notification";

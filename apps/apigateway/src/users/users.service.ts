@@ -39,16 +39,6 @@ export class UsersService implements OnModuleInit {
     return await this.redisClient.get(key);
   }
 
-  calculateTTL(expiredAt: any): number {
-    const low = expiredAt.low;
-    const high = expiredAt.high;
-
-    const timestamp = (high << 32) + (low & 0xFFFFFFFF);
-    const currentTimestamp = Math.floor(Date.now() / 100);
-    const ttl = timestamp / 1000 - currentTimestamp; // chia 1000 ở đây nếu timestamp là mili giây
-    return Math.max(ttl, 0);
-  }
-
   async validateResetToken(token: string) {
     const key = `reset_password:${token}`;
     const cacheData = await this.getCacheData(key);
@@ -69,13 +59,11 @@ export class UsersService implements OnModuleInit {
       const key = `getAllUser:${JSON.stringify(request)}`;
       const cacheData = await this.getCacheData(key);
       if (cacheData) {
-        return cacheData;
+        return JSON.parse(cacheData);
       }
       const data = await this.usersService.getAllUser(request).toPromise();
-      await this.setCacheData(key, data);
+      await this.setCacheData(key, JSON.stringify(data), 60*5);
       return data;
-
-      // return await this.usersService.getAllUser(request).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -108,9 +96,8 @@ export class UsersService implements OnModuleInit {
       const data = await this.notificationService.sendMailForForgotPassword(email, id, name);
       if (data.status === 'success') {
         const key = `reset_password:${data.token}`;
-        // const { expiredAt } = data.tokenData;
-        // const ttl = this.calculateTTL(expiredAt);
-        await this.setCacheData(key, JSON.stringify(data), 900);
+        const { tokenData } = data;
+        await this.setCacheData(key, JSON.stringify(tokenData), 900);
         return data;
       }
       return data;
