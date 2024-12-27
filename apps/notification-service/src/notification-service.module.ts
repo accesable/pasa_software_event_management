@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { NotificationServiceController } from './notification-service.controller';
 import { NotificationServiceService } from './notification-service.service';
-import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
+import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { mailerConfig } from 'apps/notification-service/src/config/mailer.config';
 import { validateEnv } from './config/env.validation';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
@@ -28,6 +29,18 @@ import { validateEnv } from './config/env.validation';
         signOptions: { expiresIn: configService.get<string>('TOKEN_PASSWORD_EXPIRATION') },
       }),
     }),
+
+    ClientsModule.register([
+      {
+        name: 'NOTIFICATION_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://admin:1234@localhost:5672'],
+          queue: 'notifications_queue',
+          queueOptions: { durable: true },
+        },
+      },
+    ]),
   ],
   controllers: [NotificationServiceController],
   providers: [NotificationServiceService],

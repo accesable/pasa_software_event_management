@@ -1,5 +1,5 @@
 import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, ProfileRespone, UpdateAvatarRequest, UpdateProfileRequest, UpgradeUserRequest, UserResponse } from './../../../../libs/common/src/types/auth';
-import { Injectable, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpStatus, Inject } from '@nestjs/common';
 import { RegisterDto, } from '../../../apigateway/src/users/dto/register';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
@@ -8,7 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { GoogleAuthRequest, LogoutRequest } from '@app/common';
-import { RpcException } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 import { handleRpcException } from '@app/common/filters/handleException';
 import aqp from 'api-query-params';
@@ -19,7 +19,12 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    @Inject('NOTIFICATION_SERVICE') private readonly client: ClientProxy
   ) { }
+
+  // onModuleInit() {
+  //   this.client.connect();
+  // }
 
   async findByEmailWithoutPassword(email: string) {
     try {
@@ -85,6 +90,7 @@ export class UsersService {
       const hashedPassword = await this.hashPassword(registerDto.password);
       const user = await this.userModel.create({ ...registerDto, password: hashedPassword });
       const userResponse = this.transformUserDataResponse(user);
+      // this.client.emit('user_registered', { email: user.email, name: user.name });
       return { user: userResponse };
     } catch (error) {
       throw handleRpcException(error, 'Error during registration');

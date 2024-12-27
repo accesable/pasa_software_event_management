@@ -21,14 +21,9 @@ export class EventServiceController {
   // } 
 
   @Get()
-  @ResponseMessage('Get all events or filter by category success')
-  getAllEventByCategoryName(@Query() query: any, @Query("category") categoryName: string) {
-    if (categoryName) {
-      return this.eventServiceService.getEventByCategoryName(categoryName.toLocaleLowerCase());
-    }
-    return this.eventServiceService.getAllEvent(
-      { query }
-    );
+  @ResponseMessage('Get events with filter (including category) success')
+  getAllEvents(@Query() query: any) {
+    return this.eventServiceService.getAllEvent(query);
   }
 
   @Get(':id')
@@ -38,19 +33,19 @@ export class EventServiceController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('organizer', 'admin')
+  @UseGuards(JwtAuthGuard)
+  // @Roles('organizer', 'admin')
   @ResponseMessage('Update event success')
   updateEvent(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
     return this.eventServiceService.updateEvent(id, updateEventDto);
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('organizer', 'admin')
+  @UseGuards(JwtAuthGuard)
+  // @Roles('organizer', 'admin')
   @ResponseMessage('Event created successfully')
   createEvent(@Body() createEventDto: CreateEventDto, @User() user: DecodeAccessResponse) {
-    return this.eventServiceService.createEvent(createEventDto, user.id);
+    return this.eventServiceService.createEvent(createEventDto, {id: user.id, email: user.email, name: user.name});
   }
 
   // @Get()
@@ -91,8 +86,8 @@ export class CategoryServiceController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('organizer', 'admin')
+  @UseGuards(JwtAuthGuard)
+  // @Roles('organizer', 'admin')
   @ResponseMessage('Category created successfully')
   createCategory(@Body() createEventCategoryDto: CreateEventCategoryDto, @User() user: DecodeAccessResponse) {
     return this.eventServiceService.createCategory(createEventCategoryDto);
@@ -118,8 +113,8 @@ export class SpeakerServiceController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('organizer', 'admin')
+  @UseGuards(JwtAuthGuard)
+  // @Roles('organizer', 'admin')
   @ResponseMessage('Speaker created successfully')
   createSpeaker(@Body() createSpeakerDto: CreateSpeakerDto) {
     return this.eventServiceService.createSpeaker(createSpeakerDto);
@@ -137,8 +132,8 @@ export class GuestServiceController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('organizer', 'admin')
+  @UseGuards(JwtAuthGuard)
+  // @Roles('organizer', 'admin')
   @ResponseMessage('Guest created successfully')
   createGuest(@Body() createGuestDto: CreateGuestDto) {
     return this.eventServiceService.createGuest(createGuestDto);

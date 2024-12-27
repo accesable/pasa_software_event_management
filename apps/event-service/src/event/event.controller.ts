@@ -41,7 +41,7 @@ export class EventController implements EventServiceController {
   // }
 
   getAllEvent(request: QueryParamsRequest) {
-    return this.eventService.getAllEvent(request.query);
+    return this.eventService.getAllEvent(request);
   }
 
   getEventById(request: EventByIdRequest) {

@@ -1,10 +1,10 @@
 import { handleRpcException } from '@app/common/filters/handleException';
 import { ForgotPasswordRequest, TokenData } from '@app/common/types/notification';
 import { MailerService } from '@nestjs-modules/mailer';
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { RpcException } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { EmailTemplates } from 'apps/notification-service/src/mail/contants/template';
 
 @Injectable()
@@ -13,7 +13,20 @@ export class NotificationServiceService {
     private readonly mailerService: MailerService,
     private configService: ConfigService,
     private jwtService: JwtService,
+    @Inject('NOTIFICATION_SERVICE') private readonly client: ClientProxy,
   ) { }
+
+  // onModuleInit() {
+  //   this.client.connect();
+  // }
+
+  async handleUserCreated(data: any) {
+    try {
+      this.sendMail(data.email, EmailTemplates.WELCOME_EMAIL, 'Welcome to PASA', { name: data.name });
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to send email');
+    }
+  }
 
   async sendMailForgotPassword(request: ForgotPasswordRequest) {
     try {
@@ -28,14 +41,14 @@ export class NotificationServiceService {
           code: HttpStatus.INTERNAL_SERVER_ERROR,
         });
       }
-  
+
       const tokenData: TokenData = {
         id: request.id,
         email: request.email,
         type: 'forgot-password',
         name: request.name,
       };
-  
+
       return { status: 'success', message: "If this email exists, a reset link has been sent to your email.", token, tokenData };
     } catch (error) {
       throw handleRpcException(error, 'Failed to send email');

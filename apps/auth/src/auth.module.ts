@@ -1,8 +1,9 @@
 import { validateEnv } from './config/env.validation';
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { UsersModule } from './users/users.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
@@ -20,6 +21,31 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       validate: validateEnv,
       envFilePath: 'apps/auth/.env.example',
     }),
+
+    ClientsModule.register([
+      {
+        name: 'NOTIFICATION_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://admin:1234@localhost:5672'],
+          queue: 'notifications_queue',
+          queueOptions: { durable: true },
+        },
+      },
+      // {
+      //   name: 'PAYMENT_SERVICE',
+      //   transport: Transport.RMQ,
+      //   options: {
+      //     urls: ['amqp://admin:1234@localhost:5672'],
+      //     queue: 'payments_queue',
+      //     queueOptions: { durable: true },
+      //   },
+      // },
+    ]),
+    forwardRef(() => UsersModule),
+  ],
+  exports: [
+    ClientsModule,
   ],
 })
 export class AuthModule { }

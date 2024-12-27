@@ -1,0 +1,35 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+export type TicketDocument = Ticket & Document & {
+    createdAt: Date;
+    updatedAt: Date;
+};
+
+@Schema({ timestamps: true, versionKey: false })
+export class Ticket {
+  @Prop({ required: true })
+  participantId: string;
+
+  @Prop({ required: true })
+  code: string;
+
+  @Prop()
+  qrCodeUrl: string;
+
+  @Prop({ default: false })
+  isUsed: boolean;
+
+  @Prop()
+  usedAt: Date;
+
+  @Prop()
+  issuedAt: Date;
+
+  @Prop()
+  canceledAt: Date;
+}
+
+export const TicketSchema = SchemaFactory.createForClass(Ticket);
+TicketSchema.index({ code: 1 }, { unique: true });
+TicketSchema.index({ participantId: 1 });

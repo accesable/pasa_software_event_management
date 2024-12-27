@@ -147,7 +147,7 @@ message CreateEventRequest {
   string banner = 11;
   string videoIntro = 12;
   repeated string documents = 13;
-  string createdBy = 14;
+  CreatedBy createdBy = 14;
   repeated SponsorType sponsors = 15;
   optional BudgetType budget = 16;
   repeated ScheduleType schedule = 17;
@@ -193,7 +193,7 @@ message EventType {
   string status = 16;
   string createdAt = 17;
   string updatedAt = 18;
-  string createdBy = 19;
+  CreatedBy createdBy = 19;
   repeated SponsorType sponsors = 20;
   optional BudgetType budget = 21;
 }
@@ -247,4 +247,10 @@ message ScheduleType {
   string endTime = 3;
   string description = 4;
   repeated string speakerIds = 5;
+}
+
+message CreatedBy{
+  string id = 1;
+  string name = 2;
+  string email = 3;
 }

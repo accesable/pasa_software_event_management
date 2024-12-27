@@ -1,4 +1,4 @@
-import { CreateEventRequest, EVENT_SERVICE_NAME, EventServiceClient, QueryParamsRequest, UpdateCategoryRequest, UpdateEventRequest } from '@app/common/types/event';
+import { CreatedBy, CreateEventRequest, EVENT_SERVICE_NAME, EventServiceClient, QueryParamsRequest, UpdateCategoryRequest, UpdateEventRequest } from '@app/common/types/event';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { CreateEventDto } from 'apps/apigateway/src/event-service/dto/create-event-service.dto';
@@ -23,22 +23,23 @@ export class EventServiceService implements OnModuleInit {
     this.eventService = this.client.getService<EventServiceClient>(EVENT_SERVICE_NAME);
   }
 
-  async getAllEvent(
-    request: QueryParamsRequest
-  ) {
+  async getAllEvent(query: any) {
     try {
-      const key = `getAllEvent:${JSON.stringify(request)}`;
+      const key = `getAllEvent:${JSON.stringify(query)}`;
       const cacheData = await this.redisCacheService.get<any>(key);
       if (cacheData) {
         return cacheData;
       }
-      const data = await this.eventService.getAllEvent(request).toPromise();
+
+      const data = await this.eventService.getAllEvent({query}).toPromise();
+
       await this.redisCacheService.set(key, data, 60 * 5);
       return data;
     } catch (error) {
       throw new RpcException(error);
     }
   }
+
 
   async getEventByCategoryName(categoryName: string) {
     try {
@@ -63,7 +64,7 @@ export class EventServiceService implements OnModuleInit {
     }
   }
 
-  async createEvent(createEventDto: CreateEventDto, createdBy: string) {
+  async createEvent(createEventDto: CreateEventDto, createdBy: CreatedBy) {
     try {
       const scheduleProto = createEventDto.schedule?.map(s => ({
         title: s.title,

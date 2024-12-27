@@ -4,6 +4,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
+import { CategoryDocument, EventCategory } from 'apps/event-service/src/event-category/schemas/event-category.schema';
 import { EventDocument } from 'apps/event-service/src/event/schemas/event.schema';
 import { Model } from 'mongoose';
 
@@ -11,32 +12,74 @@ import { Model } from 'mongoose';
 export class EventService {
     constructor(
         @InjectModel(Event.name) private eventModel: Model<EventDocument>,
+        @InjectModel(EventCategory.name) private categoryModel: Model<CategoryDocument>,
     ) { }
 
-    async getAllEvent(query: any) {
+    async getAllEvent(request: { query: { [key: string]: string } }) {
         try {
-            const { filter, limit, sort } = aqp(query);
-            const page = parseInt(filter.page || '1', 10);
-            delete filter.page;
-            
-            const population = filter.population?.split(',').map(field => ({ path: field.trim() }));
-            const skip = (page - 1) * (limit || 10);
-            const totalItems = await this.eventModel.countDocuments(filter);
-            const totalPages = Math.ceil(totalItems / limit);
+            const { filter, limit, sort } = aqp(request.query);
 
+            const page = parseInt(filter.page, 10);
+            delete filter.page;
+
+            let population: any[] = [];
+            if (filter.population) {
+                const popVal = filter.population;
+
+                if (typeof popVal === 'string') {
+                    population = popVal.split(',').map((field: string) => {
+                        const trimmedField = field.trim();
+                        if (trimmedField === 'schedule.speakerIds') {
+                            return { path: trimmedField, model: 'Speaker' };
+                        }
+                        return { path: trimmedField };
+                    });
+                }
+
+                else if (Array.isArray(popVal) || (popVal['$in'] && Array.isArray(popVal['$in']))) {
+                    const fields = Array.isArray(popVal) ? popVal : popVal['$in'];
+                    population = fields.map((field: string) => {
+                        const trimmedField = field.trim();
+                        if (trimmedField === 'schedule.speakerIds') {
+                            return { path: trimmedField, model: 'Speaker' };
+                        }
+                        return { path: trimmedField };
+                    });
+                }
+
+                delete filter.population;
+            }
+
+
+            if (filter.category) {
+                const foundCategory = await this.categoryModel.findOne({
+                    name: filter.category.toLowerCase(),
+                });
+                if (foundCategory) {
+                    filter.categoryId = foundCategory._id;
+                }
+                delete filter.category;
+            }
+
+            const parsedLimit = limit;
+            const skip = (page - 1) * parsedLimit;
+
+            const totalItems = await this.eventModel.countDocuments(filter);
+            const totalPages = Math.ceil(totalItems / parsedLimit);
             const events = await this.eventModel
                 .find(filter)
                 .skip(skip)
-                .limit(limit)
+                .limit(parsedLimit)
                 .sort(sort as any)
-                .populate(population)
+                .populate(population) // "guestIds", "categoryId", "schedule.speakerIds"
                 .exec();
 
-            const eventResponses: EventType[] = events.map((event) => this.transformEvent(event));
+            const eventResponses = events.map((event) => this.transformEvent(event));
+
             return {
                 meta: {
                     page,
-                    limit,
+                    limit: parsedLimit,
                     totalPages,
                     totalItems,
                     count: events.length,
@@ -47,7 +90,6 @@ export class EventService {
             throw handleRpcException(error, 'Failed to get all event');
         }
     }
-
 
     async getAllEventByCategoryName(id: string) {
         try {
@@ -99,60 +141,35 @@ export class EventService {
         }
     }
 
-    transformEvent(event: EventDocument): EventType {
-        const schedule = event.schedule?.map(session => ({
-            title: session.title,
-            startTime: session.startTime ? session.startTime.toISOString() : '',
-            endTime: session.endTime ? session.endTime.toISOString() : '',
-            description: session.description || '',
-            speakerIds: session.speakerIds?.map(sid => sid.toString()) || []
-        })) || [];
-
-        const guestIds = event.guestIds?.map(g => g.toString()) || [];
-
-        const sponsors = event.sponsors?.map(s => ({
-            name: s.name || '',
-            logo: s.logo || '',
-            website: s.website || '',
-            contribution: s.contribution || 0
-        })) || [];
-
-        const budget = event.budget ? {
-            totalBudget: event.budget.totalBudget || 0,
-            expenses: event.budget.expenses?.map(e => ({
-                desc: e.desc || '',
-                amount: e.amount || 0,
-                date: e.date ? e.date.toISOString() : ''
-            })) || [],
-            revenue: event.budget.revenue?.map(r => ({
-                desc: r.desc || '',
-                amount: r.amount || 0,
-                date: r.date ? r.date.toISOString() : ''
-            })) || []
-        } : { totalBudget: 0, expenses: [], revenue: [] };
-
+    private transformEvent(event: EventDocument) {
+        const obj = event.toObject({ virtuals: true, getters: true });
         return {
-            id: event._id.toString(),
-            name: event.name || '',
-            description: event.description || '',
-            startDate: event.startDate.toISOString(),
-            endDate: event.endDate.toISOString(),
-            location: event.location || '',
-            schedule,
-            guestIds,
-            categoryId: event.categoryId.toString(),
-            isFree: event.isFree,
-            price: event.price,
-            maxParticipants: event.maxParticipants,
-            banner: event.banner || '',
-            videoIntro: event.videoIntro || '',
-            documents: event.documents || [],
-            status: event.status,
-            createdAt: event.createdAt.toISOString(),
-            updatedAt: event.updatedAt.toISOString(),
-            createdBy: event.createdBy.toString(),
-            sponsors,
-            budget
+            id: obj._id.toString(),
+            name: obj.name,
+            description: obj.description,
+            startDate: obj.startDate,
+            endDate: obj.endDate,
+            location: obj.location,
+            guestIds: obj.guestIds,
+            categoryId: obj.categoryId,
+            schedule: obj.schedule.map((item) => ({
+                ...item,
+                speakerIds: item.speakerIds.map((speaker) =>
+                    speaker.toObject ? speaker.toObject() : speaker
+                ),
+            })),
+            createdBy: obj.createdBy,
+            isFree: obj.isFree,
+            price: obj.price,
+            maxParticipants: obj.maxParticipants,
+            banner: obj.banner,
+            videoIntro: obj.videoIntro,
+            documents: obj.documents,
+            status: obj.status,
+            createdAt: obj.createdAt,
+            updatedAt: obj.updatedAt,
+            sponsors: obj.sponsors,
+            budget: obj.budget,
         };
     }
 }

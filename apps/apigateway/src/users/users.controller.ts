@@ -12,7 +12,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesService } from 'apps/apigateway/src/files/files.service';
 import { RolesGuard } from 'apps/apigateway/src/guards/roles.guard';
 import { ChangePasswordDto } from 'apps/apigateway/src/users/dto/change-password';
-import { UpgradeDto } from 'apps/apigateway/src/users/dto/upgrade';
+// import { UpgradeDto } from 'apps/apigateway/src/users/dto/upgrade';
 
 @Controller('auth')
 export class UsersController {
@@ -96,8 +96,7 @@ export class GeneralUsersController {
   ) { }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('organizer', 'admin')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Users fetched successfully')
   async getAllUser(@Query() query: any) {
     return this.usersService.getAllUser({ query });
@@ -121,13 +120,13 @@ export class GeneralUsersController {
     return this.usersService.updateProfile(accessToken, profileDto);
   }
 
-  @Patch('upgrade/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
-  @ResponseMessage('User upgraded successfully')
-  async upgradeUser(@Param('id') id: string, @Body() body: UpgradeDto) {
-    return this.usersService.upgradeUser({ id, role: body.role });
-  }
+  // @Patch('upgrade/:id')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles('admin')
+  // @ResponseMessage('User upgraded successfully')
+  // async upgradeUser(@Param('id') id: string, @Body() body: UpgradeDto) {
+  //   return this.usersService.upgradeUser({ id, role: body.role });
+  // }
 
   @Post('upload/avatar')
   @UseGuards(JwtAuthGuard)

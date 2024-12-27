@@ -5,6 +5,7 @@ import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 import { AllUserResponse, ChangePasswordRequest, EmailRequest, Empty, FindByIdRequest, ProfileRespone, QueryParamsRequest, UpdateAvatarRequest, UpdateProfileRequest, UpgradeUserRequest } from '@app/common/types/auth';
 import { Observable } from 'rxjs';
+import { EventPattern } from '@nestjs/microservices';
 
 @Controller()
 @UsersServiceControllerMethods()
@@ -27,7 +28,7 @@ export class UsersController implements UsersServiceController {
     return this.usersService.changePassword(request);
   }
 
-  updateAvatar(request: UpdateAvatarRequest){
+  updateAvatar(request: UpdateAvatarRequest) {
     return this.usersService.updateAvatar(request);
   }
 
@@ -55,7 +56,7 @@ export class UsersController implements UsersServiceController {
     return this.usersService.handleLogout(accessToken);
   }
 
-  updateProfile(@Body() data: UpdateProfileRequest){
+  updateProfile(@Body() data: UpdateProfileRequest) {
     return this.usersService.updateProfile(data);
   }
 }

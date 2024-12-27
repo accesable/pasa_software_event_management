@@ -1,4 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { EventCategory } from 'apps/event-service/src/event-category/schemas/event-category.schema';
+import { Guest } from 'apps/event-service/src/guest/schemas/guest.schema';
+import { Speaker } from 'apps/event-service/src/speaker/schemas/speaker.schema';
 import { Document, Types } from 'mongoose';
 
 export type EventDocument = Event & Document & {
@@ -14,7 +17,15 @@ export class Event {
   @Prop({ trim: true })
   description: string;
 
-  @Prop({ required: true })
+  @Prop({
+    required: true,
+    validate: {
+      validator: function (this: Event, value: Date) {
+        return value < this.endDate;
+      },
+      message: 'Start date must be earlier than end date.'
+    }
+  })
   startDate: Date;
 
   @Prop({ required: true })
@@ -23,17 +34,15 @@ export class Event {
   @Prop({ trim: true })
   location: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'EventCategory', required: true })
-  categoryId: string;
+  @Prop({ type: Types.ObjectId, ref: EventCategory.name, required: true })
+  categoryId: Types.ObjectId;
 
-  @Prop({ required: true })
-  createdBy: string;
-
-  @Prop({ default: true })
-  isFree: boolean;
-
-  @Prop({ default: 0 })
-  price: number;
+  @Prop({ type: Types.ObjectId, required: true })
+  createdBy: {
+    id: Types.ObjectId;
+    name: string;
+    email: string;
+  };
 
   @Prop({ default: 50 })
   maxParticipants: number;
@@ -47,7 +56,7 @@ export class Event {
   @Prop({ type: [String] })
   documents: string[];
 
-  @Prop({ type: [Types.ObjectId], ref: 'Guest' })
+  @Prop({ type: [Types.ObjectId], ref: Guest.name })
   guestIds: Types.ObjectId[];
 
   @Prop({
@@ -56,7 +65,7 @@ export class Event {
       startTime: { type: Date, required: true },
       endTime: { type: Date, required: true },
       description: { type: String, trim: true },
-      speakerIds: [{ type: Types.ObjectId, ref: 'Speaker' }]
+      speakerIds: [{ type: Types.ObjectId, ref: Speaker.name }]
     }],
     default: []
   })

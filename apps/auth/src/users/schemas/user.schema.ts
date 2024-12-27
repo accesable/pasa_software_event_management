@@ -17,7 +17,7 @@ export class User {
   @Prop({ trim: true })
   phoneNumber: string;
 
-  @Prop({default: "https://res.cloudinary.com/dbvyexitw/image/upload/v1733047490/default%20avatar.jpg"})
+  @Prop({ default: "https://res.cloudinary.com/dbvyexitw/image/upload/v1733047490/default%20avatar.jpg" })
   avatar: string;
 
   @Prop()
@@ -29,11 +29,11 @@ export class User {
   @Prop()
   refreshToken?: string;
 
-  @Prop({ default: 'student', enum: ['student', 'teacher', 'organizer' ,'admin'] })
-  role: string;
+  // @Prop({ default: 'user', enum: ['user'] })
+  // role: string;
 
-  @Prop({ default: true })
-  isActive: boolean;
+  // @Prop({ default: true })
+  // isActive: boolean;
 
   @Prop()
   lastLoginAt: Date;
