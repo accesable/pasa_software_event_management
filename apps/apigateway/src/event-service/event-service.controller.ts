@@ -45,7 +45,7 @@ export class EventServiceController {
   // @Roles('organizer', 'admin')
   @ResponseMessage('Event created successfully')
   createEvent(@Body() createEventDto: CreateEventDto, @User() user: DecodeAccessResponse) {
-    return this.eventServiceService.createEvent(createEventDto, {id: user.id, email: user.email, name: user.name});
+    return this.eventServiceService.createEvent(createEventDto, {id: user.id, email: user.email});
   }
 
   // @Get()

@@ -40,7 +40,6 @@ export class Event {
   @Prop({ type: Types.ObjectId, required: true })
   createdBy: {
     id: Types.ObjectId;
-    name: string;
     email: string;
   };
 
@@ -61,6 +60,11 @@ export class Event {
 
   @Prop({
     type: [{
+      id: {
+        type: Types.ObjectId,
+        default: () => new Types.ObjectId(), // Tạo tự động ObjectId
+        required: true,
+      },
       title: { type: String, required: true },
       startTime: { type: Date, required: true },
       endTime: { type: Date, required: true },
@@ -70,6 +74,7 @@ export class Event {
     default: []
   })
   schedule: {
+    id: Types.ObjectId;
     title: string;
     startTime: Date;
     endTime: Date;

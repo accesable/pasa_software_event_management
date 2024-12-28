@@ -3,4 +3,92 @@ syntax = "proto3";
 package ticket;
 
 service TicketServiceProto{
+    rpc GetAllTicket(QueryParamsRequest) returns (AllTicketResponse);
+    rpc GetTicketById(TicketByIdRequest) returns (TicketResponse);
+    rpc UpdateTicket(UpdateTicketRequest) returns (TicketResponse);
+    rpc DeleteTicket(TicketByIdRequest) returns (TicketResponse);
+    rpc CheckIn(TicketByIdRequest) returns (TicketResponse);
+    rpc CancelTicket(TicketByIdRequest) returns (TicketResponse);
+
+    rpc CreateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
+    rpc GetParticipant(QueryParamsRequest) returns (ParticipationResponse); // filter eventId, userId, status
+    rpc GetParticipantById(ParticipationByIdRequest) returns (ParticipationResponse);
+    rpc UpdateParticipant(UpdateParticipationRequest) returns (ParticipationResponse);
+    rpc DeleteParticipant(ParticipationByIdRequest) returns (Empty);
+}
+
+message Empty{}
+
+message UpdateParticipationRequest{
+  string id = 1;
+  optional string status = 2;
+  optional string checkedInAt = 3;
+  optional string checkedOutAt = 4;
+}
+
+message ParticipationByIdRequest{
+  string id = 1;
+}
+
+message QueryParamsRequest{
+  map<string, string> query = 1;
+}
+
+message CreateParticipationRequest{
+  string eventId = 1;
+  string userId = 2;
+  repeated string sessionIds = 3;
+}
+
+message ParticipationResponse{
+  Participation participation = 1;
+}
+
+message Participation{
+  string id = 1;
+  string eventId = 2;
+  string userId = 3;
+  repeated string sessionIds = 4;
+  string status = 5;
+  string createdAt = 6;
+  string updatedAt = 7;
+  optional string checkedInAt = 8;
+  optional string checkedOutAt = 9;
+}
+
+message TicketResponse{
+  Ticket ticket = 1;
+}
+
+message AllTicketResponse{
+  repeated Ticket tickets = 1;
+  Meta meta = 2;
+}
+
+message TicketByIdRequest{
+  string id = 1;
+}
+
+message UpdateTicketRequest{
+  string id = 1;
+  optional string title = 2;
+  optional string description = 3;
+  optional string category = 4;
+  optional string priority = 5;
+  optional string status = 6;
+}
+
+message Ticket{
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string category = 4;
+  string priority = 5;
+  string status = 6;
+}
+
+message Meta{
+  int32 total = 1;
+  int32 page = 2;
+  int32 limit = 3;
 }

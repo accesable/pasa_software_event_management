@@ -148,7 +148,7 @@ export interface CreateEventRequest {
   createdBy: CreatedBy | undefined;
   sponsors: SponsorType[];
   budget?: BudgetType | undefined;
-  schedule: ScheduleType[];
+  schedule: ScheduleWithoutId[];
 }
 
 export interface UpdateEventRequest {
@@ -169,7 +169,7 @@ export interface UpdateEventRequest {
   status?: string | undefined;
   sponsors: SponsorType[];
   budget?: BudgetType | undefined;
-  schedule: ScheduleType[];
+  schedule: ScheduleWithoutId[];
 }
 
 export interface EventType {
@@ -239,7 +239,16 @@ export interface BudgetType {
   revenue: ExpenseOrRevenueType[];
 }
 
+export interface ScheduleWithoutId {
+  title: string;
+  startTime: string;
+  endTime: string;
+  description: string;
+  speakerIds: string[];
+}
+
 export interface ScheduleType {
+  id: string;
   title: string;
   startTime: string;
   endTime: string;
@@ -249,7 +258,6 @@ export interface ScheduleType {
 
 export interface CreatedBy {
   id: string;
-  name: string;
   email: string;
 }
 

@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Participant } from 'apps/ticket-service/src/schemas/participant';
+import { Document, Types } from 'mongoose';
 
 export type TicketDocument = Ticket & Document & {
     createdAt: Date;
@@ -8,8 +9,8 @@ export type TicketDocument = Ticket & Document & {
 
 @Schema({ timestamps: true, versionKey: false })
 export class Ticket {
-  @Prop({ required: true })
-  participantId: string;
+  @Prop({ required: true, type: Types.ObjectId, ref: Participant.name })
+  participantId: Types.ObjectId;
 
   @Prop({ required: true })
   code: string;
@@ -22,9 +23,6 @@ export class Ticket {
 
   @Prop()
   usedAt: Date;
-
-  @Prop()
-  issuedAt: Date;
 
   @Prop()
   canceledAt: Date;

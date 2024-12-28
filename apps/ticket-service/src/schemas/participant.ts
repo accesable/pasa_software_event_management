@@ -11,20 +11,17 @@ export class Participant {
   @Prop({ required: true })
   eventId: string;
 
-  @Prop({ default: 'REGISTERED', enum: ['REGISTERED', 'CANCELLED', 'COMPLETED'] })
+  @Prop({
+    default: 'INVITED',
+    enum: ['INVITED', 'REGISTERED', 'CANCELLED', 'COMPLETED'],
+  })
   status: string;
-
-  @Prop()
-  registeredAt: Date;
 
   @Prop({ type: [String], default: [] })
   sectionIds: string[];
 
   @Prop({ default: false })
   isVolunteer: boolean;
-
-  @Prop()
-  canceledAt: Date;
 
   @Prop()
   checkinAt: Date;

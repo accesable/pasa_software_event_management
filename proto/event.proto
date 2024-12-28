@@ -150,7 +150,7 @@ message CreateEventRequest {
   CreatedBy createdBy = 14;
   repeated SponsorType sponsors = 15;
   optional BudgetType budget = 16;
-  repeated ScheduleType schedule = 17;
+  repeated ScheduleWithoutId schedule = 17;
 }
 
 message UpdateEventRequest {
@@ -171,7 +171,7 @@ message UpdateEventRequest {
   optional string status=15;
   repeated SponsorType sponsors = 16;
   optional BudgetType budget = 17;
-  repeated ScheduleType schedule = 18;
+  repeated ScheduleWithoutId schedule = 18;
 }
 
 message EventType {
@@ -241,16 +241,24 @@ message BudgetType {
   repeated ExpenseOrRevenueType revenue = 3;
 }
 
-message ScheduleType {
-  string title = 1;
-  string startTime = 2;
-  string endTime = 3;
-  string description = 4;
-  repeated string speakerIds = 5;
+message ScheduleWithoutId {
+  string title = 2;
+  string startTime = 3;
+  string endTime = 4;
+  string description = 5;
+  repeated string speakerIds = 6;
+}
+
+message ScheduleType{
+  string id = 1;
+  string title = 2;
+  string startTime = 3;
+  string endTime = 4;
+  string description = 5;
+  repeated string speakerIds = 6;
 }
 
 message CreatedBy{
   string id = 1;
-  string name = 2;
-  string email = 3;
+  string email = 2;
 }

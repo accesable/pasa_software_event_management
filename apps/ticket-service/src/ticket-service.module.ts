@@ -4,6 +4,8 @@ import { TicketServiceService } from './ticket-service.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { validateEnv } from './config/env.validation';
+import { Ticket, TicketSchema } from 'apps/ticket-service/src/schemas/ticket';
+import { Participant, ParticipantSchema } from 'apps/ticket-service/src/schemas/participant';
 
 @Module({
   imports: [
@@ -20,6 +22,11 @@ import { validateEnv } from './config/env.validation';
       validate: validateEnv,
       envFilePath: 'apps/ticket-service/.env.example',
     }),
+
+    MongooseModule.forFeature([
+      { name: Ticket.name, schema: TicketSchema },
+      { name: Participant.name, schema: ParticipantSchema },
+    ]),
   ],
   controllers: [TicketServiceController],
   providers: [TicketServiceService],
