@@ -9,6 +9,7 @@ service TicketServiceProto{
     rpc DeleteTicket(TicketByIdRequest) returns (TicketResponse);
     rpc CheckIn(TicketByIdRequest) returns (TicketResponse);
     rpc CancelTicket(TicketByIdRequest) returns (TicketResponse);
+    rpc ScanTicket(ScanTicketRequest) returns (Empty);
 
     rpc CreateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
     rpc GetParticipant(QueryParamsRequest) returns (ParticipationResponse); // filter eventId, userId, status
@@ -18,6 +19,10 @@ service TicketServiceProto{
 }
 
 message Empty{}
+
+message ScanTicketRequest{
+  string code = 1;
+}
 
 message UpdateParticipationRequest{
   string id = 1;
@@ -42,6 +47,7 @@ message CreateParticipationRequest{
 
 message ParticipationResponse{
   Participation participation = 1;
+  TicketType ticket = 2;
 }
 
 message Participation{
@@ -57,11 +63,11 @@ message Participation{
 }
 
 message TicketResponse{
-  Ticket ticket = 1;
+  TicketType ticket = 1;
 }
 
 message AllTicketResponse{
-  repeated Ticket tickets = 1;
+  repeated TicketType tickets = 1;
   Meta meta = 2;
 }
 
@@ -71,24 +77,22 @@ message TicketByIdRequest{
 
 message UpdateTicketRequest{
   string id = 1;
-  optional string title = 2;
-  optional string description = 3;
-  optional string category = 4;
-  optional string priority = 5;
-  optional string status = 6;
+  optional string status = 2;
+  optional string usedAt = 3;
 }
 
-message Ticket{
+message TicketType {
   string id = 1;
-  string title = 2;
-  string description = 3;
-  string category = 4;
-  string priority = 5;
-  string status = 6;
+  string participantId = 2;
+  string qrCodeUrl = 4;
+  string status = 5;
+  optional string usedAt = 6;
 }
 
 message Meta{
-  int32 total = 1;
-  int32 page = 2;
-  int32 limit = 3;
+  optional int32 page = 1;
+  optional int32 limit = 2;
+  optional int32 totalPages = 3;
+  int32 totalItems = 4;
+  int32 count = 5;
 }

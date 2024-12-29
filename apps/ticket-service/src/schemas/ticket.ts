@@ -18,14 +18,11 @@ export class Ticket {
   @Prop()
   qrCodeUrl: string;
 
-  @Prop({ default: false })
-  isUsed: boolean;
+  @Prop({ default: 'ACTIVE', enum: ['ACTIVE', 'CANCELLED', 'USED'] })
+  status: string;
 
   @Prop()
   usedAt: Date;
-
-  @Prop()
-  canceledAt: Date;
 }
 
 export const TicketSchema = SchemaFactory.createForClass(Ticket);

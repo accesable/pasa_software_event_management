@@ -1,7 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type ParticipantDocument = Participant & Document;
+export type ParticipantDocument = Participant & Document & {
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 @Schema({ timestamps: true, versionKey: false })
 export class Participant {
@@ -13,7 +16,7 @@ export class Participant {
 
   @Prop({
     default: 'INVITED',
-    enum: ['INVITED', 'REGISTERED', 'CANCELLED', 'COMPLETED'],
+    enum: ['INVITED', 'REGISTERED', 'CANCELED', 'COMPLETED'],
   })
   status: string;
 

@@ -120,7 +120,7 @@ export class Event {
     revenue: { desc?: string; amount?: number; date?: Date; }[];
   };
 
-  @Prop({ default: 'scheduled', enum: ["scheduled", "ongoing", "canceled", "finished"] })
+  @Prop({ default: 'SCHEDULED', enum: ["SCHEDULED", "ONGOING", "CANCELED", "FINISHED"] })
   status: string;
 }
 

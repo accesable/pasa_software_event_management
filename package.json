@@ -9,7 +9,7 @@
     "build": "nest build",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "start": "nest start",
-    "start:all": "concurrently \"yarn run start:dev apigateway\" \"yarn run start:dev auth\" \"yarn run start:dev event-service\" \"yarn run start:dev notification-service\"",
+    "start:all": "concurrently \"yarn run start:dev apigateway\" \"yarn run start:dev auth\" \"yarn run start:dev event-service\" \"yarn run start:dev notification-service\" \"yarn run start:dev ticket-service\"",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/apps/apigateway/main",

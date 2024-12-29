@@ -9,6 +9,7 @@ import { EventServiceModule } from 'apps/apigateway/src/event-service/event-serv
 import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { NotificationModule } from 'apps/apigateway/src/notification/notification.module';
 import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
+import { TicketServiceModule } from 'apps/apigateway/src/ticket-service/ticket-service.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
     EventServiceModule,
     NotificationModule,
     RedisModule,
+    TicketServiceModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: 'apps/apigateway/.env.example',

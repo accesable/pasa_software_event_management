@@ -1,12 +1,15 @@
 import { Controller, Get } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
-import { AllTicketResponse, CreateParticipationRequest, Empty, ParticipationByIdRequest, ParticipationResponse, QueryParamsRequest, TicketByIdRequest, TicketResponse, TicketServiceProtoController, TicketServiceProtoControllerMethods, UpdateParticipationRequest, UpdateTicketRequest } from '@app/common/types/ticket';
+import { AllTicketResponse, CreateParticipationRequest, Empty, ParticipationByIdRequest, ParticipationResponse, QueryParamsRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, TicketServiceProtoController, TicketServiceProtoControllerMethods, UpdateParticipationRequest, UpdateTicketRequest } from '@app/common/types/ticket';
 import { Observable } from 'rxjs';
 
 @Controller()
 @TicketServiceProtoControllerMethods()
 export class TicketServiceController implements TicketServiceProtoController {
   constructor(private readonly ticketServiceService: TicketServiceService) {}
+  scanTicket(request: ScanTicketRequest){
+    return this.ticketServiceService.scanTicket(request.code);
+  }
   checkIn(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse {
     throw new Error('Method not implemented.');
   }
@@ -26,9 +29,10 @@ export class TicketServiceController implements TicketServiceProtoController {
     throw new Error('Method not implemented.');
   }
 
-  getAllTicket(request: QueryParamsRequest): Promise<AllTicketResponse> | Observable<AllTicketResponse> | AllTicketResponse {
-    throw new Error('Method not implemented.');
+  getAllTicket(request: QueryParamsRequest) {
+    return this.ticketServiceService.getAllTicket(request);
   }
+  
   getTicketById(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse {
     throw new Error('Method not implemented.');
   }
@@ -42,10 +46,5 @@ export class TicketServiceController implements TicketServiceProtoController {
 
   createParticipant(request: CreateParticipationRequest) {
     return this.ticketServiceService.createParticipant(request);
-  }
-
-  @Get()
-  getHello(): string {
-    return this.ticketServiceService.getHello();
   }
 }

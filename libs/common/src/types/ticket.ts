@@ -13,6 +13,10 @@ export const protobufPackage = "ticket";
 export interface Empty {
 }
 
+export interface ScanTicketRequest {
+  code: string;
+}
+
 export interface UpdateParticipationRequest {
   id: string;
   status?: string | undefined;
@@ -41,6 +45,7 @@ export interface CreateParticipationRequest {
 
 export interface ParticipationResponse {
   participation: Participation | undefined;
+  ticket: TicketType | undefined;
 }
 
 export interface Participation {
@@ -56,11 +61,11 @@ export interface Participation {
 }
 
 export interface TicketResponse {
-  ticket: Ticket | undefined;
+  ticket: TicketType | undefined;
 }
 
 export interface AllTicketResponse {
-  tickets: Ticket[];
+  tickets: TicketType[];
   meta: Meta | undefined;
 }
 
@@ -70,26 +75,24 @@ export interface TicketByIdRequest {
 
 export interface UpdateTicketRequest {
   id: string;
-  title?: string | undefined;
-  description?: string | undefined;
-  category?: string | undefined;
-  priority?: string | undefined;
   status?: string | undefined;
+  usedAt?: string | undefined;
 }
 
-export interface Ticket {
+export interface TicketType {
   id: string;
-  title: string;
-  description: string;
-  category: string;
-  priority: string;
+  participantId: string;
+  qrCodeUrl: string;
   status: string;
+  usedAt?: string | undefined;
 }
 
 export interface Meta {
-  total: number;
-  page: number;
-  limit: number;
+  page?: number | undefined;
+  limit?: number | undefined;
+  totalPages?: number | undefined;
+  totalItems: number;
+  count: number;
 }
 
 export const TICKET_PACKAGE_NAME = "ticket";
@@ -106,6 +109,8 @@ export interface TicketServiceProtoClient {
   checkIn(request: TicketByIdRequest): Observable<TicketResponse>;
 
   cancelTicket(request: TicketByIdRequest): Observable<TicketResponse>;
+
+  scanTicket(request: ScanTicketRequest): Observable<Empty>;
 
   createParticipant(request: CreateParticipationRequest): Observable<ParticipationResponse>;
 
@@ -134,6 +139,8 @@ export interface TicketServiceProtoController {
   checkIn(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse;
 
   cancelTicket(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse;
+
+  scanTicket(request: ScanTicketRequest): Promise<Empty> | Observable<Empty> | Empty;
 
   createParticipant(
     request: CreateParticipationRequest,
@@ -165,6 +172,7 @@ export function TicketServiceProtoControllerMethods() {
       "deleteTicket",
       "checkIn",
       "cancelTicket",
+      "scanTicket",
       "createParticipant",
       "getParticipant",
       "getParticipantById",
