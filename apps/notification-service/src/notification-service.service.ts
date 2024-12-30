@@ -13,7 +13,7 @@ export class NotificationServiceService {
     private readonly mailerService: MailerService,
     private configService: ConfigService,
     private jwtService: JwtService,
-    @Inject('NOTIFICATION_SERVICE') private readonly client: ClientProxy,
+    // @Inject('NOTIFICATION_SERVICE') private readonly client: ClientProxy,
   ) { }
 
   // onModuleInit() {

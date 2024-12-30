@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { EventService } from './event.service';
-import { AllEventResponse, AllGuestResponse, AllSpeakerResponse, CategoryByIdRequest, CategoryNameRequest, CategoryResponse, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, GuestResponse, QueryParamsRequest, SpeakerResponse, UpdateCategoryRequest, UpdateEventRequest } from '@app/common/types/event';
+import { AllEventResponse, AllGuestResponse, AllSpeakerResponse, CancelEventRequest, CategoryByIdRequest, CategoryNameRequest, CategoryResponse, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, Empty, EventByIdRequest, EventResponse, EventServiceController, EventServiceControllerMethods, GuestResponse, QueryParamsRequest, SpeakerResponse, UpdateCategoryRequest, UpdateEventRequest } from '@app/common/types/event';
 import { Observable } from 'rxjs';
 import { EventCategoryService } from 'apps/event-service/src/event-category/event-category.service';
 import { SpeakerService } from 'apps/event-service/src/speaker/speaker.service';
@@ -15,6 +15,10 @@ export class EventController implements EventServiceController {
     private readonly speakerService: SpeakerService,
     private readonly guestService: GuestService,
   ) { }
+
+  cancelEvent(request: CancelEventRequest) {
+    return this.eventService.cancelEvent(request);
+  }
 
   getAllGuest(request: Empty) {
     return this.guestService.getAllGuest();

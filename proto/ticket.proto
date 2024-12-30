@@ -9,7 +9,7 @@ service TicketServiceProto{
     rpc DeleteTicket(TicketByIdRequest) returns (TicketResponse);
     rpc CheckIn(TicketByIdRequest) returns (TicketResponse);
     rpc CancelTicket(TicketByIdRequest) returns (TicketResponse);
-    rpc ScanTicket(ScanTicketRequest) returns (Empty);
+    rpc ScanTicket(ScanTicketRequest) returns (ScanTicketResponse);
 
     rpc CreateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
     rpc GetParticipant(QueryParamsRequest) returns (ParticipationResponse); // filter eventId, userId, status
@@ -19,6 +19,10 @@ service TicketServiceProto{
 }
 
 message Empty{}
+
+message ScanTicketResponse{
+  string message = 1;
+}
 
 message ScanTicketRequest{
   string code = 1;

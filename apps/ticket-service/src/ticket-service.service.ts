@@ -21,7 +21,6 @@ export class TicketServiceService {
 
   async scanTicket(code: string) {
     try {
-      console.log('code123', code);
       const ticket = await this.ticketModel.findOne({ code });
       if (!ticket) {
         throw new RpcException({
@@ -30,7 +29,6 @@ export class TicketServiceService {
         });
       }
       if (ticket.status === 'ACTIVE') {
-        console.log('active');
         await this.participantModel.findByIdAndUpdate(ticket.participantId, { checkinAt: new Date() });
         ticket.status = 'USED';
         ticket.usedAt = new Date();
@@ -40,29 +38,40 @@ export class TicketServiceService {
         };
       }
       if (ticket.status === 'USED') {
-        console.log('used');
         const participant = await this.participantModel.findById(ticket.participantId);
-        console.log('participant', participant.checkinAt);
-        if (participant.checkinAt === null) {
-          throw new RpcException({
-            message: 'Ticket has not been checked in yet',
-            code: HttpStatus.BAD_REQUEST,
-          });
+        if (!participant.checkoutAt) {
+          participant.checkoutAt = new Date();
+          await participant.save();
+          return {
+            message: 'checked out successfully',
+          };
         }
-        participant.checkoutAt = new Date();
-        await participant.save();
-        return {
-          message: 'checked out successfully',
-        };
-      }
-      if (ticket.status === 'CANCELLED') {
         throw new RpcException({
-          message: 'Ticket has been cancelled',
+          message: 'Ticket has been used',
+          code: HttpStatus.BAD_REQUEST,
+        });
+      }
+      if (ticket.status === 'CANCELED') {
+        throw new RpcException({
+          message: 'Ticket has been canceled',
           code: HttpStatus.BAD_REQUEST,
         });
       }
     } catch (error) {
       throw handleRpcException(error, 'Failed to scan ticket');
+    }
+  }
+
+  async cancelEvent(eventId: string) {
+    try {
+      const participants = await this.participantModel.find({ eventId });
+      participants.forEach(async (participant) => {
+        this.ticketModel.findOneAndUpdate({ participantId: participant._id }, { status: 'CANCELED' });
+        participant.updateOne({ status: 'CANCELED' });
+        console.log('participant', participant);
+      });
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to cancel event');
     }
   }
 

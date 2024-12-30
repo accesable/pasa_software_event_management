@@ -18,7 +18,7 @@ export class Ticket {
   @Prop()
   qrCodeUrl: string;
 
-  @Prop({ default: 'ACTIVE', enum: ['ACTIVE', 'CANCELLED', 'USED'] })
+  @Prop({ default: 'ACTIVE', enum: ['ACTIVE', 'CANCELED', 'USED'] })
   status: string;
 
   @Prop()

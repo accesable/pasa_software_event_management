@@ -107,6 +107,13 @@ export class EventServiceService implements OnModuleInit {
     }
   }
 
+  cancelEvent(id: string, userId: string) {
+    try {
+      return this.eventService.cancelEvent({ id, userId }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
 
   async createCategory(createEventCategoryDto: CreateEventCategoryDto) {
     try {

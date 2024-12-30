@@ -16,9 +16,15 @@ service EventService{
   rpc GetAllSpeaker(Empty) returns (AllSpeakerResponse);
   rpc getAllGuest(Empty) returns (AllGuestResponse);
   rpc CreateGuest(CreateGuestRequest) returns (GuestResponse);
+  rpc CancelEvent(CancelEventRequest) returns (EventResponse);
 }
 
 message Empty{}
+
+message CancelEventRequest{
+  string id = 1;
+  string userId = 2;
+}
 
 message GuestResponse{
   Guest guest = 1;

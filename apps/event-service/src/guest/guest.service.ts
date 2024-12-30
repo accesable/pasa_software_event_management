@@ -10,7 +10,7 @@ export class GuestService {
     constructor(
         @InjectModel(Guest.name) private speakerModel: Model<GuestDocument>
     ) {}
-
+    
     async getAllGuest() {
         try {
             const guests = await this.speakerModel.find();

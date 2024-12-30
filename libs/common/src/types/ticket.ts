@@ -13,6 +13,10 @@ export const protobufPackage = "ticket";
 export interface Empty {
 }
 
+export interface ScanTicketResponse {
+  message: string;
+}
+
 export interface ScanTicketRequest {
   code: string;
 }
@@ -110,7 +114,7 @@ export interface TicketServiceProtoClient {
 
   cancelTicket(request: TicketByIdRequest): Observable<TicketResponse>;
 
-  scanTicket(request: ScanTicketRequest): Observable<Empty>;
+  scanTicket(request: ScanTicketRequest): Observable<ScanTicketResponse>;
 
   createParticipant(request: CreateParticipationRequest): Observable<ParticipationResponse>;
 
@@ -140,7 +144,9 @@ export interface TicketServiceProtoController {
 
   cancelTicket(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse;
 
-  scanTicket(request: ScanTicketRequest): Promise<Empty> | Observable<Empty> | Empty;
+  scanTicket(
+    request: ScanTicketRequest,
+  ): Promise<ScanTicketResponse> | Observable<ScanTicketResponse> | ScanTicketResponse;
 
   createParticipant(
     request: CreateParticipationRequest,

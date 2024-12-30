@@ -2,11 +2,18 @@ import { Controller, Get } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
 import { AllTicketResponse, CreateParticipationRequest, Empty, ParticipationByIdRequest, ParticipationResponse, QueryParamsRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, TicketServiceProtoController, TicketServiceProtoControllerMethods, UpdateParticipationRequest, UpdateTicketRequest } from '@app/common/types/ticket';
 import { Observable } from 'rxjs';
+import { EventPattern } from '@nestjs/microservices';
 
 @Controller()
 @TicketServiceProtoControllerMethods()
 export class TicketServiceController implements TicketServiceProtoController {
   constructor(private readonly ticketServiceService: TicketServiceService) {}
+  
+  @EventPattern('cancelEvent')
+  cancelEvent(request: any) {
+    return this.ticketServiceService.cancelEvent(request);
+  }
+
   scanTicket(request: ScanTicketRequest){
     return this.ticketServiceService.scanTicket(request.code);
   }

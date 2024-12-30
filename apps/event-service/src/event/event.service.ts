@@ -1,7 +1,7 @@
 import { handleRpcException } from '@app/common/filters/handleException';
-import { CreateEventRequest, EventType, UpdateEventRequest } from '@app/common/types/event';
-import { HttpStatus, Injectable } from '@nestjs/common';
-import { RpcException } from '@nestjs/microservices';
+import { CancelEventRequest, CreateEventRequest, EventType, UpdateEventRequest } from '@app/common/types/event';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
 import { CategoryDocument, EventCategory } from 'apps/event-service/src/event-category/schemas/event-category.schema';
@@ -13,7 +13,26 @@ export class EventService {
     constructor(
         @InjectModel(Event.name) private eventModel: Model<EventDocument>,
         @InjectModel(EventCategory.name) private categoryModel: Model<CategoryDocument>,
+        @Inject('TICKET_SERVICE') private readonly client: ClientProxy
     ) { }
+
+    async cancelEvent(request: CancelEventRequest){
+        try {
+            const event = await this.eventModel.findById(request.id);
+            if(event.createdBy.id.toString() !== request.userId){
+                throw new RpcException({
+                    message: 'You are not authorized to cancel this event',
+                    code: HttpStatus.FORBIDDEN,
+                });
+            }
+            event.status = 'CANCELED';
+            await event.save();
+            this.client.emit('cancelEvent', { eventId: request.id });
+            return { event: this.transformEvent(event) };
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to cancel event');
+        }
+    }
 
     async getAllEvent(request: { query: { [key: string]: string } }) {
         try {

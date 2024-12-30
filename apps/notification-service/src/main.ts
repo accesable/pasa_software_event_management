@@ -29,6 +29,6 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
 
-  console.log('Service B is listening on gRPC and RabbitMQ...');
+  console.log('Service notification is listening on gRPC and RabbitMQ...');
 }
 bootstrap();

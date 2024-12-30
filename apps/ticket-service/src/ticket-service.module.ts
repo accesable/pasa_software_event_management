@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { validateEnv } from './config/env.validation';
 import { Ticket, TicketSchema } from 'apps/ticket-service/src/schemas/ticket';
 import { Participant, ParticipantSchema } from 'apps/ticket-service/src/schemas/participant';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
@@ -26,6 +27,18 @@ import { Participant, ParticipantSchema } from 'apps/ticket-service/src/schemas/
     MongooseModule.forFeature([
       { name: Ticket.name, schema: TicketSchema },
       { name: Participant.name, schema: ParticipantSchema },
+    ]),
+
+    ClientsModule.register([
+      {
+        name: 'TICKET_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://admin:1234@localhost:5672'],
+          queue: 'tickets_queue',
+          queueOptions: { durable: true },
+        },
+      },
     ]),
   ],
   controllers: [TicketServiceController],

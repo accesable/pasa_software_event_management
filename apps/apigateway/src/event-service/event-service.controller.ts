@@ -48,6 +48,13 @@ export class EventServiceController {
     return this.eventServiceService.createEvent(createEventDto, {id: user.id, email: user.email});
   }
 
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Cancel event success')
+  cancelEvent(@Param('id') id: string, @User() user: DecodeAccessResponse) {
+    return this.eventServiceService.cancelEvent(id, user.id);
+  }
+
   // @Get()
   // findAll() {
   //   return this.eventServiceService.findAll();

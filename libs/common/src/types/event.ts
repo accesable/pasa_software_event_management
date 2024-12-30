@@ -13,6 +13,11 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+export interface CancelEventRequest {
+  id: string;
+  userId: string;
+}
+
 export interface GuestResponse {
   guest: Guest | undefined;
 }
@@ -289,6 +294,8 @@ export interface EventServiceClient {
   getAllGuest(request: Empty): Observable<AllGuestResponse>;
 
   createGuest(request: CreateGuestRequest): Observable<GuestResponse>;
+
+  cancelEvent(request: CancelEventRequest): Observable<EventResponse>;
 }
 
 export interface EventServiceController {
@@ -327,6 +334,8 @@ export interface EventServiceController {
   getAllGuest(request: Empty): Promise<AllGuestResponse> | Observable<AllGuestResponse> | AllGuestResponse;
 
   createGuest(request: CreateGuestRequest): Promise<GuestResponse> | Observable<GuestResponse> | GuestResponse;
+
+  cancelEvent(request: CancelEventRequest): Promise<EventResponse> | Observable<EventResponse> | EventResponse;
 }
 
 export function EventServiceControllerMethods() {
@@ -345,6 +354,7 @@ export function EventServiceControllerMethods() {
       "getAllSpeaker",
       "getAllGuest",
       "createGuest",
+      "cancelEvent",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
