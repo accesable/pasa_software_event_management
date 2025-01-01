@@ -6,10 +6,12 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TICKET_SERVICE } from 'apps/apigateway/src/constants/service.constant';
 import { TICKET_PACKAGE_NAME } from '@app/common/types/ticket';
 import { join } from 'path';
+import { EventServiceModule } from 'apps/apigateway/src/event-service/event-service.module';
 
 @Module({
   imports: [
     RedisCacheModule,
+    EventServiceModule,
     ClientsModule.register([
       {
         name: TICKET_SERVICE,

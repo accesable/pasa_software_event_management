@@ -7,6 +7,9 @@ import { validateEnv } from './config/env.validation';
 import { Ticket, TicketSchema } from 'apps/ticket-service/src/schemas/ticket';
 import { Participant, ParticipantSchema } from 'apps/ticket-service/src/schemas/participant';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { EVENT_SERVICE } from 'apps/apigateway/src/constants/service.constant';
+import { EVENT_PACKAGE_NAME } from '@app/common/types/event';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -39,6 +42,15 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
           queueOptions: { durable: true },
         },
       },
+      {
+        name: EVENT_SERVICE,
+        transport: Transport.GRPC,
+        options: {
+          package: EVENT_PACKAGE_NAME,
+          protoPath: join(__dirname, '../event.proto'),
+          url: '0.0.0.0:50052'
+        },
+      }
     ]),
   ],
   controllers: [TicketServiceController],

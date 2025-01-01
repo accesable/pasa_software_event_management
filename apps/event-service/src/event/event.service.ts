@@ -16,15 +16,21 @@ export class EventService {
         @Inject('TICKET_SERVICE') private readonly client: ClientProxy
     ) { }
 
-    async cancelEvent(request: CancelEventRequest){
+    async cancelEvent(request: CancelEventRequest) {
         try {
             const event = await this.eventModel.findById(request.id);
-            if(event.createdBy.id.toString() !== request.userId){
-                throw new RpcException({
-                    message: 'You are not authorized to cancel this event',
-                    code: HttpStatus.FORBIDDEN,
-                });
-            }
+            // if (event.status === 'CANCELED' || event.status === 'FINISHED') {
+            //     throw new RpcException({
+            //         message: 'Event has been canceled or finished',
+            //         code: HttpStatus.BAD_REQUEST,
+            //     });
+            // }
+            // if (event.createdBy.id.toString() !== request.userId) {
+            //     throw new RpcException({
+            //         message: 'You are not authorized to cancel this event',
+            //         code: HttpStatus.FORBIDDEN,
+            //     });
+            // }
             event.status = 'CANCELED';
             await event.save();
             this.client.emit('cancelEvent', { eventId: request.id });

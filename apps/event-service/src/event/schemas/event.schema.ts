@@ -120,6 +120,24 @@ export class Event {
     revenue: { desc?: string; amount?: number; date?: Date; }[];
   };
 
+  @Prop({
+    type: [
+      {
+        user: { type: Types.ObjectId, ref: 'User' },
+        status: {
+          type: String,
+          enum: ['pending', 'confirmed', 'rejected'],
+          default: 'pending',
+        },
+      },
+    ],
+    default: [],
+  })
+  invitedUsers: {
+    user: Types.ObjectId;
+    status: 'pending' | 'confirmed' | 'rejected';
+  }[];
+
   @Prop({ default: 'SCHEDULED', enum: ["SCHEDULED", "ONGOING", "CANCELED", "FINISHED"] })
   status: string;
 }

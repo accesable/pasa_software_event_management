@@ -10,8 +10,8 @@ export class TicketServiceController implements TicketServiceProtoController {
   constructor(private readonly ticketServiceService: TicketServiceService) {}
   
   @EventPattern('cancelEvent')
-  cancelEvent(request: any) {
-    return this.ticketServiceService.cancelEvent(request);
+  cancelEvent(request: { eventId: string }) {
+    return this.ticketServiceService.cancelEvent(request.eventId);
   }
 
   scanTicket(request: ScanTicketRequest){

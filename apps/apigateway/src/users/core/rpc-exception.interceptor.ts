@@ -26,8 +26,8 @@ export class RpcExceptionInterceptor implements NestInterceptor {
           if (typeof errorResponse === 'object' && errorResponse !== null) {
             const { message, code, details } = errorResponse;
             const finalMessage = message || 'An error occurred';
-            const finalDetails = details || 'No additional information available';
-
+            const finalDetails = details || finalMessage.split(':')[0].trim() || 'No additional information available';
+            
             if (code !== 500) {
               throw new HttpException({
                 statusCode: code,

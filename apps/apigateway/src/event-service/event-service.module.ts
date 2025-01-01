@@ -38,5 +38,6 @@ import { RedisCacheModule } from 'apps/apigateway/src/redis/redis.module';
   ],
   controllers: [EventServiceController, CategoryServiceController, SpeakerServiceController, GuestServiceController],
   providers: [EventServiceService, JwtStrategy, RolesGuard],
+  exports: [EventServiceService],
 })
 export class EventServiceModule { }

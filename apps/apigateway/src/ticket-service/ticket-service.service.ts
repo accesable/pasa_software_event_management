@@ -1,5 +1,6 @@
+import { handleRpcException } from '@app/common/filters/handleException';
 import { CreateParticipationRequest, TICKET_SERVICE_PROTO_SERVICE_NAME, TicketServiceProtoClient } from '@app/common/types/ticket';
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { TICKET_SERVICE } from 'apps/apigateway/src/constants/service.constant';
 import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
@@ -23,6 +24,20 @@ export class TicketServiceService {
             return await this.ticketService.createParticipant(request).toPromise();
         } catch (error) {
             throw new RpcException(error);
+        }
+    }
+
+    async checkEvent(event: any) {
+        try {
+            if (event.status === 'CANCELED') {
+                console.log('event', event);
+                throw new RpcException({
+                    message: 'Event has been canceled',
+                    code: HttpStatus.BAD_REQUEST,
+                });
+            }
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to check event');
         }
     }
 

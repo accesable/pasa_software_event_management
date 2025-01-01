@@ -1,23 +1,32 @@
 import { handleRpcException } from '@app/common/filters/handleException';
+import { EVENT_SERVICE_NAME, EventServiceClient } from '@app/common/types/event';
 import { CreateParticipationRequest, Participation, TicketType } from '@app/common/types/ticket';
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RpcException } from '@nestjs/microservices';
+import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
+import { EVENT_SERVICE } from 'apps/apigateway/src/constants/service.constant';
 import { Participant, ParticipantDocument } from 'apps/ticket-service/src/schemas/participant';
 import { Ticket, TicketDocument } from 'apps/ticket-service/src/schemas/ticket';
 import { Model } from 'mongoose';
 import * as QRCode from 'qrcode';
 
 @Injectable()
-export class TicketServiceService {
+export class TicketServiceService implements OnModuleInit {
+  private eventService: EventServiceClient;
+
   constructor(
+    @Inject(EVENT_SERVICE) private client: ClientGrpc,
     @InjectModel(Ticket.name) private ticketModel: Model<TicketDocument>,
     @InjectModel(Participant.name) private participantModel: Model<ParticipantDocument>,
     private configService: ConfigService,
 
   ) { }
+
+  onModuleInit() {
+    this.eventService = this.client.getService<EventServiceClient>(EVENT_SERVICE_NAME);
+  }
 
   async scanTicket(code: string) {
     try {
@@ -67,8 +76,8 @@ export class TicketServiceService {
       const participants = await this.participantModel.find({ eventId });
       participants.forEach(async (participant) => {
         this.ticketModel.findOneAndUpdate({ participantId: participant._id }, { status: 'CANCELED' });
-        participant.updateOne({ status: 'CANCELED' });
-        console.log('participant', participant);
+        participant.status = 'CANCELED';
+        await participant.save();
       });
     } catch (error) {
       throw handleRpcException(error, 'Failed to cancel event');
@@ -91,10 +100,17 @@ export class TicketServiceService {
   async createParticipant(request: CreateParticipationRequest) {
     try {
       const { eventId, userId, sessionIds } = request;
+      const event = await this.eventService.getEventById({ id: eventId }).toPromise();
+      if (event.event.status === 'CANCELED') {
+        throw new RpcException({
+          message: 'Event has been canceled',
+          code: HttpStatus.BAD_REQUEST,
+        });
+      }
       const isExist = await this.participantModel.findOne({ eventId, userId });
       if (isExist) {
         throw new RpcException({
-          message: 'Participant already exist',
+          message: 'Ticket already exist',
           code: HttpStatus.BAD_REQUEST,
         });
       }
