@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { EventService } from './event.service';
-import { AllEventResponse, CancelEventRequest, CategoryByIdRequest, CategoryNameRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, Empty, EventByIdRequest, EventResponse, EventServiceController, EventServiceControllerMethods, GuestResponse, QueryParamsRequest, SpeakerResponse, UpdateCategoryRequest, UpdateEventRequest } from '@app/common/types/event';
+import { AllEventResponse, CancelEventRequest, CategoryByIdRequest, CategoryNameRequest, CheckOwnerShipRequest, CheckOwnerShipResponse, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, DeleteFilesEventRequest, Empty, EventByIdRequest, EventResponse, EventServiceController, EventServiceControllerMethods, GuestResponse, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, SpeakerResponse, UpdateCategoryRequest, UpdateEventDocumentRequest, UpdateEventDocumentResponse, UpdateEventRequest } from '@app/common/types/event';
 import { Observable } from 'rxjs';
 import { EventCategoryService } from 'apps/event-service/src/event-category/event-category.service';
 import { SpeakerService } from 'apps/event-service/src/speaker/speaker.service';
@@ -16,6 +16,20 @@ export class EventController implements EventServiceController {
     private readonly guestService: GuestService,
   ) { }
 
+  deleteFilesEvent(request: DeleteFilesEventRequest){
+    return this.eventService.deleteFilesEvent(request);
+  }
+
+  async sendEventInvites(
+    request: SendEventInvitesRequest,
+  ): Promise<SendEventInvitesResponse> {
+    return this.eventService.sendEventInvites(request);
+  }
+
+  checkOwnerShip(request: CheckOwnerShipRequest) {
+    return this.eventService.checkOwnership(request.eventId, request.userId);
+  }
+
   cancelEvent(request: CancelEventRequest) {
     return this.eventService.cancelEvent(request);
   }
@@ -23,7 +37,7 @@ export class EventController implements EventServiceController {
   getAllGuest(request: Empty) {
     return this.guestService.getAllGuest();
   }
-  
+
   createGuest(request: CreateGuestRequest) {
     return this.guestService.createGuest(request);
   }
@@ -34,7 +48,7 @@ export class EventController implements EventServiceController {
   getAllSpeaker(request: Empty) {
     return this.speakerService.getAllSpeaker();
   }
-  
+
   getAllEventByCategoryName(request: CategoryNameRequest): Promise<AllEventResponse> | Observable<AllEventResponse> | AllEventResponse {
     throw new Error('Method not implemented.');
   }
@@ -49,9 +63,9 @@ export class EventController implements EventServiceController {
   }
 
   getEventById(request: EventByIdRequest) {
-    return this.eventService.getEventById(request.id);
+    return this.eventService.getEventById(request);
   }
-  
+
   async createEvent(request: CreateEventRequest) {
     const isExistCategory = await this.categoryService.getCategoryById(request.categoryId);
     return this.eventService.createEvent(request, isExistCategory);

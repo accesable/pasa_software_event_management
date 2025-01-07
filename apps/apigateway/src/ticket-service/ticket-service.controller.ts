@@ -18,7 +18,6 @@ export class TicketServiceController {
   @Get('scan')
   @ResponseMessage('Scan ticket success')
   scanTicket(@Query('code') code: string) {
-    console.log('code', code);
     return this.ticketServiceService.scanTicket(code);
   }
 }

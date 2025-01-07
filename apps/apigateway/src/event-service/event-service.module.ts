@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { EventServiceService } from './event-service.service';
 import { CategoryServiceController, EventServiceController, GuestServiceController, SpeakerServiceController } from './event-service.controller';
 import { JwtModule } from '@nestjs/jwt';
@@ -11,11 +11,15 @@ import { join } from 'path';
 import { EVENT_PACKAGE_NAME } from '@app/common/types/event';
 import { UsersModule } from 'apps/apigateway/src/users/users.module';
 import { RedisCacheModule } from 'apps/apigateway/src/redis/redis.module';
+import { FileServiceModule } from 'apps/apigateway/src/file-service/file-service.module';
+import { AppModule } from 'apps/apigateway/src/app.module';
 
 @Module({
   imports: [
     UsersModule,
     RedisCacheModule,
+    FileServiceModule,
+    forwardRef(() => AppModule),
     ClientsModule.register([
       {
         name: EVENT_SERVICE,

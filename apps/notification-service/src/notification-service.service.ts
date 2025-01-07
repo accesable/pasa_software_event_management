@@ -20,7 +20,11 @@ export class NotificationServiceService {
   //   this.client.connect();
   // }
 
-  async handleUserCreated(data: any) {
+  sendInvites(emails: [string], event: any) {
+    
+  }
+
+  handleUserCreated(data: any) {
     try {
       this.sendMail(data.email, EmailTemplates.WELCOME_EMAIL, 'Welcome to PASA', { name: data.name });
     } catch (error) {

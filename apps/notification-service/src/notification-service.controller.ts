@@ -7,17 +7,22 @@ import { NotificationServiceService } from 'apps/notification-service/src/notifi
 @NotificationServiceProtoControllerMethods()
 export class NotificationServiceController implements NotificationServiceProtoController {
   constructor(
-    private readonly notificationServiceService: NotificationServiceService,
+    // private readonly notificationServiceService: NotificationServiceService,
     private readonly notificationService: NotificationServiceService
   ) { }
 
   @EventPattern('user_registered')
   async handleUserCreatedEvent(data: any) {
-    await this.notificationService.handleUserCreated(data);
+    this.notificationService.handleUserCreated(data);
+  }
+
+  @EventPattern('sendInvites')
+  async sendInvites(emails: [string], event: any) {
+    this.notificationService.sendInvites(emails, event);
   }
 
   async forgotPassword(request: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
-    const res = await this.notificationServiceService.sendMailForgotPassword(request);
+    const res = await this.notificationService.sendMailForgotPassword(request);
 
     if (res.status === 'error') {
       return { status: 'error', message: res.message };

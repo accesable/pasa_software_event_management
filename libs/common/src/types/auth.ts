@@ -41,15 +41,11 @@ export interface FindByIdRequest {
   id: string;
 }
 
-export interface UpgradeUserRequest {
-  id: string;
-  role: string;
-}
-
 export interface UpdateAvatarRequest {
   avatar: string;
   oldAvatarId: string;
   id: string;
+  previousAvatarId: string;
 }
 
 export interface GoogleAuthRequest {
@@ -161,8 +157,6 @@ export interface UsersServiceClient {
 
   updateAvatar(request: UpdateAvatarRequest): Observable<ProfileRespone>;
 
-  upgradeUser(request: UpgradeUserRequest): Observable<ProfileRespone>;
-
   changePassword(request: ChangePasswordRequest): Observable<Empty>;
 }
 
@@ -193,8 +187,6 @@ export interface UsersServiceController {
 
   updateAvatar(request: UpdateAvatarRequest): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
 
-  upgradeUser(request: UpgradeUserRequest): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
-
   changePassword(request: ChangePasswordRequest): Promise<Empty> | Observable<Empty> | Empty;
 }
 
@@ -211,7 +203,6 @@ export function UsersServiceControllerMethods() {
       "handleGoogleAuth",
       "updateProfile",
       "updateAvatar",
-      "upgradeUser",
       "changePassword",
     ];
     for (const method of grpcMethods) {

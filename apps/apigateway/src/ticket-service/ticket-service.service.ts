@@ -30,7 +30,6 @@ export class TicketServiceService {
     async checkEvent(event: any) {
         try {
             if (event.status === 'CANCELED') {
-                console.log('event', event);
                 throw new RpcException({
                     message: 'Event has been canceled',
                     code: HttpStatus.BAD_REQUEST,

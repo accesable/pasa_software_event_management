@@ -13,7 +13,6 @@ service UsersService{
     rpc HandleGoogleAuth(GoogleAuthRequest) returns (GeneralResponse);
     rpc UpdateProfile(UpdateProfileRequest) returns (ProfileRespone);
     rpc UpdateAvatar(UpdateAvatarRequest) returns (ProfileRespone);
-    rpc UpgradeUser(UpgradeUserRequest) returns (ProfileRespone);
     rpc ChangePassword(ChangePasswordRequest) returns (Empty);
 }
 
@@ -42,15 +41,11 @@ message FindByIdRequest{
     string id = 1;
 }
 
-message UpgradeUserRequest{
-    string id = 1;
-    string role = 2;
-}
-
 message UpdateAvatarRequest{
     string avatar = 1;
     string oldAvatarId = 2;
     string id = 3;
+    string previousAvatarId = 4;
 }
 
 message GoogleAuthRequest{

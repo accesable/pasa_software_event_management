@@ -1,4 +1,4 @@
-import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, ProfileRespone, UpdateAvatarRequest, UpdateProfileRequest, UpgradeUserRequest, UserResponse } from './../../../../libs/common/src/types/auth';
+import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, ProfileRespone, UpdateAvatarRequest, UpdateProfileRequest, UserResponse } from './../../../../libs/common/src/types/auth';
 import { Injectable, HttpStatus, Inject } from '@nestjs/common';
 import { RegisterDto, } from '../../../apigateway/src/users/dto/register';
 import * as bcrypt from 'bcrypt';
@@ -19,7 +19,8 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
     private configService: ConfigService,
-    @Inject('NOTIFICATION_SERVICE') private readonly client: ClientProxy
+    @Inject('NOTIFICATION_SERVICE') private readonly rabbitNotification: ClientProxy,
+    @Inject('FILE_SERVICE') private readonly rabbitFile: ClientProxy
   ) { }
 
   // onModuleInit() {
@@ -149,6 +150,7 @@ export class UsersService {
 
   async updateAvatar(data: UpdateAvatarRequest) {
     try {
+      this.rabbitFile.emit('delete_avatar', { publicId: data.previousAvatarId, entityId: data.id });
       const user = await this.userModel.findByIdAndUpdate(data.id, { avatar: data.avatar, oldAvatarId: data.oldAvatarId }, { new: true });
       const userResponse = this.transformUserDataResponse(user);
       return { user: userResponse };
@@ -270,16 +272,6 @@ export class UsersService {
       };
     } catch (error) {
       throw handleRpcException(error, 'Failed to get all user');
-    }
-  }
-
-  async upgradeUser(request: UpgradeUserRequest) {
-    try {
-      const user = await this.userModel.findByIdAndUpdate(request.id, { role: request.role }, { new: true });
-      const userResponse = this.transformUserDataResponse(user);
-      return { user: userResponse };
-    } catch (error) {
-      throw handleRpcException(error, 'Error upgrading user');
     }
   }
 

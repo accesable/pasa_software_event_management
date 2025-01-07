@@ -1,20 +1,19 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformInterceptor } from 'apps/auth/src/core/transform.interceptor';
 import { validateEnv } from 'apps/apigateway/src/config/env.validation';
 import { UsersModule } from './users/users.module';
-import { FilesModule } from 'apps/apigateway/src/files/files.module';
 import { EventServiceModule } from 'apps/apigateway/src/event-service/event-service.module';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { NotificationModule } from 'apps/apigateway/src/notification/notification.module';
 import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
 import { TicketServiceModule } from 'apps/apigateway/src/ticket-service/ticket-service.module';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
     UsersModule,
-    FilesModule,
     EventServiceModule,
     NotificationModule,
     RedisModule,
@@ -36,6 +35,19 @@ import { TicketServiceModule } from 'apps/apigateway/src/ticket-service/ticket-s
       }),
       inject: [ConfigService],
     }),
+
+    ClientsModule.register([
+      {
+        name: 'FILE_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://admin:1234@localhost:5672'],
+          queue: 'files_queue',
+          queueOptions: { durable: true },
+        },
+      },
+    ]),
+    forwardRef(() => EventServiceModule),
   ],
   controllers: [],
   providers: [
@@ -45,6 +57,6 @@ import { TicketServiceModule } from 'apps/apigateway/src/ticket-service/ticket-s
     },
     RedisCacheService,
   ],
-  exports: [RedisCacheService],
+  exports: [RedisCacheService, ClientsModule],
 })
 export class AppModule { }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, HttpCode, Req, Res, Headers, UnauthorizedException, UseGuards, HttpStatus, Put, Patch, UseInterceptors, BadRequestException, UploadedFile, Param, Query, } from '@nestjs/common';
+import { Controller, Get, Post, Body, HttpCode, Req, Res, Headers, UnauthorizedException, UseGuards, HttpStatus, Put, Patch, UseInterceptors, BadRequestException, UploadedFile, Param, Query, ParseFilePipe, FileTypeValidator, MaxFileSizeValidator, } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
@@ -9,10 +9,8 @@ import { ResponseMessage, Roles, User } from 'apps/apigateway/src/decorators/pub
 import { JwtAuthGuard } from 'apps/apigateway/src/guards/jwt-auth.guard';
 import { DecodeAccessResponse, UpdateAvatarRequest, UserResponse } from '@app/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { FilesService } from 'apps/apigateway/src/files/files.service';
-import { RolesGuard } from 'apps/apigateway/src/guards/roles.guard';
 import { ChangePasswordDto } from 'apps/apigateway/src/users/dto/change-password';
-// import { UpgradeDto } from 'apps/apigateway/src/users/dto/upgrade';
+import { FileServiceService } from 'apps/apigateway/src/file-service/file-service.service';
 
 @Controller('auth')
 export class UsersController {
@@ -92,8 +90,56 @@ export class UsersController {
 export class GeneralUsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly filesService: FilesService,
+    private readonly filesService: FileServiceService,
   ) { }
+
+  @Post('upload/avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  @ResponseMessage('Avatar updated successfully')
+  async uploadAvatar(
+    @User() user: DecodeAccessResponse,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }), // 2MB limit
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    file: Express.Multer.File,
+  ): Promise<any> {
+    try {
+      const uploadedAvatar = await this.filesService.uploadFiles(
+        [file],
+        {
+          entityId: user.id,
+          entityType: 'user',
+          type: 'image',
+          field: 'avatar',
+        },
+      );
+
+      if (uploadedAvatar.length === 0) {
+        throw new BadRequestException('File upload failed');
+      }
+
+      const { path: avatarUrl, publicId } = uploadedAvatar[0];
+
+      const updateAvatarRequest: UpdateAvatarRequest = {
+        id: user.id,
+        avatar: avatarUrl,
+        oldAvatarId: publicId,
+        previousAvatarId: user.oldAvatarId,
+      };
+      
+      return this.usersService.updateAvatar(updateAvatarRequest);
+    } catch (error) {
+      console.error('Failed to upload avatar:', error);
+      throw new BadRequestException(error.message);
+    }
+  }
 
   @Get()
   @UseGuards(JwtAuthGuard)
@@ -118,37 +164,5 @@ export class GeneralUsersController {
     }
     const accessToken = authHeader.split(' ')[1];
     return this.usersService.updateProfile(accessToken, profileDto);
-  }
-
-  // @Patch('upgrade/:id')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles('admin')
-  // @ResponseMessage('User upgraded successfully')
-  // async upgradeUser(@Param('id') id: string, @Body() body: UpgradeDto) {
-  //   return this.usersService.upgradeUser({ id, role: body.role });
-  // }
-
-  @Post('upload/avatar')
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('file', {
-    limits: {
-      fileSize: 5 * 1024 * 1024, // giới hạn 5MB
-    },
-    fileFilter: (req, file, callback) => {
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-      if (!allowedTypes.includes(file.mimetype)) {
-        return callback(new BadRequestException('Only [jpeg, png, jpg] types are allowed'), false);
-      }
-      callback(null, true);
-    }
-  }))
-  async uploadImage(@UploadedFile() file: Express.Multer.File, @User() user: DecodeAccessResponse) {
-    const data = await this.filesService.uploadFile(file, user);
-    const request: UpdateAvatarRequest = {
-      avatar: data.secure_url,
-      oldAvatarId: data.public_id,
-      id: user.id,
-    }
-    return this.usersService.updateAvatar(request)
   }
 }

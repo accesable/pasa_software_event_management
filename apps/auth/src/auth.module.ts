@@ -32,15 +32,15 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
           queueOptions: { durable: true },
         },
       },
-      // {
-      //   name: 'PAYMENT_SERVICE',
-      //   transport: Transport.RMQ,
-      //   options: {
-      //     urls: ['amqp://admin:1234@localhost:5672'],
-      //     queue: 'payments_queue',
-      //     queueOptions: { durable: true },
-      //   },
-      // },
+      {
+        name: 'FILE_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://admin:1234@localhost:5672'],
+          queue: 'files_queue',
+          queueOptions: { durable: true },
+        },
+      },
     ]),
     forwardRef(() => UsersModule),
   ],

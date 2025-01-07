@@ -13,9 +13,63 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+export interface DeleteFilesEventRequest {
+  fileIds: string[];
+  eventId: string;
+  fields: string[];
+}
+
+export interface SendEventInvitesRequest {
+  eventId: string;
+  emails: string[];
+}
+
+export interface SendEventInvitesResponse {
+  message: string;
+  success: boolean;
+}
+
+export interface UpdateEventVideoIntroRequest {
+  id: string;
+  videoUrl: string;
+}
+
+export interface CheckOwnerShipRequest {
+  eventId: string;
+  userId: string;
+}
+
+export interface CheckOwnerShipResponse {
+  isOwner: boolean;
+}
+
+export interface UpdateEventFilesRequest {
+  id: string;
+  field: string;
+  fileIds: string[];
+  videoUrl: string;
+  deletedFiles: string[];
+}
+
+export interface UpdateEventDocumentRequest {
+  id: string;
+  index: number;
+  document: string;
+  userId: string;
+}
+
+export interface UpdateEventDocumentResponse {
+  message: string;
+  event: EventType | undefined;
+}
+
 export interface CancelEventRequest {
   id: string;
   userId: string;
+}
+
+export interface CancelEventResponse {
+  message: string;
 }
 
 export interface GuestResponse {
@@ -144,11 +198,9 @@ export interface CreateEventRequest {
   location: string;
   guestIds: string[];
   categoryId: string;
-  isFree: boolean;
-  price: number;
   maxParticipants: number;
-  banner: string;
-  videoIntro: string;
+  banner?: string | undefined;
+  videoIntro?: string | undefined;
   documents: string[];
   createdBy: CreatedBy | undefined;
   sponsors: SponsorType[];
@@ -165,8 +217,6 @@ export interface UpdateEventRequest {
   location?: string | undefined;
   guestIds: string[];
   categoryId?: string | undefined;
-  isFree?: boolean | undefined;
-  price?: number | undefined;
   maxParticipants?: number | undefined;
   banner?: string | undefined;
   videoIntro?: string | undefined;
@@ -175,6 +225,7 @@ export interface UpdateEventRequest {
   sponsors: SponsorType[];
   budget?: BudgetType | undefined;
   schedule: ScheduleWithoutId[];
+  invitedUsers: InvitedUser[];
 }
 
 export interface EventType {
@@ -187,8 +238,6 @@ export interface EventType {
   schedule: ScheduleType[];
   guestIds: string[];
   categoryId: string;
-  isFree: boolean;
-  price: number;
   maxParticipants: number;
   banner?: string | undefined;
   videoIntro?: string | undefined;
@@ -199,6 +248,13 @@ export interface EventType {
   createdBy: CreatedBy | undefined;
   sponsors: SponsorType[];
   budget?: BudgetType | undefined;
+  invitedUsers: InvitedUser[];
+}
+
+export interface InvitedUser {
+  userId: string;
+  email: string;
+  status?: string | undefined;
 }
 
 export interface Speaker {
@@ -295,7 +351,22 @@ export interface EventServiceClient {
 
   createGuest(request: CreateGuestRequest): Observable<GuestResponse>;
 
-  cancelEvent(request: CancelEventRequest): Observable<EventResponse>;
+  cancelEvent(request: CancelEventRequest): Observable<CancelEventResponse>;
+
+  /** rpc UpdateEventDocument (UpdateEventDocumentRequest) returns (UpdateEventDocumentResponse); */
+
+  checkOwnerShip(request: CheckOwnerShipRequest): Observable<CheckOwnerShipResponse>;
+
+  /** rpc UpdateEventVideoIntro(UpdateEventVideoIntroRequest) returns (EventResponse); */
+
+  sendEventInvites(request: SendEventInvitesRequest): Observable<SendEventInvitesResponse>;
+
+  /**
+   * rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse);
+   * rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
+   */
+
+  deleteFilesEvent(request: DeleteFilesEventRequest): Observable<Empty>;
 }
 
 export interface EventServiceController {
@@ -335,7 +406,28 @@ export interface EventServiceController {
 
   createGuest(request: CreateGuestRequest): Promise<GuestResponse> | Observable<GuestResponse> | GuestResponse;
 
-  cancelEvent(request: CancelEventRequest): Promise<EventResponse> | Observable<EventResponse> | EventResponse;
+  cancelEvent(
+    request: CancelEventRequest,
+  ): Promise<CancelEventResponse> | Observable<CancelEventResponse> | CancelEventResponse;
+
+  /** rpc UpdateEventDocument (UpdateEventDocumentRequest) returns (UpdateEventDocumentResponse); */
+
+  checkOwnerShip(
+    request: CheckOwnerShipRequest,
+  ): Promise<CheckOwnerShipResponse> | Observable<CheckOwnerShipResponse> | CheckOwnerShipResponse;
+
+  /** rpc UpdateEventVideoIntro(UpdateEventVideoIntroRequest) returns (EventResponse); */
+
+  sendEventInvites(
+    request: SendEventInvitesRequest,
+  ): Promise<SendEventInvitesResponse> | Observable<SendEventInvitesResponse> | SendEventInvitesResponse;
+
+  /**
+   * rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse);
+   * rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
+   */
+
+  deleteFilesEvent(request: DeleteFilesEventRequest): Promise<Empty> | Observable<Empty> | Empty;
 }
 
 export function EventServiceControllerMethods() {
@@ -355,6 +447,9 @@ export function EventServiceControllerMethods() {
       "getAllGuest",
       "createGuest",
       "cancelEvent",
+      "checkOwnerShip",
+      "sendEventInvites",
+      "deleteFilesEvent",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

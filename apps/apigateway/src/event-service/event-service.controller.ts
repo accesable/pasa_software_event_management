@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
 import { EventServiceService } from './event-service.service';
 import { CreateEventDto } from 'apps/apigateway/src/event-service/dto/create-event-service.dto';
 import { ResponseMessage, Roles, User } from 'apps/apigateway/src/decorators/public.decorator';
@@ -9,16 +9,216 @@ import { CreateEventCategoryDto } from 'apps/apigateway/src/event-service/dto/cr
 import { UpdateEventDto } from 'apps/apigateway/src/event-service/dto/update-event-service.dto';
 import { CreateGuestDto } from 'apps/apigateway/src/event-service/dto/create-guest.dto';
 import { CreateSpeakerDto } from 'apps/apigateway/src/event-service/dto/create-speaker.dto';
+import { FileServiceService } from 'apps/apigateway/src/file-service/file-service.service';
+import {  FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('events')
 export class EventServiceController {
-  constructor(private readonly eventServiceService: EventServiceService) { }
+  constructor(
+    private readonly eventServiceService: EventServiceService,
+    private readonly filesService: FileServiceService,
+  ) { }
 
-  // @Get()
-  // @ResponseMessage('Get all event success')
-  // getAllEvent(){
-  //   return this.eventServiceService.getAllEvent();
-  // } 
+  @Post(':id/invite')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Invitations sent successfully')
+  async sendInvites(
+    @Param('id') eventId: string,
+    @Body('emails') emails: string[],
+    @User() user: DecodeAccessResponse,
+  ) {
+    return this.eventServiceService.sendEventInvites(eventId, emails, user);
+  }
+
+  // @Get(':id/accept')
+  // async acceptInvitation(@Param('id') eventId: string, @Query() query: any) {
+  //   return this.eventServiceService.acceptInvitation(eventId, query);
+  // }
+
+  // @Get(':id/decline')
+  // async declineInvitation(@Param('id') eventId: string, @Query() query: any) {
+  //   return this.eventServiceService.declineInvitation(eventId, query);
+  // }
+
+  // // QUESTION METHODS
+  // @Post(':eventId/questions')
+  // @UseGuards(JwtAuthGuard)
+  // @ResponseMessage('Question created successfully')
+  // async createQuestion(
+  //   @Param('eventId') eventId: string,
+  //   @Body('question') question: string,
+  //   @User() user: DecodeAccessResponse,
+  // ) {
+  //   return this.eventServiceService.createQuestion(
+  //     eventId,
+  //     question,
+  //     user,
+  //   );
+  // }
+
+  // @Get(':eventId/questions')
+  // @ResponseMessage('Questions retrieved successfully')
+  // async getEventQuestions(@Param('eventId') eventId: string) {
+  //   return this.eventServiceService.getEventQuestions(eventId);
+  // }
+
+  // @Patch(':eventId/questions/:questionId')
+  // @UseGuards(JwtAuthGuard)
+  // @ResponseMessage('Question updated successfully')
+  // async updateQuestion(
+  //   @Param('eventId') eventId: string,
+  //   @Param('questionId') questionId: string,
+  //   @Body('answered') answered: boolean,
+  //   @User() user: DecodeAccessResponse,
+  // ) {
+  //   return this.eventServiceService.updateQuestion(
+  //     eventId,
+  //     questionId,
+  //     answered,
+  //     user,
+  //   );
+  // }
+
+  // @Post(':eventId/questions/:questionId/answers')
+  // @UseGuards(JwtAuthGuard)
+  // @ResponseMessage('Answer created successfully')
+  // async answerQuestion(
+  //   @Param('eventId') eventId: string,
+  //   @Param('questionId') questionId: string,
+  //   @Body('answer') answer: string,
+  //   @User() user: DecodeAccessResponse,
+  // ) {
+  //   return this.eventServiceService.answerQuestion(
+  //     eventId,
+  //     questionId,
+  //     answer,
+  //     user,
+  //   );
+  // }
+
+  @Post(':eventId/files')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FilesInterceptor('files', 10, {
+    fileFilter: (req, file, callback) => {
+      const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'png', 'jpg', 'mp4'];
+      const extension = file.originalname.split('.').pop()?.toLowerCase();
+
+      if (!extension || !allowedExtensions.includes(extension)) {
+        return callback(
+          new BadRequestException(`File type .${extension} not allowed`),
+          false
+        );
+      }
+      callback(null, true);
+    },
+    limits: {
+      fileSize: 100 * 1024 * 1024,  // 100 MB
+    },
+  }))
+  @ResponseMessage('Files uploaded successfully')
+  async uploadFilesToEvent(
+    @Param('eventId') eventId: string,
+    @Body() body: {
+      field: 'banner' | 'documents' | 'videoIntro';
+      videoUrl?: string;
+    },
+    @User() user: DecodeAccessResponse,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    const isOwner = await this.eventServiceService.checkOwnership(eventId, user.id);
+    if (!isOwner.isOwner) {
+      throw new BadRequestException('You are not authorized to upload files for this event');
+    }
+
+    const { field, videoUrl } = body;
+
+    if (field === 'videoIntro' && videoUrl) {
+      return this.eventServiceService.updateEvent(eventId, {
+        videoIntro: videoUrl,
+      });
+    }
+
+    if ((!files || files.length === 0) && field !== 'videoIntro') {
+      throw new BadRequestException('No files provided');
+    }
+
+    const uploadedFilesInfo = await this.filesService.uploadFiles(files, {
+      entityId: eventId,
+      entityType: 'event',
+      type: field === 'videoIntro' ? 'video'
+        : field === 'documents' ? 'document'
+          : 'image',
+      field
+    });
+
+    const urlList = uploadedFilesInfo.map((f) => f.path);
+
+    if (field === 'banner') {
+      return this.eventServiceService.updateEvent(eventId, {
+        banner: urlList[0],
+      });
+    }
+    else if (field === 'documents') {
+      const found = await this.eventServiceService.getEventById(eventId);
+      const oldDocuments = found.event.documents || [];
+      const newDocuments = [
+        ...oldDocuments,
+        ...urlList,
+      ];
+      return this.eventServiceService.updateEvent(eventId, {
+        documents: newDocuments,
+      });
+    }
+    else if (field === 'videoIntro') {
+      return this.eventServiceService.updateEvent(eventId, {
+        videoIntro: urlList[0],
+      });
+    }
+
+    return { message: 'No changes made' };
+  }
+
+  @Delete(':eventId/files')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Files deleted successfully')
+  async deleteFilesFromEvent(
+    @Param('eventId') eventId: string,
+    @Body() body: {
+      field: Array<'banner' | 'documents' | 'videoIntro'>;
+      files?: string[];
+    },
+    @User() user: DecodeAccessResponse,
+  ) {
+    const isOwner = await this.eventServiceService.checkOwnership(eventId, user.id);
+    if (!isOwner.isOwner) {
+      throw new BadRequestException('You are not authorized to delete files of this event');
+    }
+    const event = await this.eventServiceService.getEventById(eventId);
+
+    const { field, files } = body;
+    const updateObject: { banner?: string; videoIntro?: string; documents?: string[] } = {};
+    const urls = [];
+    if (field.includes('banner')){
+      updateObject.banner = '';
+      urls.push(event.event.banner);
+    };
+    if (field.includes('videoIntro')){
+      updateObject.videoIntro = '';
+    };
+
+    if (field.includes('documents') && files?.length) {
+      urls.push(...files);
+      const oldDocuments = event.event.documents || [];
+  
+      const documentsToDelete = files.filter((file) => oldDocuments.includes(file));
+  
+      if (documentsToDelete.length > 0) {
+        updateObject.documents = oldDocuments.filter((doc) => !documentsToDelete.includes(doc));
+      }
+    }
+    this.eventServiceService.deleteFilesUrl(urls, event.event.videoIntro);
+    return this.eventServiceService.updateEvent(eventId, updateObject);
+  }
 
   @Get()
   @ResponseMessage('Get events with filter (including category) success')
@@ -34,7 +234,6 @@ export class EventServiceController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  // @Roles('organizer', 'admin')
   @ResponseMessage('Update event success')
   updateEvent(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
     return this.eventServiceService.updateEvent(id, updateEventDto);
@@ -42,10 +241,9 @@ export class EventServiceController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  // @Roles('organizer', 'admin')
   @ResponseMessage('Event created successfully')
   createEvent(@Body() createEventDto: CreateEventDto, @User() user: DecodeAccessResponse) {
-    return this.eventServiceService.createEvent(createEventDto, {id: user.id, email: user.email});
+    return this.eventServiceService.createEvent(createEventDto, { id: user.id, email: user.email });
   }
 
   @Delete(':id')
@@ -54,26 +252,6 @@ export class EventServiceController {
   cancelEvent(@Param('id') id: string, @User() user: DecodeAccessResponse) {
     return this.eventServiceService.cancelEvent(id, user.id);
   }
-
-  // @Get()
-  // findAll() {
-  //   return this.eventServiceService.findAll();
-  // }
-
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.eventServiceService.findOne(+id);
-  // }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateEventServiceDto: UpdateEventServiceDto) {
-  //   return this.eventServiceService.update(+id, updateEventServiceDto);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.eventServiceService.remove(+id);
-  // }
 }
 
 @Controller('categories')
@@ -94,7 +272,6 @@ export class CategoryServiceController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  // @Roles('organizer', 'admin')
   @ResponseMessage('Category created successfully')
   createCategory(@Body() createEventCategoryDto: CreateEventCategoryDto, @User() user: DecodeAccessResponse) {
     return this.eventServiceService.createCategory(createEventCategoryDto);
@@ -121,7 +298,6 @@ export class SpeakerServiceController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  // @Roles('organizer', 'admin')
   @ResponseMessage('Speaker created successfully')
   createSpeaker(@Body() createSpeakerDto: CreateSpeakerDto) {
     return this.eventServiceService.createSpeaker(createSpeakerDto);
@@ -140,7 +316,6 @@ export class GuestServiceController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  // @Roles('organizer', 'admin')
   @ResponseMessage('Guest created successfully')
   createGuest(@Body() createGuestDto: CreateGuestDto) {
     return this.eventServiceService.createGuest(createGuestDto);

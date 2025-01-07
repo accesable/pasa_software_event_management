@@ -1,11 +1,13 @@
 import { handleRpcException } from '@app/common/filters/handleException';
-import { CancelEventRequest, CreateEventRequest, EventType, UpdateEventRequest } from '@app/common/types/event';
+import { CancelEventRequest, CreateEventRequest, DeleteFilesEventRequest, EventResponse, EventType, SendEventInvitesRequest, SendEventInvitesResponse, UpdateEventRequest } from '@app/common/types/event';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
 import { CategoryDocument, EventCategory } from 'apps/event-service/src/event-category/schemas/event-category.schema';
 import { EventDocument } from 'apps/event-service/src/event/schemas/event.schema';
+import { InvitedUser, InvitedUserDocument } from 'apps/event-service/src/event/schemas/invite.schema';
+import { Question, QuestionDocument } from 'apps/event-service/src/event/schemas/question.schema';
 import { Model } from 'mongoose';
 
 @Injectable()
@@ -13,8 +15,55 @@ export class EventService {
     constructor(
         @InjectModel(Event.name) private eventModel: Model<EventDocument>,
         @InjectModel(EventCategory.name) private categoryModel: Model<CategoryDocument>,
-        @Inject('TICKET_SERVICE') private readonly client: ClientProxy
+        @InjectModel(InvitedUser.name) private invitedUserModel: Model<InvitedUserDocument>,
+        @InjectModel(Question.name) private questionModel: Model<QuestionDocument>,
+
+        @Inject('TICKET_SERVICE') private readonly clientTicket: ClientProxy,
+        @Inject('NOTIFICATION_SERVICE') private readonly clientNotification: ClientProxy,
+
     ) { }
+
+    async deleteFilesEvent(request: DeleteFilesEventRequest) {
+        try {
+            const event = await this.eventModel.findById(request.eventId);
+            if (event.banner) {
+                await this.clientTicket.emit('deleteFiles', { publicIds: [event.banner] });
+            }
+            if (event.videoIntro) {
+                await this.clientTicket.emit('deleteFiles', { publicIds: [event.videoIntro] });
+            }
+            if (event.documents.length > 0) {
+                await this.clientTicket.emit('deleteFiles', { publicIds: event.documents });
+            }
+            return { message: 'Files deleted successfully' };
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to delete files');
+        }
+    }
+
+    async sendEventInvites(
+        request: SendEventInvitesRequest,
+    ): Promise<SendEventInvitesResponse> {
+        try {
+            const event = await this.eventModel.findById(request.eventId);
+            const { emails } = request;
+            this.clientNotification.emit('sendInvites', { emails, event });
+            return {
+                message: 'Invitations sent successfully',
+                success: true,
+            };
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to send event invites');
+        }
+    }
+
+    async checkOwnership(eventId: string, userId: string) {
+        const event = await this.eventModel
+            .findById(eventId)
+            .select('createdBy')
+            .lean();
+        return { isOwner: event.createdBy.id.toString() === userId };
+    }
 
     async cancelEvent(request: CancelEventRequest) {
         try {
@@ -33,8 +82,8 @@ export class EventService {
             // }
             event.status = 'CANCELED';
             await event.save();
-            this.client.emit('cancelEvent', { eventId: request.id });
-            return { event: this.transformEvent(event) };
+            this.clientTicket.emit('cancelEvent', { eventId: request.id });
+            return { message: 'Event canceled successfully' };
         } catch (error) {
             throw handleRpcException(error, 'Failed to cancel event');
         }
@@ -47,33 +96,33 @@ export class EventService {
             const page = parseInt(filter.page, 10);
             delete filter.page;
 
-            let population: any[] = [];
-            if (filter.population) {
-                const popVal = filter.population;
+            // let population: any[] = [];
+            // if (filter.population) {
+            //     const popVal = filter.population;
 
-                if (typeof popVal === 'string') {
-                    population = popVal.split(',').map((field: string) => {
-                        const trimmedField = field.trim();
-                        if (trimmedField === 'schedule.speakerIds') {
-                            return { path: trimmedField, model: 'Speaker' };
-                        }
-                        return { path: trimmedField };
-                    });
-                }
+            //     if (typeof popVal === 'string') {
+            //         population = popVal.split(',').map((field: string) => {
+            //             const trimmedField = field.trim();
+            //             if (trimmedField === 'schedule.speakerIds') {
+            //                 return { path: trimmedField, model: 'Speaker' };
+            //             }
+            //             return { path: trimmedField };
+            //         });
+            //     }
 
-                else if (Array.isArray(popVal) || (popVal['$in'] && Array.isArray(popVal['$in']))) {
-                    const fields = Array.isArray(popVal) ? popVal : popVal['$in'];
-                    population = fields.map((field: string) => {
-                        const trimmedField = field.trim();
-                        if (trimmedField === 'schedule.speakerIds') {
-                            return { path: trimmedField, model: 'Speaker' };
-                        }
-                        return { path: trimmedField };
-                    });
-                }
+            //     else if (Array.isArray(popVal) || (popVal['$in'] && Array.isArray(popVal['$in']))) {
+            //         const fields = Array.isArray(popVal) ? popVal : popVal['$in'];
+            //         population = fields.map((field: string) => {
+            //             const trimmedField = field.trim();
+            //             if (trimmedField === 'schedule.speakerIds') {
+            //                 return { path: trimmedField, model: 'Speaker' };
+            //             }
+            //             return { path: trimmedField };
+            //         });
+            //     }
 
-                delete filter.population;
-            }
+            //     delete filter.population;
+            // }
 
 
             if (filter.category) {
@@ -96,7 +145,7 @@ export class EventService {
                 .skip(skip)
                 .limit(parsedLimit)
                 .sort(sort as any)
-                .populate(population) // "guestIds", "categoryId", "schedule.speakerIds"
+                // .populate(population) // "guestIds", "categoryId", "schedule.speakerIds"
                 .exec();
 
             const eventResponses = events.map((event) => this.transformEvent(event));
@@ -126,16 +175,32 @@ export class EventService {
         }
     }
 
-    async getEventById(id: string) {
+    async getEventById(
+        request: any,
+    ): Promise<EventResponse> {
         try {
-            const event = await this.eventModel.findById(id);
+            const event = await this.eventModel
+                .findById(request.id)
+                .populate('guestIds')
+                .populate({
+                    path: 'invitedUsers.user',
+                    select: 'name email',
+                })
+                .populate({
+                    path: 'schedule',
+                    populate: { path: 'speakerIds', model: 'Speaker' },
+                })
+                .exec();
+
             if (!event) {
                 throw new RpcException({
                     message: 'Event not found',
                     code: HttpStatus.NOT_FOUND,
                 });
             }
-            return { event: this.transformEvent(event) };
+            return {
+                event: this.transformEvent(event),
+            };
         } catch (error) {
             throw handleRpcException(error, 'Failed to get event by id');
         }
@@ -166,7 +231,7 @@ export class EventService {
         }
     }
 
-    private transformEvent(event: EventDocument) {
+    private transformEvent(event: EventDocument): EventType {
         const obj = event.toObject({ virtuals: true, getters: true });
         return {
             id: obj._id.toString(),
@@ -175,26 +240,25 @@ export class EventService {
             startDate: obj.startDate,
             endDate: obj.endDate,
             location: obj.location,
-            guestIds: obj.guestIds,
-            categoryId: obj.categoryId,
-            schedule: obj.schedule.map((item) => ({
-                ...item,
-                speakerIds: item.speakerIds.map((speaker) =>
-                    speaker.toObject ? speaker.toObject() : speaker
-                ),
-            })),
-            createdBy: obj.createdBy,
-            isFree: obj.isFree,
-            price: obj.price,
-            maxParticipants: obj.maxParticipants,
             banner: obj.banner,
             videoIntro: obj.videoIntro,
             documents: obj.documents,
-            status: obj.status,
+            maxParticipants: obj.maxParticipants,
+            guestIds: obj.guestIds,
+            categoryId: obj.categoryId,
+            // schedule: obj.schedule.map((item) => ({
+            //     ...item,
+            //     speakerIds: item.speakerIds.map((speaker) => speaker.toObject ? speaker.toObject() : speaker
+            //     ),
+            // })),
+            schedule: obj.schedule,
+            createdBy: obj.createdBy,
             createdAt: obj.createdAt,
             updatedAt: obj.updatedAt,
             sponsors: obj.sponsors,
             budget: obj.budget,
+            status: obj.status,
+            invitedUsers: []
         };
     }
 }

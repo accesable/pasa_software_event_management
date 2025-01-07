@@ -9,14 +9,15 @@ import { GoogleStrategy } from 'apps/apigateway/src/strategies/google.stategy';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from 'apps/apigateway/src/strategies/jwt.strategy';
-import { FilesService } from 'apps/apigateway/src/files/files.service';
 import { NotificationModule } from 'apps/apigateway/src/notification/notification.module';
 import { RedisCacheModule } from 'apps/apigateway/src/redis/redis.module';
+import { FileServiceModule } from 'apps/apigateway/src/file-service/file-service.module';
 
 @Module({
   imports: [
     NotificationModule,
     RedisCacheModule,
+    FileServiceModule,
     ClientsModule.register([
       {
         name: AUTH_SERVICE,
@@ -32,13 +33,13 @@ import { RedisCacheModule } from 'apps/apigateway/src/redis/redis.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),  // Lấy biến từ .env
-        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRATION') },  // Lấy thời gian hết hạn từ .env
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRATION') },
       }),
     }),
   ],
   controllers: [UsersController, GeneralUsersController],
-  providers: [UsersService, GoogleStrategy, JwtStrategy, FilesService],
+  providers: [UsersService, GoogleStrategy, JwtStrategy],
   exports: [UsersService],
 })
 export class UsersModule { }

@@ -14,7 +14,7 @@ import { REPORT_PACKAGE_NAME } from '@app/common/types/report';
         transport: Transport.GRPC,
         options: {
           package: REPORT_PACKAGE_NAME,
-          protoPath: join(__dirname, '../ticket.proto'),
+          protoPath: join(__dirname, '../report.proto'),
           url: '0.0.0.0:50055'
         },
       }

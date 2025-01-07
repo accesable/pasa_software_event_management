@@ -17,9 +17,59 @@ service EventService{
   rpc getAllGuest(Empty) returns (AllGuestResponse);
   rpc CreateGuest(CreateGuestRequest) returns (GuestResponse);
   rpc CancelEvent(CancelEventRequest) returns (CancelEventResponse);
+  //rpc UpdateEventDocument (UpdateEventDocumentRequest) returns (UpdateEventDocumentResponse);
+  rpc CheckOwnerShip(CheckOwnerShipRequest) returns (CheckOwnerShipResponse);
+  //rpc UpdateEventVideoIntro(UpdateEventVideoIntroRequest) returns (EventResponse);
+  rpc SendEventInvites (SendEventInvitesRequest) returns (SendEventInvitesResponse);
+  //rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse);
+  //rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
 }
 
 message Empty{}
+
+message SendEventInvitesRequest{
+  string eventId = 1;
+  repeated string emails = 2;
+}
+
+message SendEventInvitesResponse {
+  string message = 1;
+  bool success = 2;
+}
+
+message UpdateEventVideoIntroRequest{
+  string id = 1;
+  string videoUrl = 2;
+}
+
+message CheckOwnerShipRequest{
+  string eventId = 1;
+  string userId = 2;
+}
+
+message CheckOwnerShipResponse{
+  bool isOwner = 1;
+}
+
+message UpdateEventFilesRequest {
+    string id = 1;                
+    string field = 2;             
+    repeated string fileIds = 3;  
+    string videoUrl = 4;          
+    repeated string deletedFiles = 5;             
+}
+
+message UpdateEventDocumentRequest {
+  string id = 1; 
+  int32 index = 2; 
+  string document = 3; 
+  string userId = 4;
+}
+
+message UpdateEventDocumentResponse {
+  string message = 1;
+  EventType event = 2; 
+}
 
 message CancelEventRequest{
   string id = 1;
@@ -151,16 +201,14 @@ message CreateEventRequest {
   string location = 5;
   repeated string guestIds = 6;
   string categoryId = 7;
-  bool isFree = 8;
-  int32 price = 9;
-  int32 maxParticipants = 10;
-  string banner = 11;
-  string videoIntro = 12;
-  repeated string documents = 13;
-  CreatedBy createdBy = 14;
-  repeated SponsorType sponsors = 15;
-  optional BudgetType budget = 16;
-  repeated ScheduleWithoutId schedule = 17;
+  int32 maxParticipants = 8;
+  optional string banner = 9;
+  optional string videoIntro = 10;
+  repeated string documents = 11;
+  CreatedBy createdBy = 12;
+  repeated SponsorType sponsors = 13;
+  optional BudgetType budget = 14;
+  repeated ScheduleWithoutId schedule = 15;
 }
 
 message UpdateEventRequest {
@@ -172,17 +220,17 @@ message UpdateEventRequest {
   optional string location = 6;
   repeated string guestIds = 7;
   optional string categoryId = 8;
-  optional bool isFree = 9;
-  optional int32 price = 10;
-  optional int32 maxParticipants= 11;
-  optional string banner=12;
-  optional string videoIntro = 13;
-  repeated string documents=14;
-  optional string status=15;
-  repeated SponsorType sponsors = 16;
-  optional BudgetType budget = 17;
-  repeated ScheduleWithoutId schedule = 18;
+  optional int32 maxParticipants= 9;
+  optional string banner=10;
+  optional string videoIntro = 11;
+  repeated string documents=12;
+  optional string status=13;
+  repeated SponsorType sponsors = 14;
+  optional BudgetType budget = 15;
+  repeated ScheduleWithoutId schedule = 16;
+  repeated InvitedUser invitedUsers = 17;
 }
+
 
 message EventType {
   string id = 1;
@@ -194,18 +242,23 @@ message EventType {
   repeated ScheduleType schedule = 7;
   repeated string guestIds = 8;
   string categoryId = 9;
-  bool isFree = 10;
-  int32 price = 11;
-  int32 maxParticipants = 12;
-  optional string banner = 13;
-  optional string videoIntro = 14;
-  repeated string documents = 15;
-  string status = 16;
-  string createdAt = 17;
-  string updatedAt = 18;
-  CreatedBy createdBy = 19;
-  repeated SponsorType sponsors = 20;
-  optional BudgetType budget = 21;
+  int32 maxParticipants = 10;
+  optional string banner = 11;
+  optional string videoIntro = 12;
+  repeated string documents = 13;
+  string status = 14;
+  string createdAt = 15;
+  string updatedAt = 16;
+  CreatedBy createdBy = 17;
+  repeated SponsorType sponsors = 18;
+  optional BudgetType budget = 19;
+  repeated InvitedUser invitedUsers = 20;
+}
+
+message InvitedUser {
+    string userId = 1;
+    string email = 2;
+  optional string status = 3;
 }
 
 message Speaker{

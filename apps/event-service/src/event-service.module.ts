@@ -32,6 +32,15 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
           queueOptions: { durable: true },
         },
       },
+      {
+        name: 'NOTIFICATION_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://admin:1234@localhost:5672'],
+          queue: 'notifications_queue',
+          queueOptions: { durable: true },
+        },
+      },
     ]),
 
     forwardRef(() => EventModule),

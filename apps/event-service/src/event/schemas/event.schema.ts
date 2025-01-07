@@ -62,7 +62,7 @@ export class Event {
     type: [{
       id: {
         type: Types.ObjectId,
-        default: () => new Types.ObjectId(), // Tạo tự động ObjectId
+        default: () => new Types.ObjectId(),
         required: true,
       },
       title: { type: String, required: true },
@@ -83,6 +83,12 @@ export class Event {
   }[];
 
   @Prop({
+    type: [Types.ObjectId],
+    default: [],
+  })
+  invitedUsers: Types.ObjectId[];
+
+  @Prop({
     type: [{
       name: { type: String, required: true },
       logo: { type: String },
@@ -98,47 +104,7 @@ export class Event {
     contribution: number;
   }[];
 
-  @Prop({
-    type: {
-      totalBudget: { type: Number, default: 0 },
-      expenses: [{
-        desc: { type: String },
-        amount: { type: Number, default: 0 },
-        date: { type: Date }
-      }],
-      revenue: [{
-        desc: { type: String },
-        amount: { type: Number, default: 0 },
-        date: { type: Date }
-      }]
-    },
-    default: {}
-  })
-  budget: {
-    totalBudget: number;
-    expenses: { desc?: string; amount?: number; date?: Date; }[];
-    revenue: { desc?: string; amount?: number; date?: Date; }[];
-  };
-
-  @Prop({
-    type: [
-      {
-        user: { type: Types.ObjectId, ref: 'User' },
-        status: {
-          type: String,
-          enum: ['pending', 'confirmed', 'rejected'],
-          default: 'pending',
-        },
-      },
-    ],
-    default: [],
-  })
-  invitedUsers: {
-    user: Types.ObjectId;
-    status: 'pending' | 'confirmed' | 'rejected';
-  }[];
-
-  @Prop({ default: 'SCHEDULED', enum: ["SCHEDULED", "ONGOING", "CANCELED", "FINISHED"] })
+  @Prop({ default: 'SCHEDULED', enum: ["SCHEDULED", "CANCELED", "FINISHED"] })
   status: string;
 }
 
