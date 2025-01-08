@@ -34,14 +34,23 @@ import { join } from 'path';
 
     ClientsModule.register([
       {
-        name: 'TICKET_SERVICE',
+        name: 'EVENT_SERVICE_RABBIT',
         transport: Transport.RMQ,
         options: {
           urls: ['amqp://admin:1234@localhost:5672'],
-          queue: 'tickets_queue',
+          queue: 'events_queue',
           queueOptions: { durable: true },
         },
       },
+      // {
+      //   name: 'TICKET_SERVICE',
+      //   transport: Transport.RMQ,
+      //   options: {
+      //     urls: ['amqp://admin:1234@localhost:5672'],
+      //     queue: 'tickets_queue',
+      //     queueOptions: { durable: true },
+      //   },
+      // },
       {
         name: EVENT_SERVICE,
         transport: Transport.GRPC,

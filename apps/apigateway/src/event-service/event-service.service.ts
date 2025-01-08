@@ -1,5 +1,5 @@
 import { CreatedBy, CreateEventRequest, DecodeAccessResponse, EVENT_SERVICE_NAME, EventServiceClient, QueryParamsRequest, UpdateCategoryRequest, UpdateEventRequest } from '@app/common/types/event';
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { CreateEventDto } from 'apps/apigateway/src/event-service/dto/create-event-service.dto';
 import { EVENT_SERVICE } from 'apps/apigateway/src/constants/service.constant';
@@ -23,6 +23,14 @@ export class EventServiceService implements OnModuleInit {
 
   onModuleInit() {
     this.eventService = this.client.getService<EventServiceClient>(EVENT_SERVICE_NAME);
+  }
+
+  async isExistEvent(id: string) {
+    try {
+      return await this.eventService.isExistEvent({ id }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
 
   async sendEventInvites(
@@ -58,7 +66,6 @@ export class EventServiceService implements OnModuleInit {
   }
 
   deleteFilesUrl(urls: string[], videoURl?: string) {
-    console.log('deleteFilesUrl', urls, videoURl);
     this.rabbitFile.emit('delete_files_event', { urls, videoURl });
   }
 

@@ -13,6 +13,11 @@ export const protobufPackage = "auth";
 export interface Empty {
 }
 
+export interface ResetPassRequest {
+  id: string;
+  password: string;
+}
+
 export interface QueryParamsRequest {
   query: { [key: string]: string };
 }
@@ -158,6 +163,8 @@ export interface UsersServiceClient {
   updateAvatar(request: UpdateAvatarRequest): Observable<ProfileRespone>;
 
   changePassword(request: ChangePasswordRequest): Observable<Empty>;
+
+  resetPassword(request: ResetPassRequest): Observable<Empty>;
 }
 
 export interface UsersServiceController {
@@ -188,6 +195,8 @@ export interface UsersServiceController {
   updateAvatar(request: UpdateAvatarRequest): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
 
   changePassword(request: ChangePasswordRequest): Promise<Empty> | Observable<Empty> | Empty;
+
+  resetPassword(request: ResetPassRequest): Promise<Empty> | Observable<Empty> | Empty;
 }
 
 export function UsersServiceControllerMethods() {
@@ -204,6 +213,7 @@ export function UsersServiceControllerMethods() {
       "updateProfile",
       "updateAvatar",
       "changePassword",
+      "resetPassword",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

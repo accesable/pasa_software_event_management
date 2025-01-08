@@ -9,6 +9,7 @@ export const envSchema = z.object({
     MAIL_FROM: z.string().optional(),
     JWT_SECRET: z.string(),
     TOKEN_PASSWORD_EXPIRATION: z.string(),
+    FRONTEND_URL: z.string(),
 });
 
 export const validateEnv = (env: Record<string, unknown>) => {

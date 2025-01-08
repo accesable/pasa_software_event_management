@@ -1,6 +1,6 @@
 import { AUTH_SERVICE } from '../constants/service.constant';
 import * as ms from 'ms';
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { AllUserResponse, ChangePasswordRequest, GoogleAuthRequest, UpdateAvatarRequest, UpdateProfileRequest, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
@@ -42,7 +42,37 @@ export class UsersService implements OnModuleInit {
       );
     }
     await this.redisCacheService.del(key);
+    await this.redisCacheService.set(key, cacheData, 900);
     return { message: 'Token is valid' };
+  }
+
+  async resetPassword(token: string, password: string) {
+    try {
+      const key = `reset_password:${token}`;
+      const cacheData = await this.redisCacheService.get<{
+        id: string;
+        name: string;
+        email: string;
+        type: string;
+      }>(key);
+
+      if (!cacheData) {
+        throw new RpcException({
+          code: 410,
+          error: 'The reset password link has expired',
+        });
+      }
+      const request = {
+        id: cacheData.id,
+        password,
+      };
+      await this.usersService.resetPassword(request).toPromise();
+      await this.redisCacheService.del(key);
+
+      return { message: 'Reset password success' };
+    } catch (error) {
+      throw new BadRequestException('Token was expired or used');
+    }
   }
 
   async getAllUser(request: QueryParamsRequest) {

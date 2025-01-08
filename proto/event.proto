@@ -23,9 +23,14 @@ service EventService{
   rpc SendEventInvites (SendEventInvitesRequest) returns (SendEventInvitesResponse);
   //rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse);
   //rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
+  rpc IsExistEvent(EventByIdRequest) returns (IsExistEventResponse);
 }
 
 message Empty{}
+
+message IsExistEventResponse{
+  bool isExist = 1;
+}
 
 message SendEventInvitesRequest{
   string eventId = 1;

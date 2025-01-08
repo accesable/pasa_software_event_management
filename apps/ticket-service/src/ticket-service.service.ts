@@ -3,7 +3,7 @@ import { EVENT_SERVICE_NAME, EventServiceClient } from '@app/common/types/event'
 import { CreateParticipationRequest, Participation, TicketType } from '@app/common/types/ticket';
 import { HttpStatus, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ClientGrpc, RpcException } from '@nestjs/microservices';
+import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
 import { EVENT_SERVICE } from 'apps/apigateway/src/constants/service.constant';
@@ -21,7 +21,7 @@ export class TicketServiceService implements OnModuleInit {
     @InjectModel(Ticket.name) private ticketModel: Model<TicketDocument>,
     @InjectModel(Participant.name) private participantModel: Model<ParticipantDocument>,
     private configService: ConfigService,
-
+    @Inject('EVENT_SERVICE_RABBIT') private readonly clientEvent: ClientProxy,
   ) { }
 
   onModuleInit() {
@@ -98,15 +98,22 @@ export class TicketServiceService implements OnModuleInit {
   }
 
   async createParticipant(request: CreateParticipationRequest) {
-    try {
+    try {      
       const { eventId, userId, sessionIds } = request;
       const event = await this.eventService.getEventById({ id: eventId }).toPromise();
-      if (event.event.status === 'CANCELED') {
+      if (event.event.status === 'CANCELED' || event.event.status === 'COMPLETED') {
         throw new RpcException({
-          message: 'Event has been canceled',
+          message: 'Event has been canceled or completed',
           code: HttpStatus.BAD_REQUEST,
         });
       }
+      if(event.event.maxParticipants === 0) {
+        throw new RpcException({
+          message: 'Event is full',
+          code: HttpStatus.BAD_REQUEST,
+        });
+      }
+
       const isExist = await this.participantModel.findOne({ eventId, userId });
       if (isExist) {
         throw new RpcException({
@@ -121,7 +128,6 @@ export class TicketServiceService implements OnModuleInit {
         status: 'REGISTERED'
       });
       const baseUrl = this.configService.get<string>('BASE_URL');
-      console.log('baseUrl', baseUrl);
       const code = `${participant._id}`;
       const url = baseUrl + '/tickets/scan?code=' + code;
       const qrCodeUrl = await QRCode.toDataURL(url, {
@@ -130,7 +136,7 @@ export class TicketServiceService implements OnModuleInit {
         width: 300,
       });
       const ticket = await this.ticketModel.create({ participantId: participant._id, qrCodeUrl, code });
-
+      this.clientEvent.emit('ticket_created', { eventId: request.eventId });
       return {
         participation: this.transformParticipant(participant),
         ticket: this.transformTicket(ticket),
@@ -153,6 +159,25 @@ export class TicketServiceService implements OnModuleInit {
     } catch (error) {
       throw handleRpcException(error, 'Failed to get participant by ID');
     }
+  }
+
+  async deleteParticipant(id: string) {
+    // try {
+    //   const participant = await this.participantModel.findById(id);
+    //   if (!participant) {
+    //     throw new RpcException({
+    //       message: 'Participant not found',
+    //       code: HttpStatus.NOT_FOUND,
+    //     });
+    //   }
+    //   await this.participantModel.findByIdAndDelete(id);
+    //   await this.ticketModel.findOneAndDelete({ participantId: id });
+    //   return {
+    //     message: 'Participant deleted successfully',
+    //   };
+    // } catch (error) {
+    //   throw handleRpcException(error, 'Failed to delete participant');
+    // }
   }
 
   async getAllTicket(request: any) {

@@ -11,7 +11,13 @@ export class TicketServiceController implements TicketServiceProtoController {
   
   @EventPattern('cancelEvent')
   cancelEvent(request: { eventId: string }) {
+    console.log('cancelEvent', request);
     return this.ticketServiceService.cancelEvent(request.eventId);
+  }
+
+  @EventPattern('checkEvent')
+  checkEvent(request: { event: any }) {
+    console.log('checkEvent asd', request);
   }
 
   scanTicket(request: ScanTicketRequest){
@@ -32,8 +38,8 @@ export class TicketServiceController implements TicketServiceProtoController {
   updateParticipant(request: UpdateParticipationRequest): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse {
     throw new Error('Method not implemented.');
   }
-  deleteParticipant(request: ParticipationByIdRequest): Promise<Empty> | Observable<Empty> | Empty {
-    throw new Error('Method not implemented.');
+  deleteParticipant(request: ParticipationByIdRequest) {
+    return this.ticketServiceService.deleteParticipant(request.id);
   }
 
   getAllTicket(request: QueryParamsRequest) {

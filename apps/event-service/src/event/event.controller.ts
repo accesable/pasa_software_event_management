@@ -1,10 +1,11 @@
 import { Controller } from '@nestjs/common';
 import { EventService } from './event.service';
-import { AllEventResponse, CancelEventRequest, CategoryByIdRequest, CategoryNameRequest, CheckOwnerShipRequest, CheckOwnerShipResponse, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, DeleteFilesEventRequest, Empty, EventByIdRequest, EventResponse, EventServiceController, EventServiceControllerMethods, GuestResponse, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, SpeakerResponse, UpdateCategoryRequest, UpdateEventDocumentRequest, UpdateEventDocumentResponse, UpdateEventRequest } from '@app/common/types/event';
+import { AllEventResponse, CancelEventRequest, CategoryByIdRequest, CategoryNameRequest, CheckOwnerShipRequest, CheckOwnerShipResponse, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, Empty, EventByIdRequest, EventResponse, EventServiceController, EventServiceControllerMethods, GuestResponse, IsExistEventResponse, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, SpeakerResponse, UpdateCategoryRequest, UpdateEventDocumentRequest, UpdateEventDocumentResponse, UpdateEventRequest } from '@app/common/types/event';
 import { Observable } from 'rxjs';
 import { EventCategoryService } from 'apps/event-service/src/event-category/event-category.service';
 import { SpeakerService } from 'apps/event-service/src/speaker/speaker.service';
 import { GuestService } from 'apps/event-service/src/guest/guest.service';
+import { EventPattern } from '@nestjs/microservices';
 
 @Controller()
 @EventServiceControllerMethods()
@@ -16,8 +17,14 @@ export class EventController implements EventServiceController {
     private readonly guestService: GuestService,
   ) { }
 
-  deleteFilesEvent(request: DeleteFilesEventRequest){
-    return this.eventService.deleteFilesEvent(request);
+  isExistEvent(request: EventByIdRequest) {
+    return this.eventService.isExistEvent(request.id);
+  }
+
+  @EventPattern('ticket_created')
+  updateEventDocument(request: any) {
+    console.log('updateEventDocument', request);
+    return this.eventService.decreaseMaxParticipant(request.eventId);
   }
 
   async sendEventInvites(

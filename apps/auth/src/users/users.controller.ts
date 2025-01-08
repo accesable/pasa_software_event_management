@@ -3,12 +3,17 @@ import { UsersService } from './users.service';
 import { GeneralResponse, GoogleAuthRequest, LogoutRequest, UsersServiceController, UsersServiceControllerMethods } from '@app/common';
 import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
 import { LoginDto } from 'apps/apigateway/src/users/dto/login';
-import { AllUserResponse, ChangePasswordRequest, EmailRequest, Empty, FindByIdRequest, ProfileRespone, QueryParamsRequest, UpdateAvatarRequest, UpdateProfileRequest } from '@app/common/types/auth';
+import { AllUserResponse, ChangePasswordRequest, EmailRequest, Empty, FindByIdRequest, ProfileRespone, QueryParamsRequest, ResetPassRequest, UpdateAvatarRequest, UpdateProfileRequest } from '@app/common/types/auth';
+import { Observable } from 'rxjs';
 
 @Controller()
 @UsersServiceControllerMethods()
 export class UsersController implements UsersServiceController {
   constructor(private readonly usersService: UsersService) { }
+
+  resetPassword(request: ResetPassRequest) {
+    return this.usersService.resetPassword(request.id, request.password);
+  }
 
   findByEmailWithoutPassword(request: EmailRequest) {
     return this.usersService.findByEmailWithoutPassword(request.email);

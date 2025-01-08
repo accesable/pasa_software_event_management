@@ -1,5 +1,5 @@
 import { handleRpcException } from '@app/common/filters/handleException';
-import { CancelEventRequest, CreateEventRequest, DeleteFilesEventRequest, EventResponse, EventType, SendEventInvitesRequest, SendEventInvitesResponse, UpdateEventRequest } from '@app/common/types/event';
+import { CancelEventRequest, CreateEventRequest, EventResponse, EventType, SendEventInvitesRequest, SendEventInvitesResponse, UpdateEventRequest } from '@app/common/types/event';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
@@ -20,24 +20,18 @@ export class EventService {
 
         @Inject('TICKET_SERVICE') private readonly clientTicket: ClientProxy,
         @Inject('NOTIFICATION_SERVICE') private readonly clientNotification: ClientProxy,
-
     ) { }
 
-    async deleteFilesEvent(request: DeleteFilesEventRequest) {
+    async decreaseMaxParticipant(eventId: string) {
         try {
-            const event = await this.eventModel.findById(request.eventId);
-            if (event.banner) {
-                await this.clientTicket.emit('deleteFiles', { publicIds: [event.banner] });
+            const event = await this.eventModel.findById(eventId);
+            if (event.maxParticipants > 0) {
+                event.maxParticipants -= 1;
+                await event.save();
             }
-            if (event.videoIntro) {
-                await this.clientTicket.emit('deleteFiles', { publicIds: [event.videoIntro] });
-            }
-            if (event.documents.length > 0) {
-                await this.clientTicket.emit('deleteFiles', { publicIds: event.documents });
-            }
-            return { message: 'Files deleted successfully' };
+            return { message: 'Max participant decreased' };
         } catch (error) {
-            throw handleRpcException(error, 'Failed to delete files');
+            throw handleRpcException(error, 'Failed to decrease max participant');
         }
     }
 
@@ -68,18 +62,18 @@ export class EventService {
     async cancelEvent(request: CancelEventRequest) {
         try {
             const event = await this.eventModel.findById(request.id);
-            // if (event.status === 'CANCELED' || event.status === 'FINISHED') {
-            //     throw new RpcException({
-            //         message: 'Event has been canceled or finished',
-            //         code: HttpStatus.BAD_REQUEST,
-            //     });
-            // }
-            // if (event.createdBy.id.toString() !== request.userId) {
-            //     throw new RpcException({
-            //         message: 'You are not authorized to cancel this event',
-            //         code: HttpStatus.FORBIDDEN,
-            //     });
-            // }
+            if (event.status === 'CANCELED' || event.status === 'FINISHED') {
+                throw new RpcException({
+                    message: 'Event has been canceled or finished',
+                    code: HttpStatus.BAD_REQUEST,
+                });
+            }
+            if (event.createdBy.id.toString() !== request.userId) {
+                throw new RpcException({
+                    message: 'You are not authorized to cancel this event',
+                    code: HttpStatus.FORBIDDEN,
+                });
+            }
             event.status = 'CANCELED';
             await event.save();
             this.clientTicket.emit('cancelEvent', { eventId: request.id });
@@ -178,6 +172,7 @@ export class EventService {
     async getEventById(
         request: any,
     ): Promise<EventResponse> {
+        this.clientTicket.emit('checkEvent', { id: request.id });
         try {
             const event = await this.eventModel
                 .findById(request.id)
@@ -192,12 +187,6 @@ export class EventService {
                 })
                 .exec();
 
-            if (!event) {
-                throw new RpcException({
-                    message: 'Event not found',
-                    code: HttpStatus.NOT_FOUND,
-                });
-            }
             return {
                 event: this.transformEvent(event),
             };
@@ -218,6 +207,15 @@ export class EventService {
             return { event: this.transformEvent(event) };
         } catch (error) {
             throw handleRpcException(error, 'Failed to create event');
+        }
+    }
+
+    async isExistEvent(id: string) {
+        try {
+            const event = await this.eventModel.findOne({ _id: id });
+            return { isExist: !!event };
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to check event');
         }
     }
 

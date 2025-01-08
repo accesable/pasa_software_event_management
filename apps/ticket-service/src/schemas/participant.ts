@@ -23,8 +23,8 @@ export class Participant {
   @Prop({ type: [String], default: [] })
   sectionIds: string[];
 
-  @Prop({ default: false })
-  isVolunteer: boolean;
+  // @Prop({ default: false })
+  // isVolunteer: boolean;
 
   @Prop()
   checkinAt: Date;

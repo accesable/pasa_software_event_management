@@ -1,7 +1,10 @@
-import { Body, Controller, Get, HttpStatus, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
 import { CreateParticipationRequest, QueryParamsRequest } from '@app/common/types/ticket';
 import { ResponseMessage } from 'apps/auth/src/decorators/public.decorator';
+import { JwtAuthGuard } from 'apps/apigateway/src/guards/jwt-auth.guard';
+import { User } from 'apps/apigateway/src/decorators/public.decorator';
+import { DecodeAccessResponse } from '@app/common';
 
 @Controller('tickets')
 export class TicketServiceController {
@@ -29,7 +32,16 @@ export class ParticipantServiceController {
   ) { }
 
   @Post()
-  async createParticipant(@Body() request: CreateParticipationRequest) {
-    return this.ticketServiceService.createParticipant(request);
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Create participant success')
+  async createParticipant(@Body() request: CreateParticipationRequest, @User() user: DecodeAccessResponse) {
+    return this.ticketServiceService.createParticipant({...request, userId: user.id});
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Delete participant success')
+  async deleteParticipant(@Param('id') id: string) {
+    return this.ticketServiceService.deleteParticipant(id);
   }
 }

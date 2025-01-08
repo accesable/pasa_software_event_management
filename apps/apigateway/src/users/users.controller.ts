@@ -61,6 +61,13 @@ export class UsersController {
     return this.usersService.validateResetToken(token);
   }
 
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Reset password success')
+  async resetPassword(@Body() body: { token: string; newPassword: string }) {
+    return this.usersService.resetPassword(body.token, body.newPassword);
+  }
+
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)

@@ -13,10 +13,8 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
-export interface DeleteFilesEventRequest {
-  fileIds: string[];
-  eventId: string;
-  fields: string[];
+export interface IsExistEventResponse {
+  isExist: boolean;
 }
 
 export interface SendEventInvitesRequest {
@@ -366,7 +364,7 @@ export interface EventServiceClient {
    * rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
    */
 
-  deleteFilesEvent(request: DeleteFilesEventRequest): Observable<Empty>;
+  isExistEvent(request: EventByIdRequest): Observable<IsExistEventResponse>;
 }
 
 export interface EventServiceController {
@@ -427,7 +425,9 @@ export interface EventServiceController {
    * rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
    */
 
-  deleteFilesEvent(request: DeleteFilesEventRequest): Promise<Empty> | Observable<Empty> | Empty;
+  isExistEvent(
+    request: EventByIdRequest,
+  ): Promise<IsExistEventResponse> | Observable<IsExistEventResponse> | IsExistEventResponse;
 }
 
 export function EventServiceControllerMethods() {
@@ -449,7 +449,7 @@ export function EventServiceControllerMethods() {
       "cancelEvent",
       "checkOwnerShip",
       "sendEventInvites",
-      "deleteFilesEvent",
+      "isExistEvent",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

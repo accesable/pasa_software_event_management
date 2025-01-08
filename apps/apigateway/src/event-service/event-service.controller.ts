@@ -11,6 +11,7 @@ import { CreateGuestDto } from 'apps/apigateway/src/event-service/dto/create-gue
 import { CreateSpeakerDto } from 'apps/apigateway/src/event-service/dto/create-speaker.dto';
 import { FileServiceService } from 'apps/apigateway/src/file-service/file-service.service';
 import {  FilesInterceptor } from '@nestjs/platform-express';
+import { Types } from 'mongoose';
 
 @Controller('events')
 export class EventServiceController {
@@ -228,7 +229,15 @@ export class EventServiceController {
 
   @Get(':id')
   @ResponseMessage('Get event by id success')
-  getEventById(@Param('id') id: string) {
+  async getEventById(@Param('id') id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid Event ID');
+    }
+  
+    const isExist = await this.eventServiceService.isExistEvent(id);
+    if (!isExist.isExist) {
+      throw new BadRequestException('Event not found');
+    }
     return this.eventServiceService.getEventById(id);
   }
 

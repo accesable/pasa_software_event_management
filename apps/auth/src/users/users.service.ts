@@ -27,6 +27,16 @@ export class UsersService {
   //   this.client.connect();
   // }
 
+  async resetPassword(id: string, password: string) {
+    try {
+      const hashedPassword = await this.hashPassword(password);
+      await this.userModel.findByIdAndUpdate(id, { password: hashedPassword });
+      return { message: 'Password reset success' };
+    } catch (error) {
+      throw handleRpcException(error, 'Error resetting password');
+    }
+  }
+
   async findByEmailWithoutPassword(email: string) {
     try {
       const user = await this.userModel.findOne({ email }).exec();

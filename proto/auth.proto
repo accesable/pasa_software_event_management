@@ -14,9 +14,15 @@ service UsersService{
     rpc UpdateProfile(UpdateProfileRequest) returns (ProfileRespone);
     rpc UpdateAvatar(UpdateAvatarRequest) returns (ProfileRespone);
     rpc ChangePassword(ChangePasswordRequest) returns (Empty);
+    rpc ResetPassword(ResetPassRequest) returns (Empty);
 }
 
 message Empty{}
+
+message ResetPassRequest{
+    string id = 1;
+    string password = 2;
+}
 
 message QueryParamsRequest{
   map<string, string> query = 1;
