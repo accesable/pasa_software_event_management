@@ -101,7 +101,7 @@ export class UsersService {
       const hashedPassword = await this.hashPassword(registerDto.password);
       const user = await this.userModel.create({ ...registerDto, password: hashedPassword });
       const userResponse = this.transformUserDataResponse(user);
-      // this.client.emit('user_registered', { email: user.email, name: user.name });
+      // this.rabbitNotification.emit('user_registered', { email: user.email, name: user.name });
       return { user: userResponse };
     } catch (error) {
       throw handleRpcException(error, 'Error during registration');

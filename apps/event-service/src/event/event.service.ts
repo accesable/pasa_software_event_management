@@ -8,7 +8,7 @@ import { CategoryDocument, EventCategory } from 'apps/event-service/src/event-ca
 import { EventDocument } from 'apps/event-service/src/event/schemas/event.schema';
 import { InvitedUser, InvitedUserDocument } from 'apps/event-service/src/event/schemas/invite.schema';
 import { Question, QuestionDocument } from 'apps/event-service/src/event/schemas/question.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class EventService {
@@ -172,7 +172,6 @@ export class EventService {
     async getEventById(
         request: any,
     ): Promise<EventResponse> {
-        this.clientTicket.emit('checkEvent', { id: request.id });
         try {
             const event = await this.eventModel
                 .findById(request.id)
@@ -212,7 +211,13 @@ export class EventService {
 
     async isExistEvent(id: string) {
         try {
-            const event = await this.eventModel.findOne({ _id: id });
+            if (!Types.ObjectId.isValid(id)) {
+                throw new RpcException({
+                    message: 'Invalid event ID',
+                    code: HttpStatus.BAD_REQUEST,
+                });
+            }
+            const event = await this.eventModel.findById(id);
             return { isExist: !!event };
         } catch (error) {
             throw handleRpcException(error, 'Failed to check event');

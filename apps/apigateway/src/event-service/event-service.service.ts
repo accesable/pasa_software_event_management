@@ -26,11 +26,7 @@ export class EventServiceService implements OnModuleInit {
   }
 
   async isExistEvent(id: string) {
-    try {
-      return await this.eventService.isExistEvent({ id }).toPromise();
-    } catch (error) {
-      throw new RpcException(error);
-    }
+    return await this.eventService.isExistEvent({ id }).toPromise();
   }
 
   async sendEventInvites(
@@ -313,8 +309,9 @@ export class EventServiceService implements OnModuleInit {
     }
   }
 
-  cancelEvent(id: string, userId: string) {
+  async cancelEvent(id: string, userId: string) {
     try {
+      await this.eventService.isExistEvent({ id }).toPromise();
       return this.eventService.cancelEvent({ id, userId }).toPromise();
     } catch (error) {
       throw new RpcException(error);
@@ -421,70 +418,6 @@ export class EventServiceService implements OnModuleInit {
       throw new RpcException(error);
     }
   }
-
-  async updateEventVideoIntro() {
-
-  }
-
-  // async updateEventFiles(
-  //   eventId: string,
-  //   field: string,
-  //   uploadedFilesInfo: any[], // Use your actual type here
-  //   user: DecodeAccessResponse,
-  // ): Promise<UpdateEventResponse> {
-  //   // Assuming you want to associate these files with the event
-  //   try {
-  //     const userResponse = await lastValueFrom(
-  //       this.usersService.findById({ id: user.id }),
-  //     );
-
-  //     if (!userResponse || !userResponse.id) {
-  //       throw new RpcException('User not found or invalid user data');
-  //     }
-  //     const fileIds = uploadedFilesInfo.map((fileInfo) => fileInfo.fileId);
-
-  //     let updateData: any = {};
-
-  //     switch (field) {
-  //       case 'banner':
-  //         updateData.banner = fileIds[0]; // Assuming single file for banner
-  //         break;
-  //       case 'videoIntro':
-  //         updateData.videoIntro = fileIds[0]; // Assuming single file for videoIntro
-  //         break;
-  //       case 'documents':
-  //         updateData.documents = fileIds;
-  //         break;
-  //       default:
-  //         throw new RpcException(`Invalid field: ${field}`);
-  //     }
-
-  //     return await lastValueFrom(
-  //       this.eventService.updateEvent(
-  //         {
-  //           id: eventId,
-  //           ...updateData,
-  //         },
-  //         userResponse,
-  //       ),
-  //     );
-  //   } catch (error) {
-  //     throw new RpcException(error);
-  //   }
-  // }
-
-  // async updateEventDocument(
-  //   request: UpdateEventDocumentRequest,
-  // ): Promise<any> {
-  //   try {
-  //     const data = await this.eventService
-  //       .updateEventDocument(request)
-  //       .toPromise();
-  //     return data;
-  //   } catch (error) {
-  //     throw new RpcException(error);
-  //   }
-  // }
 
   async getAllSpeaker() {
     try {

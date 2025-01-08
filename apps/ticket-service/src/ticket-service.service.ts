@@ -98,8 +98,9 @@ export class TicketServiceService implements OnModuleInit {
   }
 
   async createParticipant(request: CreateParticipationRequest) {
-    try {      
+    try {
       const { eventId, userId, sessionIds } = request;
+      // error here
       const event = await this.eventService.getEventById({ id: eventId }).toPromise();
       if (event.event.status === 'CANCELED' || event.event.status === 'COMPLETED') {
         throw new RpcException({
@@ -107,7 +108,7 @@ export class TicketServiceService implements OnModuleInit {
           code: HttpStatus.BAD_REQUEST,
         });
       }
-      if(event.event.maxParticipants === 0) {
+      if (event.event.maxParticipants === 0) {
         throw new RpcException({
           message: 'Event is full',
           code: HttpStatus.BAD_REQUEST,

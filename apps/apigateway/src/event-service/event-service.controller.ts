@@ -258,7 +258,7 @@ export class EventServiceController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Cancel event success')
-  cancelEvent(@Param('id') id: string, @User() user: DecodeAccessResponse) {
+  async cancelEvent(@Param('id') id: string, @User() user: DecodeAccessResponse) {
     return this.eventServiceService.cancelEvent(id, user.id);
   }
 }

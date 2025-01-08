@@ -15,11 +15,6 @@ export class TicketServiceController implements TicketServiceProtoController {
     return this.ticketServiceService.cancelEvent(request.eventId);
   }
 
-  @EventPattern('checkEvent')
-  checkEvent(request: { event: any }) {
-    console.log('checkEvent asd', request);
-  }
-
   scanTicket(request: ScanTicketRequest){
     return this.ticketServiceService.scanTicket(request.code);
   }
