@@ -3,16 +3,16 @@ import * as ms from 'ms';
 import { BadRequestException, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { AllUserResponse, ChangePasswordRequest, GoogleAuthRequest, UpdateAvatarRequest, UpdateProfileRequest, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
-import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
-import { LoginDto } from 'apps/apigateway/src/users/dto/login';
+import { RegisterDto } from './dto/register';
+import { LoginDto } from './dto/login';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { ProfileDto } from 'apps/apigateway/src/users/dto/profile';
+import { ProfileDto } from './dto/profile';
 import { QueryParamsRequest } from '@app/common/types/event';
 
-import { NotificationService } from 'apps/apigateway/src/notification/notification.service';
-import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
-import { FileServiceService } from 'apps/apigateway/src/file-service/file-service.service';
+import { NotificationService } from '../notification/notification.service'; 
+import { RedisCacheService } from '../redis/redis.service';
+import { FileServiceService } from '../file-service/file-service.service';
 
 @Injectable()
 export class UsersService implements OnModuleInit {

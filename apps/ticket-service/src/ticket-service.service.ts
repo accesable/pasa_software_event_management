@@ -100,7 +100,6 @@ export class TicketServiceService implements OnModuleInit {
   async createParticipant(request: CreateParticipationRequest) {
     try {
       const { eventId, userId, sessionIds } = request;
-      // error here
       const event = await this.eventService.getEventById({ id: eventId }).toPromise();
       if (event.event.status === 'CANCELED' || event.event.status === 'COMPLETED') {
         throw new RpcException({
@@ -240,6 +239,28 @@ export class TicketServiceService implements OnModuleInit {
   //     throw handleRpcException(error, 'Failed to update participant');
   //   }
   // }
+
+  async updateParticipant(request: CreateParticipationRequest) {
+    try {
+      const { eventId, userId, sessionIds } = request;
+      const participant = await this.participantModel.findOne({ eventId, userId });
+      if (!participant) {
+        throw new RpcException({
+          message: 'Participant not found',
+          code: HttpStatus.NOT_FOUND,
+        });
+      }
+      participant.sectionIds = sessionIds;
+      await participant.save();
+      const ticket = await this.ticketModel.findOne({ participantId: participant._id });
+      return {
+        participation: this.transformParticipant(participant),
+        ticket: this.transformTicket(ticket),
+      };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to update participant');
+    }
+  }
 
   transformParticipant(participant: ParticipantDocument): Participation {
     return {

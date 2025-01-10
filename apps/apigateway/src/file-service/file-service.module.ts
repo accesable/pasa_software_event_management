@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { FileServiceService } from './file-service.service';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
-import { FILE_SERVICE } from 'apps/apigateway/src/constants/service.constant';
+import { FILE_SERVICE } from '../constants/service.constant';
 import { FILE_PACKAGE_NAME } from '@app/common/types/file';
 
 @Module({

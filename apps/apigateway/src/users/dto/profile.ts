@@ -1,5 +1,5 @@
 import { OmitType, PartialType } from '@nestjs/mapped-types';
-import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
+import { RegisterDto } from './register';
 import { IsNotEmpty, IsOptional, IsString, IsUrl, Length } from 'class-validator';
 
 export class ProfileDto extends PartialType(OmitType(RegisterDto, ['email'] as const)) {

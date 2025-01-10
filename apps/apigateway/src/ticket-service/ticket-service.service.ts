@@ -4,7 +4,7 @@ import { BadRequestException, HttpStatus, Inject, Injectable, NotFoundException 
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { TICKET_SERVICE } from 'apps/apigateway/src/constants/service.constant';
 import { EventServiceService } from 'apps/apigateway/src/event-service/event-service.service';
-import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
+import { RedisCacheService } from '../redis/redis.service';
 
 @Injectable()
 export class TicketServiceService {
@@ -20,11 +20,23 @@ export class TicketServiceService {
         this.ticketService = this.client.getService<TicketServiceProtoClient>(TICKET_SERVICE_PROTO_SERVICE_NAME);
     }
 
+    async updateParticipant(request: CreateParticipationRequest) {
+        try {
+            const res = await this.eventService.isExistEvent(request.eventId);
+            if(!res.isExist) {
+                throw new NotFoundException('Event not found');
+            }
+            return await this.ticketService.updateParticipant(request).toPromise();
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to update participant');
+        }
+    }
+
     async deleteParticipant(id: string) {
         try {
             return await this.ticketService.deleteParticipant({ id }).toPromise();
         } catch (error) {
-            throw new RpcException(error);
+            throw handleRpcException(error, 'Failed to delete participant');
         }
     }
 
@@ -33,7 +45,7 @@ export class TicketServiceService {
             await this.eventService.isExistEvent(request.eventId);
             return await this.ticketService.createParticipant(request).toPromise();
         } catch (error) {
-            throw new RpcException(error);
+            throw handleRpcException(error, 'Failed to create participant');
         }
     }
 
@@ -54,7 +66,7 @@ export class TicketServiceService {
         try {
             return await this.ticketService.getAllTicket(request).toPromise();
         } catch (error) {
-            throw new RpcException(error);
+            throw handleRpcException(error, 'Failed to get all ticket');
         }
     }
 
@@ -62,7 +74,7 @@ export class TicketServiceService {
         try {
             return await this.ticketService.scanTicket({ code }).toPromise();
         } catch (error) {
-            throw new RpcException(error);
+            throw handleRpcException(error, 'Failed to scan ticket');
         }
     }
 }

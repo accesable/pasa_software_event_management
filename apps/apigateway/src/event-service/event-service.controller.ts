@@ -1,16 +1,16 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
 import { EventServiceService } from './event-service.service';
-import { CreateEventDto } from 'apps/apigateway/src/event-service/dto/create-event-service.dto';
-import { ResponseMessage, Roles, User } from 'apps/apigateway/src/decorators/public.decorator';
-import { JwtAuthGuard } from 'apps/apigateway/src/guards/jwt-auth.guard';
-import { RolesGuard } from 'apps/apigateway/src/guards/roles.guard';
+import { CreateEventDto } from './dto/create-event-service.dto';
+import { ResponseMessage, Roles, User } from '../decorators/public.decorator';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
 import { DecodeAccessResponse } from '@app/common';
-import { CreateEventCategoryDto } from 'apps/apigateway/src/event-service/dto/create-event-category.dtc';
-import { UpdateEventDto } from 'apps/apigateway/src/event-service/dto/update-event-service.dto';
-import { CreateGuestDto } from 'apps/apigateway/src/event-service/dto/create-guest.dto';
-import { CreateSpeakerDto } from 'apps/apigateway/src/event-service/dto/create-speaker.dto';
-import { FileServiceService } from 'apps/apigateway/src/file-service/file-service.service';
-import {  FilesInterceptor } from '@nestjs/platform-express';
+import { CreateEventCategoryDto } from './dto/create-event-category.dtc';
+import { UpdateEventDto } from './dto/update-event-service.dto';
+import { CreateGuestDto } from './dto/create-guest.dto';
+import { CreateSpeakerDto } from './dto/create-speaker.dto';
+import { FileServiceService } from '../file-service/file-service.service';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { Types } from 'mongoose';
 
 @Controller('events')

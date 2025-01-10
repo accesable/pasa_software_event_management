@@ -14,7 +14,7 @@ service TicketServiceProto{
     rpc CreateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
     rpc GetParticipant(QueryParamsRequest) returns (ParticipationResponse); // filter eventId, userId, status
     rpc GetParticipantById(ParticipationByIdRequest) returns (ParticipationResponse);
-    rpc UpdateParticipant(UpdateParticipationRequest) returns (ParticipationResponse);
+    rpc UpdateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
     rpc DeleteParticipant(ParticipationByIdRequest) returns (Empty);
 }
 
@@ -26,13 +26,6 @@ message ScanTicketResponse{
 
 message ScanTicketRequest{
   string code = 1;
-}
-
-message UpdateParticipationRequest{
-  string id = 1;
-  optional string status = 2;
-  optional string checkedInAt = 3;
-  optional string checkedOutAt = 4;
 }
 
 message ParticipationByIdRequest{

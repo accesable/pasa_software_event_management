@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
-import { AllTicketResponse, CreateParticipationRequest, Empty, ParticipationByIdRequest, ParticipationResponse, QueryParamsRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, TicketServiceProtoController, TicketServiceProtoControllerMethods, UpdateParticipationRequest, UpdateTicketRequest } from '@app/common/types/ticket';
+import { AllTicketResponse, CreateParticipationRequest, Empty, ParticipationByIdRequest, ParticipationResponse, QueryParamsRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, TicketServiceProtoController, TicketServiceProtoControllerMethods, UpdateTicketRequest } from '@app/common/types/ticket';
 import { Observable } from 'rxjs';
 import { EventPattern } from '@nestjs/microservices';
 
@@ -30,8 +30,8 @@ export class TicketServiceController implements TicketServiceProtoController {
   getParticipantById(request: ParticipationByIdRequest): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse {
     throw new Error('Method not implemented.');
   }
-  updateParticipant(request: UpdateParticipationRequest): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse {
-    throw new Error('Method not implemented.');
+  updateParticipant(request: CreateParticipationRequest) {
+    return this.ticketServiceService.updateParticipant(request);
   }
   deleteParticipant(request: ParticipationByIdRequest) {
     return this.ticketServiceService.deleteParticipant(request.id);

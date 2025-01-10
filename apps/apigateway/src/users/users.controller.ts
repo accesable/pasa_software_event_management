@@ -1,16 +1,16 @@
 import { Controller, Get, Post, Body, HttpCode, Req, Res, Headers, UnauthorizedException, UseGuards, HttpStatus, Put, Patch, UseInterceptors, BadRequestException, UploadedFile, Param, Query, ParseFilePipe, FileTypeValidator, MaxFileSizeValidator, } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
-import { LoginDto } from 'apps/apigateway/src/users/dto/login';
+import { RegisterDto } from './dto/register';
+import { LoginDto } from './dto/login';
 import { Response, Request as ExpressRequest } from 'express';
-import { ProfileDto } from 'apps/apigateway/src/users/dto/profile';
-import { GoogleAuthGuard } from 'apps/apigateway/src/guards/google-auth/google-auth.guard';
-import { ResponseMessage, Roles, User } from 'apps/apigateway/src/decorators/public.decorator';
-import { JwtAuthGuard } from 'apps/apigateway/src/guards/jwt-auth.guard';
+import { ProfileDto } from './dto/profile';
+import { GoogleAuthGuard } from '../guards/google-auth/google-auth.guard';
+import { ResponseMessage, Roles, User } from '../decorators/public.decorator';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { DecodeAccessResponse, UpdateAvatarRequest, UserResponse } from '@app/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ChangePasswordDto } from 'apps/apigateway/src/users/dto/change-password';
-import { FileServiceService } from 'apps/apigateway/src/file-service/file-service.service';
+import { ChangePasswordDto } from '../users/dto/change-password';
+import { FileServiceService } from '../file-service/file-service.service';
 
 @Controller('auth')
 export class UsersController {

@@ -1,15 +1,14 @@
 import { CreatedBy, CreateEventRequest, DecodeAccessResponse, EVENT_SERVICE_NAME, EventServiceClient, QueryParamsRequest, UpdateCategoryRequest, UpdateEventRequest } from '@app/common/types/event';
 import { Inject, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
-import { CreateEventDto } from 'apps/apigateway/src/event-service/dto/create-event-service.dto';
-import { EVENT_SERVICE } from 'apps/apigateway/src/constants/service.constant';
-import { CreateEventCategoryDto } from 'apps/apigateway/src/event-service/dto/create-event-category.dtc';
-import { UpdateEventDto } from 'apps/apigateway/src/event-service/dto/update-event-service.dto';
-import { CreateSpeakerDto } from 'apps/apigateway/src/event-service/dto/create-speaker.dto';
-import { CreateGuestDto } from 'apps/apigateway/src/event-service/dto/create-guest.dto';
-import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
+import { CreateEventDto } from './dto/create-event-service.dto';
+import { EVENT_SERVICE } from '../constants/service.constant';
+import { CreateEventCategoryDto } from './dto/create-event-category.dtc';
+import { UpdateEventDto } from './dto/update-event-service.dto';
+import { CreateSpeakerDto } from './dto/create-speaker.dto';
+import { CreateGuestDto } from './dto/create-guest.dto';
+import { RedisCacheService } from '../redis/redis.service';
 import { lastValueFrom, map } from 'rxjs';
-import { NotificationService } from 'apps/apigateway/src/notification/notification.service';
 
 @Injectable()
 export class EventServiceService implements OnModuleInit {
@@ -68,15 +67,12 @@ export class EventServiceService implements OnModuleInit {
   // async acceptInvitation(eventId: string, query: any) {
   //   try {
   //     const token = query.token;
-
-  //     // Make a request to the event service to accept the invitation
+  //     // Gửi yêu cầu đến event service để chấp nhận lời mời
   //     const acceptResult = await lastValueFrom(
   //       this.eventService.acceptInvitation({ eventId, token }),
   //     );
-
   //     return acceptResult;
   //   } catch (error) {
-  //     // Handle errors during the invitation acceptance process
   //     throw new RpcException(error);
   //   }
   // }
@@ -84,16 +80,12 @@ export class EventServiceService implements OnModuleInit {
   // async declineInvitation(eventId: string, query: any) {
   //   try {
   //     const token = query.token;
-
-  //     // Make a request to the event service to decline the invitation
+  //     // Gửi yêu cầu đến event service để từ chối lời mời
   //     const declineResult = await lastValueFrom(
   //       this.eventService.declineInvitation({ eventId, token }),
   //     );
-
-  //     // Return the result of declining the invitation
   //     return declineResult;
   //   } catch (error) {
-  //     // Handle errors during the invitation declination process
   //     throw new RpcException(error);
   //   }
   // }
@@ -230,14 +222,14 @@ export class EventServiceService implements OnModuleInit {
   async getAllEvent(query: any) {
     try {
       const key = `getAllEvent:${JSON.stringify(query)}`;
-      const cacheData = await this.redisCacheService.get<any>(key);
-      if (cacheData) {
-        return cacheData;
-      }
+      // const cacheData = await this.redisCacheService.get<any>(key);
+      // if (cacheData) {
+      //   return cacheData;
+      // }
 
       const data = await this.eventService.getAllEvent({ query }).toPromise();
 
-      await this.redisCacheService.set(key, data, 60 * 5);
+      // await this.redisCacheService.set(key, data, 60 * 5);
       return data;
     } catch (error) {
       throw new RpcException(error);
@@ -311,7 +303,7 @@ export class EventServiceService implements OnModuleInit {
 
   async cancelEvent(id: string, userId: string) {
     try {
-      await this.eventService.isExistEvent({ id }).toPromise();
+      await this.isExistEvent(id);
       return this.eventService.cancelEvent({ id, userId }).toPromise();
     } catch (error) {
       throw new RpcException(error);

@@ -1,10 +1,7 @@
 import { Controller, Body } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { GeneralResponse, GoogleAuthRequest, LogoutRequest, UsersServiceController, UsersServiceControllerMethods } from '@app/common';
-import { RegisterDto } from 'apps/apigateway/src/users/dto/register';
-import { LoginDto } from 'apps/apigateway/src/users/dto/login';
-import { AllUserResponse, ChangePasswordRequest, EmailRequest, Empty, FindByIdRequest, ProfileRespone, QueryParamsRequest, ResetPassRequest, UpdateAvatarRequest, UpdateProfileRequest } from '@app/common/types/auth';
-import { Observable } from 'rxjs';
+import { AllUserResponse, ChangePasswordRequest, EmailRequest, Empty, FindByIdRequest, LoginRequest, ProfileRespone, QueryParamsRequest, RegisterRequest, ResetPassRequest, UpdateAvatarRequest, UpdateProfileRequest } from '@app/common/types/auth';
 
 @Controller()
 @UsersServiceControllerMethods()
@@ -43,11 +40,11 @@ export class UsersController implements UsersServiceController {
     return this.usersService.accessToken(request.refreshToken);
   }
 
-  register(@Body() registerDto: RegisterDto) {
+  register(@Body() registerDto: RegisterRequest) {
     return this.usersService.register(registerDto);
   }
 
-  login(@Body() loginDto: LoginDto) {
+  login(@Body() loginDto: LoginRequest) {
     return this.usersService.login(loginDto);
   }
 

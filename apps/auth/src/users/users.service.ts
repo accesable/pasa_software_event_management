@@ -1,6 +1,5 @@
-import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, ProfileRespone, UpdateAvatarRequest, UpdateProfileRequest, UserResponse } from './../../../../libs/common/src/types/auth';
+import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, LoginRequest, ProfileRespone, RegisterRequest, UpdateAvatarRequest, UpdateProfileRequest, UserResponse } from './../../../../libs/common/src/types/auth';
 import { Injectable, HttpStatus, Inject } from '@nestjs/common';
-import { RegisterDto, } from '../../../apigateway/src/users/dto/register';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'apps/auth/src/users/schemas/user.schema';
@@ -9,7 +8,6 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { GoogleAuthRequest, LogoutRequest } from '@app/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { LoginDto } from 'apps/apigateway/src/users/dto/login';
 import { handleRpcException } from '@app/common/filters/handleException';
 import aqp from 'api-query-params';
 
@@ -22,10 +20,6 @@ export class UsersService {
     @Inject('NOTIFICATION_SERVICE') private readonly rabbitNotification: ClientProxy,
     @Inject('FILE_SERVICE') private readonly rabbitFile: ClientProxy
   ) { }
-
-  // onModuleInit() {
-  //   this.client.connect();
-  // }
 
   async resetPassword(id: string, password: string) {
     try {
@@ -89,7 +83,7 @@ export class UsersService {
     }
   }
 
-  async register(registerDto: RegisterDto): Promise<any> {
+  async register(registerDto: RegisterRequest): Promise<any> {
     try {
       const isExistUser = await this.findByEmail(registerDto.email);
       if (isExistUser) {
@@ -101,6 +95,7 @@ export class UsersService {
       const hashedPassword = await this.hashPassword(registerDto.password);
       const user = await this.userModel.create({ ...registerDto, password: hashedPassword });
       const userResponse = this.transformUserDataResponse(user);
+      // bật lên khi cần gửi thông báo
       // this.rabbitNotification.emit('user_registered', { email: user.email, name: user.name });
       return { user: userResponse };
     } catch (error) {
@@ -108,7 +103,7 @@ export class UsersService {
     }
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginRequest) {
     try {
       const user = await this.validateUser(loginDto);
       if (!user) {
@@ -215,7 +210,7 @@ export class UsersService {
     }
   }
 
-  async validateUser(loginDto: LoginDto): Promise<any> {
+  async validateUser(loginDto: LoginRequest): Promise<any> {
     try {
       const user = await this.findByEmail(loginDto.email);
       if (!user) {

@@ -1,6 +1,6 @@
 
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateEventDto } from 'apps/apigateway/src/event-service/dto/create-event-service.dto';
+import { CreateEventDto } from './create-event-service.dto';
 import {
     IsOptional,
     IsEnum,

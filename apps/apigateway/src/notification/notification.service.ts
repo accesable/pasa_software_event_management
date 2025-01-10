@@ -1,7 +1,7 @@
 import { NOTIFICATION_SERVICE_PROTO_SERVICE_NAME, NotificationServiceProtoClient } from '@app/common/types/notification';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
-import { NOTIFICATION_SERVICE } from 'apps/apigateway/src/constants/service.constant';
+import { NOTIFICATION_SERVICE } from '../constants/service.constant';
 
 @Injectable()
 export class NotificationService implements OnModuleInit {

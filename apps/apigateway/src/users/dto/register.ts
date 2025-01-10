@@ -1,4 +1,4 @@
-import { LoginDto } from 'apps/apigateway/src/users/dto/login';
+import { LoginDto } from './login';
 import { IsEmail, IsNotEmpty, IsString, Length, MaxLength, MinLength } from 'class-validator';
 
 export class RegisterDto extends LoginDto {

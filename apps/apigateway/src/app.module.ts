@@ -7,9 +7,9 @@ import { UsersModule } from './users/users.module';
 import { EventServiceModule } from 'apps/apigateway/src/event-service/event-service.module';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { NotificationModule } from 'apps/apigateway/src/notification/notification.module';
-import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
 import { TicketServiceModule } from 'apps/apigateway/src/ticket-service/ticket-service.module';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { RedisCacheService } from 'apps/apigateway/src/redis/redis.service';
 
 @Module({
   imports: [

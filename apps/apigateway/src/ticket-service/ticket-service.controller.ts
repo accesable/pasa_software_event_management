@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
 import { CreateParticipationRequest, QueryParamsRequest } from '@app/common/types/ticket';
 import { ResponseMessage } from 'apps/auth/src/decorators/public.decorator';
@@ -13,8 +13,9 @@ export class TicketServiceController {
   ) { }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Get all ticket success')
-  getAllTicket(@Query() request: QueryParamsRequest) {
+  getAllTicket(@Query() request: QueryParamsRequest, @User() user: DecodeAccessResponse) {
     return this.ticketServiceService.getAllTicket(request);
   }
 
@@ -43,5 +44,12 @@ export class ParticipantServiceController {
   @ResponseMessage('Delete participant success')
   async deleteParticipant(@Param('id') id: string) {
     return this.ticketServiceService.deleteParticipant(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Update participant success')
+  async updateParticipant(@Param('id') id: string, @Body() request: any, @User() user: DecodeAccessResponse) {
+    return this.ticketServiceService.updateParticipant({eventId: id, ...request, userId: user.id});
   }
 }

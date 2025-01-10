@@ -22,6 +22,22 @@ export class EventService {
         @Inject('NOTIFICATION_SERVICE') private readonly clientNotification: ClientProxy,
     ) { }
 
+    async acceptInvitation(request: AcceptInvitationRequest) {
+        try {
+            // Xử lý logic chấp nhận lời mời, cập nhật trạng thái trong database
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to accept invitation');
+        }
+    }
+
+    async declineInvitation(request: DeclineInvitationRequest) {
+        try {
+            // Xử lý logic từ chối lời mời, cập nhật trạng thái trong database
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to decline invitation');
+        }
+    }
+
     async decreaseMaxParticipant(eventId: string) {
         try {
             const event = await this.eventModel.findById(eventId);
@@ -85,39 +101,10 @@ export class EventService {
 
     async getAllEvent(request: { query: { [key: string]: string } }) {
         try {
-            const { filter, limit, sort } = aqp(request.query);
+            const { filter = {}, limit = 10, sort = {} } = aqp(request.query || {});
 
-            const page = parseInt(filter.page, 10);
+            const page = parseInt(filter.page || '1', 10);
             delete filter.page;
-
-            // let population: any[] = [];
-            // if (filter.population) {
-            //     const popVal = filter.population;
-
-            //     if (typeof popVal === 'string') {
-            //         population = popVal.split(',').map((field: string) => {
-            //             const trimmedField = field.trim();
-            //             if (trimmedField === 'schedule.speakerIds') {
-            //                 return { path: trimmedField, model: 'Speaker' };
-            //             }
-            //             return { path: trimmedField };
-            //         });
-            //     }
-
-            //     else if (Array.isArray(popVal) || (popVal['$in'] && Array.isArray(popVal['$in']))) {
-            //         const fields = Array.isArray(popVal) ? popVal : popVal['$in'];
-            //         population = fields.map((field: string) => {
-            //             const trimmedField = field.trim();
-            //             if (trimmedField === 'schedule.speakerIds') {
-            //                 return { path: trimmedField, model: 'Speaker' };
-            //             }
-            //             return { path: trimmedField };
-            //         });
-            //     }
-
-            //     delete filter.population;
-            // }
-
 
             if (filter.category) {
                 const foundCategory = await this.categoryModel.findOne({
@@ -129,17 +116,17 @@ export class EventService {
                 delete filter.category;
             }
 
-            const parsedLimit = limit;
+            const parsedLimit = parseInt(limit as any, 10) || 10;
             const skip = (page - 1) * parsedLimit;
 
             const totalItems = await this.eventModel.countDocuments(filter);
             const totalPages = Math.ceil(totalItems / parsedLimit);
+
             const events = await this.eventModel
                 .find(filter)
                 .skip(skip)
                 .limit(parsedLimit)
                 .sort(sort as any)
-                // .populate(population) // "guestIds", "categoryId", "schedule.speakerIds"
                 .exec();
 
             const eventResponses = events.map((event) => this.transformEvent(event));

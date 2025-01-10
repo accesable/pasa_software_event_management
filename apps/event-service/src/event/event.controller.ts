@@ -17,6 +17,14 @@ export class EventController implements EventServiceController {
     private readonly guestService: GuestService,
   ) { }
 
+  async acceptInvitation(request: AcceptInvitationRequest): Promise<AcceptInvitationResponse> {
+    return this.eventService.acceptInvitation(request);
+  }
+  
+  async declineInvitation(request: DeclineInvitationRequest): Promise<DeclineInvitationResponse> {
+    return this.eventService.declineInvitation(request);
+  }
+
   isExistEvent(request: EventByIdRequest) {
     return this.eventService.isExistEvent(request.id);
   }

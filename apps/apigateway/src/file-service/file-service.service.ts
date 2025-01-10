@@ -1,7 +1,7 @@
 import { FILE_SERVICE_PROTO_SERVICE_NAME, FileServiceProtoClient, FileUpload, UploadOptions } from '@app/common/types/file';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
-import { FILE_SERVICE } from 'apps/apigateway/src/constants/service.constant';
+import { FILE_SERVICE } from '../constants/service.constant';
 import { lastValueFrom } from 'rxjs';
 
 export interface FileUploadResult {

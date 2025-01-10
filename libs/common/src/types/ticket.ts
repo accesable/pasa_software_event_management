@@ -21,13 +21,6 @@ export interface ScanTicketRequest {
   code: string;
 }
 
-export interface UpdateParticipationRequest {
-  id: string;
-  status?: string | undefined;
-  checkedInAt?: string | undefined;
-  checkedOutAt?: string | undefined;
-}
-
 export interface ParticipationByIdRequest {
   id: string;
 }
@@ -124,7 +117,7 @@ export interface TicketServiceProtoClient {
 
   getParticipantById(request: ParticipationByIdRequest): Observable<ParticipationResponse>;
 
-  updateParticipant(request: UpdateParticipationRequest): Observable<ParticipationResponse>;
+  updateParticipant(request: CreateParticipationRequest): Observable<ParticipationResponse>;
 
   deleteParticipant(request: ParticipationByIdRequest): Observable<Empty>;
 }
@@ -163,7 +156,7 @@ export interface TicketServiceProtoController {
   ): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse;
 
   updateParticipant(
-    request: UpdateParticipationRequest,
+    request: CreateParticipationRequest,
   ): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse;
 
   deleteParticipant(request: ParticipationByIdRequest): Promise<Empty> | Observable<Empty> | Empty;

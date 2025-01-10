@@ -65,6 +65,40 @@ export class IsFutureDateConstraint implements ValidatorConstraintInterface {
     }
 }
 
+@ValidatorConstraint({ name: 'IsScheduleValid', async: false })
+export class IsScheduleValidConstraint implements ValidatorConstraintInterface {
+    validate(schedule: any[], args: ValidationArguments): boolean {
+        const eventStartDate = new Date(args.object['startDate']);
+        const eventEndDate = new Date(args.object['endDate']);
+
+        for (const item of schedule) {
+            const startTime = new Date(item.startTime);
+            const endTime = new Date(item.endTime);
+
+            if (startTime <= new Date() || endTime <= new Date()) {
+                return false;
+            }
+
+            if (startTime >= endTime) {
+                return false;
+            }
+
+            if (startTime < eventStartDate || endTime > eventEndDate) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    defaultMessage(args: ValidationArguments): string {
+        return `Each schedule's startTime and endTime must:
+        - Be in the future,
+        - Have startTime before endTime,
+        - And fall within the event's startDate and endDate.`;
+    }
+}
+
 export class CreateEventDto {
     @IsNotEmpty({ message: 'Name is required' })
     @IsString({ message: 'Name must be string' })
@@ -127,6 +161,7 @@ export class CreateEventDto {
 
     @IsOptional()
     @IsArray({ message: 'Schedule must be an array' })
+    @Validate(IsScheduleValidConstraint, { message: 'Invalid schedule timing' })
     schedule?: {
         title: string;
         startTime: Date;
