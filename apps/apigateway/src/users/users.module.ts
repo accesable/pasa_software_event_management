@@ -2,16 +2,16 @@ import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { GeneralUsersController, UsersController } from './users.controller';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { AUTH_SERVICE } from 'apps/apigateway/src/constants/service.constant';
-import { AUTH_PACKAGE_NAME } from '@app/common';
+import { AUTH_SERVICE } from '../constants/service.constant';
 import { join } from 'path';
-import { GoogleStrategy } from 'apps/apigateway/src/strategies/google.stategy';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtStrategy } from 'apps/apigateway/src/strategies/jwt.strategy';
-import { NotificationModule } from 'apps/apigateway/src/notification/notification.module';
-import { RedisCacheModule } from 'apps/apigateway/src/redis/redis.module';
-import { FileServiceModule } from 'apps/apigateway/src/file-service/file-service.module';
+import { JwtStrategy } from '../strategies/jwt.strategy';
+import { NotificationModule } from '../notification/notification.module';
+import { RedisCacheModule } from '../redis/redis.module';
+import { FileServiceModule } from '../file-service/file-service.module';
+import { AUTH_PACKAGE_NAME } from '../../../../libs/common/src';
+import { GoogleStrategy } from '../strategies/google.stategy';
 
 @Module({
   imports: [

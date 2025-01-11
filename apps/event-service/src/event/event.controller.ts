@@ -1,11 +1,11 @@
 import { Controller } from '@nestjs/common';
 import { EventService } from './event.service';
-import { AllEventResponse, CancelEventRequest, CategoryByIdRequest, CategoryNameRequest, CheckOwnerShipRequest, CheckOwnerShipResponse, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, Empty, EventByIdRequest, EventResponse, EventServiceController, EventServiceControllerMethods, GuestResponse, IsExistEventResponse, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, SpeakerResponse, UpdateCategoryRequest, UpdateEventDocumentRequest, UpdateEventDocumentResponse, UpdateEventRequest } from '@app/common/types/event';
 import { Observable } from 'rxjs';
-import { EventCategoryService } from 'apps/event-service/src/event-category/event-category.service';
-import { SpeakerService } from 'apps/event-service/src/speaker/speaker.service';
-import { GuestService } from 'apps/event-service/src/guest/guest.service';
+import { EventCategoryService } from '../event-category/event-category.service';
+import { SpeakerService } from '../speaker/speaker.service';
+import { GuestService } from '../guest/guest.service';
 import { EventPattern } from '@nestjs/microservices';
+import { AllEventResponse, CancelEventRequest, CategoryByIdRequest, CategoryNameRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
 
 @Controller()
 @EventServiceControllerMethods()
@@ -17,13 +17,13 @@ export class EventController implements EventServiceController {
     private readonly guestService: GuestService,
   ) { }
 
-  async acceptInvitation(request: AcceptInvitationRequest): Promise<AcceptInvitationResponse> {
-    return this.eventService.acceptInvitation(request);
-  }
+  // async acceptInvitation(request: AcceptInvitationRequest) {
+  //   return this.eventService.acceptInvitation(request);
+  // }
   
-  async declineInvitation(request: DeclineInvitationRequest): Promise<DeclineInvitationResponse> {
-    return this.eventService.declineInvitation(request);
-  }
+  // async declineInvitation(request: DeclineInvitationRequest) {
+  //   return this.eventService.declineInvitation(request);
+  // }
 
   isExistEvent(request: EventByIdRequest) {
     return this.eventService.isExistEvent(request.id);

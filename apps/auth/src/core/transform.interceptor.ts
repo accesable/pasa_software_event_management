@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { RESPONSE_MESSAGE } from 'apps/auth/src/decorators/public.decorator';
+import { RESPONSE_MESSAGE } from '../../../apigateway/src/decorators/public.decorator';
 
 export interface Response<T> {
     statusCode: number;

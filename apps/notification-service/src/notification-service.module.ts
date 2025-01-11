@@ -4,9 +4,9 @@ import { NotificationServiceService } from './notification-service.service';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { mailerConfig } from 'apps/notification-service/src/config/mailer.config';
 import { validateEnv } from './config/env.validation';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { mailerConfig } from './config/mailer.config';
 
 @Module({
   imports: [

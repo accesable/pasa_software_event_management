@@ -1,15 +1,14 @@
-import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, LoginRequest, ProfileRespone, RegisterRequest, UpdateAvatarRequest, UpdateProfileRequest, UserResponse } from './../../../../libs/common/src/types/auth';
+import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, GoogleAuthRequest, LoginRequest, LogoutRequest, ProfileRespone, RegisterRequest, UpdateAvatarRequest, UpdateProfileRequest, UserForParticipant, UserResponse } from './../../../../libs/common/src/types/auth';
 import { Injectable, HttpStatus, Inject } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
-import { User, UserDocument } from 'apps/auth/src/users/schemas/user.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { GoogleAuthRequest, LogoutRequest } from '@app/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { handleRpcException } from '@app/common/filters/handleException';
 import aqp from 'api-query-params';
+import { User, UserDocument } from './schemas/user.schema';
+import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
 
 @Injectable()
 export class UsersService {
@@ -20,6 +19,18 @@ export class UsersService {
     @Inject('NOTIFICATION_SERVICE') private readonly rabbitNotification: ClientProxy,
     @Inject('FILE_SERVICE') private readonly rabbitFile: ClientProxy
   ) { }
+
+  async findUsersByIds(ids: string[]) {
+    try {
+      const users = await this.userModel.find(
+        { _id: { $in: ids } },
+        { id: 1, email: 1, name: 1, phoneNumber: 1 }
+      );
+      return { users: users.map((user) => this.transformUserDataForParticipant(user)) };
+    } catch (error) {
+      throw handleRpcException(error, 'Error finding users by ids');
+    }
+  }
 
   async resetPassword(id: string, password: string) {
     try {
@@ -301,6 +312,15 @@ export class UsersService {
       return
     } catch (error) {
       throw handleRpcException(error, 'Error changing password');
+    }
+  }
+
+  transformUserDataForParticipant(user: any): UserForParticipant {
+    return {
+      id: user._id ? user._id.toString() : user.id.toString(),
+      email: user.email,
+      name: user.name,
+      phoneNumber: user.phoneNumber || null,
     }
   }
 

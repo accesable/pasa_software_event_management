@@ -7,10 +7,10 @@ import { ProfileDto } from './dto/profile';
 import { GoogleAuthGuard } from '../guards/google-auth/google-auth.guard';
 import { ResponseMessage, Roles, User } from '../decorators/public.decorator';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { DecodeAccessResponse, UpdateAvatarRequest, UserResponse } from '@app/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ChangePasswordDto } from '../users/dto/change-password';
 import { FileServiceService } from '../file-service/file-service.service';
+import { DecodeAccessResponse, UpdateAvatarRequest, UserResponse } from '../../../../libs/common/src';
 
 @Controller('auth')
 export class UsersController {

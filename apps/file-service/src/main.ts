@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { FileServiceModule } from './file-service.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
-import { FILE_PACKAGE_NAME } from '@app/common/types/file';
+import { FILE_PACKAGE_NAME } from '../../../libs/common/src/types/file';
 
 async function bootstrap() {
   const grpcApp = await NestFactory.createMicroservice<MicroserviceOptions>(

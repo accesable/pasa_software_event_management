@@ -1,4 +1,3 @@
-// ./apps/file-service/src/schemas/file.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 

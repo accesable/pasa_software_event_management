@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ReportServiceModule } from './report-service.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
-import { REPORT_PACKAGE_NAME } from '@app/common/types/report';
+import { REPORT_PACKAGE_NAME } from '../../../libs/common/src/types/report';
 
 async function bootstrap() {
   const grpcApp = await NestFactory.createMicroservice<MicroserviceOptions>(

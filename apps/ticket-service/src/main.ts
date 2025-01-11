@@ -1,9 +1,8 @@
-// main.ts
 import { NestFactory } from '@nestjs/core';
 import { TicketServiceModule } from './ticket-service.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
-import { TICKET_PACKAGE_NAME } from '@app/common/types/ticket';
+import { TICKET_PACKAGE_NAME } from '../../../libs/common/src/types/ticket';
 
 async function bootstrap() {
   // gRPC

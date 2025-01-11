@@ -1,12 +1,16 @@
 import { Controller, Body } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { GeneralResponse, GoogleAuthRequest, LogoutRequest, UsersServiceController, UsersServiceControllerMethods } from '@app/common';
-import { AllUserResponse, ChangePasswordRequest, EmailRequest, Empty, FindByIdRequest, LoginRequest, ProfileRespone, QueryParamsRequest, RegisterRequest, ResetPassRequest, UpdateAvatarRequest, UpdateProfileRequest } from '@app/common/types/auth';
+import { Observable } from 'rxjs';
+import { UsersServiceControllerMethods, UsersServiceController, GoogleAuthRequest, GeneralResponse, LogoutRequest, ChangePasswordRequest, EmailRequest, FindByIdRequest, findUsersByIdsRequest, LoginRequest, QueryParamsRequest, RegisterRequest, ResetPassRequest, UpdateAvatarRequest, UpdateProfileRequest } from '../../../../libs/common/src';
 
 @Controller()
 @UsersServiceControllerMethods()
 export class UsersController implements UsersServiceController {
   constructor(private readonly usersService: UsersService) { }
+
+  findUsersByIds(request: findUsersByIdsRequest) {
+    return this.usersService.findUsersByIds(request.ids);
+  }
 
   resetPassword(request: ResetPassRequest) {
     return this.usersService.resetPassword(request.id, request.password);

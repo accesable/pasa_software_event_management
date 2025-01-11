@@ -3,10 +3,10 @@ import { INestApplication } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
 import { CategoryServiceController, EventServiceController } from './event-service.controller';
 import { EventServiceService } from './event-service.service';
-import { DecodeAccessResponse } from '@app/common';
 import { CreateEventDto } from './dto/create-event-service.dto';
 import { of } from 'rxjs';
 import { FileServiceService } from '../file-service/file-service.service';
+import { DecodeAccessResponse } from '../../../../libs/common/src';
 
 
 describe('EventController', () => {

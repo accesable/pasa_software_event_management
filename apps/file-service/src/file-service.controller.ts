@@ -1,8 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { FileServiceService } from './file-service.service';
-import { DeleteFilesRequest, DeleteFilesResponse, FileServiceProtoController, FileServiceProtoControllerMethods, UploadFilesRequest, UploadFilesResponse } from '@app/common/types/file';
 import { Observable } from 'rxjs';
 import { EventPattern } from '@nestjs/microservices';
+import { FileServiceProtoControllerMethods, FileServiceProtoController, UploadFilesRequest, UploadFilesResponse, DeleteFilesRequest, DeleteFilesResponse } from '../../../libs/common/src/types/file';
 
 @Controller()
 @FileServiceProtoControllerMethods()

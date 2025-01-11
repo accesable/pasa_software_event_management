@@ -1,10 +1,10 @@
-import { handleRpcException } from '@app/common/filters/handleException';
-import { CreateParticipationRequest, TICKET_SERVICE_PROTO_SERVICE_NAME, TicketServiceProtoClient } from '@app/common/types/ticket';
-import { BadRequestException, HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, forwardRef, HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
-import { TICKET_SERVICE } from 'apps/apigateway/src/constants/service.constant';
-import { EventServiceService } from 'apps/apigateway/src/event-service/event-service.service';
+import { TICKET_SERVICE } from '../constants/service.constant';
+import { EventServiceService } from '../event-service/event-service.service';
 import { RedisCacheService } from '../redis/redis.service';
+import { CreateParticipationRequest, TICKET_SERVICE_PROTO_SERVICE_NAME, TicketServiceProtoClient } from '../../../../libs/common/src/types/ticket';
+import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
 
 @Injectable()
 export class TicketServiceService {
@@ -13,6 +13,7 @@ export class TicketServiceService {
     constructor(
         @Inject(TICKET_SERVICE) private client: ClientGrpc,
         private readonly redisCacheService: RedisCacheService,
+        @Inject(forwardRef(() => EventServiceService))
         private readonly eventService: EventServiceService,
     ) { }
 
@@ -20,10 +21,18 @@ export class TicketServiceService {
         this.ticketService = this.client.getService<TicketServiceProtoClient>(TICKET_SERVICE_PROTO_SERVICE_NAME);
     }
 
+    async getParticipantByEventId(eventId: string) {
+        try {
+            return await this.ticketService.getParticipantByEventId({ eventId }).toPromise();
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get participant by event id');
+        }
+    }
+
     async updateParticipant(request: CreateParticipationRequest) {
         try {
             const res = await this.eventService.isExistEvent(request.eventId);
-            if(!res.isExist) {
+            if (!res.isExist) {
                 throw new NotFoundException('Event not found');
             }
             return await this.ticketService.updateParticipant(request).toPromise();
@@ -72,7 +81,29 @@ export class TicketServiceService {
 
     async scanTicket(code: string) {
         try {
-            return await this.ticketService.scanTicket({ code }).toPromise();
+            const result = await this.ticketService.scanTicket({ code }).toPromise();
+            const cacheKey = `event:${result.result.eventId}:checkInOut`;
+            const cacheData = await this.redisCacheService.get<any>(cacheKey);
+            if(!result.result.checkOutAt){
+                if(cacheData){
+                    cacheData.push(result.result);
+                    await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
+                }
+                else{
+                    await this.redisCacheService.set(cacheKey, JSON.stringify([result.result]));
+                }
+            }
+            else{
+                if(cacheData){
+                    const index = cacheData.findIndex((item: any) => item.id === result.result.id);
+                    if(index !== -1){
+                        cacheData[index].checkOutAt = result.result.checkOutAt;
+                        await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
+                    }
+                }
+            }
+            const response = await this.redisCacheService.get<string>(`event:${result.result.eventId}:checkInOut`);
+            return response;
         } catch (error) {
             throw handleRpcException(error, 'Failed to scan ticket');
         }

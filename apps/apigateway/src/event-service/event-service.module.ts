@@ -3,22 +3,24 @@ import { EventServiceService } from './event-service.service';
 import { CategoryServiceController, EventServiceController, GuestServiceController, SpeakerServiceController } from './event-service.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtStrategy } from 'apps/apigateway/src/strategies/jwt.strategy';
-import { RolesGuard } from 'apps/apigateway/src/guards/roles.guard';
+import { JwtStrategy } from '../strategies/jwt.strategy';
+import { RolesGuard } from '../guards/roles.guard';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { EVENT_SERVICE } from 'apps/apigateway/src/constants/service.constant';
+import { EVENT_SERVICE } from '../constants/service.constant';
 import { join } from 'path';
-import { EVENT_PACKAGE_NAME } from '@app/common/types/event';
-import { UsersModule } from 'apps/apigateway/src/users/users.module';
-import { RedisCacheModule } from 'apps/apigateway/src/redis/redis.module';
-import { FileServiceModule } from 'apps/apigateway/src/file-service/file-service.module';
-import { AppModule } from 'apps/apigateway/src/app.module';
+import { UsersModule } from '../users/users.module';
+import { RedisCacheModule } from '../redis/redis.module';
+import { FileServiceModule } from '../file-service/file-service.module';
+import { AppModule } from '../app.module';
+import { TicketServiceModule } from '../ticket-service/ticket-service.module';
+import { EVENT_PACKAGE_NAME } from '../../../../libs/common/src/types/event';
 
 @Module({
   imports: [
     UsersModule,
     RedisCacheModule,
     FileServiceModule,
+    forwardRef(() => TicketServiceModule),
     forwardRef(() => AppModule),
     ClientsModule.register([
       {

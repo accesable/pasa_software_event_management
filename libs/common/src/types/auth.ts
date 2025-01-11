@@ -13,6 +13,14 @@ export const protobufPackage = "auth";
 export interface Empty {
 }
 
+export interface findUsersByIdsRequest {
+  ids: string[];
+}
+
+export interface findUsersByIdsResponse {
+  users: UserForParticipant[];
+}
+
 export interface ResetPassRequest {
   id: string;
   password: string;
@@ -139,6 +147,13 @@ export interface Meta {
   count: number;
 }
 
+export interface UserForParticipant {
+  id: string;
+  email: string;
+  name: string;
+  phoneNumber: string;
+}
+
 export const AUTH_PACKAGE_NAME = "auth";
 
 export interface UsersServiceClient {
@@ -165,6 +180,8 @@ export interface UsersServiceClient {
   changePassword(request: ChangePasswordRequest): Observable<Empty>;
 
   resetPassword(request: ResetPassRequest): Observable<Empty>;
+
+  findUsersByIds(request: findUsersByIdsRequest): Observable<findUsersByIdsResponse>;
 }
 
 export interface UsersServiceController {
@@ -197,6 +214,10 @@ export interface UsersServiceController {
   changePassword(request: ChangePasswordRequest): Promise<Empty> | Observable<Empty> | Empty;
 
   resetPassword(request: ResetPassRequest): Promise<Empty> | Observable<Empty> | Empty;
+
+  findUsersByIds(
+    request: findUsersByIdsRequest,
+  ): Promise<findUsersByIdsResponse> | Observable<findUsersByIdsResponse> | findUsersByIdsResponse;
 }
 
 export function UsersServiceControllerMethods() {
@@ -214,6 +235,7 @@ export function UsersServiceControllerMethods() {
       "updateAvatar",
       "changePassword",
       "resetPassword",
+      "findUsersByIds",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

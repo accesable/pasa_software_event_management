@@ -1,9 +1,9 @@
-import { handleRpcException } from '@app/common/filters/handleException';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Guest, GuestDocument } from 'apps/event-service/src/guest/schemas/guest.schema';
 import { Model } from 'mongoose';
-import { CreateGuestRequest, Guest as GuestType } from '@app/common/types/event';
+import { CreateGuestRequest, Guest as GuestType} from '../../../../libs/common/src/types/event';
+import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
+import { Guest, GuestDocument } from './schemas/guest.schema';
 
 @Injectable()
 export class GuestService {

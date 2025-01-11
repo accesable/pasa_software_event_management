@@ -1,10 +1,9 @@
 import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
-import { CreateParticipationRequest, QueryParamsRequest } from '@app/common/types/ticket';
-import { ResponseMessage } from 'apps/auth/src/decorators/public.decorator';
-import { JwtAuthGuard } from 'apps/apigateway/src/guards/jwt-auth.guard';
-import { User } from 'apps/apigateway/src/decorators/public.decorator';
-import { DecodeAccessResponse } from '@app/common';
+import { CreateParticipationRequest, QueryParamsRequest } from '../../../../libs/common/src/types/ticket';
+import { DecodeAccessResponse } from '../../../../libs/common/src';
+import { ResponseMessage, User } from '../decorators/public.decorator';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @Controller('tickets')
 export class TicketServiceController {
@@ -24,6 +23,11 @@ export class TicketServiceController {
   scanTicket(@Query('code') code: string) {
     return this.ticketServiceService.scanTicket(code);
   }
+
+  // @Post(':id/scan/manual')
+  // scanTicketManual(@Param('id') id: string, @Body() request: { email: string,  }) {
+  //   return this.ticketServiceService.scanTicketManual(id, request);
+  // }
 }
 
 @Controller('participants')

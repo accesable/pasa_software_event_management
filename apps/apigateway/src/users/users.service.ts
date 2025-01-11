@@ -1,18 +1,16 @@
 import { AUTH_SERVICE } from '../constants/service.constant';
 import * as ms from 'ms';
 import { BadRequestException, Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { AllUserResponse, ChangePasswordRequest, GoogleAuthRequest, UpdateAvatarRequest, UpdateProfileRequest, USERS_SERVICE_NAME, UsersServiceClient } from '@app/common';
 import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { RegisterDto } from './dto/register';
 import { LoginDto } from './dto/login';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { ProfileDto } from './dto/profile';
-import { QueryParamsRequest } from '@app/common/types/event';
-
 import { NotificationService } from '../notification/notification.service'; 
 import { RedisCacheService } from '../redis/redis.service';
 import { FileServiceService } from '../file-service/file-service.service';
+import { AllUserResponse, ChangePasswordRequest, GoogleAuthRequest, QueryParamsRequest, UpdateAvatarRequest, UpdateProfileRequest, USERS_SERVICE_NAME, UsersServiceClient } from '../../../../libs/common/src';
 
 @Injectable()
 export class UsersService implements OnModuleInit {

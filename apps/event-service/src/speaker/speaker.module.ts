@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SpeakerService } from './speaker.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Speaker, SpeakerSchema } from 'apps/event-service/src/speaker/schemas/speaker.schema';
+import { Speaker, SpeakerSchema } from './schemas/speaker.schema';
 
 @Module({
   imports: [

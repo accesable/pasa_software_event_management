@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Participant } from 'apps/ticket-service/src/schemas/participant';
 import { Document, Types } from 'mongoose';
+import { Participant } from './participant';
 
 export type TicketDocument = Ticket & Document & {
     createdAt: Date;

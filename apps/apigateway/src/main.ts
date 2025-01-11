@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
-import { RpcExceptionInterceptor } from 'apps/apigateway/src/users/core/rpc-exception.interceptor';
 import * as cookieParser from 'cookie-parser';
+import { RpcExceptionInterceptor } from './users/core/rpc-exception.interceptor';
 
 async function bootstrap() {
   const PORT = process.env.PORT || 8080;

@@ -2,14 +2,14 @@ import { forwardRef, Module } from '@nestjs/common';
 import { EventService } from './event.service';
 import { EventController } from './event.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { EventSchema } from 'apps/event-service/src/event/schemas/event.schema';
-import { EventCategoryModule } from 'apps/event-service/src/event-category/event-category.module';
-import { EventCategory, EventCategorySchema } from 'apps/event-service/src/event-category/schemas/event-category.schema';
-import { SpeakerModule } from 'apps/event-service/src/speaker/speaker.module';
-import { GuestModule } from 'apps/event-service/src/guest/guest.module';
-import { EventServiceModule } from 'apps/event-service/src/event-service.module';
-import { Question, QuestionSchema } from 'apps/event-service/src/event/schemas/question.schema';
-import { InvitedUser, InvitedUserSchema } from 'apps/event-service/src/event/schemas/invite.schema';
+import { EventCategoryModule } from '../event-category/event-category.module';
+import { EventCategory, EventCategorySchema } from '../event-category/schemas/event-category.schema';
+import { EventServiceModule } from '../event-service.module';
+import { GuestModule } from '../guest/guest.module';
+import { SpeakerModule } from '../speaker/speaker.module';
+import { EventSchema } from './schemas/event.schema';
+import { InvitedUser, InvitedUserSchema } from './schemas/invite.schema';
+import { Question, QuestionSchema } from './schemas/question.schema';
 
 @Module({
   imports: [

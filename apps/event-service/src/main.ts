@@ -2,7 +2,7 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { EventServiceModule } from './event-service.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
-import { EVENT_PACKAGE_NAME } from '@app/common/types/event';
+import { EVENT_PACKAGE_NAME } from '../../../libs/common/src/types/event';
 
 async function bootstrap() {
   const grpcApp = await NestFactory.createMicroservice<MicroserviceOptions>(

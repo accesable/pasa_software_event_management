@@ -2,8 +2,8 @@ import { forwardRef, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { validateEnv } from './config/env.validation';
-import { EventModule } from 'apps/event-service/src/event/event.module';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { EventModule } from './event/event.module';
 
 @Module({
   imports: [
@@ -43,7 +43,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
       },
     ]),
 
-    forwardRef(() => EventModule),
   ],
   exports: [
     ClientsModule

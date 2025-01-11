@@ -4,7 +4,7 @@ import { FileServiceService } from './file-service.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { validateEnv } from './config/env.validation';
 import { MongooseModule } from '@nestjs/mongoose';
-import { FileSchema } from 'apps/file-service/src/schemas/file.schema';
+import { FileSchema } from './schemas/file.schema';
 
 @Module({
   imports: [

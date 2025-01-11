@@ -3,7 +3,7 @@ import { FileServiceService } from './file-service.service';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import { FILE_SERVICE } from '../constants/service.constant';
-import { FILE_PACKAGE_NAME } from '@app/common/types/file';
+import { FILE_PACKAGE_NAME } from '../../../../libs/common/src/types/file';
 
 @Module({
   imports: [

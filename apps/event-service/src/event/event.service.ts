@@ -1,14 +1,14 @@
-import { handleRpcException } from '@app/common/filters/handleException';
-import { CancelEventRequest, CreateEventRequest, EventResponse, EventType, SendEventInvitesRequest, SendEventInvitesResponse, UpdateEventRequest } from '@app/common/types/event';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
-import { CategoryDocument, EventCategory } from 'apps/event-service/src/event-category/schemas/event-category.schema';
-import { EventDocument } from 'apps/event-service/src/event/schemas/event.schema';
-import { InvitedUser, InvitedUserDocument } from 'apps/event-service/src/event/schemas/invite.schema';
-import { Question, QuestionDocument } from 'apps/event-service/src/event/schemas/question.schema';
+import { EventDocument } from './schemas/event.schema';
+import { InvitedUser, InvitedUserDocument } from './schemas/invite.schema';
+import { Question, QuestionDocument } from './schemas/question.schema';
 import { Model, Types } from 'mongoose';
+import { CategoryDocument, EventCategory } from '../event-category/schemas/event-category.schema';
+import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
+import { SendEventInvitesRequest, SendEventInvitesResponse, CancelEventRequest, EventType, EventResponse, CreateEventRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
 
 @Injectable()
 export class EventService {
@@ -22,21 +22,21 @@ export class EventService {
         @Inject('NOTIFICATION_SERVICE') private readonly clientNotification: ClientProxy,
     ) { }
 
-    async acceptInvitation(request: AcceptInvitationRequest) {
-        try {
-            // Xử lý logic chấp nhận lời mời, cập nhật trạng thái trong database
-        } catch (error) {
-            throw handleRpcException(error, 'Failed to accept invitation');
-        }
-    }
+    // async acceptInvitation(request: AcceptInvitationRequest) {
+    //     try {
+    //         // Xử lý logic chấp nhận lời mời, cập nhật trạng thái trong database
+    //     } catch (error) {
+    //         throw handleRpcException(error, 'Failed to accept invitation');
+    //     }
+    // }
 
-    async declineInvitation(request: DeclineInvitationRequest) {
-        try {
-            // Xử lý logic từ chối lời mời, cập nhật trạng thái trong database
-        } catch (error) {
-            throw handleRpcException(error, 'Failed to decline invitation');
-        }
-    }
+    // async declineInvitation(request: DeclineInvitationRequest) {
+    //     try {
+    //         // Xử lý logic từ chối lời mời, cập nhật trạng thái trong database
+    //     } catch (error) {
+    //         throw handleRpcException(error, 'Failed to decline invitation');
+    //     }
+    // }
 
     async decreaseMaxParticipant(eventId: string) {
         try {

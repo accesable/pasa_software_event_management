@@ -15,7 +15,12 @@ export class RedisCacheService {
 
     async set(key: string, value: any, ttl?: number): Promise<void> {
         const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
-        await this.redisClient.set(key, stringValue, 'EX', ttl || this.configService.get<number>('CACHE_TTL'));
+        if(ttl) {
+            await this.redisClient.set(key, stringValue, 'EX', ttl);
+        }
+        else {
+            await this.redisClient.set(key, stringValue);
+        }
     }
 
     async get<T>(key: string): Promise<T | null> {

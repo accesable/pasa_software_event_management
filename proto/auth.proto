@@ -15,9 +15,18 @@ service UsersService{
     rpc UpdateAvatar(UpdateAvatarRequest) returns (ProfileRespone);
     rpc ChangePassword(ChangePasswordRequest) returns (Empty);
     rpc ResetPassword(ResetPassRequest) returns (Empty);
+    rpc findUsersByIds(findUsersByIdsRequest) returns (findUsersByIdsResponse);
 }
 
 message Empty{}
+
+message findUsersByIdsRequest{
+    repeated string ids = 1;
+}
+
+message findUsersByIdsResponse{
+    repeated UserForParticipant users = 1;
+}
 
 message ResetPassRequest{
     string id = 1;
@@ -138,4 +147,11 @@ message Meta{
   optional int32 totalPages = 3;
   int32 totalItems = 4;
   int32 count = 5;
+}
+
+message UserForParticipant{
+    string id = 1;
+    string email = 2;
+    string name = 3;
+    string phoneNumber = 4;
 }

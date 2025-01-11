@@ -3,8 +3,8 @@ import { NotificationService } from './notification.service';
 import { NotificationController } from './notification.controller';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { NOTIFICATION_SERVICE } from '../constants/service.constant';
-import { NOTIFICATION_PACKAGE_NAME } from '@app/common/types/notification';
 import { join } from 'path';
+import { NOTIFICATION_PACKAGE_NAME } from '../../../../libs/common/src/types/notification';
 
 @Module({
   imports: [

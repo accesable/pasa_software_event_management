@@ -1,15 +1,16 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TicketServiceController } from './ticket-service.controller';
 import { TicketServiceService } from './ticket-service.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { validateEnv } from './config/env.validation';
-import { Ticket, TicketSchema } from 'apps/ticket-service/src/schemas/ticket';
-import { Participant, ParticipantSchema } from 'apps/ticket-service/src/schemas/participant';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { EVENT_SERVICE } from 'apps/apigateway/src/constants/service.constant';
-import { EVENT_PACKAGE_NAME } from '@app/common/types/event';
 import { join } from 'path';
+import { AUTH_PACKAGE_NAME } from '../../../libs/common/src';
+import { EVENT_PACKAGE_NAME } from '../../../libs/common/src/types/event';
+import { EVENT_SERVICE, AUTH_SERVICE } from '../../apigateway/src/constants/service.constant';
+import { Participant, ParticipantSchema } from './schemas/participant';
+import { Ticket, TicketSchema } from './schemas/ticket';
 
 @Module({
   imports: [
@@ -59,10 +60,19 @@ import { join } from 'path';
           protoPath: join(__dirname, '../event.proto'),
           url: '0.0.0.0:50052'
         },
+      },
+      {
+        name: AUTH_SERVICE,
+        transport: Transport.GRPC,
+        options: {
+          package: AUTH_PACKAGE_NAME,
+          protoPath: join(__dirname, '../auth.proto'),
+          url: '0.0.0.0:50051'
+        },
       }
     ]),
   ],
   controllers: [TicketServiceController],
-  providers: [TicketServiceService],
+  providers: [TicketServiceService]
 })
 export class TicketServiceModule { }

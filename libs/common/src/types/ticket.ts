@@ -13,8 +13,26 @@ export const protobufPackage = "ticket";
 export interface Empty {
 }
 
+export interface GetParticipantByEventIdRequest {
+  eventId: string;
+}
+
+export interface GetParticipantByEventIdResponse {
+  participants: DataResultCheckInOut[];
+}
+
 export interface ScanTicketResponse {
-  message: string;
+  result: DataResultCheckInOut | undefined;
+}
+
+export interface DataResultCheckInOut {
+  eventId: string;
+  id: string;
+  email: string;
+  name: string;
+  phoneNumber?: string | undefined;
+  checkInAt: string;
+  checkOutAt?: string | undefined;
 }
 
 export interface ScanTicketRequest {
@@ -111,9 +129,7 @@ export interface TicketServiceProtoClient {
 
   createParticipant(request: CreateParticipationRequest): Observable<ParticipationResponse>;
 
-  /** filter eventId, userId, status */
-
-  getParticipant(request: QueryParamsRequest): Observable<ParticipationResponse>;
+  getParticipantByEventId(request: GetParticipantByEventIdRequest): Observable<GetParticipantByEventIdResponse>;
 
   getParticipantById(request: ParticipationByIdRequest): Observable<ParticipationResponse>;
 
@@ -145,11 +161,12 @@ export interface TicketServiceProtoController {
     request: CreateParticipationRequest,
   ): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse;
 
-  /** filter eventId, userId, status */
-
-  getParticipant(
-    request: QueryParamsRequest,
-  ): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse;
+  getParticipantByEventId(
+    request: GetParticipantByEventIdRequest,
+  ):
+    | Promise<GetParticipantByEventIdResponse>
+    | Observable<GetParticipantByEventIdResponse>
+    | GetParticipantByEventIdResponse;
 
   getParticipantById(
     request: ParticipationByIdRequest,
@@ -173,7 +190,7 @@ export function TicketServiceProtoControllerMethods() {
       "cancelTicket",
       "scanTicket",
       "createParticipant",
-      "getParticipant",
+      "getParticipantByEventId",
       "getParticipantById",
       "updateParticipant",
       "deleteParticipant",

@@ -4,7 +4,6 @@ import { CreateEventDto } from './dto/create-event-service.dto';
 import { ResponseMessage, Roles, User } from '../decorators/public.decorator';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
-import { DecodeAccessResponse } from '@app/common';
 import { CreateEventCategoryDto } from './dto/create-event-category.dtc';
 import { UpdateEventDto } from './dto/update-event-service.dto';
 import { CreateGuestDto } from './dto/create-guest.dto';
@@ -12,6 +11,7 @@ import { CreateSpeakerDto } from './dto/create-speaker.dto';
 import { FileServiceService } from '../file-service/file-service.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Types } from 'mongoose';
+import { DecodeAccessResponse } from '../../../../libs/common/src';
 
 @Controller('events')
 export class EventServiceController {
@@ -29,6 +29,12 @@ export class EventServiceController {
     @User() user: DecodeAccessResponse,
   ) {
     return this.eventServiceService.sendEventInvites(eventId, emails, user);
+  }
+
+  @Get(':id/participants')
+  @ResponseMessage('Get participants success')
+  async getParticipantsEvent(@Param('id') eventId: string) {
+    return this.eventServiceService.getParticipantsEvent(eventId);
   }
 
   // @Get(':id/accept')

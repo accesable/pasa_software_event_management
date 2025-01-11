@@ -1,11 +1,10 @@
-import { handleRpcException } from '@app/common/filters/handleException';
-import { CreateSpeakerRequest } from '@app/common/types/event';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
-import { Speaker, SpeakerDocument } from 'apps/event-service/src/speaker/schemas/speaker.schema';
 import { Model } from 'mongoose';
-import { Speaker as SpeakerType } from '@app/common/types/event';
+import { CreateSpeakerRequest, Speaker as SpeakerType } from '../../../../libs/common/src/types/event';
+import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
+import { Speaker, SpeakerDocument } from './schemas/speaker.schema';
 
 @Injectable()
 export class SpeakerService {

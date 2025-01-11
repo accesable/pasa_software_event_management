@@ -1,10 +1,10 @@
-import { handleRpcException } from '@app/common/filters/handleException';
-import { Category, CreateCategoryRequest, UpdateCategoryRequest } from '@app/common/types/event';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
-import { CategoryDocument, EventCategory } from 'apps/event-service/src/event-category/schemas/event-category.schema';
 import { Model } from 'mongoose';
+import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
+import { CreateCategoryRequest, Category, UpdateCategoryRequest } from '../../../../libs/common/src/types/event';
+import { EventCategory, CategoryDocument } from './schemas/event-category.schema';
 
 @Injectable()
 export class EventCategoryService {

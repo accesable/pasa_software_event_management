@@ -11,7 +11,7 @@ export const envSchema = z.object({
     REDIS_HOST: z.string(),
     REDIS_PASSWORD: z.string(),
     REDIS_PORT: z.string().transform(Number),
-    CACHE_TTL: z.string().transform(Number),
+    // CACHE_TTL: z.string().transform(Number),
 });
 
 export const validateEnv = (env: Record<string, unknown>) => {

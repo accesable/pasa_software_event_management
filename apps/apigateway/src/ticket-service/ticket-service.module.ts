@@ -1,17 +1,17 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
 import { ParticipantServiceController, TicketServiceController } from './ticket-service.controller';
-import { RedisCacheModule } from 'apps/apigateway/src/redis/redis.module';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { TICKET_SERVICE } from 'apps/apigateway/src/constants/service.constant';
-import { TICKET_PACKAGE_NAME } from '@app/common/types/ticket';
 import { join } from 'path';
-import { EventServiceModule } from 'apps/apigateway/src/event-service/event-service.module';
+import { RedisCacheModule } from '../redis/redis.module';
+import { EventServiceModule } from '../event-service/event-service.module';
+import { TICKET_SERVICE } from '../constants/service.constant';
+import { TICKET_PACKAGE_NAME } from '../../../../libs/common/src/types/ticket';
 
 @Module({
   imports: [
     RedisCacheModule,
-    EventServiceModule,
+    forwardRef(() => EventServiceModule),
     ClientsModule.register([
       {
         name: TICKET_SERVICE,
@@ -26,5 +26,6 @@ import { EventServiceModule } from 'apps/apigateway/src/event-service/event-serv
   ],
   controllers: [TicketServiceController, ParticipantServiceController],
   providers: [TicketServiceService],
+  exports: [TicketServiceService],
 })
 export class TicketServiceModule { }

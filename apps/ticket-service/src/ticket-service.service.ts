@@ -1,23 +1,26 @@
-import { handleRpcException } from '@app/common/filters/handleException';
-import { EVENT_SERVICE_NAME, EventServiceClient } from '@app/common/types/event';
-import { CreateParticipationRequest, Participation, TicketType } from '@app/common/types/ticket';
 import { HttpStatus, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
-import { EVENT_SERVICE } from 'apps/apigateway/src/constants/service.constant';
-import { Participant, ParticipantDocument } from 'apps/ticket-service/src/schemas/participant';
-import { Ticket, TicketDocument } from 'apps/ticket-service/src/schemas/ticket';
 import { Model } from 'mongoose';
 import * as QRCode from 'qrcode';
+import { UsersServiceClient, USERS_SERVICE_NAME } from '../../../libs/common/src';
+import { handleRpcException } from '../../../libs/common/src/filters/handleException';
+import { EVENT_SERVICE_NAME, EventServiceClient } from '../../../libs/common/src/types/event';
+import { ScanTicketResponse, CreateParticipationRequest, Participation, TicketType } from '../../../libs/common/src/types/ticket';
+import { EVENT_SERVICE, AUTH_SERVICE } from '../../apigateway/src/constants/service.constant';
+import { Participant, ParticipantDocument } from './schemas/participant';
+import { Ticket, TicketDocument } from './schemas/ticket';
 
 @Injectable()
 export class TicketServiceService implements OnModuleInit {
   private eventService: EventServiceClient;
+  private authService: UsersServiceClient;
 
   constructor(
     @Inject(EVENT_SERVICE) private client: ClientGrpc,
+    @Inject(AUTH_SERVICE) private clientAuth: ClientGrpc,
     @InjectModel(Ticket.name) private ticketModel: Model<TicketDocument>,
     @InjectModel(Participant.name) private participantModel: Model<ParticipantDocument>,
     private configService: ConfigService,
@@ -26,9 +29,10 @@ export class TicketServiceService implements OnModuleInit {
 
   onModuleInit() {
     this.eventService = this.client.getService<EventServiceClient>(EVENT_SERVICE_NAME);
+    this.authService = this.clientAuth.getService<UsersServiceClient>(USERS_SERVICE_NAME);
   }
 
-  async scanTicket(code: string) {
+  async scanTicket(code: string): Promise<ScanTicketResponse> {
     try {
       const ticket = await this.ticketModel.findOne({ code });
       if (!ticket) {
@@ -38,12 +42,23 @@ export class TicketServiceService implements OnModuleInit {
         });
       }
       if (ticket.status === 'ACTIVE') {
-        await this.participantModel.findByIdAndUpdate(ticket.participantId, { checkinAt: new Date() });
+        const participant = await this.participantModel.findByIdAndUpdate(ticket.participantId, { checkinAt: new Date() }, { new: true });
         ticket.status = 'USED';
         ticket.usedAt = new Date();
         await ticket.save();
+        const userInfo = await this.authService.findById({ id: participant.userId }).toPromise();
+
+        const result = {
+          eventId: participant.eventId,
+          id: userInfo.id,
+          email: userInfo.email,
+          name: userInfo.name,
+          phoneNumber: userInfo.phoneNumber || '',
+          checkInAt: participant.checkinAt.toISOString(),
+          checkOutAt: null,
+        }
         return {
-          message: 'checked in successfully',
+          result
         };
       }
       if (ticket.status === 'USED') {
@@ -51,8 +66,20 @@ export class TicketServiceService implements OnModuleInit {
         if (!participant.checkoutAt) {
           participant.checkoutAt = new Date();
           await participant.save();
+
+          const userInfo = await this.authService.findById({ id: participant.userId }).toPromise();
+
+          const result = {
+            eventId: participant.eventId,
+            id: userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name,
+            phoneNumber: userInfo.phoneNumber || '',
+            checkInAt: participant.checkinAt.toISOString(),
+            checkOutAt: participant.checkoutAt.toISOString(),
+          }
           return {
-            message: 'checked out successfully',
+            result
           };
         }
         throw new RpcException({
@@ -180,6 +207,35 @@ export class TicketServiceService implements OnModuleInit {
     // }
   }
 
+  async getParticipantByEventId(eventId: string) {
+    try {
+      const participants = await this.participantModel.find(
+        { eventId, checkinAt: { $ne: null } }, // Lọc những người có checkinAt không null
+        { userId: 1, eventId: 1, checkinAt: 1, checkoutAt: 1 }
+      );
+      const userIDs = participants.map((participant) => participant.userId);
+      const usersResponse = await this.authService.findUsersByIds({ ids: userIDs }).toPromise();
+      const users = usersResponse.users;
+      const response = participants.map((participant) => {
+        const user = users.find((u) => u.id === participant.userId);
+
+        return {
+          eventId: participant.eventId,
+          id: participant._id.toString(),
+          email: user?.email || '',
+          name: user?.name || '',
+          phoneNumber: user?.phoneNumber || null,
+          checkInAt: participant.checkinAt ? participant.checkinAt.toISOString() : null,
+          checkOutAt: participant.checkoutAt ? participant.checkoutAt.toISOString() : null,
+        };
+      });
+
+      return { participants: response };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get participant by event ID');
+    }
+  }
+
   async getAllTicket(request: any) {
     try {
       const { filter, limit, sort } = aqp(request.query);
@@ -216,29 +272,6 @@ export class TicketServiceService implements OnModuleInit {
       throw handleRpcException(error, 'Failed to get all ticket');
     }
   }
-
-  // async updateParticipant(request: UpdateParticipantRequest) {
-  //   try {
-  //     const { id, status, checkedInAt, checkedOutAt } = request;
-  //     const participant = await this.participantModel.findById(id);
-  //     if (!participant) {
-  //       throw new RpcException({
-  //         message: 'Participant not found',
-  //         code: HttpStatus.NOT_FOUND,
-  //       });
-  //     }
-
-  //     if (status) participant.status = status;
-  //     if (checkedInAt) participant.checkinAt = new Date(checkedInAt);
-  //     if (checkedOutAt) participant.checkoutAt = new Date(checkedOutAt);
-  //     // v.v. -> sectionIds, isVolunteer... tùy logic
-  //     await participant.save();
-
-  //     return participant;
-  //   } catch (error) {
-  //     throw handleRpcException(error, 'Failed to update participant');
-  //   }
-  // }
 
   async updateParticipant(request: CreateParticipationRequest) {
     try {

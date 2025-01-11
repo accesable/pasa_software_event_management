@@ -12,7 +12,7 @@ service TicketServiceProto{
     rpc ScanTicket(ScanTicketRequest) returns (ScanTicketResponse);
 
     rpc CreateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
-    rpc GetParticipant(QueryParamsRequest) returns (ParticipationResponse); // filter eventId, userId, status
+    rpc GetParticipantByEventId(GetParticipantByEventIdRequest) returns (GetParticipantByEventIdResponse);
     rpc GetParticipantById(ParticipationByIdRequest) returns (ParticipationResponse);
     rpc UpdateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
     rpc DeleteParticipant(ParticipationByIdRequest) returns (Empty);
@@ -20,8 +20,26 @@ service TicketServiceProto{
 
 message Empty{}
 
+message GetParticipantByEventIdRequest{
+  string eventId = 1;
+}
+
+message GetParticipantByEventIdResponse{
+  repeated DataResultCheckInOut participants = 1;
+}
+
 message ScanTicketResponse{
-  string message = 1;
+  DataResultCheckInOut result = 1;
+}
+
+message DataResultCheckInOut{
+  string eventId = 7;
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  optional string phoneNumber = 4;
+  string checkInAt = 5;
+  optional string checkOutAt = 6;
 }
 
 message ScanTicketRequest{
@@ -81,9 +99,9 @@ message UpdateTicketRequest{
 message TicketType {
   string id = 1;
   string participantId = 2;
-  string qrCodeUrl = 4;
-  string status = 5;
-  optional string usedAt = 6;
+  string qrCodeUrl = 3;
+  string status = 4;
+  optional string usedAt = 5;
 }
 
 message Meta{

@@ -1,11 +1,11 @@
-import { handleRpcException } from '@app/common/filters/handleException';
-import { ForgotPasswordRequest, TokenData } from '@app/common/types/notification';
 import { MailerService } from '@nestjs-modules/mailer';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { EmailTemplates } from 'apps/notification-service/src/mail/contants/template';
+import { handleRpcException } from '../../../libs/common/src/filters/handleException';
+import { ForgotPasswordRequest, TokenData } from '../../../libs/common/src/types/notification';
+import { EmailTemplates } from './mail/contants/template';
 
 @Injectable()
 export class NotificationServiceService {
@@ -15,10 +15,6 @@ export class NotificationServiceService {
     private jwtService: JwtService,
     // @Inject('NOTIFICATION_SERVICE') private readonly client: ClientProxy,
   ) { }
-
-  // onModuleInit() {
-  //   this.client.connect();
-  // }
 
   sendInvites(emails: [string], event: any) {
     

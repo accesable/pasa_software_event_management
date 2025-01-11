@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { EventCategory } from 'apps/event-service/src/event-category/schemas/event-category.schema';
-import { Guest } from 'apps/event-service/src/guest/schemas/guest.schema';
-import { Speaker } from 'apps/event-service/src/speaker/schemas/speaker.schema';
 import { Document, Types } from 'mongoose';
+import { EventCategory } from '../../event-category/schemas/event-category.schema';
+import { Guest } from '../../guest/schemas/guest.schema';
+import { Speaker } from '../../speaker/schemas/speaker.schema';
 
 export type EventDocument = Event & Document & {
   createdAt: Date;

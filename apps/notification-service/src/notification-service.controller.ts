@@ -1,7 +1,7 @@
-import { ForgotPasswordRequest, ForgotPasswordResponse, NotificationServiceProtoController, NotificationServiceProtoControllerMethods } from '@app/common/types/notification';
 import { Controller, Get } from '@nestjs/common';
 import { EventPattern } from '@nestjs/microservices';
-import { NotificationServiceService } from 'apps/notification-service/src/notification-service.service';
+import { NotificationServiceProtoControllerMethods, NotificationServiceProtoController, ForgotPasswordRequest, ForgotPasswordResponse } from '../../../libs/common/src/types/notification';
+import { NotificationServiceService } from './notification-service.service';
 
 @Controller()
 @NotificationServiceProtoControllerMethods()

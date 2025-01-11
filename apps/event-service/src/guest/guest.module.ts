@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { GuestService } from './guest.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Guest, GuestSchema } from 'apps/event-service/src/guest/schemas/guest.schema';
+import { Guest, GuestSchema } from './schemas/guest.schema';
 
 @Module({
   imports: [

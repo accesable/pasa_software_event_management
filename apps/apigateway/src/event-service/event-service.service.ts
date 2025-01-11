@@ -1,5 +1,4 @@
-import { CreatedBy, CreateEventRequest, DecodeAccessResponse, EVENT_SERVICE_NAME, EventServiceClient, QueryParamsRequest, UpdateCategoryRequest, UpdateEventRequest } from '@app/common/types/event';
-import { Inject, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { CreateEventDto } from './dto/create-event-service.dto';
 import { EVENT_SERVICE } from '../constants/service.constant';
@@ -8,7 +7,9 @@ import { UpdateEventDto } from './dto/update-event-service.dto';
 import { CreateSpeakerDto } from './dto/create-speaker.dto';
 import { CreateGuestDto } from './dto/create-guest.dto';
 import { RedisCacheService } from '../redis/redis.service';
-import { lastValueFrom, map } from 'rxjs';
+import { lastValueFrom } from 'rxjs';
+import { TicketServiceService } from '../ticket-service/ticket-service.service';
+import { CreatedBy, CreateEventRequest, DecodeAccessResponse, EVENT_SERVICE_NAME, EventServiceClient, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
 
 @Injectable()
 export class EventServiceService implements OnModuleInit {
@@ -17,6 +18,8 @@ export class EventServiceService implements OnModuleInit {
   constructor(
     @Inject(EVENT_SERVICE) private client: ClientGrpc,
     private readonly redisCacheService: RedisCacheService,
+    @Inject(forwardRef(() => TicketServiceService))
+    private readonly ticketService: TicketServiceService,
     @Inject('FILE_SERVICE') private readonly rabbitFile: ClientProxy
   ) { }
 
@@ -67,7 +70,6 @@ export class EventServiceService implements OnModuleInit {
   // async acceptInvitation(eventId: string, query: any) {
   //   try {
   //     const token = query.token;
-  //     // Gửi yêu cầu đến event service để chấp nhận lời mời
   //     const acceptResult = await lastValueFrom(
   //       this.eventService.acceptInvitation({ eventId, token }),
   //     );
@@ -80,7 +82,6 @@ export class EventServiceService implements OnModuleInit {
   // async declineInvitation(eventId: string, query: any) {
   //   try {
   //     const token = query.token;
-  //     // Gửi yêu cầu đến event service để từ chối lời mời
   //     const declineResult = await lastValueFrom(
   //       this.eventService.declineInvitation({ eventId, token }),
   //     );
@@ -218,6 +219,21 @@ export class EventServiceService implements OnModuleInit {
   //     throw new RpcException(error);
   //   }
   // }
+
+  async getParticipantsEvent(eventId: string) {
+    try {
+      const cacheKey = `event:${eventId}:checkInOut`;
+      const cacheData = await this.redisCacheService.get<any>(cacheKey);
+      if (cacheData) {
+        return cacheData;
+      }
+      const result = await this.ticketService.getParticipantByEventId(eventId);
+      await this.redisCacheService.set(cacheKey, result);
+      return result;
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
 
   async getAllEvent(query: any) {
     try {

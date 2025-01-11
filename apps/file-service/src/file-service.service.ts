@@ -1,12 +1,12 @@
-import { FileUpload, UploadOptions } from '@app/common/types/file';
 import { HttpStatus, Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { File, FileDocument } from 'apps/file-service/src/schemas/file.schema';
 import { v2 as cloudinary } from 'cloudinary';
 import { ConfigService } from '@nestjs/config';
 import * as streamifier from 'streamifier';
 import { RpcException } from '@nestjs/microservices';
+import { FileUpload, UploadOptions } from '../../../libs/common/src/types/file';
+import { FileDocument } from './schemas/file.schema';
 
 @Injectable()
 export class FileServiceService {
