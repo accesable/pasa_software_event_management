@@ -1,6 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
 import { FileServiceService } from './file-service.service';
-import { Observable } from 'rxjs';
 import { EventPattern } from '@nestjs/microservices';
 import { FileServiceProtoControllerMethods, FileServiceProtoController, UploadFilesRequest, UploadFilesResponse, DeleteFilesRequest, DeleteFilesResponse } from '../../../libs/common/src/types/file';
 
@@ -25,6 +24,7 @@ export class FileServiceController implements FileServiceProtoController {
     const options = request.options;
 
     const result = await this.fileServiceService.handleFileUploads(files, options);
+
     const response: UploadFilesResponse = {
       files: result.map((fileInfo) => ({
         fileId: fileInfo._id.toString(),    // Lấy _id từ Mongo
@@ -35,6 +35,7 @@ export class FileServiceController implements FileServiceProtoController {
         publicId: fileInfo.publicId,       // Bổ sung publicId vào response
       })),
     };
+
     return response;
   }
 

@@ -4,9 +4,10 @@ import { Model, Types } from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
 import { ConfigService } from '@nestjs/config';
 import * as streamifier from 'streamifier';
-import { RpcException } from '@nestjs/microservices';
 import { FileUpload, UploadOptions } from '../../../libs/common/src/types/file';
 import { FileDocument } from './schemas/file.schema';
+import { handleRpcException } from '../../../libs/common/src/filters/handleException';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class FileServiceService {
@@ -25,6 +26,12 @@ export class FileServiceService {
     files: FileUpload[],
     options: UploadOptions,
   ): Promise<FileDocument[]> {
+    if(!files) {
+      throw new RpcException({
+        message: 'No file to upload',
+        code: HttpStatus.BAD_REQUEST,
+      });
+    }
     const uploadPromises = files.map((file) =>
       this.uploadToCloudinary(file, options).catch((error) => {
         console.error(
@@ -39,27 +46,26 @@ export class FileServiceService {
       const uploadedFiles = (await Promise.all(uploadPromises)).filter(
         (file) => file !== null,
       );
-      // Save file information to the database
+
       const savedFiles = await this.fileModel.insertMany(
-        uploadedFiles.map((file) => ({
-          filename: file.original_filename,
-          path: file.secure_url,
-          mimetype: file.format,
-          size: file.bytes,
-          entityId: options.entityId,
-          entityType: options.entityType,
-          type: options.type,
-          field: options.field,
-          publicId: file.public_id,
-        })),
+        uploadedFiles.map((file) => (
+          {
+            filename: file.original_filename,
+            path: file.secure_url,
+            mimetype: file.format || file.resource_type,
+            size: file.bytes,
+            entityId: options.entityId,
+            entityType: options.entityType,
+            type: options.type,
+            field: options.field,
+            publicId: file.public_id,
+          })),
       );
+
       return savedFiles;
     } catch (error) {
       console.error('Failed to save file information to database:', error);
-      throw new RpcException({
-        message: 'Failed to save file information to database',
-        code: HttpStatus.INTERNAL_SERVER_ERROR,
-      });
+      throw handleRpcException(error, 'Failed to save file information to database');
     }
   }
 
@@ -67,79 +73,76 @@ export class FileServiceService {
     file: FileUpload,
     options: UploadOptions,
   ): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'auto',
-          folder: `${options.entityType}/${options.field}`,
-          public_id: file.fileName,
-          overwrite: true,
-        },
-        (error, result) => {
-          if (error) {
-            console.error('Failed to upload file to Cloudinary:', error);
-            return reject(
-              new BadRequestException('Failed to upload file to Cloudinary'),
-            );
-          }
-          resolve(result);
-        },
-      );
-      if (!file.data) {
-        const errorMessage = `File ${file.fileName} is undefined or has no data`;
-        console.error(errorMessage);
-        return reject(new BadRequestException(errorMessage));
-      }
-      streamifier.createReadStream(file.data).pipe(uploadStream);
-    });
+    try {
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            resource_type: 'auto',
+            folder: `${options.entityType}/${options.field}`,
+            public_id: file.fileName,
+            overwrite: true,
+          },
+          (error, result) => {
+            if (error) {
+              console.error('Failed to upload file to Cloudinary:', error);
+              return reject(
+                new BadRequestException('Failed to upload file to Cloudinary'),
+              );
+            }
+            resolve(result);
+          },
+        );
+        if (!file.data) {
+          const errorMessage = `File ${file.fileName} is undefined or has no data`;
+          console.error(errorMessage);
+          return reject(new BadRequestException(errorMessage));
+        }
+        streamifier.createReadStream(file.data).pipe(uploadStream);
+      });
+    } catch (error) {
+      console.error('Failed to upload file to Cloudinary:', error);
+      throw handleRpcException(error, 'Failed to upload file to Cloudinary');
+    }
   }
 
   async deleteFilesUrl(urls: string[], videoIntro: string) {
     try {
       if (videoIntro) {
         const f = await this.fileModel.findOne({ path: videoIntro });
-        console.log(f);
-        await cloudinary.uploader.destroy(f.publicId)
+        if (f) {
+          try {
+            await cloudinary.uploader.destroy(f.publicId, { resource_type: 'video' });
+            console.log(`Deleted video from Cloudinary: ${f.publicId}`);
+            await this.fileModel.findByIdAndDelete(f._id);
+            console.log(`Deleted video record from database: ${f._id}`);
+          } catch (err) {
+            console.error(`Failed to delete video: ${f.publicId}`, err);
+          }
+        }
       }
 
       for (const url of urls) {
-        this.fileModel.find({ path: url })
-          .then(files => {
-            if (!files || files.length === 0) {
-              console.warn(`File not found with URL: ${url}`);
-              return;
+        const files = await this.fileModel.find({ path: url });
+        for (const file of files) {
+          if (file.publicId) {
+            try {
+              await cloudinary.uploader.destroy(file.publicId);
+              console.log(`Deleted file from Cloudinary: ${file.publicId}`);
+            } catch (err) {
+              console.error(`Failed to delete from Cloudinary: ${file.publicId}`, err);
             }
-
-            files.forEach(file => {
-              const tasks = [];
-
-              if (file.publicId) {
-                tasks.push(
-                  cloudinary.uploader.destroy(file.publicId)
-                    .then(() => console.log(`Deleted file from Cloudinary: ${file.publicId}`))
-                    .catch(err => console.error(`Failed to delete from Cloudinary: ${file.publicId}`, err))
-                );
-              }
-
-              tasks.push(
-                this.fileModel.findByIdAndDelete(file._id)
-                  .then(() => console.log(`Deleted file record from database: ${file._id}`))
-                  .catch(err => console.error(`Failed to delete file record: ${file._id}`, err))
-              );
-
-              Promise.all(tasks).catch(error =>
-                console.error(`Error during deletion for URL ${url}:`, error)
-              );
-            });
-          })
-          .catch(error => console.error(`Failed to find files for URL ${url}:`, error));
+          }
+          try {
+            await this.fileModel.findByIdAndDelete(file._id);
+            console.log(`Deleted file record from database: ${file._id}`);
+          } catch (err) {
+            console.error(`Failed to delete file record: ${file._id}`, err);
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to delete files:', error);
-      throw new RpcException({
-        message: error.message || 'Failed to delete files',
-        code: HttpStatus.INTERNAL_SERVER_ERROR,
-      });
+      throw handleRpcException(error, 'Failed to delete files');
     }
   }
 
@@ -161,10 +164,7 @@ export class FileServiceService {
         console.log(`Deleted file record from database: ${fileId}`);
       } catch (error) {
         console.error(`Failed to delete file with ID ${fileId}:`, error);
-        throw new RpcException({
-          message: error.message || 'Failed to delete files',
-          code: HttpStatus.INTERNAL_SERVER_ERROR,
-        });
+        throw handleRpcException(error, 'Failed to delete files');
       }
     }
   }
@@ -179,10 +179,7 @@ export class FileServiceService {
     }
     catch (error) {
       console.error('Failed to delete avatar:', error);
-      throw new RpcException({
-        message: error.message || 'Failed to delete avatar',
-        code: HttpStatus.INTERNAL_SERVER_ERROR,
-      });
+      throw handleRpcException(error, 'Failed to delete avatar');
     }
   }
 }

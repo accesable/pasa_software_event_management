@@ -105,23 +105,38 @@ export class EventServiceController {
 
   @Post(':eventId/files')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FilesInterceptor('files', 10, {
-    fileFilter: (req, file, callback) => {
-      const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'png', 'jpg', 'mp4'];
-      const extension = file.originalname.split('.').pop()?.toLowerCase();
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      fileFilter: (req, file, callback) => {
+        const allowedExtensions = {
+          banner: ['png', 'jpg', 'jpeg'],
+          documents: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'],
+          videoIntro: ['mp4'],
+        };
 
-      if (!extension || !allowedExtensions.includes(extension)) {
-        return callback(
-          new BadRequestException(`File type .${extension} not allowed`),
-          false
-        );
-      }
-      callback(null, true);
-    },
-    limits: {
-      fileSize: 100 * 1024 * 1024,  // 100 MB
-    },
-  }))
+        const field: string = req.body.field;
+        const extension = file.originalname.split('.').pop()?.toLowerCase();
+
+        if (
+          !field ||
+          !allowedExtensions[field] ||
+          !extension ||
+          !allowedExtensions[field].includes(extension)
+        ) {
+          return callback(
+            new BadRequestException(
+              `File type .${extension} not allowed for ${field}`,
+            ),
+            false,
+          );
+        }
+        callback(null, true);
+      },
+      limits: {
+        fileSize: 100 * 1024 * 1024, // 100 MB mặc định
+      },
+    }),
+  )
   @ResponseMessage('Files uploaded successfully')
   async uploadFilesToEvent(
     @Param('eventId') eventId: string,
@@ -159,8 +174,12 @@ export class EventServiceController {
     });
 
     const urlList = uploadedFilesInfo.map((f) => f.path);
-
+    const event = await this.eventServiceService.getEventById(eventId);
+    
     if (field === 'banner') {
+      if(event.event.banner) {
+        this.eventServiceService.deleteFilesUrl([event.event.banner], '');
+      }
       return this.eventServiceService.updateEvent(eventId, {
         banner: urlList[0],
       });
@@ -177,6 +196,9 @@ export class EventServiceController {
       });
     }
     else if (field === 'videoIntro') {
+      if(event.event.videoIntro) {
+        this.eventServiceService.deleteFilesUrl([], event.event.videoIntro);
+      }
       return this.eventServiceService.updateEvent(eventId, {
         videoIntro: urlList[0],
       });
@@ -205,20 +227,23 @@ export class EventServiceController {
     const { field, files } = body;
     const updateObject: { banner?: string; videoIntro?: string; documents?: string[] } = {};
     const urls = [];
-    if (field.includes('banner')){
+    if (field.includes('banner')) {
       updateObject.banner = '';
       urls.push(event.event.banner);
     };
-    if (field.includes('videoIntro')){
+    if (field.includes('videoIntro')) {
       updateObject.videoIntro = '';
     };
 
-    if (field.includes('documents') && files?.length) {
+    if (field.includes('documents')) {
+      if(!files || files.length === 0) {
+        throw new BadRequestException('No files provided to delete documents');
+      }
       urls.push(...files);
       const oldDocuments = event.event.documents || [];
-  
+
       const documentsToDelete = files.filter((file) => oldDocuments.includes(file));
-  
+
       if (documentsToDelete.length > 0) {
         updateObject.documents = oldDocuments.filter((doc) => !documentsToDelete.includes(doc));
       }
@@ -239,7 +264,7 @@ export class EventServiceController {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid Event ID');
     }
-  
+
     const isExist = await this.eventServiceService.isExistEvent(id);
     if (!isExist.isExist) {
       throw new BadRequestException('Event not found');
