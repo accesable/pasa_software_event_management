@@ -6,5 +6,6 @@ class EventDTO(BaseModel):
     location: str
     capacity : int = 0
     category : str = "conference"
+    description: str
     start_date: datetime = datetime.now()
     end_date: datetime = None

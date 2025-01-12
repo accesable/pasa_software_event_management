@@ -1,0 +1,101 @@
+[
+    {
+        "id" : 1,
+        "name" : "Job Fair 101",
+        "description" : "A Opportunity For Student to Find Jobs and Connect",
+        "startDate" :"2025-01-01T00:00:00",
+        "endDate" : "2025-01-31T23:59:59",
+        "location" : "Virtual Event",
+        "capacity" : 500
+    },
+    {
+        "id" : 2,
+        "name" : "Job Fair 101",
+        "description" : "A Opportunity For Student to Find Jobs and Connect",
+        "startDate" :"2025-01-01T00:00:00",
+        "endDate" : "2025-01-31T23:59:59",
+        "location" : "Virtual Event",
+        "capacity" : 500
+    },
+    {
+        "id" : 3,
+        "name" : "Job Fair 101",
+        "description" : "A Opportunity For Student to Find Jobs and Connect",
+        "startDate" :"2025-01-01T00:00:00",
+        "endDate" : "2025-01-31T23:59:59",
+        "location" : "Virtual Event",
+        "capacity" : 500
+    },
+    {
+        "id" : 4,
+        "name" : "Job Fair 101",
+        "description" : "A Opportunity For Student to Find Jobs and Connect",
+        "startDate" :"2025-01-01T00:00:00",
+        "endDate" : "2025-01-31T23:59:59",
+        "location" : "Virtual Event",
+        "capacity" : 500
+    },
+    {
+        "id" : 4,
+        "name" : "Job Fair 101",
+        "description" : "A Opportunity For Student to Find Jobs and Connect",
+        "startDate" :"2025-01-01T00:00:00",
+        "endDate" : "2025-01-31T23:59:59",
+        "location" : "Virtual Event",
+        "capacity" : 500
+    },
+    {
+        "id" : 4,
+        "name" : "Job Fair 101",
+        "description" : "A Opportunity For Student to Find Jobs and Connect",
+        "startDate" :"2025-01-01T00:00:00",
+        "endDate" : "2025-01-31T23:59:59",
+        "location" : "Virtual Event",
+        "capacity" : 500
+    },
+    {
+        "id" : 4,
+        "name" : "Job Fair 101",
+        "description" : "A Opportunity For Student to Find Jobs and Connect",
+        "startDate" :"2025-01-01T00:00:00",
+        "endDate" : "2025-01-31T23:59:59",
+        "location" : "Virtual Event",
+        "capacity" : 500
+    },
+    {
+        "id" : 4,
+        "name" : "Job Fair 101",
+        "description" : "A Opportunity For Student to Find Jobs and Connect",
+        "startDate" :"2025-01-01T00:00:00",
+        "endDate" : "2025-01-31T23:59:59",
+        "location" : "Virtual Event",
+        "capacity" : 500
+    },
+    {
+        "id" : 4,
+        "name" : "Job Fair 101",
+        "description" : "A Opportunity For Student to Find Jobs and Connect",
+        "startDate" :"2025-01-01T00:00:00",
+        "endDate" : "2025-01-31T23:59:59",
+        "location" : "Virtual Event",
+        "capacity" : 500
+    },
+    {
+        "id" : 4,
+        "name" : "Job Fair 101",
+        "description" : "A Opportunity For Student to Find Jobs and Connect",
+        "startDate" :"2025-01-01T00:00:00",
+        "endDate" : "2025-01-31T23:59:59",
+        "location" : "Virtual Event",
+        "capacity" : 500
+    },
+    {
+        "id" : 4,
+        "name" : "Job Fair 101",
+        "description" : "A Opportunity For Student to Find Jobs and Connect",
+        "startDate" :"2025-01-01T00:00:00",
+        "endDate" : "2025-01-31T23:59:59",
+        "location" : "Virtual Event",
+        "capacity" : 500
+    }
+]
