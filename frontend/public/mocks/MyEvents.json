@@ -1,0 +1,54 @@
+[
+    {
+      "event_id": "evt001",
+      "event_name": "Tech Innovation Conference",
+      "start_date": "2025-02-15",
+      "end_date": "2025-02-17",
+      "status": "Scheduled",
+      "priority": "high",
+      "capacity": 500,
+      "event_description": "A conference to showcase the latest advancements in technology.",
+      "event_location": "San Francisco, CA",
+      "event_type": "software development",
+      "event_category": "technology"
+    },
+    {
+      "event_id": "evt002",
+      "event_name": "Marketing Strategy Workshop",
+      "start_date": "2025-03-01",
+      "end_date": "2025-03-03",
+      "status": "On Going",
+      "priority": "medium",
+      "capacity": 100,
+      "event_description": "A workshop for marketing professionals to refine their strategies.",
+      "event_location": "New York, NY",
+      "event_type": "marketing",
+      "event_category": "marketing"
+    },
+    {
+      "event_id": "evt003",
+      "event_name": "Financial Growth Summit",
+      "start_date": "2025-04-10",
+      "end_date": "2025-04-12",
+      "status": "Completed",
+      "priority": "low",
+      "capacity": 300,
+      "event_description": "An event focused on financial growth strategies for businesses.",
+      "event_location": "Chicago, IL",
+      "event_type": "research",
+      "event_category": "finance"
+    },
+    {
+      "event_id": "evt004",
+      "event_name": "AI and Machine Learning Bootcamp",
+      "start_date": "2025-05-05",
+      "end_date": "2025-05-07",
+      "status": "Postponed",
+      "priority": "high",
+      "capacity": 200,
+      "event_description": "A hands-on bootcamp to learn the fundamentals of AI and machine learning.",
+      "event_location": "Seattle, WA",
+      "event_type": "software development",
+      "event_category": "technology"
+    }
+]  

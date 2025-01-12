@@ -13,7 +13,7 @@ const useFetchData = (url: string) => {
       setData(json);
     } catch (error) {
       setError(error);
-    } finally {
+    } finally { 
       setLoading(false);
     }
   }, []);
@@ -21,6 +21,8 @@ const useFetchData = (url: string) => {
   useEffect(() => {
     fetchData();
   }, [url]);
+
+  console.log(url,loading,error);
 
   return { data, error, loading };
 };

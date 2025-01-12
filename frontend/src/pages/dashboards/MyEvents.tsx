@@ -2,6 +2,7 @@ import { Alert, Button, Col, Row, Segmented, Space } from 'antd';
 import {
   Card,
   ClientsTable,
+  EventTable,
   Loader,
   PageHeader,
   ProjectsCard,
@@ -9,7 +10,7 @@ import {
   RevenueCard,
 } from '../../components';
 import { Column } from '@ant-design/charts';
-import { Projects } from '../../types';
+import { Events, Projects } from '../../types';
 import { useState } from 'react';
 import {
   CloudUploadOutlined,
@@ -21,6 +22,8 @@ import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useFetchData } from '../../hooks';
+import { EventsCard } from '../../components/dashboard/shared';
+import { useStylesContext } from '../../context';
 
 const PROJECT_TABS = [
   {
@@ -38,34 +41,41 @@ const PROJECT_TABS = [
 ];
 
 export const MyEventDashboardPage = () => {
+    const stylesContext = useStylesContext();
+    const {
+        data: events,
+        error: eventsError,
+        loading: eventsLoading,
+      } = useFetchData('../mocks/Events.json');
+
   const {
-    data: projectsData,
-    error: projectsDataError,
-    loading: projectsDataLoading,
-  } = useFetchData('../mocks/Projects.json');
+    data: eventsData,
+    error: eventsDataError,
+    loading: eventsDataLoading,
+  } = useFetchData('../mocks/MyEvents.json');
 
 
-  const [projectTabsKey, setProjectsTabKey] = useState<string>('all');
+  // const [projectTabsKey, setProjectsTabKey] = useState<string>('all');
 
-  const PROJECT_TABS_CONTENT: Record<string, React.ReactNode> = {
-    all: <ProjectsTable key="all-projects-table" data={projectsData} />,
-    inProgress: (
-      <ProjectsTable
-        key="in-progress-projects-table"
-        data={projectsData.filter((_: Projects) => _.status === 'in progress')}
-      />
-    ),
-    onHold: (
-      <ProjectsTable
-        key="on-hold-projects-table"
-        data={projectsData.filter((_: Projects) => _.status === 'on hold')}
-      />
-    ),
-  };
+  // const PROJECT_TABS_CONTENT: Record<string, React.ReactNode> = {
+  //   all: <ProjectsTable key="all-projects-table" data={projectsData} />,
+  //   inProgress: (
+  //     <ProjectsTable
+  //       key="in-progress-projects-table"
+  //       data={projectsData.filter((_: Projects) => _.status === 'in progress')}
+  //     />
+  //   ),
+  //   onHold: (
+  //     <ProjectsTable
+  //       key="on-hold-projects-table"
+  //       data={projectsData.filter((_: Projects) => _.status === 'on hold')}
+  //     />
+  //   ),
+  // };
 
-  const onProjectsTabChange = (key: string) => {
-    setProjectsTabKey(key);
-  };
+  // const onProjectsTabChange = (key: string) => {
+  //   setProjectsTabKey(key);
+  // };
 
   return (
     <div>
@@ -126,22 +136,22 @@ export const MyEventDashboardPage = () => {
             title="Recently added events"
             // extra={<Button>View all projects</Button>}
           >
-            {projectsDataError ? (
+            {eventsDataError ? (
               <Alert
                 message="Error"
-                description={projectsDataError.toString()}
+                description={eventsDataError}
                 type="error"
                 showIcon
               />
-            ) : projectsDataLoading ? (
+            ) : eventsDataLoading ? (
               <Loader />
             ) : (
               <Row gutter={[16, 16]}>
-                {projectsData.slice(0, 4).map((o: Projects) => {
+                {eventsData.slice(0, 4).map((o: Events) => {
                   return (
-                    <Col xs={24} sm={12} xl={6} key={o.project_id}>
-                      <ProjectsCard
-                        project={o}
+                    <Col xs={24} sm={12} xl={6} key={o.event_id}>
+                      <EventsCard
+                        event={o}
                         type="inner"
                         style={{ height: '100%' }}
                       />
@@ -152,7 +162,7 @@ export const MyEventDashboardPage = () => {
             )}
           </Card>
         </Col>
-        <Col span={24}>
+        {/* <Col span={24}>
           <Card
             title="Projects"
             extra={
@@ -167,7 +177,10 @@ export const MyEventDashboardPage = () => {
           >
             {PROJECT_TABS_CONTENT[projectTabsKey]}
           </Card>
-        </Col>
+        </Col> */}
+          <Col span={24}>
+            <EventTable data={events} loading={eventsLoading} error={eventsError} />
+          </Col>
       </Row>
     </div>
   );

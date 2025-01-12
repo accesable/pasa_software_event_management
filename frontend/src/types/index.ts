@@ -38,7 +38,7 @@ import type { Faq } from './faq';
 import type { Pricing } from './pricing';
 import type { Session } from './session';
 import type { ActivityTimeline } from './timeline';
-
+import type { Events } from './events.ts';
 export type {
   Projects,
   ProjectStatus,
@@ -72,4 +72,5 @@ export type {
   Pricing,
   Session,
   ActivityTimeline,
+  Events,
 };

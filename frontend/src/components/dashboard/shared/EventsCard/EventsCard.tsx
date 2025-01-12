@@ -9,33 +9,32 @@ import {
   } from 'antd';
   import {
     CalendarOutlined,
-    ClockCircleOutlined,
+    // ClockCircleOutlined,
     UsergroupAddOutlined,
   } from '@ant-design/icons';
-  import { Projects } from '../../../../types';
+  import { Events } from '../../../../types';
   
   import './styles.css';
   
   const { Text, Title } = Typography;
   
   type Props = {
-    project: Projects;
+    event: Events;
     size?: 'small' | 'default';
   } & CardProps;
   
   export const EventsCard = (props: Props) => {
     const {
       size,
-      project: {
-        client_name,
+      event: {
+        event_id,
+        event_name,
+        start_date,
         end_date,
-        project_duration,
-        project_manager,
-        project_name,
-        project_type,
-        project_location,
+        event_type,
+        event_location,
         priority,
-        team_size,
+        capacity,
         status,
       },
       ...others
@@ -43,35 +42,35 @@ import {
   
     const items: DescriptionsProps['items'] = [
       {
-        key: 'project_name',
+        key: 'event_name',
         label: 'Title',
         children: (
-          <span className="text-capitalize">{project_name.slice(0, 36)}...</span>
+          <span className="text-capitalize">{event_name.slice(0, 36)}...</span>
         ),
         span: 24,
       },
       {
-        key: 'project_manager',
+        key: 'event_id',
         label: 'Manager',
-        children: project_manager,
+        children: event_id,
         span: 24,
       },
+    //   {
+    //     key: 'project_client',
+    //     label: 'Client',
+    //     children: client_name,
+    //     span: 24,
+    //   },
       {
-        key: 'project_client',
-        label: 'Client',
-        children: client_name,
-        span: 24,
-      },
-      {
-        key: 'project_type',
+        key: 'event_type',
         label: 'Type',
-        children: <span className="text-capitalize">{project_type}</span>,
+        children: <span className="text-capitalize">{event_type}</span>,
         span: 24,
       },
       {
         key: 'project_location',
         label: 'Location',
-        children: project_location,
+        children: event_location,
         span: 24,
       },
       {
@@ -89,25 +88,25 @@ import {
         label: <UsergroupAddOutlined />,
         children: (
           <Tooltip title="Team size">
-            <Typography.Text>{team_size}</Typography.Text>
+            <Typography.Text>{capacity}</Typography.Text>
           </Tooltip>
         ),
       },
+    //   {
+    //     key: 'period',
+    //     label: <ClockCircleOutlined />,
+    //     children: (
+    //       <Tooltip title="Project duration (months)">
+    //         <Typography.Text>{project_duration}</Typography.Text>
+    //       </Tooltip>
+    //     ),
+    //   },
       {
-        key: 'period',
-        label: <ClockCircleOutlined />,
-        children: (
-          <Tooltip title="Project duration (months)">
-            <Typography.Text>{project_duration}</Typography.Text>
-          </Tooltip>
-        ),
-      },
-      {
-        key: 'end_date',
+        key: 'start_date',
         label: <CalendarOutlined />,
         children: (
-          <Tooltip title="Project end date">
-            <Typography.Text>{end_date}</Typography.Text>
+          <Tooltip title="Project date">
+            <Typography.Text>{start_date} - {end_date}</Typography.Text>
           </Tooltip>
         ),
       },
@@ -121,24 +120,24 @@ import {
         {...others}
       >
         <Title level={5} className="text-capitalize m-0">
-          {project_name.slice(0, 15)}
+          {event_name.slice(0, 15)}
         </Title>
         <br />
         <Flex wrap="wrap" gap="small" className="text-capitalize">
-          <Text>
+          {/* <Text>
             Owner: <b>{project_manager},</b>
           </Text>
           <Text>
             Client: <b>{client_name},</b>
-          </Text>
+          </Text> */}
           <Text>
             Priority: <b>{priority},</b>
           </Text>
           <Text>
-            Type: <b>{project_type},</b>
+            Type: <b>{event_type},</b>
           </Text>
           <Text>
-            Location: <b>{project_location}</b>
+            Location: <b>{event_location}</b>
           </Text>
         </Flex>
       </AntdCard>
