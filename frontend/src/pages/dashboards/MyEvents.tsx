@@ -1,8 +1,6 @@
 import { Alert, Button, Col, Row, Segmented, Space } from 'antd';
 import {
   Card,
-  ClientsTable,
-  EventTable,
   Loader,
   PageHeader,
   ProjectsCard,
@@ -23,30 +21,25 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useFetchData } from '../../hooks';
 import { EventsCard } from '../../components/dashboard/shared';
-import { useStylesContext } from '../../context';
+import { MyEventsTable } from '../../components/dashboard/events/MyEventTable';
 
-const PROJECT_TABS = [
+
+const EVENT_TABS = [
   {
     key: 'all',
-    label: 'All projects',
+    label: 'All events',
   },
   {
-    key: 'inProgress',
+    key: 'OnGoing',
     label: 'Active',
   },
   {
-    key: 'onHold',
-    label: 'On Hold',
+    key: 'Postponed',
+    label: 'Delaying',
   },
 ];
 
 export const MyEventDashboardPage = () => {
-    const stylesContext = useStylesContext();
-    const {
-        data: events,
-        error: eventsError,
-        loading: eventsLoading,
-      } = useFetchData('../mocks/Events.json');
 
   const {
     data: eventsData,
@@ -54,28 +47,27 @@ export const MyEventDashboardPage = () => {
     loading: eventsDataLoading,
   } = useFetchData('../mocks/MyEvents.json');
 
+  const [eventTabKey, setEventTabKey] = useState<string>('all');
 
-  // const [projectTabsKey, setProjectsTabKey] = useState<string>('all');
+  const EVENT_TABS_CONTENT: Record<string, React.ReactNode> = {
+    all: <MyEventsTable key="all-projects-table" data={eventsData} />,
+    OnGoing: (
+      <MyEventsTable
+        key="in-progress-projects-table"
+        data={eventsData.filter((_: Events) => _.status === 'On Going')}
+      />
+    ),
+    Postponed: (
+      <MyEventsTable
+        key="on-hold-projects-table"
+        data={eventsData.filter((_: Events) => _.status === 'Postponed')}
+      />
+    ),
+  };
 
-  // const PROJECT_TABS_CONTENT: Record<string, React.ReactNode> = {
-  //   all: <ProjectsTable key="all-projects-table" data={projectsData} />,
-  //   inProgress: (
-  //     <ProjectsTable
-  //       key="in-progress-projects-table"
-  //       data={projectsData.filter((_: Projects) => _.status === 'in progress')}
-  //     />
-  //   ),
-  //   onHold: (
-  //     <ProjectsTable
-  //       key="on-hold-projects-table"
-  //       data={projectsData.filter((_: Projects) => _.status === 'on hold')}
-  //     />
-  //   ),
-  // };
-
-  // const onProjectsTabChange = (key: string) => {
-  //   setProjectsTabKey(key);
-  // };
+  const onEventTabChange = (key: string) => {
+    setEventTabKey(key);
+  };
 
   return (
     <div>
@@ -162,25 +154,22 @@ export const MyEventDashboardPage = () => {
             )}
           </Card>
         </Col>
-        {/* <Col span={24}>
+        <Col span={24}>
           <Card
-            title="Projects"
+            title="Your Events"
             extra={
               <Space>
                 <Button icon={<CloudUploadOutlined />}>Import</Button>
-                <Button icon={<PlusOutlined />}>New project</Button>
+                <Button icon={<PlusOutlined />}>New Event</Button>
               </Space>
             }
-            tabList={PROJECT_TABS}
-            activeTabKey={projectTabsKey}
-            onTabChange={onProjectsTabChange}
+            tabList={EVENT_TABS}
+            activeTabKey={eventTabKey}
+            onTabChange={onEventTabChange}
           >
-            {PROJECT_TABS_CONTENT[projectTabsKey]}
+            {EVENT_TABS_CONTENT[eventTabKey]}
           </Card>
-        </Col> */}
-          <Col span={24}>
-            <EventTable data={events} loading={eventsLoading} error={eventsError} />
-          </Col>
+        </Col>
       </Row>
     </div>
   );

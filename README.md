@@ -13,6 +13,8 @@ Overall Use Cases
 ![use-cases](imgs/general-use-case.jpg)
 Backend
 ![backend](imgs/backend.jpg)
+Business Flow
+![business_flow](imgs/business_flow.png)
 ### 1. Event Management
 An event may have theses properties associated with it:
 - speakers of the event.
