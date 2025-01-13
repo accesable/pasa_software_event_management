@@ -64,7 +64,7 @@ export const EventTable : React.FC<EventTableProps> = ({data,error,loading} ) =>
   const navigate = useNavigate();
   return (
     <div>
-          <Card title="Incomming Events" extra={<a href="/create/events">Create Your Events</a>}>
+          <Card title="Your Events" extra={<a href="/create/events">Create Your Events</a>}>
             {error ? (
               <Alert
                 message="Error"
