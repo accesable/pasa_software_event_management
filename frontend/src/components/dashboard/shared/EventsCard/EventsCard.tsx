@@ -51,7 +51,7 @@ import {
       },
       {
         key: 'event_id',
-        label: 'Manager',
+        label: 'ID',
         children: event_id,
         span: 24,
       },

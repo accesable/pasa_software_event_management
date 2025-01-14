@@ -38,7 +38,8 @@ import {
   LogisticsDashboardPage,
   CreateEventPage,
   DetailEventPage,
-  MyEventDashboardPage
+  MyEventDashboardPage,
+  DetailMyEventPage
 } from '../pages';
 import {
   CorporateLayout,
@@ -116,6 +117,10 @@ const router = createBrowserRouter([
         index: true,
         path: 'events/:id',
         element: <DetailEventPage />,
+      },
+      {
+        path: 'my-events/:id',
+        element: <DetailMyEventPage />,
       },
     ],
   },

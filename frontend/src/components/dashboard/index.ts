@@ -56,4 +56,5 @@ export {
 export {
   EventTable,
   EventTimelineCard,
+  MyEventTimelineCard
 } from './events';

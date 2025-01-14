@@ -1,14 +1,10 @@
-import { Alert, Button, Col, Row, Segmented, Space } from 'antd';
+import { Alert, Button, Col, Row, Space } from 'antd';
 import {
   Card,
   Loader,
   PageHeader,
-  ProjectsCard,
-  ProjectsTable,
-  RevenueCard,
 } from '../../components';
-import { Column } from '@ant-design/charts';
-import { Events, Projects } from '../../types';
+import { Events } from '../../types';
 import { useState } from 'react';
 import {
   CloudUploadOutlined,

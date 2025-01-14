@@ -1,6 +1,8 @@
 import {
     Badge,
     BadgeProps,
+    Button,
+    Space,
     Table,
     TableProps,
     Tag,
@@ -8,7 +10,8 @@ import {
     Typography,
   } from 'antd';
 import { Events } from '../../../types';  
-  const COLUMNS = [
+import { useNavigate } from 'react-router-dom';
+  const COLUMNS = (navigate: ReturnType<typeof useNavigate>) => [
     {
       title: 'Name',
       dataIndex: 'event_name',
@@ -91,6 +94,24 @@ import { Events } from '../../../types';
       dataIndex: 'end_date',
       key: 'event_end_date',
     },
+    {
+      title: 'Actions',
+      dataIndex: 'event_id',
+      key: 'event_actions',
+      render: (_: any, { event_id }: Events) => (
+        <Space size="small">
+          <Button type="primary" onClick={() => navigate(`/details/my-events/${event_id}`)}>
+            Details
+          </Button>
+          {/* <Button type="primary" onClick={() => navigate(`/edit/events/${event_id}`)}>
+            Edit
+          </Button>
+          <Button type="primary" danger onClick={() => navigate(`/delete/events/${event_id}`)}>
+            Delete
+          </Button> */}
+        </Space>
+      )
+    },
   ];
   
   type Props = {
@@ -98,10 +119,11 @@ import { Events } from '../../../types';
   } & TableProps<any>;
   
   export const MyEventsTable = ({ data, ...others }: Props) => {
+    const navigate = useNavigate();
     return (
       <Table
         dataSource={data}
-        columns={COLUMNS}
+        columns={COLUMNS(navigate)}
         className="overflow-scroll"
         {...others}
       />

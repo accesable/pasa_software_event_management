@@ -1,0 +1,14 @@
+[
+    {
+        "activity_id" : "AC1",
+        "activity_name" : "Last Q&A",
+        "description" : "Answer Software Developer Question",
+        "attendees" : 20
+    },
+    {
+        "activity_id" : "AC2",
+        "activity_name" : "Present Lottery Question",
+        "description" : "Answrer Software Engineer Question for gifts",
+        "attendees" : 50
+    }
+]
