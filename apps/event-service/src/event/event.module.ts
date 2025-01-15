@@ -10,6 +10,7 @@ import { SpeakerModule } from '../speaker/speaker.module';
 import { EventSchema } from './schemas/event.schema';
 import { InvitedUser, InvitedUserSchema } from './schemas/invite.schema';
 import { Question, QuestionSchema } from './schemas/question.schema';
+import { Feedback, FeedbackSchema } from './schemas/feedback.schema';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { Question, QuestionSchema } from './schemas/question.schema';
       { name: EventCategory.name, schema: EventCategorySchema },
       { name: Question.name, schema: QuestionSchema },
       { name: InvitedUser.name, schema: InvitedUserSchema },
+      { name: Feedback.name, schema: FeedbackSchema },
     ]),
   ],
   controllers: [EventController],

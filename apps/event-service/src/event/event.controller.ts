@@ -5,7 +5,7 @@ import { EventCategoryService } from '../event-category/event-category.service';
 import { SpeakerService } from '../speaker/speaker.service';
 import { GuestService } from '../guest/guest.service';
 import { EventPattern } from '@nestjs/microservices';
-import { AllEventResponse, CancelEventRequest, CategoryByIdRequest, CategoryNameRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
+import { AllEventResponse, CancelEventRequest, CategoryByIdRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, getOrganizedEventsRequest, getParticipatedEventsRequest, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
 
 @Controller()
 @EventServiceControllerMethods()
@@ -16,6 +16,14 @@ export class EventController implements EventServiceController {
     private readonly speakerService: SpeakerService,
     private readonly guestService: GuestService,
   ) { }
+
+  getOrganizedEvents(request: getOrganizedEventsRequest) {
+    return this.eventService.getOrganizedEvents(request.userId, request.status);
+  }
+  
+  getParticipatedEvents(request: getParticipatedEventsRequest) {
+    return this.eventService.getParticipatedEvents(request.userId, request.status);
+  }
 
   // async acceptInvitation(request: AcceptInvitationRequest) {
   //   return this.eventService.acceptInvitation(request);
@@ -33,6 +41,12 @@ export class EventController implements EventServiceController {
   updateEventDocument(request: any) {
     console.log('updateEventDocument', request);
     return this.eventService.decreaseMaxParticipant(request.eventId);
+  }
+
+  @EventPattern('ticket_deleted')
+  increaseMaxParticipant(request: any) {
+    console.log('increaseMaxParticipant', request);
+    return this.eventService.increaseMaxParticipant(request.eventId);
   }
 
   async sendEventInvites(
@@ -62,10 +76,6 @@ export class EventController implements EventServiceController {
   }
   getAllSpeaker(request: Empty) {
     return this.speakerService.getAllSpeaker();
-  }
-
-  getAllEventByCategoryName(request: CategoryNameRequest): Promise<AllEventResponse> | Observable<AllEventResponse> | AllEventResponse {
-    throw new Error('Method not implemented.');
   }
 
   // async getAllEventByCategoryName(request: CategoryNameRequest) {

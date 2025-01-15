@@ -13,6 +13,16 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+export interface getParticipatedEventsRequest {
+  userId: string;
+  status?: string | undefined;
+}
+
+export interface getOrganizedEventsRequest {
+  userId: string;
+  status?: string | undefined;
+}
+
 export interface IsExistEventResponse {
   isExist: boolean;
 }
@@ -145,10 +155,6 @@ export interface UpdateCategoryRequest {
   id: string;
   name?: string | undefined;
   description?: string | undefined;
-}
-
-export interface CategoryNameRequest {
-  name: string;
 }
 
 export interface CreateCategoryRequest {
@@ -327,8 +333,6 @@ export interface EventServiceClient {
 
   getEventById(request: EventByIdRequest): Observable<EventResponse>;
 
-  getAllEventByCategoryName(request: CategoryNameRequest): Observable<AllEventResponse>;
-
   getCategoryById(request: CategoryByIdRequest): Observable<CategoryResponse>;
 
   getAllCategory(request: Empty): Observable<AllCategoryResponse>;
@@ -365,16 +369,16 @@ export interface EventServiceClient {
    */
 
   isExistEvent(request: EventByIdRequest): Observable<IsExistEventResponse>;
+
+  getOrganizedEvents(request: getOrganizedEventsRequest): Observable<AllEventResponse>;
+
+  getParticipatedEvents(request: getParticipatedEventsRequest): Observable<AllEventResponse>;
 }
 
 export interface EventServiceController {
   getAllEvent(request: QueryParamsRequest): Promise<AllEventResponse> | Observable<AllEventResponse> | AllEventResponse;
 
   getEventById(request: EventByIdRequest): Promise<EventResponse> | Observable<EventResponse> | EventResponse;
-
-  getAllEventByCategoryName(
-    request: CategoryNameRequest,
-  ): Promise<AllEventResponse> | Observable<AllEventResponse> | AllEventResponse;
 
   getCategoryById(
     request: CategoryByIdRequest,
@@ -428,6 +432,14 @@ export interface EventServiceController {
   isExistEvent(
     request: EventByIdRequest,
   ): Promise<IsExistEventResponse> | Observable<IsExistEventResponse> | IsExistEventResponse;
+
+  getOrganizedEvents(
+    request: getOrganizedEventsRequest,
+  ): Promise<AllEventResponse> | Observable<AllEventResponse> | AllEventResponse;
+
+  getParticipatedEvents(
+    request: getParticipatedEventsRequest,
+  ): Promise<AllEventResponse> | Observable<AllEventResponse> | AllEventResponse;
 }
 
 export function EventServiceControllerMethods() {
@@ -435,7 +447,6 @@ export function EventServiceControllerMethods() {
     const grpcMethods: string[] = [
       "getAllEvent",
       "getEventById",
-      "getAllEventByCategoryName",
       "getCategoryById",
       "getAllCategory",
       "createEvent",
@@ -450,6 +461,8 @@ export function EventServiceControllerMethods() {
       "checkOwnerShip",
       "sendEventInvites",
       "isExistEvent",
+      "getOrganizedEvents",
+      "getParticipatedEvents",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

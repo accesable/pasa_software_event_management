@@ -12,6 +12,7 @@ import { FileServiceService } from '../file-service/file-service.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Types } from 'mongoose';
 import { DecodeAccessResponse } from '../../../../libs/common/src';
+import { RpcException } from '@nestjs/microservices';
 
 @Controller('events')
 export class EventServiceController {
@@ -47,60 +48,120 @@ export class EventServiceController {
   //   return this.eventServiceService.declineInvitation(eventId, query);
   // }
 
+  @Get('participated-events')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Participated events fetched successfully')
+  async getParticipatedEvents(
+    @Query('status') status?: string,
+    @User() user?: DecodeAccessResponse,
+  ) {
+    return this.eventServiceService.getParticipatedEvents(user.id, status);
+  }
+
+  @Get('organized-events')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Organized events fetched successfully')
+  async getOrganizedEvents(
+    @Query('status') status?: string,
+    @User() user?: DecodeAccessResponse,
+  ) {
+    return this.eventServiceService.getOrganizedEvents(user.id, status);
+  }
+
   // // QUESTION METHODS
-  // @Post(':eventId/questions')
+  // @Post(':id/questions')
   // @UseGuards(JwtAuthGuard)
   // @ResponseMessage('Question created successfully')
   // async createQuestion(
-  //   @Param('eventId') eventId: string,
+  //   @Param('id') id: string,
   //   @Body('question') question: string,
   //   @User() user: DecodeAccessResponse,
   // ) {
-  //   return this.eventServiceService.createQuestion(
-  //     eventId,
-  //     question,
-  //     user,
-  //   );
+  //   const event = await this.eventServiceService.getEventById(id);
+
+  //   if (!event) {
+  //     throw new RpcException('Event not found');
+  //   }
+  //   return this.eventServiceService.createQuestion(id, question, user);
   // }
 
-  // @Get(':eventId/questions')
+  // @Get(':id/questions')
   // @ResponseMessage('Questions retrieved successfully')
-  // async getEventQuestions(@Param('eventId') eventId: string) {
-  //   return this.eventServiceService.getEventQuestions(eventId);
+  // async getEventQuestions(@Param('id') id: string) {
+  //   const event = await this.eventServiceService.getEventById(id);
+
+  //   if (!event) {
+  //     throw new RpcException('Event not found');
+  //   }
+  //   return this.eventServiceService.getEventQuestions(id);
   // }
 
-  // @Patch(':eventId/questions/:questionId')
+  // @Patch(':id/questions/:questionId')
   // @UseGuards(JwtAuthGuard)
   // @ResponseMessage('Question updated successfully')
   // async updateQuestion(
-  //   @Param('eventId') eventId: string,
+  //   @Param('id') id: string,
   //   @Param('questionId') questionId: string,
   //   @Body('answered') answered: boolean,
   //   @User() user: DecodeAccessResponse,
   // ) {
+  //   const event = await this.eventServiceService.getEventById(id);
+
+  //   if (!event) {
+  //     throw new RpcException('Event not found');
+  //   }
+
   //   return this.eventServiceService.updateQuestion(
-  //     eventId,
+  //     id,
   //     questionId,
   //     answered,
   //     user,
   //   );
   // }
 
-  // @Post(':eventId/questions/:questionId/answers')
+  // @Post(':id/questions/:questionId/answers')
   // @UseGuards(JwtAuthGuard)
   // @ResponseMessage('Answer created successfully')
   // async answerQuestion(
-  //   @Param('eventId') eventId: string,
+  //   @Param('id') id: string,
   //   @Param('questionId') questionId: string,
   //   @Body('answer') answer: string,
   //   @User() user: DecodeAccessResponse,
   // ) {
   //   return this.eventServiceService.answerQuestion(
-  //     eventId,
+  //     id,
   //     questionId,
   //     answer,
   //     user,
   //   );
+  // }
+
+  // @Post(':id/feedbacks')
+  // @UseGuards(JwtAuthGuard)
+  // @ResponseMessage('Feedback created successfully')
+  // async createFeedback(
+  //   @Param('id') id: string,
+  //   @Body('feedback') feedback: string,
+  //   @Body('rating') rating: number,
+  //   @User() user: DecodeAccessResponse,
+  // ) {
+  //   const event = await this.eventServiceService.getEventById(id);
+
+  //   if (!event) {
+  //     throw new RpcException('Event not found');
+  //   }
+  //   return this.eventServiceService.createFeedback(id, feedback, rating, user);
+  // }
+
+  // @Get(':id/feedbacks')
+  // @ResponseMessage('Feedbacks retrieved successfully')
+  // async getEventFeedbacks(@Param('id') id: string) {
+  //   const event = await this.eventServiceService.getEventById(id);
+
+  //   if (!event) {
+  //     throw new RpcException('Event not found');
+  //   }
+  //   return this.eventServiceService.getEventFeedbacks(id);
   // }
 
   @Post(':eventId/files')
@@ -175,9 +236,9 @@ export class EventServiceController {
 
     const urlList = uploadedFilesInfo.map((f) => f.path);
     const event = await this.eventServiceService.getEventById(eventId);
-    
+
     if (field === 'banner') {
-      if(event.event.banner) {
+      if (event.event.banner) {
         this.eventServiceService.deleteFilesUrl([event.event.banner], '');
       }
       return this.eventServiceService.updateEvent(eventId, {
@@ -196,7 +257,7 @@ export class EventServiceController {
       });
     }
     else if (field === 'videoIntro') {
-      if(event.event.videoIntro) {
+      if (event.event.videoIntro) {
         this.eventServiceService.deleteFilesUrl([], event.event.videoIntro);
       }
       return this.eventServiceService.updateEvent(eventId, {
@@ -236,7 +297,7 @@ export class EventServiceController {
     };
 
     if (field.includes('documents')) {
-      if(!files || files.length === 0) {
+      if (!files || files.length === 0) {
         throw new BadRequestException('No files provided to delete documents');
       }
       urls.push(...files);

@@ -1,4 +1,4 @@
-import { forwardRef, Inject, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { forwardRef, HttpStatus, Inject, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { CreateEventDto } from './dto/create-event-service.dto';
 import { EVENT_SERVICE } from '../constants/service.constant';
@@ -28,7 +28,15 @@ export class EventServiceService implements OnModuleInit {
   }
 
   async isExistEvent(id: string) {
-    return await this.eventService.isExistEvent({ id }).toPromise();
+    try {
+      const event = await this.eventService.getEventById({id}).toPromise();
+      return { isExist: !!event };
+    } catch (error) {
+      if (error.code === HttpStatus.NOT_FOUND) {
+        return { isExist: false };
+      }
+      throw new RpcException(error);
+    }
   }
 
   async sendEventInvites(
@@ -220,6 +228,24 @@ export class EventServiceService implements OnModuleInit {
   //   }
   // }
 
+  async getOrganizedEvents(userId: string, status?: string) {
+    try {
+      return await this.eventService.getOrganizedEvents({ userId, status }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  // danh sách sự kiên đã tham gia của user
+  async getParticipatedEvents(userId: string, status?: string) {
+    try {
+      return await this.eventService.getParticipatedEvents({ userId, status }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  // danh sách check in check out của sự kiện
   async getParticipantsEvent(eventId: string) {
     try {
       const cacheKey = `event:${eventId}:checkInOut`;
@@ -246,22 +272,6 @@ export class EventServiceService implements OnModuleInit {
       const data = await this.eventService.getAllEvent({ query }).toPromise();
 
       // await this.redisCacheService.set(key, data, 60 * 5);
-      return data;
-    } catch (error) {
-      throw new RpcException(error);
-    }
-  }
-
-
-  async getEventByCategoryName(categoryName: string) {
-    try {
-      const key = `getEventByCategoryName:${categoryName}`;
-      const cacheData = await this.redisCacheService.get<any>(key);
-      if (cacheData) {
-        return cacheData;
-      }
-      const data = await this.eventService.getAllEventByCategoryName({ name: categoryName }).toPromise();
-      await this.redisCacheService.set(key, data, 60 * 5);
       return data;
     } catch (error) {
       throw new RpcException(error);

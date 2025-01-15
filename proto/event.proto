@@ -5,7 +5,6 @@ package event;
 service EventService{
   rpc GetAllEvent(QueryParamsRequest) returns (AllEventResponse); 
   rpc GetEventById(EventByIdRequest) returns (EventResponse);
-  rpc GetAllEventByCategoryName(CategoryNameRequest) returns (AllEventResponse);
   rpc GetCategoryById(CategoryByIdRequest) returns (CategoryResponse);
   rpc GetAllCategory(Empty) returns (AllCategoryResponse);
   rpc CreateEvent(CreateEventRequest) returns (EventResponse);
@@ -24,9 +23,22 @@ service EventService{
   //rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse);
   //rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
   rpc IsExistEvent(EventByIdRequest) returns (IsExistEventResponse);
+  rpc getOrganizedEvents(getOrganizedEventsRequest) returns (AllEventResponse);
+  rpc getParticipatedEvents(getParticipatedEventsRequest) returns (AllEventResponse);
 }
 
 message Empty{}
+
+message getParticipatedEventsRequest{
+  string userId = 1;
+  optional string status = 2;
+}
+
+message getOrganizedEventsRequest{
+  string userId = 1;
+  optional string status = 2;
+}
+
 
 message IsExistEventResponse{
   bool isExist = 1;
@@ -155,10 +167,6 @@ message UpdateCategoryRequest{
   string id = 1;
   optional string name = 2;
   optional string description = 3;
-}
-
-message CategoryNameRequest{
-  string name = 1;
 }
 
 message CreateCategoryRequest{

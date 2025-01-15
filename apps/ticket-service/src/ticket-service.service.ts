@@ -32,6 +32,44 @@ export class TicketServiceService implements OnModuleInit {
     this.authService = this.clientAuth.getService<UsersServiceClient>(USERS_SERVICE_NAME);
   }
 
+  //new
+  async getParticipant(request: any) {
+    try {
+      const { filter = {}, limit, sort } = aqp(request.query);
+      const page = parseInt(filter.page, 10);
+      delete filter.page;
+
+      const skip = page && limit ? (page - 1) * limit : 0;
+
+      // Lọc các participant dựa trên userId
+      if (filter.userId) {
+        filter.userId = filter.userId.toString();
+      }
+
+      // Lọc participant theo eventId và các điều kiện khác (nếu có)
+      const query = {
+        ...filter
+      };
+
+      const totalItems = await this.participantModel.countDocuments(query);
+      const totalPages = limit ? Math.ceil(totalItems / limit) : 1;
+
+      const participants = await this.participantModel
+        .find(query)
+        .skip(skip)
+        .limit(limit)
+        .sort(sort as any)
+        .exec();
+
+      const result = participants.map((participant) => ({
+        eventId: participant.eventId.toString(),
+      }));
+      return result;
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get participants');
+    }
+  }
+
   async scanTicket(code: string): Promise<ScanTicketResponse> {
     try {
       const ticket = await this.ticketModel.findOne({ code });
@@ -189,22 +227,23 @@ export class TicketServiceService implements OnModuleInit {
   }
 
   async deleteParticipant(id: string) {
-    // try {
-    //   const participant = await this.participantModel.findById(id);
-    //   if (!participant) {
-    //     throw new RpcException({
-    //       message: 'Participant not found',
-    //       code: HttpStatus.NOT_FOUND,
-    //     });
-    //   }
-    //   await this.participantModel.findByIdAndDelete(id);
-    //   await this.ticketModel.findOneAndDelete({ participantId: id });
-    //   return {
-    //     message: 'Participant deleted successfully',
-    //   };
-    // } catch (error) {
-    //   throw handleRpcException(error, 'Failed to delete participant');
-    // }
+    try {
+      const participant = await this.participantModel.findById(id);
+      if (!participant) {
+        throw new RpcException({
+          message: 'Participant not found',
+          code: HttpStatus.NOT_FOUND,
+        });
+      }
+      await this.participantModel.findByIdAndDelete(id);
+      await this.ticketModel.findOneAndDelete({ participantId: id });
+      this.clientEvent.emit('ticket_deleted', { eventId: participant.eventId });
+      return {
+        message: 'Participant deleted successfully',
+      };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to delete participant');
+    }
   }
 
   async getParticipantByEventId(eventId: string) {

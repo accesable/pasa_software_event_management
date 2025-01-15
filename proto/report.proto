@@ -2,6 +2,103 @@ syntax = "proto3";
 
 package report;
 
-service ReportServiceProto{
-    
+import "google/protobuf/timestamp.proto";
+
+service ReportService {
+  rpc GetUpcomingEvents (GetEventsRequest) returns (EventsResponse) {} // Sắp diễn ra
+  rpc GetPastEvents (GetEventsRequest) returns (EventsResponse) {} // Đã kết thúc
+  rpc GetParticipantsByEvent (GetParticipantsByEventRequest) returns (ParticipantsResponse) {}
+  rpc GetEventParticipationStats (GetEventParticipationStatsRequest) returns (EventParticipationStatsResponse) {}
+  rpc GetTotalEventsStats (google.protobuf.Empty) returns (TotalEventsStatsResponse) {}
+  rpc GetMonthlyParticipationStats (GetMonthlyParticipationStatsRequest) returns (MonthlyParticipationStatsResponse) {}
+  rpc GetAverageParticipantsPerEvent (google.protobuf.Empty) returns (AverageParticipantsResponse) {}
+  rpc GetAverageParticipationTime (GetEventRequest) returns (AverageParticipationTimeResponse) {}
+  rpc GetCheckInOutTimeAnalysis (GetEventRequest) returns (CheckInOutTimeAnalysisResponse) {}
+  rpc GetParticipationRate (GetEventRequest) returns (ParticipationRateResponse) {}
+}
+
+message GetEventRequest {
+  string eventId = 1;
+}
+
+message GetEventsRequest {
+  // Có thể bổ sung thêm các filter khác (ví dụ: category, date range)
+}
+
+message Event {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  google.protobuf.Timestamp startDate = 4;
+  google.protobuf.Timestamp endDate = 5;
+  string location = 6;
+  string categoryId = 7;
+  string status = 8;
+  // Có thể bổ sung thêm các field khác nếu cần
+}
+
+message EventsResponse {
+  repeated Event events = 1;
+}
+
+message GetParticipantsByEventRequest {
+  string eventId = 1;
+}
+
+message Participant {
+  string id = 1;
+  string eventId = 2; // Thêm trường eventId
+  string userId = 3;
+  string email = 4; // Thêm thông tin user
+  string name = 5; // Thêm thông tin user
+  google.protobuf.Timestamp checkInAt = 6;
+  google.protobuf.Timestamp checkOutAt = 7;
+}
+
+message ParticipantsResponse {
+  repeated Participant participants = 1;
+}
+
+message GetEventParticipationStatsRequest {
+  string eventId = 1;
+}
+
+message EventParticipationStatsResponse {
+  string eventId = 1;
+  int32 registeredCount = 2;
+  int32 checkInCount = 3;
+  int32 checkOutCount = 4;
+}
+
+message TotalEventsStatsResponse {
+  int32 scheduledCount = 1;
+  int32 ongoingCount = 2;
+  int32 finishedCount = 3;
+}
+
+message GetMonthlyParticipationStatsRequest {
+  int32 year = 1; // Lấy tham số năm
+}
+
+message MonthlyParticipationStatsResponse {
+  repeated MonthlyParticipationStat monthlyStats = 1;
+}
+
+message MonthlyParticipationStat {
+  int32 month = 1;
+  int32 participantCount = 2;
+}
+
+message AverageParticipationTimeResponse {
+  double averageParticipationTimeInMinutes = 1;
+}
+
+message CheckInOutTimeAnalysisResponse {
+  double averageCheckInTimeInMinutes = 1; // Thời gian check-in trung bình (phút)
+  double averageCheckOutTimeInMinutes = 2; // Thời gian check-out trung bình (phút)
+}
+
+message ParticipationRateResponse {
+  double checkInRate = 1;
+  double checkOutRate = 2;
 }

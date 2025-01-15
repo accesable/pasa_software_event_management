@@ -13,6 +13,12 @@ export class TicketServiceController implements TicketServiceProtoController {
   getParticipantByEventId(request: GetParticipantByEventIdRequest) {
     return this.ticketServiceService.getParticipantByEventId(request.eventId);
   }
+
+  @EventPattern('getParticipant')
+  getParticipant(request: any) {
+    console.log('getParticipant', request);
+    return this.ticketServiceService.getParticipant(request);
+  }
   
   @EventPattern('cancelEvent')
   cancelEvent(request: { eventId: string }) {
@@ -27,9 +33,6 @@ export class TicketServiceController implements TicketServiceProtoController {
     throw new Error('Method not implemented.');
   }
   cancelTicket(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse {
-    throw new Error('Method not implemented.');
-  }
-  getParticipant(request: QueryParamsRequest): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse {
     throw new Error('Method not implemented.');
   }
   getParticipantById(request: ParticipationByIdRequest): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse {

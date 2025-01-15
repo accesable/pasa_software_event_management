@@ -55,7 +55,6 @@ describe('EventController', () => {
             getEventById: jest.fn().mockResolvedValue(mockEvent),
             createEvent: jest.fn().mockResolvedValue(mockEvent),
             updateEvent: jest.fn().mockResolvedValue(mockEvent),
-            getAllEventByCategoryName: jest.fn().mockResolvedValue([mockEvent]),
             getCategoryById: jest.fn().mockResolvedValue(mockCategory),
             getAllCategory: jest.fn().mockResolvedValue([mockCategory]),
             createCategory: jest.fn().mockResolvedValue(mockCategory),
