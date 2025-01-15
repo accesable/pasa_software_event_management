@@ -13,7 +13,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useFetchData } from '../../hooks';
 import { EventsCard } from '../../components/dashboard/shared';
@@ -44,6 +44,8 @@ export const MyEventDashboardPage = () => {
   } = useFetchData('../mocks/MyEvents.json');
 
   const [eventTabKey, setEventTabKey] = useState<string>('all');
+
+  const navigate = useNavigate();
 
   const EVENT_TABS_CONTENT: Record<string, React.ReactNode> = {
     all: <MyEventsTable key="all-projects-table" data={eventsData} />,
@@ -155,8 +157,8 @@ export const MyEventDashboardPage = () => {
             title="Your Events"
             extra={
               <Space>
-                <Button icon={<CloudUploadOutlined />}>Import</Button>
-                <Button icon={<PlusOutlined />}>New Event</Button>
+                {/* <Button icon={<CloudUploadOutlined />}>Import</Button> */}
+                <Button onClick={()=>navigate("/create/events")} icon={<PlusOutlined />}>New Event</Button>
               </Space>
             }
             tabList={EVENT_TABS}
