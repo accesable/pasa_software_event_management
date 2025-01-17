@@ -4,7 +4,6 @@ import { CategoryServiceController, EventServiceController, GuestServiceControll
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from '../strategies/jwt.strategy';
-import { RolesGuard } from '../guards/roles.guard';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EVENT_SERVICE } from '../constants/service.constant';
 import { join } from 'path';
@@ -43,7 +42,7 @@ import { EVENT_PACKAGE_NAME } from '../../../../libs/common/src/types/event';
     }),
   ],
   controllers: [EventServiceController, CategoryServiceController, SpeakerServiceController, GuestServiceController],
-  providers: [EventServiceService, JwtStrategy, RolesGuard],
+  providers: [EventServiceService, JwtStrategy],
   exports: [EventServiceService],
 })
 export class EventServiceModule { }

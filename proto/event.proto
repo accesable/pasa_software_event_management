@@ -11,9 +11,13 @@ service EventService{
   rpc CreateCategory(CreateCategoryRequest) returns (CategoryResponse);
   rpc UpdateEvent(UpdateEventRequest) returns (EventResponse);
   rpc UpdateCategory(UpdateCategoryRequest) returns (CategoryResponse);
+  rpc UpdateSpeaker(UpdateSpeakerRequest) returns (SpeakerResponse);
+  rpc UpdateGuest(UpdateGuestRequest) returns (GuestResponse);
   rpc CreateSpeaker(CreateSpeakerRequest) returns (SpeakerResponse);
-  rpc GetAllSpeaker(Empty) returns (AllSpeakerResponse);
-  rpc getAllGuest(Empty) returns (AllGuestResponse);
+  rpc GetAllSpeaker(GetAllRequest) returns (AllSpeakerResponse);
+  rpc getAllGuest(GetAllRequest) returns (AllGuestResponse);
+  rpc GetSpeakerById(FindByIdRequest) returns (SpeakerResponse);
+  rpc GetGuestById(FindByIdRequest) returns (GuestResponse);
   rpc CreateGuest(CreateGuestRequest) returns (GuestResponse);
   rpc CancelEvent(CancelEventRequest) returns (CancelEventResponse);
   //rpc UpdateEventDocument (UpdateEventDocumentRequest) returns (UpdateEventDocumentResponse);
@@ -28,6 +32,33 @@ service EventService{
 }
 
 message Empty{}
+
+
+message UpdateGuestRequest{
+  string id = 1;
+  optional string name = 2;
+  optional string jobTitle = 3;
+  optional string organization = 4;
+  optional string linkSocial = 5;
+  optional string avatar = 6;
+  string userId = 7;
+}
+
+message UpdateSpeakerRequest{
+  string id = 1;
+  optional string name = 2;
+  optional string email = 3;
+  optional string avatar = 4;
+  optional string phone = 5;
+  optional string jobTitle = 6;
+  optional string bio = 7;
+  optional string linkFb = 8;
+  string userId = 9;
+}
+
+message GetAllRequest{
+  string userId = 1;
+}
 
 message AcceptInvitationRequest {
   string eventId = 1;
@@ -135,6 +166,7 @@ message CreateGuestRequest{
   optional string organization = 3;
   optional string linkSocial = 4;
   optional string avatar = 5;
+  string userId = 6;
 }
 
 message CreateSpeakerRequest{
@@ -145,6 +177,7 @@ message CreateSpeakerRequest{
   string jobTitle = 5;
   optional string bio = 6;
   optional string linkFb = 7;
+  string userId = 8;
 }
 
 message SpeakerResponse{

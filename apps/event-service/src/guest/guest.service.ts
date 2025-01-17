@@ -1,19 +1,52 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CreateGuestRequest, Guest as GuestType} from '../../../../libs/common/src/types/event';
+import { CreateGuestRequest, Guest as GuestType, UpdateGuestRequest} from '../../../../libs/common/src/types/event';
 import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
 import { Guest, GuestDocument } from './schemas/guest.schema';
+import { RpcException } from '@nestjs/microservices';
+import { FindByIdRequest } from '../../../../libs/common/src';
 
 @Injectable()
 export class GuestService {
     constructor(
         @InjectModel(Guest.name) private speakerModel: Model<GuestDocument>
     ) {}
-    
-    async getAllGuest() {
+
+    async getGuestById(request: FindByIdRequest) {
         try {
-            const guests = await this.speakerModel.find();
+            const guest = await this.speakerModel.findById(request.id);
+            if (!guest) {
+                throw new RpcException({
+                    message: 'Guest not found',
+                    code: HttpStatus.NOT_FOUND,
+                });
+            }
+            return { guest: this.transformGuest(guest) };
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get guest by id');
+        }
+    }
+
+    async updateGuest(request: UpdateGuestRequest){
+        try {
+            const guest = await this.speakerModel.findOne({ _id: request.id, createdBy: request.userId });
+            if (!guest) {
+                throw new RpcException({
+                    message: 'Guest not found',
+                    code: HttpStatus.NOT_FOUND,
+                });
+            }
+            const res = await this.speakerModel.findByIdAndUpdate(request.id, request, { new: true });
+            return { guest: this.transformGuest(res) };
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to update guest');
+        }
+    }
+    
+    async getAllGuest(userId: string) {
+        try {
+            const guests = await this.speakerModel.find({ createdBy: userId });
             const guestResponses: GuestType[] = guests.map(guest => this.transformGuest(guest));
 
             const meta = {
@@ -32,7 +65,7 @@ export class GuestService {
 
     async createGuest(request: CreateGuestRequest){
         try {
-            const res = await this.speakerModel.create(request);
+            const res = await this.speakerModel.create({ ...request, createdBy: request.userId });
             return { guest: this.transformGuest(res) };
         } catch (error) {
             throw handleRpcException(error, 'Failed to create guest');

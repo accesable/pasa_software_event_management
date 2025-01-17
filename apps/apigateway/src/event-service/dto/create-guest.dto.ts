@@ -1,3 +1,4 @@
+import { PartialType } from "@nestjs/mapped-types";
 import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUrl } from "class-validator";
 
 export class CreateGuestDto {
@@ -21,3 +22,5 @@ export class CreateGuestDto {
     @IsUrl({}, { message: 'Invalid url' })
     linkSocial?: string;
 }
+
+export class UpdateGuestDto extends PartialType(CreateGuestDto) {}

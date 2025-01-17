@@ -13,6 +13,32 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+export interface UpdateGuestRequest {
+  id: string;
+  name?: string | undefined;
+  jobTitle?: string | undefined;
+  organization?: string | undefined;
+  linkSocial?: string | undefined;
+  avatar?: string | undefined;
+  userId: string;
+}
+
+export interface UpdateSpeakerRequest {
+  id: string;
+  name?: string | undefined;
+  email?: string | undefined;
+  avatar?: string | undefined;
+  phone?: string | undefined;
+  jobTitle?: string | undefined;
+  bio?: string | undefined;
+  linkFb?: string | undefined;
+  userId: string;
+}
+
+export interface GetAllRequest {
+  userId: string;
+}
+
 export interface AcceptInvitationRequest {
   eventId: string;
   token: string;
@@ -118,6 +144,7 @@ export interface CreateGuestRequest {
   organization?: string | undefined;
   linkSocial?: string | undefined;
   avatar?: string | undefined;
+  userId: string;
 }
 
 export interface CreateSpeakerRequest {
@@ -128,6 +155,7 @@ export interface CreateSpeakerRequest {
   jobTitle: string;
   bio?: string | undefined;
   linkFb?: string | undefined;
+  userId: string;
 }
 
 export interface SpeakerResponse {
@@ -368,11 +396,19 @@ export interface EventServiceClient {
 
   updateCategory(request: UpdateCategoryRequest): Observable<CategoryResponse>;
 
+  updateSpeaker(request: UpdateSpeakerRequest): Observable<SpeakerResponse>;
+
+  updateGuest(request: UpdateGuestRequest): Observable<GuestResponse>;
+
   createSpeaker(request: CreateSpeakerRequest): Observable<SpeakerResponse>;
 
-  getAllSpeaker(request: Empty): Observable<AllSpeakerResponse>;
+  getAllSpeaker(request: GetAllRequest): Observable<AllSpeakerResponse>;
 
-  getAllGuest(request: Empty): Observable<AllGuestResponse>;
+  getAllGuest(request: GetAllRequest): Observable<AllGuestResponse>;
+
+  getSpeakerById(request: FindByIdRequest): Observable<SpeakerResponse>;
+
+  getGuestById(request: FindByIdRequest): Observable<GuestResponse>;
 
   createGuest(request: CreateGuestRequest): Observable<GuestResponse>;
 
@@ -420,13 +456,25 @@ export interface EventServiceController {
     request: UpdateCategoryRequest,
   ): Promise<CategoryResponse> | Observable<CategoryResponse> | CategoryResponse;
 
+  updateSpeaker(
+    request: UpdateSpeakerRequest,
+  ): Promise<SpeakerResponse> | Observable<SpeakerResponse> | SpeakerResponse;
+
+  updateGuest(request: UpdateGuestRequest): Promise<GuestResponse> | Observable<GuestResponse> | GuestResponse;
+
   createSpeaker(
     request: CreateSpeakerRequest,
   ): Promise<SpeakerResponse> | Observable<SpeakerResponse> | SpeakerResponse;
 
-  getAllSpeaker(request: Empty): Promise<AllSpeakerResponse> | Observable<AllSpeakerResponse> | AllSpeakerResponse;
+  getAllSpeaker(
+    request: GetAllRequest,
+  ): Promise<AllSpeakerResponse> | Observable<AllSpeakerResponse> | AllSpeakerResponse;
 
-  getAllGuest(request: Empty): Promise<AllGuestResponse> | Observable<AllGuestResponse> | AllGuestResponse;
+  getAllGuest(request: GetAllRequest): Promise<AllGuestResponse> | Observable<AllGuestResponse> | AllGuestResponse;
+
+  getSpeakerById(request: FindByIdRequest): Promise<SpeakerResponse> | Observable<SpeakerResponse> | SpeakerResponse;
+
+  getGuestById(request: FindByIdRequest): Promise<GuestResponse> | Observable<GuestResponse> | GuestResponse;
 
   createGuest(request: CreateGuestRequest): Promise<GuestResponse> | Observable<GuestResponse> | GuestResponse;
 
@@ -478,9 +526,13 @@ export function EventServiceControllerMethods() {
       "createCategory",
       "updateEvent",
       "updateCategory",
+      "updateSpeaker",
+      "updateGuest",
       "createSpeaker",
       "getAllSpeaker",
       "getAllGuest",
+      "getSpeakerById",
+      "getGuestById",
       "createGuest",
       "cancelEvent",
       "checkOwnerShip",

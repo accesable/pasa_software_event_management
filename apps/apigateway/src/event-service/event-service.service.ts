@@ -2,10 +2,10 @@ import { forwardRef, HttpStatus, Inject, Injectable, NotFoundException, OnModule
 import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { CreateEventDto } from './dto/create-event-service.dto';
 import { EVENT_SERVICE } from '../constants/service.constant';
-import { CreateEventCategoryDto } from './dto/create-event-category.dto';
+import { CreateEventCategoryDto, UpdateEventCategoryDto } from './dto/create-event-category.dto';
 import { UpdateEventDto } from './dto/update-event-service.dto';
-import { CreateSpeakerDto } from './dto/create-speaker.dto';
-import { CreateGuestDto } from './dto/create-guest.dto';
+import { CreateSpeakerDto, UpdateSpeakerDto } from './dto/create-speaker.dto';
+import { CreateGuestDto, UpdateGuestDto } from './dto/create-guest.dto';
 import { RedisCacheService } from '../redis/redis.service';
 import { lastValueFrom } from 'rxjs';
 import { TicketServiceService } from '../ticket-service/ticket-service.service';
@@ -324,7 +324,7 @@ export class EventServiceService implements OnModuleInit {
 
   async createCategory(createEventCategoryDto: CreateEventCategoryDto) {
     try {
-      return await this.eventService.createCategory(createEventCategoryDto).toPromise();
+      return await this.eventService.createCategory({...createEventCategoryDto}).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -346,12 +346,12 @@ export class EventServiceService implements OnModuleInit {
     }
   }
 
-  async updateCategory(id: string, createEventCategoryDto: CreateEventCategoryDto) {
+  async updateCategory(id: string, createEventCategoryDto: UpdateEventCategoryDto) {
     try {
       const request: UpdateCategoryRequest = {
         id,
         name: createEventCategoryDto.name,
-        description: createEventCategoryDto.description ?? undefined,
+        description: createEventCategoryDto.description ?? undefined
       }
       return await this.eventService.updateCategory(request).toPromise();
     } catch (error) {
@@ -423,33 +423,65 @@ export class EventServiceService implements OnModuleInit {
     }
   }
 
-  async getAllSpeaker() {
+  async getSpeakerById(id: string) {
     try {
-      return await this.eventService.getAllSpeaker({}).toPromise();
+      return await this.eventService.getSpeakerById({ id }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
   }
 
-  async createSpeaker(createSpeakerDto: CreateSpeakerDto) {
+  async updateSpeaker(id: string, createSpeakerDto: UpdateSpeakerDto, userId: string) {
     try {
-      return await this.eventService.createSpeaker(createSpeakerDto).toPromise();
+      return await this.eventService.updateSpeaker({ id, ...createSpeakerDto, userId }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
   }
 
-  async getAllGuest() {
+  async getAllSpeaker(userId: string) {
     try {
-      return await this.eventService.getAllGuest({}).toPromise();
+      return await this.eventService.getAllSpeaker({userId}).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
   }
 
-  async createGuest(createGuestDto: CreateGuestDto) {
+  async createSpeaker(createSpeakerDto: CreateSpeakerDto, userId: string) {
     try {
-      return await this.eventService.createGuest(createGuestDto).toPromise();
+      return await this.eventService.createSpeaker({...createSpeakerDto, userId}).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async updateGuest(id: string, createGuestDto: UpdateGuestDto, userId: string) {
+    try {
+      return await this.eventService.updateGuest({ id, ...createGuestDto, userId}).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async getGuestById(id: string) {
+    try {
+      return await this.eventService.getGuestById({ id }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async getAllGuest(userId: string) { 
+    try {
+      return await this.eventService.getAllGuest({userId}).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async createGuest(createGuestDto: CreateGuestDto, userId: string) {
+    try {
+      return await this.eventService.createGuest({...createGuestDto, userId}).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }

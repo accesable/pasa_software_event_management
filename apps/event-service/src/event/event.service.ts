@@ -521,18 +521,18 @@ export class EventService {
     }
 
     async isExistEvent(id: string) {
-        // try {
-            // if (!Types.ObjectId.isValid(id)) {
-            //     throw new RpcException({
-            //         message: 'Invalid event ID',
-            //         code: HttpStatus.BAD_REQUEST,
-            //     });
-            // }
+        try {
+            if (!Types.ObjectId.isValid(id)) {
+                throw new RpcException({
+                    message: 'Invalid event ID',
+                    code: HttpStatus.BAD_REQUEST,
+                });
+            }
             const event = await this.eventModel.findById(id);
             return { isExist: !!event };
-        // } catch (error) {
-        //     throw handleRpcException(error, 'Failed to check event');
-        // }
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to check event');
+        }
     }
 
     async updateEvent(request: UpdateEventRequest) {

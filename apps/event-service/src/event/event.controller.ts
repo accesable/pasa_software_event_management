@@ -5,7 +5,7 @@ import { EventCategoryService } from '../event-category/event-category.service';
 import { SpeakerService } from '../speaker/speaker.service';
 import { GuestService } from '../guest/guest.service';
 import { EventPattern } from '@nestjs/microservices';
-import { AcceptInvitationRequest, AllEventResponse, CancelEventRequest, CategoryByIdRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, DeclineInvitationRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, getOrganizedEventsRequest, getParticipatedEventsRequest, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
+import { AcceptInvitationRequest, AllEventResponse, CancelEventRequest, CategoryByIdRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, DeclineInvitationRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, FindByIdRequest, GetAllRequest, getOrganizedEventsRequest, getParticipatedEventsRequest, GuestResponse, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, SpeakerResponse, UpdateCategoryRequest, UpdateEventRequest, UpdateGuestRequest, UpdateSpeakerRequest } from '../../../../libs/common/src/types/event';
 
 @Controller()
 @EventServiceControllerMethods()
@@ -16,6 +16,19 @@ export class EventController implements EventServiceController {
     private readonly speakerService: SpeakerService,
     private readonly guestService: GuestService,
   ) { }
+
+  updateSpeaker(request: UpdateSpeakerRequest): Promise<SpeakerResponse> | Observable<SpeakerResponse> | SpeakerResponse {
+    return this.speakerService.updateSpeaker(request);
+  }
+  updateGuest(request: UpdateGuestRequest): Promise<GuestResponse> | Observable<GuestResponse> | GuestResponse {
+    return this.guestService.updateGuest(request);
+  }
+  getSpeakerById(request: FindByIdRequest): Promise<SpeakerResponse> | Observable<SpeakerResponse> | SpeakerResponse {
+    return this.speakerService.getSpeakerById(request);
+  }
+  getGuestById(request: FindByIdRequest): Promise<GuestResponse> | Observable<GuestResponse> | GuestResponse {
+    return this.guestService.getGuestById(request);
+  }
 
   getOrganizedEvents(request: getOrganizedEventsRequest) {
     return this.eventService.getOrganizedEvents(request.userId, request.status);
@@ -63,8 +76,8 @@ export class EventController implements EventServiceController {
     return this.eventService.cancelEvent(request);
   }
 
-  getAllGuest(request: Empty) {
-    return this.guestService.getAllGuest();
+  getAllGuest(request: GetAllRequest) {
+    return this.guestService.getAllGuest(request.userId);
   }
 
   createGuest(request: CreateGuestRequest) {
@@ -74,8 +87,8 @@ export class EventController implements EventServiceController {
   createSpeaker(request: CreateSpeakerRequest) {
     return this.speakerService.createSpeaker(request);
   }
-  getAllSpeaker(request: Empty) {
-    return this.speakerService.getAllSpeaker();
+  getAllSpeaker(request: GetAllRequest) {
+    return this.speakerService.getAllSpeaker(request.userId);
   }
 
   // async getAllEventByCategoryName(request: CategoryNameRequest) {

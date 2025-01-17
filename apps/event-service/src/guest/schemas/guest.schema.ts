@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type GuestDocument = Guest & Document & {
     createdAt: Date;
@@ -22,6 +22,9 @@ export class Guest {
 
     @Prop({ trim: true, default: 'https://res.cloudinary.com/dbvyexitw/image/upload/v1734692314/gtpu0cco23s7yy5moa3e.png' })
     avatar: string;
+
+    @Prop({ required: true, type: Types.ObjectId })
+    createdBy: Types.ObjectId
 }
 
 export const GuestSchema = SchemaFactory.createForClass(Guest);

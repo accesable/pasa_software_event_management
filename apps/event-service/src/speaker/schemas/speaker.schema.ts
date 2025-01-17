@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type SpeakerDocument = Speaker & Document & {
     createdAt: Date;
@@ -28,6 +28,9 @@ export class Speaker {
 
     @Prop({required: true, trim: true })
     jobTitle: string;
+
+    @Prop({required: true, type: Types.ObjectId})
+    createdBy: Types.ObjectId
 }
 
 export const SpeakerSchema = SchemaFactory.createForClass(Speaker);

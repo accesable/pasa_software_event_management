@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type CategoryDocument = EventCategory & Document;
 
 @Schema({ versionKey: false })
 export class EventCategory {
-    @Prop({ required: true, unique: true, trim: true, index: true })
+    @Prop({ required: true, trim: true, index: true })
     name: string;
 
     @Prop({ trim: true, default: '' })

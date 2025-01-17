@@ -1,20 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, UseInterceptors, UploadedFiles, BadRequestException, SetMetadata } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
 import { EventServiceService } from './event-service.service';
 import { CreateEventDto } from './dto/create-event-service.dto';
-import { ResponseMessage, User } from '../decorators/public.decorator';
+import { ResponseMessage, StatusEvent, User } from '../decorators/public.decorator';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { RolesGuard } from '../guards/roles.guard';
-import { CreateEventCategoryDto } from './dto/create-event-category.dto';
+import { CreateEventCategoryDto, UpdateEventCategoryDto } from './dto/create-event-category.dto';
 import { UpdateEventDto } from './dto/update-event-service.dto';
-import { CreateGuestDto } from './dto/create-guest.dto';
-import { CreateSpeakerDto } from './dto/create-speaker.dto';
+import { CreateGuestDto, UpdateGuestDto } from './dto/create-guest.dto';
+import { CreateSpeakerDto, UpdateSpeakerDto } from './dto/create-speaker.dto';
 import { FileServiceService } from '../file-service/file-service.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Types } from 'mongoose';
 import { DecodeAccessResponse } from '../../../../libs/common/src';
-import { RpcException } from '@nestjs/microservices';
-import { EVENT_PACKAGE_NAME } from '../../../../libs/common/src/types/event';
-import { CheckIdExistGuard } from '../guards/check-id-exist.guard';
+import { CheckEventMaxParticipantsGuard } from '../guards/check-event-max-participants.guard';
+import { CheckEventStatusGuard } from '../guards/check-event-status.guard';
 
 @Controller('events')
 export class EventServiceController {
@@ -24,17 +22,18 @@ export class EventServiceController {
   ) { }
 
   @Post(':id/invite')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CheckEventMaxParticipantsGuard, CheckEventStatusGuard)
+  @StatusEvent('Scheduled')
   @ResponseMessage('Invitations sent successfully')
   async sendInvites(
     @Param('id') eventId: string,
     @Body('users') users: { email: string, id: string }[],
     @User() user: DecodeAccessResponse,
   ) {
-    if(!users || users.length === 0) {
+    if (!users || users.length === 0) {
       throw new BadRequestException('No users provided');
     }
-    
+
     const event = await this.eventServiceService.getEventById(eventId);
     if (!event) {
       throw new BadRequestException('Event not found');
@@ -59,13 +58,15 @@ export class EventServiceController {
   }
 
   @Get(':id/accept')
-  // add guard check event already Cancelled
+  @UseGuards(CheckEventMaxParticipantsGuard, CheckEventStatusGuard)
+  @StatusEvent('Scheduled')
   async acceptInvitation(@Param('id') eventId: string, @Query() query: any) {
     return this.eventServiceService.acceptInvitation(eventId, query);
   }
 
   @Get(':id/decline')
-  // add guard check event already Cancelled
+  @UseGuards(CheckEventStatusGuard)
+  @StatusEvent('Scheduled')
   async declineInvitation(@Param('id') eventId: string, @Query() query: any) {
     return this.eventServiceService.declineInvitation(eventId, query);
   }
@@ -186,8 +187,9 @@ export class EventServiceController {
   //   return this.eventServiceService.getEventFeedbacks(id);
   // }
 
-  @Post(':eventId/files')
-  @UseGuards(JwtAuthGuard)
+  @Post(':id/files')
+  @UseGuards(JwtAuthGuard, CheckEventStatusGuard)
+  @StatusEvent('Scheduled')
   @UseInterceptors(
     FilesInterceptor('files', 10, {
       fileFilter: (req, file, callback) => {
@@ -222,7 +224,7 @@ export class EventServiceController {
   )
   @ResponseMessage('Files uploaded successfully')
   async uploadFilesToEvent(
-    @Param('eventId') eventId: string,
+    @Param('id') eventId: string,
     @Body() body: {
       field: 'banner' | 'documents' | 'videoIntro';
       videoUrl?: string;
@@ -290,11 +292,11 @@ export class EventServiceController {
     return { message: 'No changes made' };
   }
 
-  @Delete(':eventId/files')
+  @Delete(':id/files')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Files deleted successfully')
   async deleteFilesFromEvent(
-    @Param('eventId') eventId: string,
+    @Param('id') eventId: string,
     @Body() body: {
       field: Array<'banner' | 'documents' | 'videoIntro'>;
       files?: string[];
@@ -342,19 +344,17 @@ export class EventServiceController {
   }
 
   @Get(':id')
-  @SetMetadata('serviceName', EVENT_PACKAGE_NAME)
-  @UseGuards(CheckIdExistGuard)
   @ResponseMessage('Get event by id success')
   async getEventById(@Param('id') id: string) {
-    // if (!Types.ObjectId.isValid(id)) {
-    //   throw new BadRequestException('Invalid Event ID');
-    // }
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid Event ID');
+    }
 
-    // const isExist = await this.eventServiceService.isExistEvent(id);
-    // if (!isExist.isExist) {
-    //   throw new BadRequestException('Event not found');
-    // }
-    // return this.eventServiceService.getEventById(id);
+    const isExist = await this.eventServiceService.isExistEvent(id);
+    if (!isExist.isExist) {
+      throw new BadRequestException('Event not found');
+    }
+    return this.eventServiceService.getEventById(id);
   }
 
   @Patch(':id')
@@ -372,7 +372,8 @@ export class EventServiceController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CheckEventStatusGuard)
+  @StatusEvent('Scheduled')
   @ResponseMessage('Cancel event success')
   async cancelEvent(@Param('id') id: string, @User() user: DecodeAccessResponse) {
     return this.eventServiceService.cancelEvent(id, user.id);
@@ -398,14 +399,14 @@ export class CategoryServiceController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Category created successfully')
-  createCategory(@Body() createEventCategoryDto: CreateEventCategoryDto, @User() user: DecodeAccessResponse) {
+  createCategory(@Body() createEventCategoryDto: CreateEventCategoryDto) {
     return this.eventServiceService.createCategory(createEventCategoryDto);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Update category success')
-  updateCategory(@Param('id') id: string, @Body() updateEventCategoryDto: CreateEventCategoryDto) {
+  updateCategory(@Param('id') id: string, @Body() updateEventCategoryDto: UpdateEventCategoryDto) {
     return this.eventServiceService.updateCategory(id, updateEventCategoryDto);
   }
 }
@@ -414,17 +415,31 @@ export class CategoryServiceController {
 export class SpeakerServiceController {
   constructor(private readonly eventServiceService: EventServiceService) { }
 
+  @Get(':id')
+  @ResponseMessage('Get speaker by id success')
+  getSpeakerById(@Param('id') id: string) {
+    return this.eventServiceService.getSpeakerById(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Update speaker success')
+  updateSpeaker(@Param('id') id: string, @Body() updateSpeakerDto: UpdateSpeakerDto, @User() user: DecodeAccessResponse) {
+    return this.eventServiceService.updateSpeaker(id, updateSpeakerDto, user.id);
+  }
+
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Get all speakers success')
-  getAllSpeaker() {
-    return this.eventServiceService.getAllSpeaker();
+  getAllSpeaker(@User() user: DecodeAccessResponse) {
+    return this.eventServiceService.getAllSpeaker(user.id);
   }
 
   @Post()
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Speaker created successfully')
-  createSpeaker(@Body() createSpeakerDto: CreateSpeakerDto) {
-    return this.eventServiceService.createSpeaker(createSpeakerDto);
+  createSpeaker(@Body() createSpeakerDto: CreateSpeakerDto, @User() user: DecodeAccessResponse) {
+    return this.eventServiceService.createSpeaker(createSpeakerDto, user.id);
   }
 }
 
@@ -432,16 +447,30 @@ export class SpeakerServiceController {
 export class GuestServiceController {
   constructor(private readonly eventServiceService: EventServiceService) { }
 
+  @Get(':id')
+  @ResponseMessage('Get guest by id success')
+  getGuestById(@Param('id') id: string) {
+    return this.eventServiceService.getGuestById(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Update guest success')
+  updateGuest(@Param('id') id: string, @Body() updateGuestDto: UpdateGuestDto, @User() user: DecodeAccessResponse) {
+    return this.eventServiceService.updateGuest(id, updateGuestDto, user.id);
+  }
+
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Get all guests success')
-  getAllGuest() {
-    return this.eventServiceService.getAllGuest();
+  getAllGuest(@User() user: DecodeAccessResponse) {
+    return this.eventServiceService.getAllGuest(user.id);
   }
 
   @Post()
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Guest created successfully')
-  createGuest(@Body() createGuestDto: CreateGuestDto) {
-    return this.eventServiceService.createGuest(createGuestDto);
+  createGuest(@Body() createGuestDto: CreateGuestDto, @User() user: DecodeAccessResponse) {
+    return this.eventServiceService.createGuest(createGuestDto, user.id);
   }
 }

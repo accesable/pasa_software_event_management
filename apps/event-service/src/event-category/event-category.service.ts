@@ -21,7 +21,7 @@ export class EventCategoryService {
                     code: HttpStatus.BAD_REQUEST,
                 });
             }
-            const res = await this.categoryModel.create(request);
+            const res = await this.categoryModel.create({ ...request });
             return { category: this.transformCategory(res)};
         } catch (error) {
             throw handleRpcException(error, 'Failed to create category');
@@ -58,7 +58,7 @@ export class EventCategoryService {
 
     async updateCategory(request: UpdateCategoryRequest) {
         try {
-            const isExistName = await this.categoryModel.findOne({ name: request.name });
+            const isExistName = await this.categoryModel.findOne({ _id: request.id });
             if (isExistName) {
                 throw new RpcException({
                     message: 'Category already exist',

@@ -1,3 +1,4 @@
+import { PartialType } from "@nestjs/mapped-types";
 import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUrl } from "class-validator";
 
 export class CreateSpeakerDto {
@@ -30,3 +31,5 @@ export class CreateSpeakerDto {
     @IsString({ message: 'Job title must be string' })
     jobTitle: string;
 }
+
+export class UpdateSpeakerDto extends PartialType(CreateSpeakerDto) {}
