@@ -90,16 +90,16 @@ const items: MenuProps['items'] = [
       null
     ),
   ]),
-  getItem(
-    <Link to={PATH_ABOUT.root}>About</Link>,
-    'about',
-    <InfoCircleOutlined />
-  ),
-  getItem(
-    <Link to={PATH_SITEMAP.root}>Sitemap</Link>,
-    'sitemap',
-    <BranchesOutlined />
-  ),
+  // getItem(
+  //   <Link to={PATH_ABOUT.root}>About</Link>,
+  //   'about',
+  //   <InfoCircleOutlined />
+  // ),
+  // getItem(
+  //   <Link to={PATH_SITEMAP.root}>Sitemap</Link>,
+  //   'sitemap',
+  //   <BranchesOutlined />
+  // ),
 
   getItem('Pages', 'pages', null, [], 'group'),
 
@@ -155,65 +155,65 @@ const items: MenuProps['items'] = [
     ),
   ]),
 
-  getItem('Authentication', 'authentication', <SecurityScanOutlined />, [
-    getItem(<Link to={PATH_AUTH.signin}>Sign In</Link>, 'auth-signin', null),
-    getItem(<Link to={PATH_AUTH.signup}>Sign Up</Link>, 'auth-signup', null),
-    getItem(<Link to={PATH_AUTH.welcome}>Welcome</Link>, 'auth-welcome', null),
-    getItem(
-      <Link to={PATH_AUTH.verifyEmail}>Verify email</Link>,
-      'auth-verify',
-      null
-    ),
-    getItem(
-      <Link to={PATH_AUTH.passwordReset}>Password reset</Link>,
-      'auth-password-reset',
-      null
-    ),
-    // getItem(<Link to={PATH_AUTH.passwordConfirm}>Passsword confirmation</Link>, 'auth-password-confirmation', null),
-    getItem(
-      <Link to={PATH_AUTH.accountDelete}>Account deleted</Link>,
-      'auth-account-deactivation',
-      null
-    ),
-  ]),
+  // getItem('Authentication', 'authentication', <SecurityScanOutlined />, [
+  //   getItem(<Link to={PATH_AUTH.signin}>Sign In</Link>, 'auth-signin', null),
+  //   getItem(<Link to={PATH_AUTH.signup}>Sign Up</Link>, 'auth-signup', null),
+  //   getItem(<Link to={PATH_AUTH.welcome}>Welcome</Link>, 'auth-welcome', null),
+  //   getItem(
+  //     <Link to={PATH_AUTH.verifyEmail}>Verify email</Link>,
+  //     'auth-verify',
+  //     null
+  //   ),
+  //   getItem(
+  //     <Link to={PATH_AUTH.passwordReset}>Password reset</Link>,
+  //     'auth-password-reset',
+  //     null
+  //   ),
+  //   // getItem(<Link to={PATH_AUTH.passwordConfirm}>Passsword confirmation</Link>, 'auth-password-confirmation', null),
+  //   getItem(
+  //     <Link to={PATH_AUTH.accountDelete}>Account deleted</Link>,
+  //     'auth-account-deactivation',
+  //     null
+  //   ),
+  // ]),
 
-  getItem('Errors', 'errors', <BugOutlined />, [
-    getItem(<Link to={PATH_ERROR.error400}>400</Link>, '400', null),
-    getItem(<Link to={PATH_ERROR.error403}>403</Link>, '403', null),
-    getItem(<Link to={PATH_ERROR.error404}>404</Link>, '404', null),
-    getItem(<Link to={PATH_ERROR.error500}>500</Link>, '500', null),
-    getItem(<Link to={PATH_ERROR.error503}>503</Link>, '503', null),
-  ]),
+  // getItem('Errors', 'errors', <BugOutlined />, [
+  //   getItem(<Link to={PATH_ERROR.error400}>400</Link>, '400', null),
+  //   getItem(<Link to={PATH_ERROR.error403}>403</Link>, '403', null),
+  //   getItem(<Link to={PATH_ERROR.error404}>404</Link>, '404', null),
+  //   getItem(<Link to={PATH_ERROR.error500}>500</Link>, '500', null),
+  //   getItem(<Link to={PATH_ERROR.error503}>503</Link>, '503', null),
+  // ]),
 
-  getItem('Help', 'help', null, [], 'group'),
-  getItem(
-    <Link to={PATH_DOCS.productRoadmap} target="_blank">
-      Roadmap
-    </Link>,
-    'product-roadmap',
-    <ProductOutlined />
-  ),
-  getItem(
-    <Link to={PATH_DOCS.components} target="_blank">
-      Components
-    </Link>,
-    'components',
-    <AppstoreAddOutlined />
-  ),
-  getItem(
-    <Link to={PATH_DOCS.help} target="_blank">
-      Documentation
-    </Link>,
-    'documentation',
-    <SnippetsOutlined />
-  ),
-  getItem(
-    <Link to={PATH_GITHUB.repo} target="_blank">
-      Give us a star
-    </Link>,
-    'give-us-a-star',
-    <GithubOutlined />
-  ),
+  // getItem('Help', 'help', null, [], 'group'),
+  // getItem(
+  //   <Link to={PATH_DOCS.productRoadmap} target="_blank">
+  //     Roadmap
+  //   </Link>,
+  //   'product-roadmap',
+  //   <ProductOutlined />
+  // ),
+  // getItem(
+  //   <Link to={PATH_DOCS.components} target="_blank">
+  //     Components
+  //   </Link>,
+  //   'components',
+  //   <AppstoreAddOutlined />
+  // ),
+  // getItem(
+  //   <Link to={PATH_DOCS.help} target="_blank">
+  //     Documentation
+  //   </Link>,
+  //   'documentation',
+  //   <SnippetsOutlined />
+  // ),
+  // getItem(
+  //   <Link to={PATH_GITHUB.repo} target="_blank">
+  //     Give us a star
+  //   </Link>,
+  //   'give-us-a-star',
+  //   <GithubOutlined />
+  // ),
 ];
 
 const rootSubmenuKeys = ['dashboards', 'corporate', 'user-profile'];
