@@ -5,7 +5,7 @@ import { EventCategoryService } from '../event-category/event-category.service';
 import { SpeakerService } from '../speaker/speaker.service';
 import { GuestService } from '../guest/guest.service';
 import { EventPattern } from '@nestjs/microservices';
-import { AllEventResponse, CancelEventRequest, CategoryByIdRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, getOrganizedEventsRequest, getParticipatedEventsRequest, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
+import { AcceptInvitationRequest, AllEventResponse, CancelEventRequest, CategoryByIdRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, DeclineInvitationRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, getOrganizedEventsRequest, getParticipatedEventsRequest, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
 
 @Controller()
 @EventServiceControllerMethods()
@@ -25,13 +25,13 @@ export class EventController implements EventServiceController {
     return this.eventService.getParticipatedEvents(request.userId, request.status);
   }
 
-  // async acceptInvitation(request: AcceptInvitationRequest) {
-  //   return this.eventService.acceptInvitation(request);
-  // }
+  async acceptInvitation(request: AcceptInvitationRequest) {
+    return this.eventService.acceptInvitation(request.eventId, request.token);
+  }
   
-  // async declineInvitation(request: DeclineInvitationRequest) {
-  //   return this.eventService.declineInvitation(request);
-  // }
+  async declineInvitation(request: DeclineInvitationRequest) {
+    return this.eventService.declineInvitation(request.eventId, request.token);
+  }
 
   isExistEvent(request: EventByIdRequest) {
     return this.eventService.isExistEvent(request.id);

@@ -3,4 +3,5 @@ export enum EmailTemplates {
     WELCOME_EMAIL = 'welcomeEmail',
     TICKET_CONFIRMATION = 'ticketConfirmation',
     EVENT_REMINDER = 'eventReminder',
+    INVITE = 'invite',
 }

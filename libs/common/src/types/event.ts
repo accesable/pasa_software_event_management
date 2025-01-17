@@ -13,6 +13,24 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+export interface AcceptInvitationRequest {
+  eventId: string;
+  token: string;
+}
+
+export interface AcceptInvitationResponse {
+  message: string;
+}
+
+export interface DeclineInvitationRequest {
+  eventId: string;
+  token: string;
+}
+
+export interface DeclineInvitationResponse {
+  message: string;
+}
+
 export interface getParticipatedEventsRequest {
   userId: string;
   status?: string | undefined;
@@ -28,8 +46,13 @@ export interface IsExistEventResponse {
 }
 
 export interface SendEventInvitesRequest {
-  eventId: string;
-  emails: string[];
+  event: EventResponse | undefined;
+  users: UserTypeInvite[];
+}
+
+export interface UserTypeInvite {
+  email: string;
+  id: string;
 }
 
 export interface SendEventInvitesResponse {
@@ -363,10 +386,9 @@ export interface EventServiceClient {
 
   sendEventInvites(request: SendEventInvitesRequest): Observable<SendEventInvitesResponse>;
 
-  /**
-   * rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse);
-   * rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
-   */
+  acceptInvitation(request: AcceptInvitationRequest): Observable<AcceptInvitationResponse>;
+
+  declineInvitation(request: DeclineInvitationRequest): Observable<DeclineInvitationResponse>;
 
   isExistEvent(request: EventByIdRequest): Observable<IsExistEventResponse>;
 
@@ -424,10 +446,13 @@ export interface EventServiceController {
     request: SendEventInvitesRequest,
   ): Promise<SendEventInvitesResponse> | Observable<SendEventInvitesResponse> | SendEventInvitesResponse;
 
-  /**
-   * rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse);
-   * rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
-   */
+  acceptInvitation(
+    request: AcceptInvitationRequest,
+  ): Promise<AcceptInvitationResponse> | Observable<AcceptInvitationResponse> | AcceptInvitationResponse;
+
+  declineInvitation(
+    request: DeclineInvitationRequest,
+  ): Promise<DeclineInvitationResponse> | Observable<DeclineInvitationResponse> | DeclineInvitationResponse;
 
   isExistEvent(
     request: EventByIdRequest,
@@ -460,6 +485,8 @@ export function EventServiceControllerMethods() {
       "cancelEvent",
       "checkOwnerShip",
       "sendEventInvites",
+      "acceptInvitation",
+      "declineInvitation",
       "isExistEvent",
       "getOrganizedEvents",
       "getParticipatedEvents",

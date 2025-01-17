@@ -5,7 +5,7 @@ import { LoginDto } from './dto/login';
 import { Response, Request as ExpressRequest } from 'express';
 import { ProfileDto } from './dto/profile';
 import { GoogleAuthGuard } from '../guards/google-auth/google-auth.guard';
-import { ResponseMessage, Roles, User } from '../decorators/public.decorator';
+import { ResponseMessage, User } from '../decorators/public.decorator';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ChangePasswordDto } from '../users/dto/change-password';

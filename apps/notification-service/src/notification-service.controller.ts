@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { EventPattern } from '@nestjs/microservices';
+import { EventPattern, Payload } from '@nestjs/microservices';
 import { NotificationServiceProtoControllerMethods, NotificationServiceProtoController, ForgotPasswordRequest, ForgotPasswordResponse } from '../../../libs/common/src/types/notification';
 import { NotificationServiceService } from './notification-service.service';
 
@@ -16,9 +16,10 @@ export class NotificationServiceController implements NotificationServiceProtoCo
     this.notificationService.handleUserCreated(data);
   }
 
-  @EventPattern('sendInvites')
-  async sendInvites(emails: [string], event: any) {
-    this.notificationService.sendInvites(emails, event);
+  @EventPattern('send_invites')
+  async sendInvites(@Payload() data: { users: {email: string, id: string}[]; event: any }) {
+    console.log('send email to', data.users);
+    this.notificationService.sendInvites(data.users, data.event);
   }
 
   async forgotPassword(request: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {

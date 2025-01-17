@@ -20,14 +20,32 @@ service EventService{
   rpc CheckOwnerShip(CheckOwnerShipRequest) returns (CheckOwnerShipResponse);
   //rpc UpdateEventVideoIntro(UpdateEventVideoIntroRequest) returns (EventResponse);
   rpc SendEventInvites (SendEventInvitesRequest) returns (SendEventInvitesResponse);
-  //rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse);
-  //rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
+  rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse);
+  rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
   rpc IsExistEvent(EventByIdRequest) returns (IsExistEventResponse);
   rpc getOrganizedEvents(getOrganizedEventsRequest) returns (AllEventResponse);
   rpc getParticipatedEvents(getParticipatedEventsRequest) returns (AllEventResponse);
 }
 
 message Empty{}
+
+message AcceptInvitationRequest {
+  string eventId = 1;
+  string token = 2;
+}
+
+message AcceptInvitationResponse {
+  string message = 1;
+}
+
+message DeclineInvitationRequest {
+  string eventId = 1;
+  string token = 2;
+}
+
+message DeclineInvitationResponse {
+  string message = 1;
+}
 
 message getParticipatedEventsRequest{
   string userId = 1;
@@ -45,8 +63,13 @@ message IsExistEventResponse{
 }
 
 message SendEventInvitesRequest{
-  string eventId = 1;
-  repeated string emails = 2;
+  EventResponse event = 1;
+  repeated UserTypeInvite users = 2;
+}
+
+message UserTypeInvite{
+  string email = 1;
+  string id = 2;
 }
 
 message SendEventInvitesResponse {

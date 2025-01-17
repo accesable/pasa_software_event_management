@@ -2,8 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
 import { Observable } from 'rxjs';
 import { EventPattern } from '@nestjs/microservices';
-import { QueryParamsRequest } from '../../../libs/common/src';
-import { TicketServiceProtoControllerMethods, TicketServiceProtoController, GetParticipantByEventIdRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, ParticipationResponse, ParticipationByIdRequest, CreateParticipationRequest, UpdateTicketRequest } from '../../../libs/common/src/types/ticket';
+import { TicketServiceProtoControllerMethods, TicketServiceProtoController, GetParticipantByEventIdRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, ParticipationResponse, ParticipationByIdRequest, CreateParticipationRequest, UpdateTicketRequest, QueryParamsRequest } from '../../../libs/common/src/types/ticket';
 
 @Controller()
 @TicketServiceProtoControllerMethods()
@@ -17,7 +16,13 @@ export class TicketServiceController implements TicketServiceProtoController {
   @EventPattern('getParticipant')
   getParticipant(request: any) {
     console.log('getParticipant', request);
-    return this.ticketServiceService.getParticipant(request);
+    return this.ticketServiceService.getParticipantOfUser(request);
+  }
+
+  @EventPattern('accepted_invite')
+  acceptedInvite(request: { eventId: string, userId: string }) {
+    console.log('accepted_invite', request);
+    return this.ticketServiceService.acceptedInvite(request);
   }
   
   @EventPattern('cancelEvent')

@@ -2,22 +2,75 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { ClientProxy, RpcException } from '@nestjs/microservices';
+import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { handleRpcException } from '../../../libs/common/src/filters/handleException';
 import { ForgotPasswordRequest, TokenData } from '../../../libs/common/src/types/notification';
 import { EmailTemplates } from './mail/contants/template';
+import { USERS_SERVICE_NAME, UsersServiceClient } from '../../../libs/common/src';
+import { AUTH_SERVICE } from '../../apigateway/src/constants/service.constant';
 
 @Injectable()
 export class NotificationServiceService {
+  private usersService: UsersServiceClient;
+
   constructor(
     private readonly mailerService: MailerService,
     private configService: ConfigService,
     private jwtService: JwtService,
-    // @Inject('NOTIFICATION_SERVICE') private readonly client: ClientProxy,
+    @Inject(AUTH_SERVICE) private clientAuth: ClientGrpc,
   ) { }
 
-  sendInvites(emails: [string], event: any) {
-    
+  onModuleInit() {
+    this.usersService = this.clientAuth.getService<UsersServiceClient>(USERS_SERVICE_NAME);
+  }
+
+  async sendInvites(users: {email: string, id: string}[], event: any) {
+    const eventId = event.id;
+    const expireDateTime = this.calculateExpireDateTime(new Date(event.startDate), new Date(event.endDate));
+
+    for (const user of users) {
+      const token = this.jwtService.sign(
+        { email: user.email, eventId, userId: user.id },
+        {
+          secret: this.configService.get<string>('JWT_SECRET'),
+          expiresIn: expireDateTime,
+        },
+      );
+      const url = `${this.configService.get<string>(
+        'FRONTEND_URL',
+      )}/events/${eventId}`;
+      await this.sendMail(
+        user.email,
+        EmailTemplates.INVITE,
+        'You are invited to ' + event.name,
+        {
+          email: user.email,
+          eventTitle: event.name,
+          acceptUrl: `${url}/accept?token=${token}`,
+          declineUrl: `${url}/decline?token=${token}`,
+        },
+      );
+    }
+  }
+
+  calculateExpireDateTime(eventStartDate: Date, eventEndDate: Date) {
+    const now = new Date();
+    const middleDate = new Date(
+      eventStartDate.getTime() +
+      (eventEndDate.getTime() - eventStartDate.getTime()) / 2,
+    ); // Thời điểm giữa startDate và endDate
+    let expiresInSeconds: number;
+
+    // Nếu thời điểm hiện tại đã qua giữa sự kiện, token sẽ hết hạn trong 1 giờ
+    if (now > middleDate) {
+      expiresInSeconds = 60 * 60; // 1 giờ
+    } else {
+      expiresInSeconds = Math.floor(
+        (middleDate.getTime() - now.getTime()) / 1000,
+      ); // Số giây cho đến giữa sự kiện
+    }
+
+    return `${expiresInSeconds}s`;
   }
 
   handleUserCreated(data: any) {

@@ -3,15 +3,16 @@ import { ConfigService } from '@nestjs/config';
 import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import * as QRCode from 'qrcode';
-import { UsersServiceClient, USERS_SERVICE_NAME } from '../../../libs/common/src';
+import { UsersServiceClient, USERS_SERVICE_NAME, QueryParamsRequest } from '../../../libs/common/src';
 import { handleRpcException } from '../../../libs/common/src/filters/handleException';
 import { EVENT_SERVICE_NAME, EventServiceClient } from '../../../libs/common/src/types/event';
 import { ScanTicketResponse, CreateParticipationRequest, Participation, TicketType } from '../../../libs/common/src/types/ticket';
 import { EVENT_SERVICE, AUTH_SERVICE } from '../../apigateway/src/constants/service.constant';
 import { Participant, ParticipantDocument } from './schemas/participant';
 import { Ticket, TicketDocument } from './schemas/ticket';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class TicketServiceService implements OnModuleInit {
@@ -32,8 +33,27 @@ export class TicketServiceService implements OnModuleInit {
     this.authService = this.clientAuth.getService<UsersServiceClient>(USERS_SERVICE_NAME);
   }
 
-  //new
-  async getParticipant(request: any) {
+  async acceptedInvite(request: { eventId: string, userId: string }) {
+    try {
+      const participant = await this.participantModel.findOne({ eventId: request.eventId, userId: request.userId });
+      if (participant) {
+        throw new RpcException({
+          message: 'You have already registered for this event',
+          code: HttpStatus.BAD_REQUEST,
+        });
+      }
+      const event = await lastValueFrom(this.eventService.getEventById({ id: request.eventId }));
+      const sessionIds = event.event.schedule.map((session) => session.id);
+      await this.createParticipant({ eventId: request.eventId, userId: request.userId, sessionIds: sessionIds });
+      return {
+        message: 'Accepted invitation successfully',
+      };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to accept invitation');
+    }
+  }
+
+  async getParticipantOfUser(request: QueryParamsRequest) {
     try {
       const { filter = {}, limit, sort } = aqp(request.query);
       const page = parseInt(filter.page, 10);
@@ -166,6 +186,12 @@ export class TicketServiceService implements OnModuleInit {
     try {
       const { eventId, userId, sessionIds } = request;
       const event = await this.eventService.getEventById({ id: eventId }).toPromise();
+      if(userId === event.event.createdBy.id){
+        throw new RpcException({
+          message: 'You can not register your own event',
+          code: HttpStatus.BAD_REQUEST,
+        });
+      }
       if (event.event.status === 'CANCELED' || event.event.status === 'COMPLETED') {
         throw new RpcException({
           message: 'Event has been canceled or completed',

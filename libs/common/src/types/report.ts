@@ -6,30 +6,149 @@
 
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
+import { Observable } from "rxjs";
 
 export const protobufPackage = "report";
 
+export interface GetEventRequest {
+  eventId: string;
+}
+
+export interface GetParticipantsByEventRequest {
+  eventId: string;
+}
+
+export interface Participant {
+  id: string;
+  eventId: string;
+  userId: string;
+  email: string;
+  name: string;
+  checkInAt: string;
+  checkOutAt: string;
+}
+
+export interface ParticipantsResponse {
+  participants: Participant[];
+}
+
+export interface GetEventParticipationStatsRequest {
+  eventId: string;
+}
+
+export interface EventParticipationStatsResponse {
+  eventId: string;
+  registeredCount: number;
+  checkInCount: number;
+  checkOutCount: number;
+}
+
+export interface GetMonthlyParticipationStatsRequest {
+  /** Lấy tham số năm */
+  year: number;
+}
+
+export interface MonthlyParticipationStatsResponse {
+  monthlyStats: MonthlyParticipationStat[];
+}
+
+export interface MonthlyParticipationStat {
+  month: number;
+  participantCount: number;
+}
+
+export interface AverageParticipationTimeResponse {
+  averageParticipationTimeInMinutes: number;
+}
+
+export interface CheckInOutTimeAnalysisResponse {
+  /** Thời gian check-in trung bình (phút) */
+  averageCheckInTimeInMinutes: number;
+  /** Thời gian check-out trung bình (phút) */
+  averageCheckOutTimeInMinutes: number;
+}
+
+export interface ParticipationRateResponse {
+  checkInRate: number;
+  checkOutRate: number;
+}
+
 export const REPORT_PACKAGE_NAME = "report";
 
-export interface ReportServiceProtoClient {
+export interface ReportServiceClient {
+  getParticipantsByEvent(request: GetParticipantsByEventRequest): Observable<ParticipantsResponse>;
+
+  getEventParticipationStats(request: GetEventParticipationStatsRequest): Observable<EventParticipationStatsResponse>;
+
+  getMonthlyParticipationStats(
+    request: GetMonthlyParticipationStatsRequest,
+  ): Observable<MonthlyParticipationStatsResponse>;
+
+  getAverageParticipationTime(request: GetEventRequest): Observable<AverageParticipationTimeResponse>;
+
+  getCheckInOutTimeAnalysis(request: GetEventRequest): Observable<CheckInOutTimeAnalysisResponse>;
+
+  getParticipationRate(request: GetEventRequest): Observable<ParticipationRateResponse>;
 }
 
-export interface ReportServiceProtoController {
+export interface ReportServiceController {
+  getParticipantsByEvent(
+    request: GetParticipantsByEventRequest,
+  ): Promise<ParticipantsResponse> | Observable<ParticipantsResponse> | ParticipantsResponse;
+
+  getEventParticipationStats(
+    request: GetEventParticipationStatsRequest,
+  ):
+    | Promise<EventParticipationStatsResponse>
+    | Observable<EventParticipationStatsResponse>
+    | EventParticipationStatsResponse;
+
+  getMonthlyParticipationStats(
+    request: GetMonthlyParticipationStatsRequest,
+  ):
+    | Promise<MonthlyParticipationStatsResponse>
+    | Observable<MonthlyParticipationStatsResponse>
+    | MonthlyParticipationStatsResponse;
+
+  getAverageParticipationTime(
+    request: GetEventRequest,
+  ):
+    | Promise<AverageParticipationTimeResponse>
+    | Observable<AverageParticipationTimeResponse>
+    | AverageParticipationTimeResponse;
+
+  getCheckInOutTimeAnalysis(
+    request: GetEventRequest,
+  ):
+    | Promise<CheckInOutTimeAnalysisResponse>
+    | Observable<CheckInOutTimeAnalysisResponse>
+    | CheckInOutTimeAnalysisResponse;
+
+  getParticipationRate(
+    request: GetEventRequest,
+  ): Promise<ParticipationRateResponse> | Observable<ParticipationRateResponse> | ParticipationRateResponse;
 }
 
-export function ReportServiceProtoControllerMethods() {
+export function ReportServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = [];
+    const grpcMethods: string[] = [
+      "getParticipantsByEvent",
+      "getEventParticipationStats",
+      "getMonthlyParticipationStats",
+      "getAverageParticipationTime",
+      "getCheckInOutTimeAnalysis",
+      "getParticipationRate",
+    ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcMethod("ReportServiceProto", method)(constructor.prototype[method], method, descriptor);
+      GrpcMethod("ReportService", method)(constructor.prototype[method], method, descriptor);
     }
     const grpcStreamMethods: string[] = [];
     for (const method of grpcStreamMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcStreamMethod("ReportServiceProto", method)(constructor.prototype[method], method, descriptor);
+      GrpcStreamMethod("ReportService", method)(constructor.prototype[method], method, descriptor);
     }
   };
 }
 
-export const REPORT_SERVICE_PROTO_SERVICE_NAME = "ReportServiceProto";
+export const REPORT_SERVICE_NAME = "ReportService";

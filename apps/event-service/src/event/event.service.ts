@@ -1,5 +1,5 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { ClientProxy, RpcException } from '@nestjs/microservices';
+import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
 import { EventDocument } from './schemas/event.schema';
@@ -8,46 +8,167 @@ import { Question, QuestionDocument } from './schemas/question.schema';
 import { Model, Types } from 'mongoose';
 import { CategoryDocument, EventCategory } from '../event-category/schemas/event-category.schema';
 import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
-import { SendEventInvitesRequest, SendEventInvitesResponse, CancelEventRequest, EventType, EventResponse, CreateEventRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
+import { SendEventInvitesRequest, SendEventInvitesResponse, CancelEventRequest, EventType, EventResponse, CreateEventRequest, UpdateEventRequest, UserTypeInvite } from '../../../../libs/common/src/types/event';
 import { Feedback, FeedbackDocument } from './schemas/feedback.schema';
 import { QueryParamsRequest } from '../../../../libs/common/src';
 import { lastValueFrom } from 'rxjs';
+import { TICKET_SERVICE } from '../../../apigateway/src/constants/service.constant';
+import { TICKET_SERVICE_PROTO_SERVICE_NAME, TicketServiceProtoClient } from '../../../../libs/common/src/types/ticket';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class EventService {
+    private ticketService: TicketServiceProtoClient;
+
     constructor(
         @InjectModel(Event.name) private eventModel: Model<EventDocument>,
         @InjectModel(EventCategory.name) private categoryModel: Model<CategoryDocument>,
         @InjectModel(InvitedUser.name) private invitedUserModel: Model<InvitedUserDocument>,
         @InjectModel(Question.name) private questionModel: Model<QuestionDocument>,
         @InjectModel(Feedback.name) private feedbackModel: Model<FeedbackDocument>,
-        @Inject('TICKET_SERVICE') private readonly clientTicket: ClientProxy,
+        @Inject('TICKET_SERVICE_RABBIT') private readonly clientTicket: ClientProxy,
         @Inject('NOTIFICATION_SERVICE') private readonly clientNotification: ClientProxy,
+
+        @Inject(TICKET_SERVICE) private ticketServiceClient: ClientGrpc,
+        private jwtService: JwtService,
     ) { }
 
-    // async acceptInvitation(eventId: string, query: any) {
-    //     try {
-    //         const token = query.token;
-    //         const acceptResult = await lastValueFrom(
-    //             this.eventService.acceptInvitation({ eventId, token }),
-    //         );
-    //         return acceptResult;
-    //     } catch (error) {
-    //         throw new RpcException(error);
-    //     }
-    // }
+    onModuleInit() {
+        this.ticketService = this.ticketServiceClient.getService<TicketServiceProtoClient>(TICKET_SERVICE_PROTO_SERVICE_NAME);
+    }
 
-    // async declineInvitation(eventId: string, query: any) {
-    //     try {
-    //         const token = query.token;
-    //         const declineResult = await lastValueFrom(
-    //             this.eventService.declineInvitation({ eventId, token }),
-    //         );
-    //         return declineResult;
-    //     } catch (error) {
-    //         throw new RpcException(error);
-    //     }
-    // }
+    async sendEventInvites(request: SendEventInvitesRequest): Promise<SendEventInvitesResponse> {
+        try {
+            const { users } = request;
+            const { event } = request.event;
+            let listUsers: UserTypeInvite[] = [];
+            for (const user of users) {
+                const existingInvitedUser = await this.invitedUserModel.findOne({
+                    eventId: event.id,
+                    email: user.email,
+                });
+
+                if (!existingInvitedUser) {
+                    listUsers.push({
+                        email: user.email,
+                        id: user.id,
+                    });
+                    const invitedUser = new this.invitedUserModel({
+                        eventId: event.id,
+                        email: user.email,
+                        status: 'pending',
+                    });
+
+                    await invitedUser.save();
+                }
+            }
+            this.clientNotification.emit('send_invites', { users: listUsers, event });
+
+            return {
+                message: 'Invitations sent successfully',
+                success: true,
+            };
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to send event invites');
+        }
+    }
+
+    async acceptInvitation(eventId: string, token: string) {
+        try {
+            const event = await this.eventModel.findById(eventId).exec();
+            // Xác thực JWT token
+            const decode: { email: string; eventId: string, userId: string }
+             = await this.jwtService.verify(token);
+
+            const { email: userEmail, eventId: decodedEventId, userId } = decode;
+
+            if (!userEmail || !decodedEventId) {
+                throw new RpcException({
+                    message: 'Invalid token or missing information',
+                    code: HttpStatus.BAD_REQUEST,
+                });
+            }
+
+            // Kiểm tra xem eventId trong token có khớp với eventId trong request không
+            if (eventId !== decodedEventId) {
+                throw new RpcException({
+                    message: 'Invalid token for this event',
+                    code: HttpStatus.BAD_REQUEST,
+                });
+            }
+
+            const invitedUser = await this.invitedUserModel.findOne({
+                email: userEmail,
+                eventId: eventId,
+            });
+
+            if (!invitedUser) {
+                throw new RpcException({
+                    message: 'Invitation not found or invalid',
+                    code: HttpStatus.NOT_FOUND,
+                });
+            }
+
+            if (invitedUser.status === 'pending') {
+                invitedUser.status = 'accepted';
+                await invitedUser.save();
+                await this.decreaseMaxParticipant(eventId);
+
+                this.clientTicket.emit('accepted_invite', {
+                    eventId: eventId,
+                    userId: userId,
+                });
+            }
+
+            return {
+                message: 'Invitation accepted successfully. Please check QR code in website.',
+                success: true,
+                event,
+            };
+        } catch (error) {
+            console.error('Failed to accept invitation:', error);
+            throw handleRpcException(error, 'Failed to accept invitation');
+        }
+    }
+
+    async declineInvitation(eventId: string, token: string) {
+        try {
+            const decoded = this.jwtService.verify(token);
+            const { email: userEmail, eventId: decodedEventId } = decoded;
+
+            if (!userEmail || !decodedEventId) {
+                throw new Error('Invalid token or missing information.');
+            }
+
+            // Kiểm tra xem eventId trong token có khớp với eventId trong request không
+            if (eventId !== decodedEventId) {
+                throw new Error('Invalid token for this event.');
+            }
+
+            const invitedUser = await this.invitedUserModel.findOne({
+                email: userEmail,
+                eventId: eventId
+            });
+
+            if (!invitedUser) {
+                throw new Error('Invitation not found or invalid.');
+            }
+
+            if (invitedUser.status === 'pending') {
+                invitedUser.status = 'declined';
+                await invitedUser.save();
+            }
+
+            return {
+                message: 'Invitation declined successfully',
+                success: true,
+            };
+        } catch (error) {
+            console.error('Failed to decline invitation:', error);
+            throw handleRpcException(error, 'Failed to decline invitation');
+        }
+    }
+
     // async createQuestion(
     //     eventId: string,
     //     question: string,
@@ -196,19 +317,18 @@ export class EventService {
                 this.clientTicket.send('getParticipant', {
                     query: {
                         userId: userId,
-                        status, // Lọc eventId theo status ở event service
                     },
                 } as QueryParamsRequest),
             );
-
             if (
                 !participantPerEvent ||
                 !Array.isArray(participantPerEvent) ||
                 participantPerEvent.length === 0
             ) {
-                return { 
+                return {
                     meta: { page: 1, limit: null, totalPages: 1, totalItems: 0, count: 0 },
-                    events: [] };
+                    events: []
+                };
             }
 
             const eventIds = participantPerEvent.map((participant) => participant.eventId);
@@ -242,35 +362,25 @@ export class EventService {
             };
 
             const events = await this.eventModel.find(query);
-            return { 
+            return {
                 meta: { page: 1, limit: null, totalPages: 1, totalItems: events.length, count: events.length },
-                events: events.map(event => this.transformEvent(event)) 
+                events: events.map(event => this.transformEvent(event))
             };
         } catch (error) {
             throw new RpcException(error);
         }
     }
 
-    // async acceptInvitation(request: AcceptInvitationRequest) {
-    //     try {
-    //         // Xử lý logic chấp nhận lời mời, cập nhật trạng thái trong database
-    //     } catch (error) {
-    //         throw handleRpcException(error, 'Failed to accept invitation');
-    //     }
-    // }
-
-    // async declineInvitation(request: DeclineInvitationRequest) {
-    //     try {
-    //         // Xử lý logic từ chối lời mời, cập nhật trạng thái trong database
-    //     } catch (error) {
-    //         throw handleRpcException(error, 'Failed to decline invitation');
-    //     }
-    // }
-
     async decreaseMaxParticipant(eventId: string) {
         try {
             const event = await this.eventModel.findById(eventId);
-            if (event.maxParticipants > 0) {
+            if(event.maxParticipants <= 0) {
+                throw new RpcException({
+                    message: 'Event was full',
+                    code: HttpStatus.BAD_REQUEST,
+                });
+            }
+            else if (event.maxParticipants > 0) {
                 event.maxParticipants -= 1;
                 await event.save();
             }
@@ -288,22 +398,6 @@ export class EventService {
             return { message: 'Max participant increased' };
         } catch (error) {
             throw handleRpcException(error, 'Failed to increase max participant');
-        }
-    }
-
-    async sendEventInvites(
-        request: SendEventInvitesRequest,
-    ): Promise<SendEventInvitesResponse> {
-        try {
-            const event = await this.eventModel.findById(request.eventId);
-            const { emails } = request;
-            this.clientNotification.emit('sendInvites', { emails, event });
-            return {
-                message: 'Invitations sent successfully',
-                success: true,
-            };
-        } catch (error) {
-            throw handleRpcException(error, 'Failed to send event invites');
         }
     }
 
@@ -427,18 +521,18 @@ export class EventService {
     }
 
     async isExistEvent(id: string) {
-        try {
-            if (!Types.ObjectId.isValid(id)) {
-                throw new RpcException({
-                    message: 'Invalid event ID',
-                    code: HttpStatus.BAD_REQUEST,
-                });
-            }
+        // try {
+            // if (!Types.ObjectId.isValid(id)) {
+            //     throw new RpcException({
+            //         message: 'Invalid event ID',
+            //         code: HttpStatus.BAD_REQUEST,
+            //     });
+            // }
             const event = await this.eventModel.findById(id);
             return { isExist: !!event };
-        } catch (error) {
-            throw handleRpcException(error, 'Failed to check event');
-        }
+        // } catch (error) {
+        //     throw handleRpcException(error, 'Failed to check event');
+        // }
     }
 
     async updateEvent(request: UpdateEventRequest) {

@@ -8,15 +8,23 @@ export type InvitedUserDocument = InvitedUser & Document & {
 
 @Schema({ timestamps: true, versionKey: false })
 export class InvitedUser {
-    @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-    user: Types.ObjectId;
+    @Prop({ type: Types.ObjectId, ref: 'Event', required: true })
+    eventId: Types.ObjectId;
 
     @Prop({
         type: String,
-        enum: ['pending', 'confirmed', 'rejected'],
+        required: true
+    })
+    email: string;
+
+    @Prop({
+        type: String,
+        enum: ['pending', 'accepted', 'declined'],
         default: 'pending',
     })
     status: string;
 }
 
 export const InvitedUserSchema = SchemaFactory.createForClass(InvitedUser);
+
+InvitedUserSchema.index({ eventId: 1, email: 1 }, { unique: true });

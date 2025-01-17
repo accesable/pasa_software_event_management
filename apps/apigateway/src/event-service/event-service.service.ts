@@ -2,14 +2,14 @@ import { forwardRef, HttpStatus, Inject, Injectable, NotFoundException, OnModule
 import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { CreateEventDto } from './dto/create-event-service.dto';
 import { EVENT_SERVICE } from '../constants/service.constant';
-import { CreateEventCategoryDto } from './dto/create-event-category.dtc';
+import { CreateEventCategoryDto } from './dto/create-event-category.dto';
 import { UpdateEventDto } from './dto/update-event-service.dto';
 import { CreateSpeakerDto } from './dto/create-speaker.dto';
 import { CreateGuestDto } from './dto/create-guest.dto';
 import { RedisCacheService } from '../redis/redis.service';
 import { lastValueFrom } from 'rxjs';
 import { TicketServiceService } from '../ticket-service/ticket-service.service';
-import { CreatedBy, CreateEventRequest, DecodeAccessResponse, EVENT_SERVICE_NAME, EventServiceClient, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
+import { CreatedBy, CreateEventRequest, DecodeAccessResponse, EVENT_SERVICE_NAME, EventResponse, EventServiceClient, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
 
 @Injectable()
 export class EventServiceService implements OnModuleInit {
@@ -29,7 +29,7 @@ export class EventServiceService implements OnModuleInit {
 
   async isExistEvent(id: string) {
     try {
-      const event = await this.eventService.getEventById({id}).toPromise();
+      const event = await this.eventService.getEventById({ id }).toPromise();
       return { isExist: !!event };
     } catch (error) {
       if (error.code === HttpStatus.NOT_FOUND) {
@@ -40,27 +40,13 @@ export class EventServiceService implements OnModuleInit {
   }
 
   async sendEventInvites(
-    eventId: string,
-    emails: string[],
-    user: DecodeAccessResponse,
+    users: { email: string; id: string }[],
+    event: EventResponse,
   ): Promise<any> {
     try {
-      const event = await lastValueFrom(
-        this.eventService.getEventById({ id: eventId }),
-      );
-      if (!event) {
-        throw new RpcException('Event not found');
-      }
-
-      if (event.event.createdBy.id !== user.id) {
-        throw new RpcException(
-          'You are not authorized to send invites for this event',
-        );
-      }
-
       const payload = {
-        eventId: eventId,
-        emails: emails,
+        users: users,
+        event: event,
       };
 
       return lastValueFrom(
@@ -75,29 +61,29 @@ export class EventServiceService implements OnModuleInit {
     this.rabbitFile.emit('delete_files_event', { urls, videoURl });
   }
 
-  // async acceptInvitation(eventId: string, query: any) {
-  //   try {
-  //     const token = query.token;
-  //     const acceptResult = await lastValueFrom(
-  //       this.eventService.acceptInvitation({ eventId, token }),
-  //     );
-  //     return acceptResult;
-  //   } catch (error) {
-  //     throw new RpcException(error);
-  //   }
-  // }
+  async acceptInvitation(eventId: string, query: any) {
+    try {
+      const token = query.token;
+      const acceptResult = await lastValueFrom(
+        this.eventService.acceptInvitation({ eventId, token }),
+      );
+      return acceptResult;
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
 
-  // async declineInvitation(eventId: string, query: any) {
-  //   try {
-  //     const token = query.token;
-  //     const declineResult = await lastValueFrom(
-  //       this.eventService.declineInvitation({ eventId, token }),
-  //     );
-  //     return declineResult;
-  //   } catch (error) {
-  //     throw new RpcException(error);
-  //   }
-  // }
+  async declineInvitation(eventId: string, query: any) {
+    try {
+      const token = query.token;
+      const declineResult = await lastValueFrom(
+        this.eventService.declineInvitation({ eventId, token }),
+      );
+      return declineResult;
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
 
   // async createQuestion(
   //   eventId: string,

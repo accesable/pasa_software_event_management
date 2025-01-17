@@ -2,16 +2,10 @@ syntax = "proto3";
 
 package report;
 
-import "google/protobuf/timestamp.proto";
-
 service ReportService {
-  rpc GetUpcomingEvents (GetEventsRequest) returns (EventsResponse) {} // Sắp diễn ra
-  rpc GetPastEvents (GetEventsRequest) returns (EventsResponse) {} // Đã kết thúc
   rpc GetParticipantsByEvent (GetParticipantsByEventRequest) returns (ParticipantsResponse) {}
   rpc GetEventParticipationStats (GetEventParticipationStatsRequest) returns (EventParticipationStatsResponse) {}
-  rpc GetTotalEventsStats (google.protobuf.Empty) returns (TotalEventsStatsResponse) {}
   rpc GetMonthlyParticipationStats (GetMonthlyParticipationStatsRequest) returns (MonthlyParticipationStatsResponse) {}
-  rpc GetAverageParticipantsPerEvent (google.protobuf.Empty) returns (AverageParticipantsResponse) {}
   rpc GetAverageParticipationTime (GetEventRequest) returns (AverageParticipationTimeResponse) {}
   rpc GetCheckInOutTimeAnalysis (GetEventRequest) returns (CheckInOutTimeAnalysisResponse) {}
   rpc GetParticipationRate (GetEventRequest) returns (ParticipationRateResponse) {}
@@ -21,38 +15,18 @@ message GetEventRequest {
   string eventId = 1;
 }
 
-message GetEventsRequest {
-  // Có thể bổ sung thêm các filter khác (ví dụ: category, date range)
-}
-
-message Event {
-  string id = 1;
-  string name = 2;
-  string description = 3;
-  google.protobuf.Timestamp startDate = 4;
-  google.protobuf.Timestamp endDate = 5;
-  string location = 6;
-  string categoryId = 7;
-  string status = 8;
-  // Có thể bổ sung thêm các field khác nếu cần
-}
-
-message EventsResponse {
-  repeated Event events = 1;
-}
-
 message GetParticipantsByEventRequest {
   string eventId = 1;
 }
 
 message Participant {
   string id = 1;
-  string eventId = 2; // Thêm trường eventId
+  string eventId = 2;
   string userId = 3;
-  string email = 4; // Thêm thông tin user
-  string name = 5; // Thêm thông tin user
-  google.protobuf.Timestamp checkInAt = 6;
-  google.protobuf.Timestamp checkOutAt = 7;
+  string email = 4;
+  string name = 5;
+  string checkInAt = 6;
+  string checkOutAt = 7;
 }
 
 message ParticipantsResponse {
@@ -68,12 +42,6 @@ message EventParticipationStatsResponse {
   int32 registeredCount = 2;
   int32 checkInCount = 3;
   int32 checkOutCount = 4;
-}
-
-message TotalEventsStatsResponse {
-  int32 scheduledCount = 1;
-  int32 ongoingCount = 2;
-  int32 finishedCount = 3;
 }
 
 message GetMonthlyParticipationStatsRequest {

@@ -11,6 +11,9 @@ import { EventSchema } from './schemas/event.schema';
 import { InvitedUser, InvitedUserSchema } from './schemas/invite.schema';
 import { Question, QuestionSchema } from './schemas/question.schema';
 import { Feedback, FeedbackSchema } from './schemas/feedback.schema';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { validateEnv } from '../config/env.validation';
 
 @Module({
   imports: [
@@ -26,6 +29,14 @@ import { Feedback, FeedbackSchema } from './schemas/feedback.schema';
       { name: InvitedUser.name, schema: InvitedUserSchema },
       { name: Feedback.name, schema: FeedbackSchema },
     ]),
+
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+      }),
+    }),
   ],
   controllers: [EventController],
   providers: [EventService],

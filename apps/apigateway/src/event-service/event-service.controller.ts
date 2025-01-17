@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, UseInterceptors, UploadedFiles, BadRequestException, SetMetadata } from '@nestjs/common';
 import { EventServiceService } from './event-service.service';
 import { CreateEventDto } from './dto/create-event-service.dto';
-import { ResponseMessage, Roles, User } from '../decorators/public.decorator';
+import { ResponseMessage, User } from '../decorators/public.decorator';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
-import { CreateEventCategoryDto } from './dto/create-event-category.dtc';
+import { CreateEventCategoryDto } from './dto/create-event-category.dto';
 import { UpdateEventDto } from './dto/update-event-service.dto';
 import { CreateGuestDto } from './dto/create-guest.dto';
 import { CreateSpeakerDto } from './dto/create-speaker.dto';
@@ -13,6 +13,8 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { Types } from 'mongoose';
 import { DecodeAccessResponse } from '../../../../libs/common/src';
 import { RpcException } from '@nestjs/microservices';
+import { EVENT_PACKAGE_NAME } from '../../../../libs/common/src/types/event';
+import { CheckIdExistGuard } from '../guards/check-id-exist.guard';
 
 @Controller('events')
 export class EventServiceController {
@@ -26,10 +28,28 @@ export class EventServiceController {
   @ResponseMessage('Invitations sent successfully')
   async sendInvites(
     @Param('id') eventId: string,
-    @Body('emails') emails: string[],
+    @Body('users') users: { email: string, id: string }[],
     @User() user: DecodeAccessResponse,
   ) {
-    return this.eventServiceService.sendEventInvites(eventId, emails, user);
+    if(!users || users.length === 0) {
+      throw new BadRequestException('No users provided');
+    }
+    
+    const event = await this.eventServiceService.getEventById(eventId);
+    if (!event) {
+      throw new BadRequestException('Event not found');
+    }
+
+    if (event.event.createdBy.id !== user.id) {
+      throw new BadRequestException(
+        'You are not authorized to send invites for this event',
+      );
+    }
+
+    return this.eventServiceService.sendEventInvites(
+      users,
+      event
+    );
   }
 
   @Get(':id/participants')
@@ -38,15 +58,17 @@ export class EventServiceController {
     return this.eventServiceService.getParticipantsEvent(eventId);
   }
 
-  // @Get(':id/accept')
-  // async acceptInvitation(@Param('id') eventId: string, @Query() query: any) {
-  //   return this.eventServiceService.acceptInvitation(eventId, query);
-  // }
+  @Get(':id/accept')
+  // add guard check event already Cancelled
+  async acceptInvitation(@Param('id') eventId: string, @Query() query: any) {
+    return this.eventServiceService.acceptInvitation(eventId, query);
+  }
 
-  // @Get(':id/decline')
-  // async declineInvitation(@Param('id') eventId: string, @Query() query: any) {
-  //   return this.eventServiceService.declineInvitation(eventId, query);
-  // }
+  @Get(':id/decline')
+  // add guard check event already Cancelled
+  async declineInvitation(@Param('id') eventId: string, @Query() query: any) {
+    return this.eventServiceService.declineInvitation(eventId, query);
+  }
 
   @Get('participated-events')
   @UseGuards(JwtAuthGuard)
@@ -320,17 +342,19 @@ export class EventServiceController {
   }
 
   @Get(':id')
+  @SetMetadata('serviceName', EVENT_PACKAGE_NAME)
+  @UseGuards(CheckIdExistGuard)
   @ResponseMessage('Get event by id success')
   async getEventById(@Param('id') id: string) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid Event ID');
-    }
+    // if (!Types.ObjectId.isValid(id)) {
+    //   throw new BadRequestException('Invalid Event ID');
+    // }
 
-    const isExist = await this.eventServiceService.isExistEvent(id);
-    if (!isExist.isExist) {
-      throw new BadRequestException('Event not found');
-    }
-    return this.eventServiceService.getEventById(id);
+    // const isExist = await this.eventServiceService.isExistEvent(id);
+    // if (!isExist.isExist) {
+    //   throw new BadRequestException('Event not found');
+    // }
+    // return this.eventServiceService.getEventById(id);
   }
 
   @Patch(':id')
@@ -380,7 +404,6 @@ export class CategoryServiceController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('organizer', 'admin')
   @ResponseMessage('Update category success')
   updateCategory(@Param('id') id: string, @Body() updateEventCategoryDto: CreateEventCategoryDto) {
     return this.eventServiceService.updateCategory(id, updateEventCategoryDto);

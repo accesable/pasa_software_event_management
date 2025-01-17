@@ -7,6 +7,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { validateEnv } from './config/env.validation';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { mailerConfig } from './config/mailer.config';
+import { AUTH_SERVICE } from '../../apigateway/src/constants/service.constant';
+import { join } from 'path';
+import { AUTH_PACKAGE_NAME } from '../../../libs/common/src';
 
 @Module({
   imports: [
@@ -40,6 +43,15 @@ import { mailerConfig } from './config/mailer.config';
           queueOptions: { durable: true },
         },
       },
+      {
+        name: AUTH_SERVICE,
+        transport: Transport.GRPC,
+        options: {
+          package: AUTH_PACKAGE_NAME,
+          protoPath: join(__dirname, '../auth.proto'),
+          url: '0.0.0.0:50051'
+        },
+      }
     ]),
   ],
   controllers: [NotificationServiceController],
