@@ -31,6 +31,11 @@ export const CreateEventPage = () => {
   const [loading, setLoading] = useState(false);
   // Modal State for create event type
   const [isCreateTypeModalOpen, setIsCreateTypeModalOpen] = useState<any>(false);
+  const [types,setTypes] = useState([                  { value: "software development", label: 'software development' },
+    { value: 'marketing', label: 'marketing' },
+    { value: 'research', label: 'research' },]);
+
+    const [form] = Form.useForm();
 
   const showCreateTypeModal = () => {
     setIsCreateTypeModalOpen(true);
@@ -38,6 +43,7 @@ export const CreateEventPage = () => {
 
   const handleOkCreateType = () => {
     setIsCreateTypeModalOpen(false);
+    form.submit()
   };
 
   const handleCancelCreateType = () => {
@@ -77,11 +83,19 @@ export const CreateEventPage = () => {
     console.log('Failed:', errorInfo);
   };
 
+  const onFinishType = (values : any) => {
+    setTypes([...types, { value: values.event_type, label: values.event_type }]);
+    setIsCreateTypeModalOpen(false);
+  };
+
   return (
     <Card>
         <Modal title="Create Event Type" open={isCreateTypeModalOpen} onOk={handleOkCreateType} onCancel={handleCancelCreateType}>
-          <Form layout='vertical'>
-            <Form.Item label="Event Type">
+          <Form layout='vertical'
+            onFinish={onFinishType}
+            form={form}
+          >
+            <Form.Item label="Event Type" name="event_type">
               <Input placeholder="Enter Event Type" />
             </Form.Item>
           </Form>
@@ -102,17 +116,6 @@ export const CreateEventPage = () => {
       <Form
         name="user-profile-details-form"
         layout="vertical"
-        initialValues={{
-          id: '474e2cd2-fc79-49b8-98fe-dab443facede',
-          username: 'kelvink96',
-          firstName: 'Kelvin',
-          middleName: 'Kiptum',
-          lastName: 'Kiprop',
-          company: 'Design Sparx',
-          email: 'kelvin.kiprop96@gmail.com',
-          subscription: 'pro',
-          status: 'active',
-        }}
         onFinish={onFinish}
         onFinishFailed={onFinishFailed}
         autoComplete="on"
@@ -201,11 +204,7 @@ export const CreateEventPage = () => {
                       </Button>
                   </>
                 )}
-                options={[
-                  { value: 'SD', label: 'software development' },
-                  { value: 'MK', label: 'marketing' },
-                  { value: 'RS', label: 'research' },
-                ]}
+                options={types.map((item) => ({ value: item.value, label: item.label }))}
                 />
             </Form.Item>
           </Col>

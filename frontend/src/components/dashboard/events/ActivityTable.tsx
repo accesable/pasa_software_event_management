@@ -33,7 +33,7 @@ const ACTIVITY_COLUMNS = (navigate: ReturnType<typeof useNavigate>) => [
       key: 'id',
       render: (value,record) => (
         <div>
-        <Button type="primary" onClick={() => navigate(`/details/events/${record.id}`)}>
+        <Button type="primary" onClick={() => navigate(`/details/events/${value}`)}>
           Details
         </Button>
         </div>

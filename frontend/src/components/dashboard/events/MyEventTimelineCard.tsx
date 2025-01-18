@@ -1,4 +1,4 @@
-import { Alert, Button, CardProps, Flex, Timeline, Typography } from 'antd';
+import { Alert, Button, CardProps, Flex, Form, Input, Modal, Timeline, Typography } from 'antd';
 import {
   LaptopOutlined,
   MobileOutlined,
@@ -6,7 +6,7 @@ import {
 } from '@ant-design/icons';
 // import { ActivityTimeline } from '../../../types';
 import { Card, Loader } from '../../index.ts';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 type Props = {
   data?: [];
@@ -15,8 +15,38 @@ type Props = {
 } & CardProps;
 
 export const MyEventTimelineCard = ({ data, error, loading, ...others }: Props) => {
+
+    // Modal State for create event type
+    const [activityTimeline, setActivityTimeline] = useState(data);
+    useEffect(() => {
+      setActivityTimeline(data);
+    }, [data]);
+    const [isCreateTimelineModalOpen, setIsCreateTimelineModalOpen] = useState<any>(false);
+  
+      const [form] = Form.useForm();
+  
+    const showCreateTimelineModal = () => {
+      setIsCreateTimelineModalOpen(true);
+    };
+  
+    const handleOkCreateTimeline = () => {
+      setIsCreateTimelineModalOpen(false);
+      form.submit()
+    };
+  
+    const handleCancelCreateTimeline = () => {
+      setIsCreateTimelineModalOpen(false);
+    };
+
+    const onFinishTimeline = (values : any) => {
+      setActivityTimeline([...activityTimeline, {
+        speaker_name: values.speaker_name,
+        post_content: values.post_content
+      }]);
+      setIsCreateTimelineModalOpen(false);
+    };
   return (
-    <Card title="Latest activities" {...others} extra={<Button type='primary'>Add New Activity</Button>}>
+    <Card title="Latest activities" {...others} extra={<Button type='primary' onClick={showCreateTimelineModal}>Add New Activity</Button>}>
       {error ? (
         <Alert
           message="Error"
@@ -29,7 +59,7 @@ export const MyEventTimelineCard = ({ data, error, loading, ...others }: Props) 
       ) : (
         <Timeline
           mode="left"
-          items={data?.map((_) => ({
+          items={activityTimeline?.map((_) => ({
             // dot:
             //   _.device_type === 'desktop' ? (
             //     <LaptopOutlined />
@@ -57,6 +87,19 @@ export const MyEventTimelineCard = ({ data, error, loading, ...others }: Props) 
           }))}
         />
       )}
+              <Modal title="Create Event Type" open={isCreateTimelineModalOpen} onOk={handleOkCreateTimeline} onCancel={handleCancelCreateTimeline}>
+          <Form layout='vertical'
+            onFinish={onFinishTimeline}
+            form={form}
+          >
+            <Form.Item label="Speaker's Name" name="speaker_name">
+              <Input placeholder="John Doe" />
+            </Form.Item>
+            <Form.Item label="Talk About" name="post_content">
+              <Input placeholder="Software Engineering Future" />
+            </Form.Item>
+          </Form>
+      </Modal>
     </Card>
   );
 };

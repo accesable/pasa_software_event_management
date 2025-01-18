@@ -22,7 +22,7 @@ const useFetchData = (url: string) => {
     fetchData();
   }, [url]);
 
-  console.log(url,loading,error);
+  // console.log(url,loading,error);
 
   return { data, error, loading };
 };
