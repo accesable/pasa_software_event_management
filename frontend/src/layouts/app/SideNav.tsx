@@ -73,6 +73,11 @@ const items: MenuProps['items'] = [
       null
     ),
     getItem(
+      <Link to={PATH_DASHBOARD.users}>Users</Link>,
+      'users',
+      null
+    ),
+    getItem(
       <Link to={PATH_DASHBOARD.marketing}>Marketing</Link>,
       'marketing',
       null

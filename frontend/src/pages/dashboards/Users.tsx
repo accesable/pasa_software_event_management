@@ -11,18 +11,17 @@ import {
     PageHeader,
 } from '../../components';
 import {
-  EventTable
+  UserTable
 } from '../../components/dashboard';
 import { useFetchData } from '../../hooks';
 
-
-const EventsDashboardPage = () => {
+export const UserDashboardPage = () => {
     const stylesContext = useStylesContext();
     const {
-        data: events,
-        error: eventsError,
-        loading: eventsLoading,
-      } = useFetchData('../mocks/Events.json');
+        data: users,
+        error: usersError,
+        loading: usersLoading,
+      } = useFetchData('../mocks/MyUsers.json');
   return (
     <div>
       <Helmet>
@@ -55,17 +54,15 @@ const EventsDashboardPage = () => {
             },
           },
           {
-            title: 'events',
+            title: 'users',
           },
         ]}
       />
       <Row {...stylesContext?.rowProps}>
       <Col span={24}>
-          <EventTable data={events} loading={eventsLoading} error={eventsError} />
+          <UserTable data={users} loading={usersLoading} error={usersError} />
         </Col>
       </Row>
     </div>
   )
 }
-
-export default EventsDashboardPage

@@ -39,7 +39,8 @@ import {
   CreateEventPage,
   DetailEventPage,
   MyEventDashboardPage,
-  DetailMyEventPage
+  DetailMyEventPage,
+  UserDashboardPage
 } from '../pages';
 import {
   CorporateLayout,
@@ -169,6 +170,10 @@ const router = createBrowserRouter([
       {
         path: 'my-events',
         element: <MyEventDashboardPage />,
+      },
+      {
+        path: 'users',
+        element: <UserDashboardPage />,
       },
     ],
   },

@@ -44,6 +44,7 @@ export const PATH_DASHBOARD = {
   logistics: path(ROOTS_DASHBOARD, '/logistics'),
   events : path(ROOTS_DASHBOARD, '/events'),
   my_events : path(ROOTS_DASHBOARD, '/my-events'),
+  users : path(ROOTS_DASHBOARD, '/users'),
 };
 
 export const PATH_SITEMAP = {

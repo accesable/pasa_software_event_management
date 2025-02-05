@@ -7,3 +7,4 @@ export { BiddingDashboardPage } from './Bidding.tsx';
 export { LearningDashboardPage } from './Learning.tsx';
 export { LogisticsDashboardPage } from './Logistics.tsx';
 export {MyEventDashboardPage} from './MyEvents.tsx';
+export {UserDashboardPage} from './Users.tsx';

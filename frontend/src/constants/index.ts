@@ -37,6 +37,8 @@ const DASHBOARD_ITEMS = [
   { title: 'learning', path: PATH_DASHBOARD.learning },
   { title: 'logistics', path: PATH_DASHBOARD.logistics },
   { title: 'events', path: PATH_DASHBOARD.events },
+  { title: 'my events', path: PATH_DASHBOARD.my_events },
+  { title: 'users', path: PATH_DASHBOARD.users },
 ];
 
 const CORPORATE_ITEMS = [

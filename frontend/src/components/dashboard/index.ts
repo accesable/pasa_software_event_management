@@ -58,3 +58,6 @@ export {
   EventTimelineCard,
   MyEventTimelineCard
 } from './events';
+export {
+  UserTable
+} from './users'; 
