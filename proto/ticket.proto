@@ -16,9 +16,19 @@ service TicketServiceProto{
     rpc GetParticipantById(ParticipationByIdRequest) returns (ParticipationResponse);
     rpc UpdateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
     rpc DeleteParticipant(ParticipationByIdRequest) returns (Empty);
+    rpc GetUserParticipationByEventId(GetParticipantByEventIdRequest) returns (GetUserParticipationByEventIdResponse);
 }
 
 message Empty{}
+
+message GetUserParticipationByEventIdResponse{
+  repeated UserParticipationResponse participants = 1;
+}
+
+message UserParticipationResponse{
+  string email = 1;
+  string name = 2;
+}
 
 message GetParticipantByEventIdRequest{
   string eventId = 1;

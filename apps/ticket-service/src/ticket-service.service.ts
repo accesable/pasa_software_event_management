@@ -61,7 +61,6 @@ export class TicketServiceService implements OnModuleInit {
 
       const skip = page && limit ? (page - 1) * limit : 0;
 
-      // Lọc các participant dựa trên userId
       if (filter.userId) {
         filter.userId = filter.userId.toString();
       }
@@ -99,12 +98,32 @@ export class TicketServiceService implements OnModuleInit {
           code: HttpStatus.NOT_FOUND,
         });
       }
-      if (ticket.status === 'ACTIVE') {
-        const participant = await this.participantModel.findByIdAndUpdate(ticket.participantId, { checkinAt: new Date() }, { new: true });
+
+      const ticketStatus = ticket.status.toUpperCase();
+
+      if (ticketStatus === 'ACTIVE') {
+        const participant = await this.participantModel.findByIdAndUpdate(
+          ticket.participantId,
+          { checkinAt: new Date() },
+          { new: true }
+        );
+        if (!participant) {
+          throw new RpcException({
+            message: 'Associated participant not found',
+            code: HttpStatus.NOT_FOUND,
+          });
+        }
         ticket.status = 'USED';
         ticket.usedAt = new Date();
         await ticket.save();
+
         const userInfo = await this.authService.findById({ id: participant.userId }).toPromise();
+        if (!userInfo) {
+          throw new RpcException({
+            message: 'User information not found',
+            code: HttpStatus.NOT_FOUND,
+          });
+        }
 
         const result = {
           eventId: participant.eventId,
@@ -114,19 +133,30 @@ export class TicketServiceService implements OnModuleInit {
           phoneNumber: userInfo.phoneNumber || '',
           checkInAt: participant.checkinAt.toISOString(),
           checkOutAt: null,
-        }
-        return {
-          result
         };
+
+        return { result };
       }
-      if (ticket.status === 'USED') {
+
+      if (ticketStatus === 'USED') {
         const participant = await this.participantModel.findById(ticket.participantId);
+        if (!participant) {
+          throw new RpcException({
+            message: 'Associated participant not found',
+            code: HttpStatus.NOT_FOUND,
+          });
+        }
         if (!participant.checkoutAt) {
           participant.checkoutAt = new Date();
           await participant.save();
 
           const userInfo = await this.authService.findById({ id: participant.userId }).toPromise();
-
+          if (!userInfo) {
+            throw new RpcException({
+              message: 'User information not found',
+              code: HttpStatus.NOT_FOUND,
+            });
+          }
           const result = {
             eventId: participant.eventId,
             id: userInfo.id,
@@ -135,26 +165,34 @@ export class TicketServiceService implements OnModuleInit {
             phoneNumber: userInfo.phoneNumber || '',
             checkInAt: participant.checkinAt.toISOString(),
             checkOutAt: participant.checkoutAt.toISOString(),
-          }
-          return {
-            result
           };
+          return { result };
         }
         throw new RpcException({
           message: 'Ticket has been used',
           code: HttpStatus.BAD_REQUEST,
         });
       }
-      if (ticket.status === 'CANCELED') {
+
+      if (ticketStatus === 'CANCELED') {
         throw new RpcException({
           message: 'Ticket has been canceled',
           code: HttpStatus.BAD_REQUEST,
         });
       }
+
+      throw new RpcException({
+        message: 'Ticket status is not recognized',
+        code: HttpStatus.BAD_REQUEST,
+      });
     } catch (error) {
+      if (error instanceof RpcException) {
+        throw error;
+      }
       throw handleRpcException(error, 'Failed to scan ticket');
     }
   }
+
 
   async cancelEvent(eventId: string) {
     try {
@@ -185,16 +223,16 @@ export class TicketServiceService implements OnModuleInit {
   async createParticipant(request: CreateParticipationRequest) {
     try {
       const { eventId, userId, sessionIds } = request;
-      const event = await this.eventService.getEventById({ id: eventId }).toPromise();
-      if(userId === event.event.createdBy.id){
+      const event = await lastValueFrom(this.eventService.getEventById({ id: eventId }));
+      if (userId === event.event.createdBy.id) {
         throw new RpcException({
           message: 'You can not register your own event',
           code: HttpStatus.BAD_REQUEST,
         });
       }
-      if (event.event.status === 'CANCELED' || event.event.status === 'COMPLETED') {
+      if (event.event.status === 'CANCELED' || event.event.status === 'FINISHED') {
         throw new RpcException({
-          message: 'Event has been canceled or completed',
+          message: 'Event has been canceled or finished',
           code: HttpStatus.BAD_REQUEST,
         });
       }
@@ -300,6 +338,34 @@ export class TicketServiceService implements OnModuleInit {
       throw handleRpcException(error, 'Failed to get participant by event ID');
     }
   }
+
+  async getUserParticipationByEventId(eventId: string) {
+    try {
+      // Lấy danh sách participant theo eventId
+      const participants = await this.participantModel.find({ eventId });
+      if (!participants || participants.length === 0) {
+        return { participants: [] };
+      }
+      const userIDs = participants.map((participant) => participant.userId);
+      if (!userIDs || userIDs.length === 0) {
+        return { participants: [] };
+      }
+      // Gọi authService để lấy thông tin user dựa trên danh sách userIDs
+      const usersResponse = await this.authService.findUsersByIds({ ids: userIDs }).toPromise();
+      const users = (usersResponse && usersResponse.users) ? usersResponse.users : [];
+      const response = participants.map((participant) => {
+        const user = users.find((u) => u.id === participant.userId);
+        return {
+          email: user?.email || '',
+          name: user?.name || '',
+        };
+      });
+      return { participants: response };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get user participation by event ID');
+    }
+  }
+
 
   async getAllTicket(request: any) {
     try {

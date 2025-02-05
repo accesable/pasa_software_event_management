@@ -18,13 +18,14 @@ export class NotificationServiceService {
     private configService: ConfigService,
     private jwtService: JwtService,
     @Inject(AUTH_SERVICE) private clientAuth: ClientGrpc,
+    @Inject('EVENT_SERVICE_RABBIT') private readonly clientEvent: ClientProxy,
   ) { }
 
   onModuleInit() {
     this.usersService = this.clientAuth.getService<UsersServiceClient>(USERS_SERVICE_NAME);
   }
 
-  async sendInvites(users: {email: string, id: string}[], event: any) {
+  async sendInvites(users: { email: string, id: string }[], event: any) {
     const eventId = event.id;
     const expireDateTime = this.calculateExpireDateTime(new Date(event.startDate), new Date(event.endDate));
 
@@ -50,6 +51,24 @@ export class NotificationServiceService {
           declineUrl: `${url}/decline?token=${token}`,
         },
       );
+    }
+  }
+
+  async sendFeedbackEmails(emails: string[], eventName: string, eventId: string): Promise<void> {
+    const subject = `We Value Your Feedback for ${eventName}`;
+    const feedbackUrl = `${this.configService.get<string>('FRONTEND_URL')}/events/feedback?eventId=${eventId}`;
+    console.log(eventName, eventId, feedbackUrl);
+    for (const email of emails) {
+      const res = await this.sendMail(email, EmailTemplates.FEEDBACK_INVITATION, subject, {
+        eventName,
+        eventId,
+        feedbackUrl,
+        year: new Date().getFullYear(),
+      });
+      if (res.error) {
+        console.error(`Failed to send feedback email to ${email}`);
+        console.error(res.error);
+      }
     }
   }
 

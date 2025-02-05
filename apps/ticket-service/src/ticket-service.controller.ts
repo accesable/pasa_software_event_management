@@ -2,12 +2,15 @@ import { Controller, Get } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
 import { Observable } from 'rxjs';
 import { EventPattern } from '@nestjs/microservices';
-import { TicketServiceProtoControllerMethods, TicketServiceProtoController, GetParticipantByEventIdRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, ParticipationResponse, ParticipationByIdRequest, CreateParticipationRequest, UpdateTicketRequest, QueryParamsRequest } from '../../../libs/common/src/types/ticket';
+import { TicketServiceProtoControllerMethods, TicketServiceProtoController, GetParticipantByEventIdRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, ParticipationResponse, ParticipationByIdRequest, CreateParticipationRequest, UpdateTicketRequest, QueryParamsRequest, GetUserParticipationByEventIdResponse } from '../../../libs/common/src/types/ticket';
 
 @Controller()
 @TicketServiceProtoControllerMethods()
 export class TicketServiceController implements TicketServiceProtoController {
   constructor(private readonly ticketServiceService: TicketServiceService) {}
+  getUserParticipationByEventId(request: GetParticipantByEventIdRequest) {
+    return this.ticketServiceService.getUserParticipationByEventId(request.eventId);
+  }
 
   getParticipantByEventId(request: GetParticipantByEventIdRequest) {
     return this.ticketServiceService.getParticipantByEventId(request.eventId);

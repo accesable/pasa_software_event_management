@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
@@ -8,16 +8,20 @@ import { Question, QuestionDocument } from './schemas/question.schema';
 import { Model, Types } from 'mongoose';
 import { CategoryDocument, EventCategory } from '../event-category/schemas/event-category.schema';
 import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
-import { SendEventInvitesRequest, SendEventInvitesResponse, CancelEventRequest, EventType, EventResponse, CreateEventRequest, UpdateEventRequest, UserTypeInvite } from '../../../../libs/common/src/types/event';
+import { SendEventInvitesRequest, SendEventInvitesResponse, CancelEventRequest, EventType, EventResponse, CreateEventRequest, UpdateEventRequest, UserTypeInvite, GetEventFeedbacksResponse } from '../../../../libs/common/src/types/event';
 import { Feedback, FeedbackDocument } from './schemas/feedback.schema';
 import { QueryParamsRequest } from '../../../../libs/common/src';
 import { lastValueFrom } from 'rxjs';
 import { TICKET_SERVICE } from '../../../apigateway/src/constants/service.constant';
-import { TICKET_SERVICE_PROTO_SERVICE_NAME, TicketServiceProtoClient } from '../../../../libs/common/src/types/ticket';
+import { GetParticipantByEventIdRequest, TICKET_SERVICE_PROTO_SERVICE_NAME, TicketServiceProtoClient } from '../../../../libs/common/src/types/ticket';
 import { JwtService } from '@nestjs/jwt';
+import { FeedbackService } from '../feedback/feedback.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import moment from 'moment';
 
 @Injectable()
 export class EventService {
+    private readonly logger = new Logger(EventService.name);
     private ticketService: TicketServiceProtoClient;
 
     constructor(
@@ -31,10 +35,78 @@ export class EventService {
 
         @Inject(TICKET_SERVICE) private ticketServiceClient: ClientGrpc,
         private jwtService: JwtService,
+        private readonly feedbackService: FeedbackService,
     ) { }
 
     onModuleInit() {
         this.ticketService = this.ticketServiceClient.getService<TicketServiceProtoClient>(TICKET_SERVICE_PROTO_SERVICE_NAME);
+    }
+
+
+    // tự động gửi tbao nhắc nhỡ mỗi 1h
+    @Cron(CronExpression.EVERY_30_SECONDS, { name: 'sendRemindersCron', timeZone: 'UTC' })
+    async sendReminders(): Promise<void> {
+        try {
+            const now = new Date();
+            const next24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+            // Lấy các event bắt đầu trong 24h tới, có trạng thái "SCHEDULED" và chưa được gửi reminder
+            const events = await this.eventModel.find({
+                startDate: { $gte: now, $lte: next24h },
+                status: 'SCHEDULED',
+                reminderSent: { $ne: true },
+            }).exec();
+
+            this.logger.log(`Found ${events.length} event(s) starting within 24 hours that haven't been reminded.`);
+
+            for (const event of events) {
+                let registeredEmails: string[] = [];
+                try {
+                    const participantsResponse = await lastValueFrom(
+                        this.ticketService.getUserParticipationByEventId({ eventId: event.id })
+                    );
+                    if (participantsResponse && participantsResponse.participants) {
+                        registeredEmails = participantsResponse.participants
+                            .map(p => p.email)
+                            .filter(email => email && email.trim().length > 0);
+                    }
+                } catch (err) {
+                    this.logger.error('Error fetching registered participants:', err);
+                }
+
+                // Lấy danh sách email của những người được mời (invitedUsers)
+                const invitedUsers = await this.invitedUserModel.find({ eventId: event.id }).exec();
+                const invitedEmails = invitedUsers
+                    .map(u => u.email)
+                    .filter(email => email && email.trim().length > 0);
+
+                // Hợp nhất và loại bỏ email trùng
+                const allEmails = Array.from(new Set([...registeredEmails, ...invitedEmails]));
+
+                if (allEmails.length === 0) {
+                    this.logger.warn(`No invited/registered users found for event ${event.name}`);
+                    continue;
+                }
+
+                const payload = {
+                    emails: allEmails,
+                    eventName: event.name,
+                    eventStartTime: moment(event.startDate).format('MMMM Do YYYY, h:mm a'),
+                    eventEndTime: moment(event.endDate).format('MMMM Do YYYY, h:mm a'),
+                    location: event.location,
+                    eventDescription: event.description || '',
+                };
+
+                // Emit event reminder
+                this.clientNotification.emit('send_reminder', payload);
+                this.logger.log(`Emitted reminder for event ${event.name}`);
+
+                // Cập nhật trường reminderSent = true cho event này
+                await this.eventModel.findByIdAndUpdate(event.id, { reminderSent: true });
+            }
+        } catch (error) {
+            this.logger.error('Error in sendReminders', error);
+        }
     }
 
     async sendEventInvites(request: SendEventInvitesRequest): Promise<SendEventInvitesResponse> {
@@ -78,7 +150,7 @@ export class EventService {
             const event = await this.eventModel.findById(eventId).exec();
             // Xác thực JWT token
             const decode: { email: string; eventId: string, userId: string }
-             = await this.jwtService.verify(token);
+                = await this.jwtService.verify(token);
 
             const { email: userEmail, eventId: decodedEventId, userId } = decode;
 
@@ -169,146 +241,108 @@ export class EventService {
         }
     }
 
-    // async createQuestion(
-    //     eventId: string,
-    //     question: string,
-    //     user: DecodeAccessResponse,
-    // ) {
-    //     try {
-    //         // Fetch the user data based on the user's ID
-    //         const userResponse = await lastValueFrom(
-    //             this.usersService.findById({ id: user.id }),
-    //         );
-
-    //         // If user data is not found or the ID is missing, throw an exception
-    //         if (!userResponse || !userResponse.id) {
-    //             throw new RpcException('User not found or invalid user data');
-    //         }
-    //         // Make a request to the event service to create a question
-    //         const result = await lastValueFrom(
-    //             this.eventService.createQuestion({
-    //                 eventId,
-    //                 question,
-    //                 userId: userResponse.id, // Pass the user ID from the authenticated user
-    //             }),
-    //         );
-
-    //         return result;
-    //     } catch (error) {
-    //         // Throw any errors that occur during the process
-    //         throw new RpcException(error);
-    //     }
-    // }
-
-    // async getEventQuestions(eventId: string) {
-    //     try {
-    //         // Make a request to the event service to get all questions for the event
-    //         const result = await lastValueFrom(
-    //             this.eventService.getEventQuestions({
-    //                 eventId,
-    //             }),
-    //         );
-
-    //         return result;
-    //     } catch (error) {
-    //         throw new RpcException(error);
-    //     }
-    // }
-
-    // async updateQuestion(
-    //     eventId: string,
-    //     questionId: string,
-    //     answered: boolean,
-    //     user: DecodeAccessResponse,
-    // ) {
-    //     try {
-    //         const userResponse = await lastValueFrom(
-    //             this.usersService.findById({ id: user.id }),
-    //         );
-
-    //         if (!userResponse || !userResponse.id) {
-    //             throw new RpcException('User not found or invalid user data');
-    //         }
-    //         const event = await this.eventService.getEventById({ id: eventId }).toPromise();
-
-    //         // Check if the user is authorized to update this question
-    //         if (event.createdBy.id !== userResponse.id) {
-    //             throw new RpcException(
-    //                 'You are not authorized to update questions for this event',
-    //             );
-    //         }
-    //         const result = await lastValueFrom(
-    //             this.eventService.updateQuestion({
-    //                 questionId,
-    //                 answered,
-    //             }),
-    //         );
-    //         return result;
-    //     } catch (error) {
-    //         throw new RpcException(error);
-    //     }
-    // }
-
-    // async createFeedback(
-    //     eventId: string,
-    //     feedback: string,
-    //     rating: number,
-    //     user: DecodeAccessResponse,
-    // ) {
-    //     try {
-    //         const event = await lastValueFrom(this.eventService.getEventById({ id: eventId }));
-
-    //         // Kiểm tra xem sự kiện có tồn tại không
-    //         if (!event) {
-    //             throw new RpcException({
-    //                 message: 'Event not found',
-    //                 code: HttpStatus.NOT_FOUND,
-    //             });
-    //         }
-
-    //         // Kiểm tra xem sự kiện đã kết thúc chưa
-    //         const currentDate = new Date();
-    //         const eventEndDate = new Date(event.event.endDate);
-
-    //         if (currentDate < eventEndDate) {
-    //             throw new RpcException({
-    //                 message: 'Event has not ended yet',
-    //                 code: HttpStatus.BAD_REQUEST,
-    //             });
-    //         }
-
-    //         const feedbackModel = new this.feedbackModel({
-    //             eventId: eventId,
-    //             userId: user.id, // Lấy ID của người dùng từ JWT payload
-    //             feedback: feedback,
-    //             rating: rating
-    //         });
-
-    //         await feedbackModel.save();
-
-    //         return { message: 'Feedback created successfully' };
-    //     } catch (error) {
-    //         console.error('Failed to create feedback:', error);
-    //         throw new RpcException({
-    //             code: HttpStatus.INTERNAL_SERVER_ERROR,
-    //             message: 'Failed to create feedback',
-    //         });
-    //     }
-    // }
+    async submitFeedback(eventId: string, userId: string, rating: number, comment: string) {
+        try {
+            // Kiểm tra xem event có tồn tại và đã kết thúc chưa
+            const event = await this.eventModel.findById(eventId);
+            const currentDate = new Date();
+            const eventEndDate = new Date(event.endDate);
+            if (currentDate < eventEndDate) {
+                throw new RpcException({ message: 'Event has not ended yet', code: HttpStatus.BAD_REQUEST });
+            }
+            return await this.feedbackService.createFeedback(eventId, userId, rating, comment);
+        } catch (error) {
+            throw new RpcException(error);
+        }
+    }
 
     async getEventFeedbacks(eventId: string) {
         try {
-            const feedbacks = await this.feedbackModel.find({ eventId: eventId }).exec();
-
-            // Trả về danh sách phản hồi
-            return { feedbacks };
+            return await this.feedbackService.getFeedbacks(eventId);
         } catch (error) {
-            console.error('Failed to fetch event feedbacks:', error);
-            throw new RpcException({
-                code: HttpStatus.INTERNAL_SERVER_ERROR,
-                message: 'Failed to fetch feedbacks',
-            });
+            throw new RpcException(error);
         }
+    }
+
+    async getFeedbackAnalysis(eventId: string) {
+        try {
+            const result = await this.feedbackService.getFeedbacks(eventId);
+            const feedbacks = result.feedbacks;
+            if (!feedbacks || feedbacks.length === 0) {
+                return {
+                    eventId,
+                    averageRating: 0,
+                    totalFeedbacks: 0,
+                    ratingDistribution: {},
+                };
+            }
+            const totalFeedbacks = feedbacks.length;
+            const sumRating = feedbacks.reduce((sum, fb) => sum + fb.rating, 0);
+            const averageRating = sumRating / totalFeedbacks;
+            const ratingDistribution: { [key: number]: number } = {};
+            feedbacks.forEach(fb => {
+                ratingDistribution[fb.rating] = (ratingDistribution[fb.rating] || 0) + 1;
+            });
+            return {
+                eventId,
+                averageRating,
+                totalFeedbacks,
+                ratingDistribution,
+            };
+        } catch (error) {
+            throw new RpcException(error);
+        }
+    }
+
+    async createQuestion(eventId: string, userId: string, text: string) {
+        const event = await this.eventModel.findById(eventId);
+        if (!event) {
+            throw new RpcException({ message: 'Event not found', code: HttpStatus.NOT_FOUND });
+        }
+        const question = new this.questionModel({
+            eventId: event._id,
+            userId,
+            text,
+            answers: [],
+        });
+        await question.save();
+        return { question: this.transformQuestion(question) };
+    }
+
+    async answerQuestion(questionId: string, userId: string, text: string): Promise<{ question: any }> {
+        const question = await this.questionModel.findById(questionId);
+        if (!question) {
+            throw new RpcException({ message: 'Question not found', code: HttpStatus.NOT_FOUND });
+        }
+        question.answers.push({ userId: new Types.ObjectId(userId), text, createdAt: new Date() });
+        question.answers.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        await question.save();
+        return { question: this.transformQuestion(question) };
+    }
+
+    async getEventQuestions(eventId: string): Promise<{ questions: any[] }> {
+        const questions = await this.questionModel.find({ eventId }).sort({ createdAt: 1 }).exec();
+        const transformed = questions.map(q => {
+            q.answers.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+            return this.transformQuestion(q);
+        });
+        return { questions: transformed };
+    }
+
+    transformQuestion(question: QuestionDocument) {
+        return {
+            id: question._id.toString(),
+            eventId: question.eventId.toString(),
+            userId: question.userId.toString(),
+            text: question.text,
+            createdAt: question.createdAt.toISOString(),
+            updatedAt: question.updatedAt.toISOString(),
+            answers: question.answers.map(answer => ({
+                userId: answer.userId.toString(),
+                text: answer.text,
+                createdAt: answer.createdAt.toISOString(),
+            })),
+        };
     }
 
     async getParticipatedEvents(userId: string, status?: string) {
@@ -374,7 +408,7 @@ export class EventService {
     async decreaseMaxParticipant(eventId: string) {
         try {
             const event = await this.eventModel.findById(eventId);
-            if(event.maxParticipants <= 0) {
+            if (event.maxParticipants <= 0) {
                 throw new RpcException({
                     message: 'Event was full',
                     code: HttpStatus.BAD_REQUEST,
@@ -427,6 +461,20 @@ export class EventService {
             event.status = 'CANCELED';
             await event.save();
             this.clientTicket.emit('cancelEvent', { eventId: request.id });
+            // Gửi thông báo hủy sự kiện
+            const participantsResponse = await lastValueFrom(
+                this.ticketService.getUserParticipationByEventId({ eventId: request.id })
+            );
+            if (participantsResponse && participantsResponse.participants) {
+
+                const eventNotificationPayload = {
+                    ...event.toObject(),
+                    participantsResponse
+                };
+
+                this.clientNotification.emit('event_canceled', { event: eventNotificationPayload });
+            }
+
             return { message: 'Event canceled successfully' };
         } catch (error) {
             throw handleRpcException(error, 'Failed to cancel event');
@@ -480,9 +528,7 @@ export class EventService {
         }
     }
 
-    async getEventById(
-        request: any,
-    ): Promise<EventResponse> {
+    async getEventById(request: { id: string }): Promise<EventResponse> {
         try {
             const event = await this.eventModel
                 .findById(request.id)
@@ -497,9 +543,11 @@ export class EventService {
                 })
                 .exec();
 
-            return {
-                event: this.transformEvent(event),
-            };
+            if (!event) {
+                throw new RpcException({ message: 'Event not found', code: HttpStatus.NOT_FOUND });
+            }
+
+            return { event: this.transformEvent(event) };
         } catch (error) {
             throw handleRpcException(error, 'Failed to get event by id');
         }
@@ -535,13 +583,127 @@ export class EventService {
         }
     }
 
-    async updateEvent(request: UpdateEventRequest) {
+    async updateEvent(request: UpdateEventRequest): Promise<EventResponse> {
         try {
-            const event = await this.eventModel.findByIdAndUpdate
-                (request.id, request, { new: true });
-            return { event: this.transformEvent(event) };
+            const oldEvent = await this.eventModel.findById(request.id);
+            if (!oldEvent) {
+                throw new RpcException({ message: 'Event not found', code: HttpStatus.NOT_FOUND });
+            }
+            const oldStatus = oldEvent.status;
+
+            const criticalFields = ['location', 'startDate', 'endDate', 'schedule'];
+            const updatedFields: Record<string, { old: string, new: string }> = {};
+
+            for (const field of criticalFields) {
+                if (request[field] !== undefined) {
+                    if (field === 'startDate' || field === 'endDate') {
+                        const oldVal = new Date(oldEvent[field]).toISOString();
+                        const newVal = new Date(request[field]).toISOString();
+                        if (oldVal !== newVal) {
+                            updatedFields[field] = { old: oldVal, new: newVal };
+                        }
+                    } else if (field === 'schedule') {
+                        const oldSchedule = JSON.stringify(oldEvent.schedule);
+                        const newSchedule = JSON.stringify(request.schedule);
+                        if (oldSchedule !== newSchedule) {
+                            updatedFields[field] = { old: oldSchedule, new: newSchedule };
+                        }
+                    } else {
+                        if (oldEvent[field] !== request[field]) {
+                            updatedFields[field] = { old: oldEvent[field], new: request[field] };
+                        }
+                    }
+                }
+            }
+
+            const updated = await this.eventModel.findByIdAndUpdate(request.id, request, { new: true });
+            if (!updated) {
+                throw new RpcException({ message: 'Failed to update event', code: HttpStatus.BAD_REQUEST });
+            }
+
+            if (Object.keys(updatedFields).length > 0) {
+                let registeredEmails: string[] = [];
+                try {
+                    const participantsResponse = await lastValueFrom(
+                        this.ticketService.getUserParticipationByEventId({ eventId: request.id })
+                    );
+                    if (participantsResponse && participantsResponse.participants) {
+                        registeredEmails = participantsResponse.participants
+                            .map(p => p.email)
+                            .filter(email => email && email.trim().length > 0);
+                    }
+                } catch (err) {
+                    console.error('Error fetching registered participants:', err);
+                }
+
+                // Lấy danh sách email của những người được mời (invitedUsers)
+                const invitedUsers = await this.invitedUserModel.find({ eventId: request.id }).exec();
+                const invitedEmails = invitedUsers
+                    .map(u => u.email)
+                    .filter(email => email && email.trim().length > 0);
+
+                // Hợp nhất và loại bỏ email trùng
+                const allEmails = Array.from(new Set([...registeredEmails, ...invitedEmails]));
+
+                const eventUrl = `https://yourdomain.com/events/${updated._id}`;
+
+                if (allEmails.length > 0) {
+                    const eventNotificationPayload = {
+                        ...updated.toObject(),
+                        updatedFields, // object chứa chi tiết các thay đổi
+                        registeredEmails: allEmails,
+                        eventUrl,
+                        currentYear: new Date().getFullYear(),
+                    };
+
+                    this.clientNotification.emit('event_update', { event: eventNotificationPayload });
+                }
+            }
+
+            // feedback
+            if (oldStatus !== 'FINISHED' && updated.status === 'FINISHED') {
+                await this.sendFeedbackInvites(updated);
+            }
+
+            const populatedEvent = await this.populateInvitedUsers(updated);
+            return { event: populatedEvent };
         } catch (error) {
             throw handleRpcException(error, 'Failed to update event');
+        }
+    }
+
+    private async populateInvitedUsers(event: EventDocument): Promise<EventType> {
+        const transformed = this.transformEvent(event);
+        const invitedUsers = await this.invitedUserModel.find({ eventId: event._id.toString() });
+        transformed.invitedUsers = invitedUsers.map(iu => ({
+            userId: iu.userId ? iu.userId.toString() : "",
+            id: iu._id.toString(),
+            email: iu.email,
+            status: iu.status
+        }));
+        return transformed;
+    }
+
+    private async sendFeedbackInvites(event: EventDocument) {
+        try {
+            const request: GetParticipantByEventIdRequest = { eventId: event._id.toString() };
+            const resp = await lastValueFrom(
+                this.ticketService.getParticipantByEventId(request),
+            );
+
+            const checkined = resp.participants.filter((p) => p.checkInAt);
+
+            const emails = checkined.map((p) => p.email).filter((e) => !!e);
+
+            if (emails.length > 0) {
+                this.clientNotification.emit('send_feedback_invitation', {
+                    emails,
+                    eventName: event.name,
+                    eventId: event._id.toString(),
+                });
+            }
+        } catch (error) {
+            console.error('Failed to send feedback invites:', error);
         }
     }
 

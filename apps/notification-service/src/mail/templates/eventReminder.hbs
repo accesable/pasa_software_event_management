@@ -1,18 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Event Reminder</title>
+  <meta charset="UTF-8">
+  <title>Event Reminder: {{eventName}}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      background-color: #ffffff;
+      margin: 20px auto;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+    .header h1 {
+      font-size: 24px;
+      color: #333;
+      margin: 0;
+    }
+    .content {
+      margin: 20px 0;
+    }
+    .content p {
+      font-size: 16px;
+      line-height: 1.5;
+      color: #555;
+    }
+    .event-details {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+    .event-details h2 {
+      font-size: 20px;
+      color: #007BFF;
+      margin-bottom: 10px;
+    }
+    .event-details ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .event-details li {
+      font-size: 16px;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    .footer {
+      text-align: center;
+      font-size: 14px;
+      color: #aaa;
+      margin-top: 20px;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+    }
+  </style>
 </head>
-<body style="font-family: Arial, sans-serif;">
-  <div style="max-width:600px;margin:20px auto;padding:20px;border:1px solid #ddd;">
-    <h3>Hello {{userName}},</h3>
-    <p>This is a friendly reminder that <strong>{{eventName}}</strong> is starting soon!</p>
-    <p>Date & Time: {{startDate}} - {{endDate}}<br/>
-       Location: {{location}}</p>
-    <p>We hope to see you there!</p>
-    <p>If you have any questions, feel free to contact us.</p>
-    <p>Regards,<br/>Event Team</p>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Event Reminder: {{eventName}}</h1>
+    </div>
+    <div class="content">
+      <p>Hello,</p>
+      <p>This is a friendly reminder that the event <strong>{{eventName}}</strong> is coming up soon.</p>
+      <div class="event-details">
+        <h2>Event Details</h2>
+        <ul>
+          <li><strong>Date &amp; Time:</strong> {{eventStartTime}} - {{eventEndTime}}</li>
+          <li><strong>Location:</strong> {{location}}</li>
+          {{#if eventDescription}}
+            <li><strong>Description:</strong> {{eventDescription}}</li>
+          {{/if}}
+        </ul>
+      </div>
+      <p>We look forward to seeing you at the event!</p>
+    </div>
+    <div class="footer">
+      <p>Best regards,<br/>The Event Team</p>
+    </div>
   </div>
 </body>
 </html>

@@ -14,14 +14,17 @@ import { Feedback, FeedbackSchema } from './schemas/feedback.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { validateEnv } from '../config/env.validation';
+import { FeedbackModule } from '../feedback/feedback.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     EventCategoryModule,
     SpeakerModule,
     GuestModule,
+    FeedbackModule,
     forwardRef(() => EventServiceModule),
-
+    ScheduleModule.forRoot(),
     MongooseModule.forFeature([
       { name: Event.name, schema: EventSchema },
       { name: EventCategory.name, schema: EventCategorySchema },

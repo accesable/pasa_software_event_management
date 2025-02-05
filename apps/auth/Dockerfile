@@ -1,14 +1,28 @@
-FROM node:22-alpine
+# --------------------------
+#  Stage 1: Build
+# --------------------------
+FROM node:22.12.0 AS builder
+
 WORKDIR /app
 
-# Vì context là root, gõ COPY này sẽ lấy file package.json ở root vào /app
 COPY package*.json ./
 RUN npm install
 
-# Copy toàn bộ code từ root context vào /app
 COPY . .
+RUN npm run build
 
-# Chuyển vào thư mục auth
-WORKDIR /app/apps/auth
+
+# --------------------------
+#  Stage 2: Runtime
+# --------------------------
+FROM node:22.12.0 AS runner
+
+WORKDIR /app
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+
+ENV PORT=50051
 EXPOSE 50051
-CMD ["npm", "run", "start:dev", "auth"]
+
+CMD ["node", "dist/main.js"]

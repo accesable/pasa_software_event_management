@@ -10,32 +10,12 @@ import { Observable } from "rxjs";
 
 export const protobufPackage = "report";
 
-export interface GetEventRequest {
+/** Dùng chung cho những hàm cần eventId */
+export interface EventRequest {
   eventId: string;
 }
 
-export interface GetParticipantsByEventRequest {
-  eventId: string;
-}
-
-export interface Participant {
-  id: string;
-  eventId: string;
-  userId: string;
-  email: string;
-  name: string;
-  checkInAt: string;
-  checkOutAt: string;
-}
-
-export interface ParticipantsResponse {
-  participants: Participant[];
-}
-
-export interface GetEventParticipationStatsRequest {
-  eventId: string;
-}
-
+/** 1) Đếm participant: registeredCount, checkInCount, checkOutCount */
 export interface EventParticipationStatsResponse {
   eventId: string;
   registeredCount: number;
@@ -43,8 +23,20 @@ export interface EventParticipationStatsResponse {
   checkOutCount: number;
 }
 
-export interface GetMonthlyParticipationStatsRequest {
-  /** Lấy tham số năm */
+/** 2) Timeline checkin/checkout */
+export interface ParticipationTimelineResponse {
+  timeline: TimelinePoint[];
+}
+
+export interface TimelinePoint {
+  /** "00:00 - 00:59" */
+  timeSlot: string;
+  checkInCount: number;
+  checkOutCount: number;
+}
+
+/** 3) Thống kê theo tháng */
+export interface MonthlyStatsRequest {
   year: number;
 }
 
@@ -57,17 +49,13 @@ export interface MonthlyParticipationStat {
   participantCount: number;
 }
 
-export interface AverageParticipationTimeResponse {
-  averageParticipationTimeInMinutes: number;
-}
-
+/** 4) Phân tích thời gian checkin, checkout trung bình (phút) */
 export interface CheckInOutTimeAnalysisResponse {
-  /** Thời gian check-in trung bình (phút) */
   averageCheckInTimeInMinutes: number;
-  /** Thời gian check-out trung bình (phút) */
   averageCheckOutTimeInMinutes: number;
 }
 
+/** 5) Tỷ lệ checkIn / checkOut (phần trăm) */
 export interface ParticipationRateResponse {
   checkInRate: number;
   checkOutRate: number;
@@ -75,80 +63,92 @@ export interface ParticipationRateResponse {
 
 export const REPORT_PACKAGE_NAME = "report";
 
-export interface ReportServiceClient {
-  getParticipantsByEvent(request: GetParticipantsByEventRequest): Observable<ParticipantsResponse>;
+/** Service report đơn giản, chỉ 5 hàm */
 
-  getEventParticipationStats(request: GetEventParticipationStatsRequest): Observable<EventParticipationStatsResponse>;
+export interface ReportServiceProtoClient {
+  /** 1) Thống kê số người đã đăng ký, checkin, checkout */
 
-  getMonthlyParticipationStats(
-    request: GetMonthlyParticipationStatsRequest,
-  ): Observable<MonthlyParticipationStatsResponse>;
+  getEventParticipationStats(request: EventRequest): Observable<EventParticipationStatsResponse>;
 
-  getAverageParticipationTime(request: GetEventRequest): Observable<AverageParticipationTimeResponse>;
+  /** 2) Lấy timeline checkin/checkout theo khung giờ */
 
-  getCheckInOutTimeAnalysis(request: GetEventRequest): Observable<CheckInOutTimeAnalysisResponse>;
+  getParticipationTimeline(request: EventRequest): Observable<ParticipationTimelineResponse>;
 
-  getParticipationRate(request: GetEventRequest): Observable<ParticipationRateResponse>;
+  /** 3) Thống kê số lượt tham gia trong từng tháng (cho 1 năm) */
+
+  getMonthlyParticipationStats(request: MonthlyStatsRequest): Observable<MonthlyParticipationStatsResponse>;
+
+  /** 4) Phân tích thời điểm checkin/checkout trung bình */
+
+  getCheckInOutTimeAnalysis(request: EventRequest): Observable<CheckInOutTimeAnalysisResponse>;
+
+  /** 5) Tỷ lệ checkin/checkout (theo %) so với tổng */
+
+  getParticipationRate(request: EventRequest): Observable<ParticipationRateResponse>;
 }
 
-export interface ReportServiceController {
-  getParticipantsByEvent(
-    request: GetParticipantsByEventRequest,
-  ): Promise<ParticipantsResponse> | Observable<ParticipantsResponse> | ParticipantsResponse;
+/** Service report đơn giản, chỉ 5 hàm */
+
+export interface ReportServiceProtoController {
+  /** 1) Thống kê số người đã đăng ký, checkin, checkout */
 
   getEventParticipationStats(
-    request: GetEventParticipationStatsRequest,
+    request: EventRequest,
   ):
     | Promise<EventParticipationStatsResponse>
     | Observable<EventParticipationStatsResponse>
     | EventParticipationStatsResponse;
 
+  /** 2) Lấy timeline checkin/checkout theo khung giờ */
+
+  getParticipationTimeline(
+    request: EventRequest,
+  ): Promise<ParticipationTimelineResponse> | Observable<ParticipationTimelineResponse> | ParticipationTimelineResponse;
+
+  /** 3) Thống kê số lượt tham gia trong từng tháng (cho 1 năm) */
+
   getMonthlyParticipationStats(
-    request: GetMonthlyParticipationStatsRequest,
+    request: MonthlyStatsRequest,
   ):
     | Promise<MonthlyParticipationStatsResponse>
     | Observable<MonthlyParticipationStatsResponse>
     | MonthlyParticipationStatsResponse;
 
-  getAverageParticipationTime(
-    request: GetEventRequest,
-  ):
-    | Promise<AverageParticipationTimeResponse>
-    | Observable<AverageParticipationTimeResponse>
-    | AverageParticipationTimeResponse;
+  /** 4) Phân tích thời điểm checkin/checkout trung bình */
 
   getCheckInOutTimeAnalysis(
-    request: GetEventRequest,
+    request: EventRequest,
   ):
     | Promise<CheckInOutTimeAnalysisResponse>
     | Observable<CheckInOutTimeAnalysisResponse>
     | CheckInOutTimeAnalysisResponse;
 
+  /** 5) Tỷ lệ checkin/checkout (theo %) so với tổng */
+
   getParticipationRate(
-    request: GetEventRequest,
+    request: EventRequest,
   ): Promise<ParticipationRateResponse> | Observable<ParticipationRateResponse> | ParticipationRateResponse;
 }
 
-export function ReportServiceControllerMethods() {
+export function ReportServiceProtoControllerMethods() {
   return function (constructor: Function) {
     const grpcMethods: string[] = [
-      "getParticipantsByEvent",
       "getEventParticipationStats",
+      "getParticipationTimeline",
       "getMonthlyParticipationStats",
-      "getAverageParticipationTime",
       "getCheckInOutTimeAnalysis",
       "getParticipationRate",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcMethod("ReportService", method)(constructor.prototype[method], method, descriptor);
+      GrpcMethod("ReportServiceProto", method)(constructor.prototype[method], method, descriptor);
     }
     const grpcStreamMethods: string[] = [];
     for (const method of grpcStreamMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcStreamMethod("ReportService", method)(constructor.prototype[method], method, descriptor);
+      GrpcStreamMethod("ReportServiceProto", method)(constructor.prototype[method], method, descriptor);
     }
   };
 }
 
-export const REPORT_SERVICE_NAME = "ReportService";
+export const REPORT_SERVICE_PROTO_SERVICE_NAME = "ReportServiceProto";

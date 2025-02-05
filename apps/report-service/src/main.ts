@@ -16,6 +16,7 @@ async function bootstrap() {
       },
     },
   );
-  await grpcApp.listen()
+  await grpcApp.listen();
+  console.log('Report-service gRPC is listening on port 50055...');
 }
 bootstrap();

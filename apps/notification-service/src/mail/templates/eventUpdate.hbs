@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Event Update Notification</title>
+  <style>
+    /* Reset và định dạng cơ bản */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      font-family: Arial, sans-serif;
+      color: #333;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 30px auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+    .email-header {
+      background-color: #2d3748;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+    }
+    .email-header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .email-body {
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .email-body p {
+      margin: 16px 0;
+    }
+    /* Bảng hiển thị thay đổi */
+    .update-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    .update-table th,
+    .update-table td {
+      text-align: left;
+      padding: 12px 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .update-table th {
+      background-color: #edf2f7;
+      font-size: 16px;
+    }
+    .update-table td {
+      font-size: 14px;
+    }
+    /* Nút xem chi tiết */
+    .btn {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 12px 24px;
+      background-color: #3182ce;
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .email-footer {
+      background-color: #f7fafc;
+      text-align: center;
+      padding: 10px;
+      font-size: 12px;
+      color: #718096;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="email-header">
+      <h1>Event Updated</h1>
+    </div>
+    <div class="email-body">
+      <p>Dear Participant,</p>
+      <p>The event <strong>{{eventName}}</strong> has been updated with the following changes:</p>
+      
+      {{#if updatedFields}}
+        <table class="update-table">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Old Value</th>
+              <th>New Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each updatedFields}}
+              <tr>
+                <td>{{@key}}</td>
+                <td>{{this.old}}</td>
+                <td>{{this.new}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      {{else}}
+        <p>No significant changes were detected.</p>
+      {{/if}}
+      
+      <p>You can view more details by clicking the button below:</p>
+      <p style="text-align: center;">
+        <a class="btn" href="{{eventUrl}}">View Event Details</a>
+      </p>
+      <p>Thank you for your attention.</p>
+    </div>
+    <div class="email-footer">
+      <p>&copy; {{currentYear}} PASA Company. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

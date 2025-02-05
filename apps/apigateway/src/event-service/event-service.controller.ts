@@ -91,101 +91,60 @@ export class EventServiceController {
     return this.eventServiceService.getOrganizedEvents(user.id, status);
   }
 
-  // // QUESTION METHODS
-  // @Post(':id/questions')
-  // @UseGuards(JwtAuthGuard)
-  // @ResponseMessage('Question created successfully')
-  // async createQuestion(
-  //   @Param('id') id: string,
-  //   @Body('question') question: string,
-  //   @User() user: DecodeAccessResponse,
-  // ) {
-  //   const event = await this.eventServiceService.getEventById(id);
+  @Post(':id/questions')
+  @ResponseMessage('Question submitted successfully')
+  async createQuestion(
+    @Param('id') eventId: string,
+    @Body() body: { userId: string; text: string },
+  ) {
+    if (!body.text) {
+      throw new BadRequestException('Question text is required');
+    }
+    return this.eventServiceService.createQuestion(eventId, body.userId, body.text);
+  }
 
-  //   if (!event) {
-  //     throw new RpcException('Event not found');
-  //   }
-  //   return this.eventServiceService.createQuestion(id, question, user);
-  // }
+  // Trả lời một câu hỏi
+  @Post('questions/:questionId/answers')
+  @ResponseMessage('Answer submitted successfully')
+  async answerQuestion(
+    @Param('questionId') questionId: string,
+    @Body() body: { userId: string; text: string },
+  ) {
+    if (!body.text) {
+      throw new BadRequestException('Answer text is required');
+    }
+    return this.eventServiceService.answerQuestion(questionId, body.userId, body.text);
+  }
 
-  // @Get(':id/questions')
-  // @ResponseMessage('Questions retrieved successfully')
-  // async getEventQuestions(@Param('id') id: string) {
-  //   const event = await this.eventServiceService.getEventById(id);
+  // Lấy danh sách câu hỏi của một sự kiện
+  @Get(':id/questions')
+  @ResponseMessage('Questions fetched successfully')
+  async getQuestions(@Param('id') eventId: string) {
+    return this.eventServiceService.getEventQuestions(eventId);
+  }
 
-  //   if (!event) {
-  //     throw new RpcException('Event not found');
-  //   }
-  //   return this.eventServiceService.getEventQuestions(id);
-  // }
+  @Post(':id/feedback')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Feedback submitted successfully')
+  async submitFeedback(
+    @Param('id') eventId: string,
+    @Body() body: { rating: number; comment: string },
+    @User() user: DecodeAccessResponse,
+  ) {
+    return this.eventServiceService.submitFeedback(eventId, user.id, body.rating, body.comment);
+  }
 
-  // @Patch(':id/questions/:questionId')
-  // @UseGuards(JwtAuthGuard)
-  // @ResponseMessage('Question updated successfully')
-  // async updateQuestion(
-  //   @Param('id') id: string,
-  //   @Param('questionId') questionId: string,
-  //   @Body('answered') answered: boolean,
-  //   @User() user: DecodeAccessResponse,
-  // ) {
-  //   const event = await this.eventServiceService.getEventById(id);
+  @Get(':id/feedbacks')
+  @ResponseMessage('Feedbacks fetched successfully')
+  async getFeedbacks(@Param('id') eventId: string) {
+    return this.eventServiceService.getEventFeedbacks(eventId);
+  }
 
-  //   if (!event) {
-  //     throw new RpcException('Event not found');
-  //   }
-
-  //   return this.eventServiceService.updateQuestion(
-  //     id,
-  //     questionId,
-  //     answered,
-  //     user,
-  //   );
-  // }
-
-  // @Post(':id/questions/:questionId/answers')
-  // @UseGuards(JwtAuthGuard)
-  // @ResponseMessage('Answer created successfully')
-  // async answerQuestion(
-  //   @Param('id') id: string,
-  //   @Param('questionId') questionId: string,
-  //   @Body('answer') answer: string,
-  //   @User() user: DecodeAccessResponse,
-  // ) {
-  //   return this.eventServiceService.answerQuestion(
-  //     id,
-  //     questionId,
-  //     answer,
-  //     user,
-  //   );
-  // }
-
-  // @Post(':id/feedbacks')
-  // @UseGuards(JwtAuthGuard)
-  // @ResponseMessage('Feedback created successfully')
-  // async createFeedback(
-  //   @Param('id') id: string,
-  //   @Body('feedback') feedback: string,
-  //   @Body('rating') rating: number,
-  //   @User() user: DecodeAccessResponse,
-  // ) {
-  //   const event = await this.eventServiceService.getEventById(id);
-
-  //   if (!event) {
-  //     throw new RpcException('Event not found');
-  //   }
-  //   return this.eventServiceService.createFeedback(id, feedback, rating, user);
-  // }
-
-  // @Get(':id/feedbacks')
-  // @ResponseMessage('Feedbacks retrieved successfully')
-  // async getEventFeedbacks(@Param('id') id: string) {
-  //   const event = await this.eventServiceService.getEventById(id);
-
-  //   if (!event) {
-  //     throw new RpcException('Event not found');
-  //   }
-  //   return this.eventServiceService.getEventFeedbacks(id);
-  // }
+  @Get(':id/feedback-analysis')
+  @ResponseMessage('Feedback analysis fetched successfully')
+  async getFeedbackAnalysis(@Param('id') eventId: string) {
+    return this.eventServiceService.getFeedbackAnalysis(eventId);
+  }
 
   @Post(':id/files')
   @UseGuards(JwtAuthGuard, CheckEventStatusGuard)
@@ -360,7 +319,18 @@ export class EventServiceController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Update event success')
-  updateEvent(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
+  async updateEvent(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto, @User() user: DecodeAccessResponse) {
+    const event = await this.eventServiceService.getEventById(id);
+    if (!event) {
+      throw new BadRequestException('Event not found');
+    }
+
+    if (event.event.createdBy.id !== user.id) {
+      console.log(event.event.createdBy.id, user.id);
+      throw new BadRequestException(
+        'You do not have permission to update this event',
+      );
+    }
     return this.eventServiceService.updateEvent(id, updateEventDto);
   }
 
@@ -376,6 +346,7 @@ export class EventServiceController {
   @StatusEvent('Scheduled')
   @ResponseMessage('Cancel event success')
   async cancelEvent(@Param('id') id: string, @User() user: DecodeAccessResponse) {
+    
     return this.eventServiceService.cancelEvent(id, user.id);
   }
 }

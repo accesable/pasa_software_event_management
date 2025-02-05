@@ -8,6 +8,6 @@ import {
 
 export class UpdateEventDto extends PartialType(CreateEventDto) {
     @IsOptional()
-    @IsEnum(['scheduled', 'ongoing', 'canceled', 'finished'], { message: 'Invalid status' })
+    @IsEnum(['SCHEDULED', 'CANCELED', 'FINISHED'], { message: 'Invalid status' })
     status?: string;
 }

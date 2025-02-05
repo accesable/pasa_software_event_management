@@ -30,7 +30,7 @@ export class RpcExceptionInterceptor implements NestInterceptor {
           const { message, code, details } = errorResponse;
           const finalMessage = message || 'An error occurred';
           const finalDetails = details || finalMessage.split(':')[0].trim() || 'No additional information available';
-
+          
           throw new HttpException(
             {
               statusCode: code,
@@ -46,9 +46,9 @@ export class RpcExceptionInterceptor implements NestInterceptor {
           const { message, code, details } = errorResponse;
           const finalMessage = message || 'An error occurred';
           const finalDetails = details || finalMessage.split(':')[0].trim() || 'No additional information available';
-        
+          
           throw new HttpException({
-            statusCode: code,
+            statusCode: 400,
             error: finalDetails,
             path: context.getArgs()[0].url,
           }, HttpStatus.BAD_REQUEST);

@@ -51,7 +51,16 @@ import { AUTH_PACKAGE_NAME } from '../../../libs/common/src';
           protoPath: join(__dirname, '../auth.proto'),
           url: '0.0.0.0:50051'
         },
-      }
+      },
+      {
+        name: 'EVENT_SERVICE_RABBIT',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://admin:1234@localhost:5672'],
+          queue: 'events_queue',
+          queueOptions: { durable: true },
+        },
+      },
     ]),
   ],
   controllers: [NotificationServiceController],

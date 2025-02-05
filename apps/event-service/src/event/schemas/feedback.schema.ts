@@ -6,19 +6,19 @@ export type FeedbackDocument = Feedback & Document & {
   updatedAt: Date;
 };
 
-@Schema({ timestamps: true, versionKey: false })
+@Schema({ timestamps: true })
 export class Feedback {
-  @Prop({ type: Types.ObjectId, ref: 'Event', required: true, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'Event', required: true })
   eventId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({ type: Types.ObjectId, required: true })
   userId: Types.ObjectId;
-
-  @Prop({ required: true })
-  comment: string;
 
   @Prop({ required: true, min: 1, max: 5 })
   rating: number;
+
+  @Prop({ default: '' })
+  comment: string;
 }
 
 export const FeedbackSchema = SchemaFactory.createForClass(Feedback);

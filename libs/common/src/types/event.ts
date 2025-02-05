@@ -13,6 +13,83 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+export interface CreateQuestionRequest {
+  eventId: string;
+  userId: string;
+  text: string;
+}
+
+export interface CreateQuestionResponse {
+  question: Question | undefined;
+}
+
+export interface AnswerQuestionRequest {
+  questionId: string;
+  userId: string;
+  text: string;
+}
+
+export interface AnswerQuestionResponse {
+  question: Question | undefined;
+}
+
+export interface GetEventQuestionsResponse {
+  questions: Question[];
+}
+
+export interface Question {
+  id: string;
+  eventId: string;
+  userId: string;
+  text: string;
+  answers: Answer[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Answer {
+  userId: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface SubmitFeedbackRequest {
+  eventId: string;
+  userId: string;
+  rating: number;
+  comment: string;
+}
+
+export interface SubmitFeedbackResponse {
+  message: string;
+}
+
+export interface GetEventFeedbacksResponse {
+  feedbacks: Feedback[];
+}
+
+export interface Feedback {
+  id: string;
+  eventId: string;
+  userId: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FeedbackAnalysisResponse {
+  eventId: string;
+  averageRating: number;
+  totalFeedbacks: number;
+  ratingDistribution: { [key: number]: number };
+}
+
+export interface FeedbackAnalysisResponse_RatingDistributionEntry {
+  key: number;
+  value: number;
+}
+
 export interface UpdateGuestRequest {
   id: string;
   name?: string | undefined;
@@ -431,6 +508,18 @@ export interface EventServiceClient {
   getOrganizedEvents(request: getOrganizedEventsRequest): Observable<AllEventResponse>;
 
   getParticipatedEvents(request: getParticipatedEventsRequest): Observable<AllEventResponse>;
+
+  createQuestion(request: CreateQuestionRequest): Observable<CreateQuestionResponse>;
+
+  answerQuestion(request: AnswerQuestionRequest): Observable<AnswerQuestionResponse>;
+
+  getEventQuestions(request: EventByIdRequest): Observable<GetEventQuestionsResponse>;
+
+  submitFeedback(request: SubmitFeedbackRequest): Observable<SubmitFeedbackResponse>;
+
+  getEventFeedbacks(request: EventByIdRequest): Observable<GetEventFeedbacksResponse>;
+
+  getFeedbackAnalysis(request: EventByIdRequest): Observable<FeedbackAnalysisResponse>;
 }
 
 export interface EventServiceController {
@@ -513,6 +602,30 @@ export interface EventServiceController {
   getParticipatedEvents(
     request: getParticipatedEventsRequest,
   ): Promise<AllEventResponse> | Observable<AllEventResponse> | AllEventResponse;
+
+  createQuestion(
+    request: CreateQuestionRequest,
+  ): Promise<CreateQuestionResponse> | Observable<CreateQuestionResponse> | CreateQuestionResponse;
+
+  answerQuestion(
+    request: AnswerQuestionRequest,
+  ): Promise<AnswerQuestionResponse> | Observable<AnswerQuestionResponse> | AnswerQuestionResponse;
+
+  getEventQuestions(
+    request: EventByIdRequest,
+  ): Promise<GetEventQuestionsResponse> | Observable<GetEventQuestionsResponse> | GetEventQuestionsResponse;
+
+  submitFeedback(
+    request: SubmitFeedbackRequest,
+  ): Promise<SubmitFeedbackResponse> | Observable<SubmitFeedbackResponse> | SubmitFeedbackResponse;
+
+  getEventFeedbacks(
+    request: EventByIdRequest,
+  ): Promise<GetEventFeedbacksResponse> | Observable<GetEventFeedbacksResponse> | GetEventFeedbacksResponse;
+
+  getFeedbackAnalysis(
+    request: EventByIdRequest,
+  ): Promise<FeedbackAnalysisResponse> | Observable<FeedbackAnalysisResponse> | FeedbackAnalysisResponse;
 }
 
 export function EventServiceControllerMethods() {
@@ -542,6 +655,12 @@ export function EventServiceControllerMethods() {
       "isExistEvent",
       "getOrganizedEvents",
       "getParticipatedEvents",
+      "createQuestion",
+      "answerQuestion",
+      "getEventQuestions",
+      "submitFeedback",
+      "getEventFeedbacks",
+      "getFeedbackAnalysis",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

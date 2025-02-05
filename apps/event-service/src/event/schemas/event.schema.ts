@@ -106,6 +106,9 @@ export class Event {
 
   @Prop({ default: 'SCHEDULED', enum: ["SCHEDULED", "CANCELED", "FINISHED"] })
   status: string;
+
+  @Prop({ default: false })
+  reminderSent: boolean;
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);

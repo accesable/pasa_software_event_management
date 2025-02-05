@@ -29,10 +29,85 @@ service EventService{
   rpc IsExistEvent(EventByIdRequest) returns (IsExistEventResponse);
   rpc getOrganizedEvents(getOrganizedEventsRequest) returns (AllEventResponse);
   rpc getParticipatedEvents(getParticipatedEventsRequest) returns (AllEventResponse);
+  rpc CreateQuestion(CreateQuestionRequest) returns (CreateQuestionResponse);
+  rpc AnswerQuestion(AnswerQuestionRequest) returns (AnswerQuestionResponse);
+  rpc GetEventQuestions(EventByIdRequest) returns (GetEventQuestionsResponse);
+
+  rpc SubmitFeedback(SubmitFeedbackRequest) returns (SubmitFeedbackResponse);
+  rpc GetEventFeedbacks(EventByIdRequest) returns (GetEventFeedbacksResponse);
+  rpc GetFeedbackAnalysis(EventByIdRequest) returns (FeedbackAnalysisResponse);
 }
 
 message Empty{}
 
+message CreateQuestionRequest {
+  string eventId = 1;
+  string userId = 2;
+  string text = 3;
+}
+message CreateQuestionResponse {
+  Question question = 1;
+}
+
+message AnswerQuestionRequest {
+  string questionId = 1;
+  string userId = 2;
+  string text = 3;
+}
+message AnswerQuestionResponse {
+  Question question = 1;
+}
+
+message GetEventQuestionsResponse {
+  repeated Question questions = 1;
+}
+
+message Question {
+  string id = 1;
+  string eventId = 2;
+  string userId = 3;
+  string text = 4;
+  repeated Answer answers = 5;
+  string createdAt = 6;
+  string updatedAt = 7;
+}
+message Answer {
+  string userId = 1;
+  string text = 2;
+  string createdAt = 3;
+}
+
+message SubmitFeedbackRequest {
+  string eventId = 1;
+  string userId = 2;
+  int32 rating = 3;
+  string comment = 4;
+}
+
+message SubmitFeedbackResponse {
+  string message = 1;
+}
+
+message GetEventFeedbacksResponse {
+  repeated Feedback feedbacks = 1;
+}
+
+message Feedback {
+  string id = 1;
+  string eventId = 2;
+  string userId = 3;
+  int32 rating = 4;
+  string comment = 5;
+  string createdAt = 6;
+  string updatedAt = 7;
+}
+
+message FeedbackAnalysisResponse {
+  string eventId = 1;
+  double averageRating = 2;
+  int32 totalFeedbacks = 3;
+  map<int32, int32> ratingDistribution = 4;
+}
 
 message UpdateGuestRequest{
   string id = 1;

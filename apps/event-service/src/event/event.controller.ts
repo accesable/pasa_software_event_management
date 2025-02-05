@@ -4,8 +4,8 @@ import { Observable } from 'rxjs';
 import { EventCategoryService } from '../event-category/event-category.service';
 import { SpeakerService } from '../speaker/speaker.service';
 import { GuestService } from '../guest/guest.service';
-import { EventPattern } from '@nestjs/microservices';
-import { AcceptInvitationRequest, AllEventResponse, CancelEventRequest, CategoryByIdRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateSpeakerRequest, DeclineInvitationRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, FindByIdRequest, GetAllRequest, getOrganizedEventsRequest, getParticipatedEventsRequest, GuestResponse, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, SpeakerResponse, UpdateCategoryRequest, UpdateEventRequest, UpdateGuestRequest, UpdateSpeakerRequest } from '../../../../libs/common/src/types/event';
+import { EventPattern, RpcException } from '@nestjs/microservices';
+import { AcceptInvitationRequest, AllEventResponse, AnswerQuestionRequest, AnswerQuestionResponse, CancelEventRequest, CategoryByIdRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateQuestionRequest, CreateQuestionResponse, CreateSpeakerRequest, DeclineInvitationRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, FeedbackAnalysisResponse, FindByIdRequest, GetAllRequest, GetEventFeedbacksResponse, GetEventQuestionsResponse, getOrganizedEventsRequest, getParticipatedEventsRequest, GuestResponse, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, SpeakerResponse, SubmitFeedbackRequest, SubmitFeedbackResponse, UpdateCategoryRequest, UpdateEventRequest, UpdateGuestRequest, UpdateSpeakerRequest } from '../../../../libs/common/src/types/event';
 
 @Controller()
 @EventServiceControllerMethods()
@@ -16,6 +16,29 @@ export class EventController implements EventServiceController {
     private readonly speakerService: SpeakerService,
     private readonly guestService: GuestService,
   ) { }
+
+  createQuestion(request: CreateQuestionRequest) {
+    return this.eventService.createQuestion(request.eventId, request.userId, request.text);
+  }
+  answerQuestion(request: AnswerQuestionRequest){
+    return this.eventService.answerQuestion(request.questionId, request.userId, request.text);
+  }
+  getEventQuestions(request: EventByIdRequest) {
+    return this.eventService.getEventQuestions(request.id);
+  }
+
+  async submitFeedback(request: SubmitFeedbackRequest) {
+    // request: { eventId, userId, rating, comment }
+    return this.eventService.submitFeedback(request.eventId, request.userId, request.rating, request.comment);
+  }
+
+  async getEventFeedbacks(request: EventByIdRequest) {
+    return this.eventService.getEventFeedbacks(request.id);
+  }
+
+  async getFeedbackAnalysis(request: EventByIdRequest) {
+    return this.eventService.getFeedbackAnalysis(request.id);
+  }
 
   updateSpeaker(request: UpdateSpeakerRequest): Promise<SpeakerResponse> | Observable<SpeakerResponse> | SpeakerResponse {
     return this.speakerService.updateSpeaker(request);
@@ -105,8 +128,12 @@ export class EventController implements EventServiceController {
   }
 
   async createEvent(request: CreateEventRequest) {
-    const isExistCategory = await this.categoryService.getCategoryById(request.categoryId);
-    return this.eventService.createEvent(request, isExistCategory);
+    try {
+      const isExistCategory = await this.categoryService.getCategoryById(request.categoryId);
+      return this.eventService.createEvent(request, isExistCategory);
+    } catch (error) {
+      throw new RpcException({ message: 'Category not found', code : 404 });
+    }
   }
 
   updateEvent(request: UpdateEventRequest) {

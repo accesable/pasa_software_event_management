@@ -27,6 +27,54 @@ export class EventServiceService implements OnModuleInit {
     this.eventService = this.client.getService<EventServiceClient>(EVENT_SERVICE_NAME);
   }
 
+  async createQuestion(eventId: string, userId: string, text: string) {
+    try {
+      return await this.eventService.createQuestion({ eventId, userId, text}).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async answerQuestion(questionId: string, userId: string, text: string) {
+    try {
+      return await this.eventService.answerQuestion({ questionId, userId, text}).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async getEventQuestions(eventId: string) {
+    try {
+      return await this.eventService.getEventQuestions({ id: eventId }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async submitFeedback(eventId: string, userId: string, rating: number, comment: string) {
+    try {
+      return await this.eventService.submitFeedback({ eventId, userId, rating, comment }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async getEventFeedbacks(eventId: string) {
+    try {
+      return await this.eventService.getEventFeedbacks({id: eventId }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async getFeedbackAnalysis(eventId: string) {
+    try {
+      return await this.eventService.getFeedbackAnalysis({id: eventId }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
   async isExistEvent(id: string) {
     try {
       const event = await this.eventService.getEventById({ id }).toPromise();
@@ -305,17 +353,14 @@ export class EventServiceService implements OnModuleInit {
         schedule: scheduleProto,
         sponsors: sponsorsProto,
       };
-
       return await this.eventService.createEvent(request).toPromise();
     } catch (error) {
-      console.error('Error occurred while creating event:', error.message);
-      throw new RpcException('Failed to create event. Please try again.');
+      throw new RpcException(error);
     }
   }
 
   async cancelEvent(id: string, userId: string) {
     try {
-      await this.isExistEvent(id);
       return this.eventService.cancelEvent({ id, userId }).toPromise();
     } catch (error) {
       throw new RpcException(error);

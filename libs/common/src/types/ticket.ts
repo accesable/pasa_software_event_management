@@ -13,6 +13,15 @@ export const protobufPackage = "ticket";
 export interface Empty {
 }
 
+export interface GetUserParticipationByEventIdResponse {
+  participants: UserParticipationResponse[];
+}
+
+export interface UserParticipationResponse {
+  email: string;
+  name: string;
+}
+
 export interface GetParticipantByEventIdRequest {
   eventId: string;
 }
@@ -136,6 +145,10 @@ export interface TicketServiceProtoClient {
   updateParticipant(request: CreateParticipationRequest): Observable<ParticipationResponse>;
 
   deleteParticipant(request: ParticipationByIdRequest): Observable<Empty>;
+
+  getUserParticipationByEventId(
+    request: GetParticipantByEventIdRequest,
+  ): Observable<GetUserParticipationByEventIdResponse>;
 }
 
 export interface TicketServiceProtoController {
@@ -177,6 +190,13 @@ export interface TicketServiceProtoController {
   ): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse;
 
   deleteParticipant(request: ParticipationByIdRequest): Promise<Empty> | Observable<Empty> | Empty;
+
+  getUserParticipationByEventId(
+    request: GetParticipantByEventIdRequest,
+  ):
+    | Promise<GetUserParticipationByEventIdResponse>
+    | Observable<GetUserParticipationByEventIdResponse>
+    | GetUserParticipationByEventIdResponse;
 }
 
 export function TicketServiceProtoControllerMethods() {
@@ -194,6 +214,7 @@ export function TicketServiceProtoControllerMethods() {
       "getParticipantById",
       "updateParticipant",
       "deleteParticipant",
+      "getUserParticipationByEventId",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

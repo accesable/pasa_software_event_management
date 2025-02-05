@@ -1,70 +1,53 @@
 import { Controller } from '@nestjs/common';
+import {
+  ReportServiceProtoControllerMethods,
+  ReportServiceProtoController,
+  // import message request/response
+  EventRequest,
+  EventParticipationStatsResponse,
+  ParticipationTimelineResponse,
+  MonthlyStatsRequest,
+  MonthlyParticipationStatsResponse,
+  CheckInOutTimeAnalysisResponse,
+  ParticipationRateResponse,
+} from '../../../libs/common/src/types/report'; 
+// => tuỳ path bạn generate
+
 import { ReportServiceService } from './report-service.service';
-import { Observable } from 'rxjs';
-import { ReportServiceControllerMethods, GetEventRequest, ParticipationRateResponse, CheckInOutTimeAnalysisResponse, AverageParticipationTimeResponse, GetMonthlyParticipationStatsRequest, MonthlyParticipationStatsResponse, GetEventParticipationStatsRequest, EventParticipationStatsResponse, GetParticipantsByEventRequest, ParticipantsResponse } from '../../../libs/common/src/types/report';
 
 @Controller()
-@ReportServiceControllerMethods()
-export class ReportServiceController implements ReportServiceController {
+@ReportServiceProtoControllerMethods() 
+export class ReportServiceController implements ReportServiceProtoController {
   constructor(private readonly reportServiceService: ReportServiceService) {}
 
-  // Lấy thông tin tổng quan về checkin, checkout, số người tham gia, ...
-  getParticipationRate(
-    request: GetEventRequest,
-  ):
-    | ParticipationRateResponse
-    | Promise<ParticipationRateResponse>
-    | Observable<ParticipationRateResponse> {
-    return this.reportServiceService.getParticipationRate(request.eventId);
-  }
-
-  // Phân tích thời gian check in/out trung bình
-  getCheckInOutTimeAnalysis(
-    request: GetEventRequest,
-  ):
-    | CheckInOutTimeAnalysisResponse
-    | Promise<CheckInOutTimeAnalysisResponse>
-    | Observable<CheckInOutTimeAnalysisResponse> {
-    return this.reportServiceService.getCheckInOutTimeAnalysis(request.eventId);
-  }
-
-  // Lấy thời gian tham dự trung bình của user
-  getAverageParticipationTime(
-    request: GetEventRequest,
-  ):
-    | AverageParticipationTimeResponse
-    | Promise<AverageParticipationTimeResponse>
-    | Observable<AverageParticipationTimeResponse> {
-    return this.reportServiceService.getAverageParticipationTime(request.eventId);
-  }
-
-  // Lấy thống kê số lượng người tham gia theo từng tháng trong năm
-  getMonthlyParticipationStats(
-    request: GetMonthlyParticipationStatsRequest,
-  ):
-    | MonthlyParticipationStatsResponse
-    | Promise<MonthlyParticipationStatsResponse>
-    | Observable<MonthlyParticipationStatsResponse> {
-    return this.reportServiceService.getMonthlyParticipationStats(request);
-  }
-
-  // Lấy thông số tổng quát của sự kiện
-  getEventParticipationStats(
-    request: GetEventParticipationStatsRequest,
-  ):
-    | EventParticipationStatsResponse
-    | Promise<EventParticipationStatsResponse>
-    | Observable<EventParticipationStatsResponse> {
+  // 1) GetEventParticipationStats
+  getEventParticipationStats(request: EventRequest): Promise<EventParticipationStatsResponse> {
     return this.reportServiceService.getEventParticipationStats(request.eventId);
   }
 
-  // Lấy danh sách người tham gia cho sự kiện (bao gồm check in/out time)
-  getParticipantsByEvent(
-    request: GetParticipantsByEventRequest,
-  ):
-    | ParticipantsResponse
-    | Promise<ParticipantsResponse>
-    | Observable<ParticipantsResponse> {
-    return this.reportServiceService.getParticipantsByEvent(request.eventId);
+  // 2) GetParticipationTimeline
+  getParticipationTimeline(request: EventRequest): Promise<ParticipationTimelineResponse> {
+    return this.reportServiceService.getParticipationTimeline(request.eventId);
+  }
+
+  // 3) GetMonthlyParticipationStats
+  getMonthlyParticipationStats(
+    request: MonthlyStatsRequest,
+  ): Promise<MonthlyParticipationStatsResponse> {
+    return this.reportServiceService.getMonthlyParticipationStats(request.year);
+  }
+
+  // 4) GetCheckInOutTimeAnalysis
+  getCheckInOutTimeAnalysis(
+    request: EventRequest,
+  ): Promise<CheckInOutTimeAnalysisResponse> {
+    return this.reportServiceService.getCheckInOutTimeAnalysis(request.eventId);
+  }
+
+  // 5) GetParticipationRate
+  getParticipationRate(
+    request: EventRequest,
+  ): Promise<ParticipationRateResponse> {
+    return this.reportServiceService.getParticipationRate(request.eventId);
   }
 }

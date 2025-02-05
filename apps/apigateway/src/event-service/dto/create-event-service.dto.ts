@@ -70,7 +70,7 @@ export class IsScheduleValidConstraint implements ValidatorConstraintInterface {
     validate(schedule: any[], args: ValidationArguments): boolean {
         const eventStartDate = new Date(args.object['startDate']);
         const eventEndDate = new Date(args.object['endDate']);
-
+        
         for (const item of schedule) {
             const startTime = new Date(item.startTime);
             const endTime = new Date(item.endTime);

@@ -2,41 +2,32 @@ syntax = "proto3";
 
 package report;
 
-service ReportService {
-  rpc GetParticipantsByEvent (GetParticipantsByEventRequest) returns (ParticipantsResponse) {}
-  rpc GetEventParticipationStats (GetEventParticipationStatsRequest) returns (EventParticipationStatsResponse) {}
-  rpc GetMonthlyParticipationStats (GetMonthlyParticipationStatsRequest) returns (MonthlyParticipationStatsResponse) {}
-  rpc GetAverageParticipationTime (GetEventRequest) returns (AverageParticipationTimeResponse) {}
-  rpc GetCheckInOutTimeAnalysis (GetEventRequest) returns (CheckInOutTimeAnalysisResponse) {}
-  rpc GetParticipationRate (GetEventRequest) returns (ParticipationRateResponse) {}
+// Service report đơn giản, chỉ 5 hàm
+service ReportServiceProto {
+  // 1) Thống kê số người đã đăng ký, checkin, checkout
+  rpc GetEventParticipationStats (EventRequest) returns (EventParticipationStatsResponse) {}
+
+  // 2) Lấy timeline checkin/checkout theo khung giờ
+  rpc GetParticipationTimeline (EventRequest) returns (ParticipationTimelineResponse) {}
+
+  // 3) Thống kê số lượt tham gia trong từng tháng (cho 1 năm)
+  rpc GetMonthlyParticipationStats (MonthlyStatsRequest) returns (MonthlyParticipationStatsResponse) {}
+
+  // 4) Phân tích thời điểm checkin/checkout trung bình
+  rpc GetCheckInOutTimeAnalysis (EventRequest) returns (CheckInOutTimeAnalysisResponse) {}
+
+  // 5) Tỷ lệ checkin/checkout (theo %) so với tổng
+  rpc GetParticipationRate (EventRequest) returns (ParticipationRateResponse) {}
 }
 
-message GetEventRequest {
+// ------ Request / Response định nghĩa ------
+
+// Dùng chung cho những hàm cần eventId
+message EventRequest {
   string eventId = 1;
 }
 
-message GetParticipantsByEventRequest {
-  string eventId = 1;
-}
-
-message Participant {
-  string id = 1;
-  string eventId = 2;
-  string userId = 3;
-  string email = 4;
-  string name = 5;
-  string checkInAt = 6;
-  string checkOutAt = 7;
-}
-
-message ParticipantsResponse {
-  repeated Participant participants = 1;
-}
-
-message GetEventParticipationStatsRequest {
-  string eventId = 1;
-}
-
+// 1) Đếm participant: registeredCount, checkInCount, checkOutCount
 message EventParticipationStatsResponse {
   string eventId = 1;
   int32 registeredCount = 2;
@@ -44,8 +35,20 @@ message EventParticipationStatsResponse {
   int32 checkOutCount = 4;
 }
 
-message GetMonthlyParticipationStatsRequest {
-  int32 year = 1; // Lấy tham số năm
+// 2) Timeline checkin/checkout
+message ParticipationTimelineResponse {
+  repeated TimelinePoint timeline = 1;
+}
+
+message TimelinePoint {
+  string timeSlot = 1;   // "00:00 - 00:59"
+  int32 checkInCount = 2;
+  int32 checkOutCount = 3;
+}
+
+// 3) Thống kê theo tháng
+message MonthlyStatsRequest {
+  int32 year = 1;
 }
 
 message MonthlyParticipationStatsResponse {
@@ -57,15 +60,13 @@ message MonthlyParticipationStat {
   int32 participantCount = 2;
 }
 
-message AverageParticipationTimeResponse {
-  double averageParticipationTimeInMinutes = 1;
-}
-
+// 4) Phân tích thời gian checkin, checkout trung bình (phút)
 message CheckInOutTimeAnalysisResponse {
-  double averageCheckInTimeInMinutes = 1; // Thời gian check-in trung bình (phút)
-  double averageCheckOutTimeInMinutes = 2; // Thời gian check-out trung bình (phút)
+  double averageCheckInTimeInMinutes = 1;
+  double averageCheckOutTimeInMinutes = 2;
 }
 
+// 5) Tỷ lệ checkIn / checkOut (phần trăm)
 message ParticipationRateResponse {
   double checkInRate = 1;
   double checkOutRate = 2;

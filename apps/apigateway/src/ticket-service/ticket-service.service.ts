@@ -33,7 +33,10 @@ export class TicketServiceService {
         try {
             const res = await this.eventService.isExistEvent(request.eventId);
             if (!res.isExist) {
-                throw new NotFoundException('Event not found');
+                throw new RpcException({
+                    message: 'Event not found',
+                    code: HttpStatus.NOT_FOUND,
+                });
             }
             return await this.ticketService.updateParticipant(request).toPromise();
         } catch (error) {

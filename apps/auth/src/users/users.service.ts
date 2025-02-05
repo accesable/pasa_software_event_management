@@ -107,7 +107,7 @@ export class UsersService {
       const user = await this.userModel.create({ ...registerDto, password: hashedPassword });
       const userResponse = this.transformUserDataResponse(user);
       // bật lên khi cần gửi thông báo
-      // this.rabbitNotification.emit('user_registered', { email: user.email, name: user.name });
+      this.rabbitNotification.emit('user_registered', { email: user.email, name: user.name });
       return { user: userResponse };
     } catch (error) {
       throw handleRpcException(error, 'Error during registration');

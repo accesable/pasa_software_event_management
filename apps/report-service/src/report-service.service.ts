@@ -1,216 +1,215 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
-import { EVENT_SERVICE, TICKET_SERVICE } from '../../apigateway/src/constants/service.constant';
-import {
-  EventServiceClient,
-  EVENT_SERVICE_NAME,
-} from '../../../libs/common/src/types/event';
 import { lastValueFrom } from 'rxjs';
+import moment from 'moment';
+
 import {
-  TicketServiceProtoClient,
+  // Proto messages
+  EventParticipationStatsResponse,
+  MonthlyParticipationStatsResponse,
+  MonthlyParticipationStat,
+  ParticipationTimelineResponse,
+  TimelinePoint,
+  CheckInOutTimeAnalysisResponse,
+  ParticipationRateResponse,
+} from '../../../libs/common/src/types/report';
+
+import {
   TICKET_SERVICE_PROTO_SERVICE_NAME,
+  TicketServiceProtoClient,
+  // getAllTicket => AllTicketResponse { tickets: [], meta }
+  // getParticipantByEventId => { participants: [...] }
 } from '../../../libs/common/src/types/ticket';
-import { ParticipationRateResponse, ParticipantsResponse, GetEventRequest, AverageParticipationTimeResponse, CheckInOutTimeAnalysisResponse, EventParticipationStatsResponse, GetMonthlyParticipationStatsRequest, MonthlyParticipationStatsResponse } from '../../../libs/common/src/types/report';
+
+import { EVENT_SERVICE, TICKET_SERVICE } from '../../apigateway/src/constants/service.constant';
+import { handleRpcException } from '../../../libs/common/src/filters/handleException';
 
 @Injectable()
 export class ReportServiceService implements OnModuleInit {
-  private eventService: EventServiceClient;
   private ticketService: TicketServiceProtoClient;
+
   constructor(
-    @Inject(EVENT_SERVICE) private readonly eventServiceClient: ClientGrpc,
-    @Inject(TICKET_SERVICE)
-    private readonly ticketServiceClient: ClientGrpc,
+    @Inject(TICKET_SERVICE) private readonly ticketServiceClient: ClientGrpc,
   ) {}
 
   onModuleInit() {
-    this.eventService =
-      this.eventServiceClient.getService<EventServiceClient>(EVENT_SERVICE_NAME);
     this.ticketService = this.ticketServiceClient.getService<TicketServiceProtoClient>(
       TICKET_SERVICE_PROTO_SERVICE_NAME,
     );
   }
 
-  // Lấy thông tin tổng quan về checkin, checkout, số người tham gia, ...
-  async getParticipationRate(
-    eventId: string,
-  ): Promise<ParticipationRateResponse> {
-    const participations = await this.getParticipantsByEvent(eventId);
+  // 1) Thống kê số participant
+  async getEventParticipationStats(eventId: string): Promise<EventParticipationStatsResponse> {
+    try {
+      const res = await lastValueFrom(
+        this.ticketService.getParticipantByEventId({ eventId }),
+      );
+      // res?.participants => mảng participant
+      const participants = res?.participants || [];
+      const registeredCount = participants.length;
+      const checkInCount = participants.filter((p) => p.checkInAt).length;
+      const checkOutCount = participants.filter((p) => p.checkOutAt).length;
 
-    if (participations.participants.length === 0) {
-      return { checkInRate: 0, checkOutRate: 0 };
+      return {
+        eventId,
+        registeredCount,
+        checkInCount,
+        checkOutCount,
+      };
+    } catch (error) {
+      throw handleRpcException(error, 'Fail getEventParticipationStats');
     }
-
-    const checkInCount = participations.participants.filter(
-      (p) => p.checkInAt !== null,
-    ).length;
-    const checkOutCount = participations.participants.filter(
-      (p) => p.checkOutAt !== null,
-    ).length;
-
-    const checkInRate =
-      (checkInCount / participations.participants.length) * 100;
-    const checkOutRate =
-      (checkOutCount / participations.participants.length) * 100;
-
-    return {
-      checkInRate,
-      checkOutRate,
-    };
   }
 
-  // Lấy danh sách người tham gia cho sự kiện (bao gồm check in/out time)
-  async getParticipantsByEvent(eventId: string): Promise<ParticipantsResponse> {
-    const participants = await lastValueFrom(
-      this.ticketService.getParticipantByEventId({ eventId: eventId }),
-    );
-    return {
-      participants: participants.participants.map((participant) => ({
-        id: participant.id,
-        eventId: participant.eventId,
-        userId: participant.userId,
-        email: participant.email,
-        name: participant.name,
-        checkInAt: participant.checkInAt
-          ? {
-              seconds: Math.floor(
-                new Date(participant.checkInAt).getTime() / 1000,
-              ),
-              nanos: 0,
-            }
-          : null,
-        checkOutAt: participant.checkOutAt
-          ? {
-              seconds: Math.floor(
-                new Date(participant.checkOutAt).getTime() / 1000,
-              ),
-              nanos: 0,
-            }
-          : null,
-      })),
-    };
+  // 2) Lấy timeline checkin/checkout (theo giờ)
+  async getParticipationTimeline(eventId: string): Promise<ParticipationTimelineResponse> {
+    try {
+      const res = await lastValueFrom(
+        this.ticketService.getParticipantByEventId({ eventId }),
+      );
+      const participants = res?.participants || [];
+
+      // map[ "00:00 - 00:59" ] = {in: 0, out: 0}
+      const timelineMap = new Map<string, { in: number; out: number }>();
+      for (let h = 0; h < 24; h++) {
+        timelineMap.set(this.buildHourSlot(h), { in: 0, out: 0 });
+      }
+
+      participants.forEach((p) => {
+        if (p.checkInAt) {
+          const hourIn = moment(p.checkInAt).hour();
+          const slotIn = this.buildHourSlot(hourIn);
+          const curIn = timelineMap.get(slotIn);
+          if (curIn) {
+            curIn.in++;
+            timelineMap.set(slotIn, curIn);
+          }
+        }
+        if (p.checkOutAt) {
+          const hourOut = moment(p.checkOutAt).hour();
+          const slotOut = this.buildHourSlot(hourOut);
+          const curOut = timelineMap.get(slotOut);
+          if (curOut) {
+            curOut.out++;
+            timelineMap.set(slotOut, curOut);
+          }
+        }
+      });
+
+      // Convert map => array
+      const timeline: TimelinePoint[] = [];
+      for (const [timeSlot, data] of timelineMap.entries()) {
+        timeline.push({
+          timeSlot,
+          checkInCount: data.in,
+          checkOutCount: data.out,
+        });
+      }
+      // sort theo timeSlot "00:00 - 00:59" => "01:00 - 01:59" ...
+      timeline.sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
+
+      return { timeline };
+    } catch (error) {
+      throw handleRpcException(error, 'Fail getParticipationTimeline');
+    }
   }
 
-  // Lấy thời gian tham dự trung bình của user
-  async getAverageParticipationTime(
-    request: GetEventRequest,
-  ): Promise<AverageParticipationTimeResponse> {
-    const { eventId } = request;
-    const participants = await this.getParticipantsByEvent(eventId);
+  private buildHourSlot(hour: number): string {
+    const hh = hour.toString().padStart(2, '0');
+    return `${hh}:00 - ${hh}:59`;
+  }
 
-    let totalParticipationTimeInSeconds = 0;
-    let participatedCount = 0;
+  // 3) Thống kê số participant từng tháng
+  async getMonthlyParticipationStats(year: number): Promise<MonthlyParticipationStatsResponse> {
+    try {
+      const monthlyStats: MonthlyParticipationStat[] = [];
 
-    for (const participant of participants.participants) {
-      if (participant.checkInAt && participant.checkOutAt) {
-        const checkInTime = new Date(participant.checkInAt.seconds * 1000);
-        const checkOutTime = new Date(participant.checkOutAt.seconds * 1000);
-        const participationTimeInSeconds =
-          (checkOutTime.getTime() - checkInTime.getTime()) / 1000;
-        if (participationTimeInSeconds >= 0) {
-          totalParticipationTimeInSeconds += participationTimeInSeconds;
-          participatedCount++;
+      for (let month = 1; month <= 12; month++) {
+        // Giả lập filter theo createdAt ~ [start, end]
+        // Tùy logic, code gốc ticket-service hay parse "request.query"
+        // => Tại đây ta gắn "from=..., to=..." 
+        const start = moment.utc({ year, month: month - 1 }).startOf('month');
+        const end = moment(start).endOf('month');
+
+        const allTickets = await lastValueFrom(
+          this.ticketService.getAllTicket({
+            query: {
+              from: start.toISOString(),
+              to: end.toISOString(),
+              // ... tuỳ code parse filter ...
+            },
+          }),
+        );
+        // allTickets?.tickets => mảng ticket
+        const tickets = allTickets?.tickets || [];
+        const participantCount = tickets.length; 
+        // (hoặc) => sum checkIn ?
+
+        monthlyStats.push({
+          month,
+          participantCount,
+        });
+      }
+
+      return { monthlyStats };
+    } catch (error) {
+      throw handleRpcException(error, 'Fail getMonthlyParticipationStats');
+    }
+  }
+
+  // 4) Phân tích thời điểm check in/out trung bình
+  async getCheckInOutTimeAnalysis(eventId: string): Promise<CheckInOutTimeAnalysisResponse> {
+    try {
+      const res = await lastValueFrom(
+        this.ticketService.getParticipantByEventId({ eventId }),
+      );
+      const participants = res?.participants || [];
+
+      let sumCheckIn = 0, cIn = 0;
+      let sumCheckOut = 0, cOut = 0;
+
+      for (const p of participants) {
+        if (p.checkInAt) {
+          sumCheckIn += new Date(p.checkInAt).getTime();
+          cIn++;
+        }
+        if (p.checkOutAt) {
+          sumCheckOut += new Date(p.checkOutAt).getTime();
+          cOut++;
         }
       }
+      // Tính trung bình -> đổi ms -> phút
+      const averageCheckInTimeInMinutes = cIn > 0 ? (sumCheckIn / cIn) / 60000 : 0;
+      const averageCheckOutTimeInMinutes = cOut > 0 ? (sumCheckOut / cOut) / 60000 : 0;
+
+      return { averageCheckInTimeInMinutes, averageCheckOutTimeInMinutes };
+    } catch (error) {
+      throw handleRpcException(error, 'Fail getCheckInOutTimeAnalysis');
     }
-
-    const averageParticipationTimeInMinutes =
-      participatedCount > 0
-        ? totalParticipationTimeInSeconds / participatedCount / 60
-        : 0;
-
-    return { averageParticipationTimeInMinutes };
   }
 
-  // Phân tích thời gian check in/out trung bình
-  async getCheckInOutTimeAnalysis(
-    request: GetEventRequest,
-  ): Promise<CheckInOutTimeAnalysisResponse> {
-    const { eventId } = request;
-    const participants = await this.getParticipantsByEvent(eventId);
-
-    if (participants.participants.length === 0) {
-      return {
-        averageCheckInTimeInMinutes: 0,
-        averageCheckOutTimeInMinutes: 0,
-      };
-    }
-
-    let totalCheckInTime = 0;
-    let totalCheckOutTime = 0;
-    let checkInCount = 0;
-    let checkOutCount = 0;
-
-    for (const participant of participants.participants) {
-      if (participant.checkInAt) {
-        totalCheckInTime += participant.checkInAt.seconds;
-        checkInCount++;
-      }
-      if (participant.checkOutAt) {
-        totalCheckOutTime += participant.checkOutAt.seconds;
-        checkOutCount++;
-      }
-    }
-
-    const averageCheckInTimeInMinutes =
-      checkInCount > 0 ? totalCheckInTime / checkInCount / 60 : 0;
-    const averageCheckOutTimeInMinutes =
-      checkOutCount > 0 ? totalCheckOutTime / checkOutCount / 60 : 0;
-
-    return {
-      averageCheckInTimeInMinutes,
-      averageCheckOutTimeInMinutes,
-    };
-  }
-
-  // Lấy thông số tổng quát của sự kiện
-  async getEventParticipationStats(
-    eventId: string,
-  ): Promise<EventParticipationStatsResponse> {
-    const participants = await this.getParticipantsByEvent(eventId);
-    const registeredCount = participants.participants.length;
-    const checkInCount = participants.participants.filter(
-      (p) => p.checkInAt !== null && p.checkInAt !== undefined,
-    ).length;
-    const checkOutCount = participants.participants.filter(
-      (p) => p.checkOutAt !== null && p.checkOutAt !== undefined,
-    ).length;
-
-    return {
-      eventId,
-      registeredCount,
-      checkInCount,
-      checkOutCount,
-    };
-  }
-
-  // Lấy thống kê số lượng người tham gia theo từng tháng trong năm
-  async getMonthlyParticipationStats(
-    request: GetMonthlyParticipationStatsRequest,
-  ): Promise<MonthlyParticipationStatsResponse> {
-    const { year } = request;
-    const monthlyStats: { month: number; participantCount: number }[] = [];
-
-    for (let month = 1; month <= 12; month++) {
-      const startDate = new Date(year, month - 1, 1); // First day of the month
-      const endDate = new Date(year, month, 0); // Last day of the month
-
-      const startDateISO = startDate.toISOString();
-      const endDateISO = endDate.toISOString();
-      const result = await lastValueFrom(
-        this.ticketService.getAllTicket({
-          query: {
-            createdAt: {
-              $gte: startDateISO,
-              $lt: endDateISO,
-            },
-          },
-        }),
+  // 5) Tỷ lệ checkIn / checkOut (theo %)
+  async getParticipationRate(eventId: string): Promise<ParticipationRateResponse> {
+    try {
+      const res = await lastValueFrom(
+        this.ticketService.getParticipantByEventId({ eventId }),
       );
-      const participantCount = result.tickets.length;
+      const participants = res?.participants || [];
+      const total = participants.length;
 
-      monthlyStats.push({ month, participantCount });
+      if (total === 0) {
+        return { checkInRate: 0, checkOutRate: 0 };
+      }
+
+      const checkInCount = participants.filter((p) => p.checkInAt).length;
+      const checkOutCount = participants.filter((p) => p.checkOutAt).length;
+
+      return {
+        checkInRate: (checkInCount / total) * 100,
+        checkOutRate: (checkOutCount / total) * 100,
+      };
+    } catch (error) {
+      throw handleRpcException(error, 'Fail getParticipationRate');
     }
-
-    return { monthlyStats };
   }
 }

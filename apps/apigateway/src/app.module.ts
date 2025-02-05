@@ -10,6 +10,7 @@ import { NotificationModule } from './notification/notification.module';
 import { TicketServiceModule } from './ticket-service/ticket-service.module';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { RedisCacheService } from './redis/redis.service';
+import { ReportServiceModule } from './report-service/report-service.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { RedisCacheService } from './redis/redis.service';
     NotificationModule,
     RedisModule,
     TicketServiceModule,
+    ReportServiceModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: 'apps/apigateway/.env.example',
