@@ -1,6 +1,6 @@
+import React, { useState } from 'react';
 import {
   Button,
-  Checkbox,
   Col,
   Divider,
   Flex,
@@ -20,17 +20,15 @@ import { Logo } from '../../components';
 import { useMediaQuery } from 'react-responsive';
 import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import authService from '../../services/authService'; // Import service
 
 const { Title, Text, Link } = Typography;
 
 type FieldType = {
-  firstName?: string;
-  lastName?: string;
+  name?: string;
   email?: string;
   password?: string;
-  cPassword?: string;
-  terms?: boolean;
+  remember?: boolean;
 };
 
 export const SignUpPage = () => {
@@ -41,18 +39,22 @@ export const SignUpPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = (values: any) => {
-    console.log('Success:', values);
+  const onFinish = async (values: FieldType) => {
     setLoading(true);
+    try {
+      const response = await authService.register(values);
+      console.log('Registration successful:', response);
 
-    message.open({
-      type: 'success',
-      content: 'Account signup successful',
-    });
-
-    setTimeout(() => {
-      navigate(PATH_DASHBOARD.default);
-    }, 5000);
+      message.success('Registration successful, please login.');
+      setTimeout(() => {
+        navigate(PATH_AUTH.signin);
+      }, 1000); // chuyển hướng đến trang đăng nhập sau 1s
+    } catch (error: any) {
+      console.error('Registration failed:', error);
+      message.error(error.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onFinishFailed = (errorInfo: any) => {
@@ -106,7 +108,7 @@ export const SignUpPage = () => {
           <Form
             name="sign-up-form"
             layout="vertical"
-            labelCol={{ span: 8 }}
+            labelCol={{ span: 24 }}
             wrapperCol={{ span: 24 }}
             initialValues={{ remember: true }}
             onFinish={onFinish}
@@ -115,26 +117,15 @@ export const SignUpPage = () => {
             requiredMark={false}
           >
             <Row gutter={[8, 0]}>
-              <Col xs={24} lg={12}>
+              <Col xs={24}>
                 <Form.Item<FieldType>
-                  label="First name"
-                  name="firstName"
+                  label="User name"
+                  name="name"
                   rules={[
                     {
                       required: true,
-                      message: 'Please input your first name!',
+                      message: 'Please input your name!',
                     },
-                  ]}
-                >
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col xs={24} lg={12}>
-                <Form.Item<FieldType>
-                  label="Last name"
-                  name="lastName"
-                  rules={[
-                    { required: true, message: 'Please input your last name!' },
                   ]}
                 >
                   <Input />
@@ -160,28 +151,6 @@ export const SignUpPage = () => {
                   ]}
                 >
                   <Input.Password />
-                </Form.Item>
-              </Col>
-              <Col xs={24}>
-                <Form.Item<FieldType>
-                  label="Confirm password"
-                  name="cPassword"
-                  rules={[
-                    {
-                      required: true,
-                      message: 'Please ensure passwords match!',
-                    },
-                  ]}
-                >
-                  <Input.Password />
-                </Form.Item>
-              </Col>
-              <Col xs={24}>
-                <Form.Item<FieldType> name="terms" valuePropName="checked">
-                  <Flex>
-                    <Checkbox>I agree to</Checkbox>
-                    <Link>terms and conditions</Link>
-                  </Flex>
                 </Form.Item>
               </Col>
             </Row>

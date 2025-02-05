@@ -1,3 +1,4 @@
+// src/pages/authentication/PasswordReset.tsx
 import {
   Button,
   Col,
@@ -14,6 +15,7 @@ import { useMediaQuery } from 'react-responsive';
 import { PATH_DASHBOARD } from '../../constants';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import axios from 'axios';
 
 const { Title, Text } = Typography;
 
@@ -29,22 +31,23 @@ export const PasswordResetPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = (values: any) => {
-    console.log('Success:', values);
+  const onFinish = async (values: any) => {
     setLoading(true);
+    try {
+      const response = await axios.post('/api/v1/auth/forgot-password', values);
+      const data = response.data as { message: string };
+      message.success(data.message);
+      setTimeout(() => {
+        navigate(PATH_DASHBOARD.default);
+      }, 5000);
 
-    message.open({
-      type: 'success',
-      content: 'Password reset link sent successfully',
-    });
-
-    setTimeout(() => {
-      navigate(PATH_DASHBOARD.default);
-    }, 5000);
-  };
-
-  const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
+    } catch (error) {
+      // message.error(error.response.data.message);
+      message.error("Password reset failed!");
+    }
+    finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -84,7 +87,6 @@ export const PasswordResetPage = () => {
             wrapperCol={{ span: 24 }}
             initialValues={{ remember: true }}
             onFinish={onFinish}
-            onFinishFailed={onFinishFailed}
             autoComplete="off"
             requiredMark={false}
             style={{ width: '100%' }}
@@ -92,7 +94,9 @@ export const PasswordResetPage = () => {
             <Form.Item<FieldType>
               label="Email"
               name="email"
-              rules={[{ required: true, message: 'Please input your email' }]}
+              rules={[{ required: true, message: 'Please input your email' },
+              { type: 'email', message: 'Please enter a valid email' },
+              ]}
             >
               <Input />
             </Form.Item>

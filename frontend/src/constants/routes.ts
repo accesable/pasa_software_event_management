@@ -42,7 +42,7 @@ export const PATH_DASHBOARD = {
   bidding: path(ROOTS_DASHBOARD, '/bidding'),
   learning: path(ROOTS_DASHBOARD, '/learning'),
   logistics: path(ROOTS_DASHBOARD, '/logistics'),
-  events : path(ROOTS_DASHBOARD, '/events'),
+  events : path(ROOTS_DASHBOARD, '/events-list'),
   my_events : path(ROOTS_DASHBOARD, '/my-events'),
   users : path(ROOTS_DASHBOARD, '/users'),
 };

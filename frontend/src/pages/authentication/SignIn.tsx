@@ -1,6 +1,6 @@
+import React, { useState } from 'react';
 import {
   Button,
-  Checkbox,
   Col,
   Divider,
   Flex,
@@ -16,18 +16,18 @@ import {
   GoogleOutlined,
   TwitterOutlined,
 } from '@ant-design/icons';
-import { Logo } from '../../components';
 import { useMediaQuery } from 'react-responsive';
 import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import authService from '../../services/authService'; // Import service
+import { useDispatch } from 'react-redux';
+import { setUser } from '../../redux/userSlice';
 
 const { Title, Text, Link } = Typography;
 
 type FieldType = {
   email?: string;
   password?: string;
-  remember?: boolean;
 };
 
 export const SignInPage = () => {
@@ -37,22 +37,78 @@ export const SignInPage = () => {
   const isMobile = useMediaQuery({ maxWidth: 769 });
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
 
-  const onFinish = (values: any) => {
-    console.log('Success:', values);
+  // Xử lý login bằng email + password
+  const onFinish = async (values: FieldType) => {
     setLoading(true);
-    // TODO: make post request here
-    message.open({
-      type: 'success',
-      content: 'Login successful',
-    });
-    setTimeout(() => {
-      navigate(PATH_DASHBOARD.default);
-    }, 5000);
+    try {
+      const response = await authService.login(values) as unknown as {
+        statusCode: number,
+        message: string,
+        data: {
+          accessToken: string,
+          user: any
+        }
+      };
+
+      if (response.statusCode === 200) {
+        message.success(response.message);
+
+        // Lưu token vào localStorage
+        localStorage.setItem('accessToken', response.data.accessToken);
+
+        // Lưu thông tin người dùng vào localStorage
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+
+        // dispatch action để lưu vào Redux store
+        dispatch(setUser(response.data.user));
+
+        setTimeout(() => {
+          navigate(PATH_DASHBOARD.default);
+        }, 1000);
+      } else {
+        message.error(response.message || 'Login failed');
+      }
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      message.error(error.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onFinishFailed = (errorInfo: any) => {
     console.log('Failed:', errorInfo);
+  };
+
+  // Xử lý login bằng Google
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      /** 
+       * Ở đây ta mong muốn server trả về: 
+       * { statusCode: 200, data: { url: "https://accounts.google.com/..." } } 
+       * => ta redirect sang Google
+       */
+      const response = await authService.googleLogin() as unknown as {
+        statusCode: number,
+        message: string,
+        data: { url: string }
+      };
+
+      if (response.statusCode === 200) {
+        // Redirect người dùng sang link Google:
+        window.location.href = response.data.url;
+      } else {
+        message.error(response.message || 'Google Login failed');
+      }
+    } catch (error: any) {
+      console.error('Google Login failed:', error);
+      message.error(error.message || 'Google Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,7 +121,6 @@ export const SignInPage = () => {
           className="text-center"
           style={{ background: colorPrimary, height: '100%', padding: '1rem' }}
         >
-          {/* <Logo color="white" /> */}
           <Title level={2} className="text-white">
             Welcome back to Event Management
           </Title>
@@ -88,15 +143,11 @@ export const SignInPage = () => {
             <Link href={PATH_AUTH.signup}>Create an account here</Link>
           </Flex>
           <Form
-            name="sign-up-form"
+            name="sign-in-form"
             layout="vertical"
             labelCol={{ span: 24 }}
             wrapperCol={{ span: 24 }}
-            initialValues={{
-              email: 'demo@email.com',
-              password: 'demo123',
-              remember: true,
-            }}
+            initialValues={{}}
             onFinish={onFinish}
             onFinishFailed={onFinishFailed}
             autoComplete="off"
@@ -125,11 +176,6 @@ export const SignInPage = () => {
                   <Input.Password />
                 </Form.Item>
               </Col>
-              <Col xs={24}>
-                <Form.Item<FieldType> name="remember" valuePropName="checked">
-                  <Checkbox>Remember me</Checkbox>
-                </Form.Item>
-              </Col>
             </Row>
             <Form.Item>
               <Flex align="center" justify="space-between">
@@ -152,9 +198,14 @@ export const SignInPage = () => {
             wrap="wrap"
             style={{ width: '100%' }}
           >
-            <Button icon={<GoogleOutlined />}>Sign in with Google</Button>
-            {/* <Button icon={<FacebookFilled />}>Sign in with Facebook</Button>
-            <Button icon={<TwitterOutlined />}>Sign in with Twitter</Button> */}
+            <Button
+              icon={<GoogleOutlined />}
+              onClick={handleGoogleLogin}
+              loading={loading}
+            >
+              Sign in with Google
+            </Button>
+            {/* Nếu cần, thêm Facebook, Twitter... */}
           </Flex>
         </Flex>
       </Col>

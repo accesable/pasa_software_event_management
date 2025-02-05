@@ -35,10 +35,12 @@ import SideNav from './SideNav.tsx';
 import HeaderNav from './HeaderNav.tsx';
 import FooterNav from './FooterNav.tsx';
 import { NProgress } from '../../components';
-import { PATH_LANDING } from '../../constants';
+import { PATH_LANDING, PATH_AUTH } from '../../constants';
 import { useSelector, useDispatch } from 'react-redux';
 import { toggleTheme } from '../../redux/theme/themeSlice.ts';
 import { RootState } from '../../redux/store.ts';
+import authService from '../../services/authService'; // Import service
+import { clearUser } from '../../redux/userSlice.tsx';
 const { Content } = Layout;
 
 type AppLayoutProps = {
@@ -59,6 +61,33 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const floatBtnRef = useRef(null);
   const dispatch = useDispatch();
   const { mytheme } = useSelector((state: RootState) => state.theme);
+  const user = useSelector((state: RootState) => state.user);
+//
+    const handleLogout = async () => {
+        message.open({
+            type: 'loading',
+            content: 'Signing you out',
+        });
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) return navigate(PATH_AUTH.signin);
+            await authService.logout(accessToken);
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('user');
+            dispatch(clearUser());
+    
+            setTimeout(() => {
+              navigate(PATH_AUTH.signin);
+              message.success('Logout successful');
+            }, 1000);
+          } catch (error: any) {
+            setTimeout(() => {
+              navigate(PATH_AUTH.signin);
+              message.success('Logout successful');
+            }, 1000);
+          }
+    };
+
   const items: MenuProps['items'] = [
     {
       key: 'user-profile-link',
@@ -83,16 +112,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       label: 'logout',
       icon: <LogoutOutlined />,
       danger: true,
-      onClick: () => {
-        message.open({
-          type: 'loading',
-          content: 'signing you out',
-        });
-
-        setTimeout(() => {
-          navigate(PATH_LANDING.root);
-        }, 1000);
-      },
+      onClick: handleLogout
     },
   ];
 
@@ -202,7 +222,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               <Dropdown menu={{ items }} trigger={['click']}>
                 <Flex>
                   <img
-                    src="/me.jpg"
+                    src={user?.avatar || "/me.jpg"}
                     alt="user profile photo"
                     height={36}
                     width={36}
@@ -215,7 +235,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           <Content
             style={{
               margin: `0 0 0 ${collapsed ? 0 : '200px'}`,
-              // background: '#ebedf0',
+              // background: 'none',
               borderRadius: collapsed ? 0 : borderRadius,
               transition: 'all .25s',
               padding: '24px 32px',

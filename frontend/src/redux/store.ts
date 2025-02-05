@@ -1,38 +1,29 @@
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import themeReducer, { ThemeState } from './theme/themeSlice';
-import { persistReducer, persistStore, PersistConfig } from 'redux-persist';
+// src/redux/store.ts
+import { configureStore } from '@reduxjs/toolkit';
+import themeReducer from './theme/themeSlice';
+import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
+import userReducer from './userSlice';  // Import userReducer, update import path
 
-// Define the state shape
-interface RootState {
-  theme: ThemeState;
-}
-
-// Combine reducers
-const rootReducer = combineReducers({
-  theme: themeReducer,
-});
-
-// Persist config with RootState
-const persistConfig: PersistConfig<RootState> = {
+const persistConfig = {
   key: 'root',
   storage,
-  version: 1,
+  blacklist: ['user'],
 };
 
-const persistedReducer = persistReducer(persistConfig, rootReducer);
+const persistedThemeReducer = persistReducer(persistConfig, themeReducer);
 
-// Configure store with persisted reducer
 export const store = configureStore({
-  reducer: persistedReducer,
+  reducer: {
+    theme: persistedThemeReducer,
+    user: userReducer,
+  },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false,
     }),
 });
 
-// Persistor
 export const persistor = persistStore(store);
-
-// Type for RootState
-export type { RootState };
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
