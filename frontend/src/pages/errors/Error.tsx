@@ -1,3 +1,4 @@
+// src\pages\errors\Error.tsx
 import { useRouteError } from 'react-router-dom';
 import { Result, Typography } from 'antd';
 import { BackBtn, RefreshBtn } from '../../components';
@@ -15,7 +16,7 @@ export const ErrorPage = () => {
       status="error"
       title="Oops!"
       subTitle="Sorry, an unexpected error has occurred."
-      extra={[<BackBtn type="primary" />, <RefreshBtn />]}
+      extra={[<BackBtn key="back-btn" type="primary" />, <RefreshBtn key="refresh-btn" />]} // Added key props here
     >
       <div className="desc">
         <Paragraph>

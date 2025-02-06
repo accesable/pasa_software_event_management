@@ -1,63 +1,54 @@
+// src\components\dashboard\events\MyEventTable.tsx
 import {
-    Badge,
-    BadgeProps,
-    Button,
-    Space,
-    Table,
-    TableProps,
-    Tag,
-    TagProps,
-    Typography,
-  } from 'antd';
-import { Events } from '../../../types';  
+  Badge,
+  BadgeProps,
+  Button,
+  Popconfirm,
+  Space,
+  Table,
+  TableProps,
+  Tag,
+  TagProps,
+  Typography,
+  message,
+} from 'antd';
 import { useNavigate } from 'react-router-dom';
-  const COLUMNS = (navigate: ReturnType<typeof useNavigate>) => [
+import { useState } from 'react';
+import authService from '../../../services/authService';
+import { Events } from '../../../types';
+import { ColumnsType } from 'antd/es/table';
+
+type Props = {
+  data: Events[];
+  loading: boolean;
+  fetchData: () => void;
+  activeTabKey: string;
+} & TableProps<Events>;
+
+export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...others }: Props) => {
+  const navigate = useNavigate();
+  const [tableLoading, setTableLoading] = useState(false);
+
+  const COLUMNS = (navigate: ReturnType<typeof useNavigate>, setLoading: (loading: boolean) => void, fetchData: () => void, activeTabKey: string): ColumnsType<Events> => [
     {
       title: 'Name',
-      dataIndex: 'event_name',
+      dataIndex: 'name',
       key: 'proj_name',
-      render: (_: any, { event_name }: Events) => (
+      render: (_: any, record: Events) => (
         <Typography.Paragraph
           ellipsis={{ rows: 1 }}
           className="text-capitalize"
           style={{ marginBottom: 0 }}
         >
-          {event_name.substring(0, 20)}
+          {record.name?.substring(0, 20)}
         </Typography.Paragraph>
       ),
     },
-    // {
-    //   title: 'Client',
-    //   dataIndex: 'client_name',
-    //   key: 'proj_client_name',
-    // },
     {
       title: 'Category',
-      dataIndex: 'event_category',
+      dataIndex: 'categoryId',
       key: 'event_category',
       render: (_: any) => <span className="text-capitalize">{_}</span>,
-    },
-    {
-      title: 'Priority',
-      dataIndex: 'priority',
-      key: 'event_priority',
-      render: (_: any) => {
-        let color: TagProps['color'];
-  
-        if (_ === 'low') {
-          color = 'cyan';
-        } else if (_ === 'medium') {
-          color = 'geekblue';
-        } else {
-          color = 'magenta';
-        }
-  
-        return (
-          <Tag color={color} className="text-capitalize">
-            {_}
-          </Tag>
-        );
-      },
     },
     {
       title: 'Status',
@@ -65,68 +56,104 @@ import { useNavigate } from 'react-router-dom';
       key: 'proj_status',
       render: (_: any) => {
         let status: BadgeProps['status'];
-  
-        if (_ === 'Scheduled') {
+
+        if (_ === 'SCHEDULED') {
           status = 'default';
-        } else if (_ === 'Completed') {
+        } else if (_ === 'FINISHED') {
           status = 'success';
-        } else if (_ === "Postponed") {
+        } else if (_ === "CANCELED") {
           status = 'error';
         } else {
-            status = 'processing'
+          status = 'processing'
         }
-  
+
         return <Badge status={status} text={_} className="text-capitalize" />;
       },
     },
     {
       title: 'Capacity',
-      dataIndex: 'capacity',
+      dataIndex: 'maxParticipants',
       key: 'event_capacity',
     },
     {
       title: 'Start Date',
-      dataIndex: 'start_date',
+      dataIndex: 'startDate',
       key: 'event_start_date',
     },
     {
       title: 'End Date',
-      dataIndex: 'end_date',
+      dataIndex: 'endDate',
       key: 'event_end_date',
     },
     {
       title: 'Actions',
-      dataIndex: 'event_id',
+      dataIndex: 'id',
       key: 'event_actions',
-      render: (_: any, { event_id }: Events) => (
-        <Space size="small">
-          <Button type="primary" onClick={() => navigate(`/details/my-events/${event_id}`)}>
-            Details
-          </Button>
-          {/* <Button type="primary" onClick={() => navigate(`/edit/events/${event_id}`)}>
-            Edit
-          </Button>
-          <Button type="primary" danger onClick={() => navigate(`/delete/events/${event_id}`)}>
-            Delete
-          </Button> */}
-        </Space>
-      )
+      render: (eventId: string, record: Events) => {
+        return (
+          <Space size="small">
+            <Button type="primary" onClick={() => navigate(`/details/events/${record.id}`)}> {/* Đã sửa URL navigate */}
+              Details
+            </Button>
+            {activeTabKey !== 'CANCELED' && activeTabKey !== 'FINISHED' && (
+              <Button type="primary" onClick={() => navigate(`/edit/events/${record.id}`)}>
+                Update
+              </Button>
+            )}
+            {activeTabKey !== 'CANCELED' && activeTabKey !== 'FINISHED' && (
+              <Popconfirm
+                title="Cancel Event"
+                description="Are you sure to cancel this event?"
+                onConfirm={() => handleCancel(eventId, setTableLoading, fetchData)}
+                onCancel={() => message.info('Cancel cancel')}
+                okText="Yes, Cancel"
+                cancelText="No"
+                placement="topRight" // Thử thay đổi placement
+                overlayInnerStyle={{ width: 300 }} // Thử set width
+              >
+                <Button danger>
+                  Cancel
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
-  
-  type Props = {
-    data: Events[];
-  } & TableProps<any>;
-  
-  export const MyEventsTable = ({ data, ...others }: Props) => {
-    const navigate = useNavigate();
-    return (
-      <Table
-        dataSource={data}
-        columns={COLUMNS(navigate)}
-        className="overflow-scroll"
-        {...others}
-      />
-    );
+
+  const handleCancel = async (eventId: string, setLoading: (loading: boolean) => void, fetchData: () => void) => {
+    setLoading(true);
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error("No access token found. Please login again.");
+        return;
+      }
+
+      const response = await authService.deleteEvent(eventId, accessToken) as { statusCode: number, message: string };
+      if (response.statusCode === 200) {
+        message.success(response.message);
+        fetchData();
+      } else {
+        message.error(response.message || 'Failed to cancel event');
+      }
+    } catch (error: any) {
+      console.error('Error canceling event:', error);
+      message.error(error.message || 'Failed to cancel event');
+    } finally {
+      setLoading(false);
+    }
   };
-  
+
+  return (
+    <Table
+      rowKey="id"
+      dataSource={data}
+      columns={COLUMNS(navigate, setTableLoading, fetchData, activeTabKey)}
+      className="overflow-scroll"
+      loading={loading || tableLoading}
+      {...others}
+    />
+  );
+};

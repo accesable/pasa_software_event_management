@@ -1,3 +1,4 @@
+// src\pages\authentication\SignIn.tsx
 import React, { useState } from 'react';
 import {
   Button,
@@ -19,7 +20,7 @@ import {
 import { useMediaQuery } from 'react-responsive';
 import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
 import { useNavigate } from 'react-router-dom';
-import authService from '../../services/authService'; // Import service
+import authService from '../../services/authService';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../../redux/userSlice';
 
@@ -39,7 +40,6 @@ export const SignInPage = () => {
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
 
-  // Xử lý login bằng email + password
   const onFinish = async (values: FieldType) => {
     setLoading(true);
     try {
@@ -55,13 +55,8 @@ export const SignInPage = () => {
       if (response.statusCode === 200) {
         message.success(response.message);
 
-        // Lưu token vào localStorage
         localStorage.setItem('accessToken', response.data.accessToken);
-
-        // Lưu thông tin người dùng vào localStorage
         localStorage.setItem('user', JSON.stringify(response.data.user));
-
-        // dispatch action để lưu vào Redux store
         dispatch(setUser(response.data.user));
 
         setTimeout(() => {
@@ -82,15 +77,9 @@ export const SignInPage = () => {
     console.log('Failed:', errorInfo);
   };
 
-  // Xử lý login bằng Google
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      /** 
-       * Ở đây ta mong muốn server trả về: 
-       * { statusCode: 200, data: { url: "https://accounts.google.com/..." } } 
-       * => ta redirect sang Google
-       */
       const response = await authService.googleLogin() as unknown as {
         statusCode: number,
         message: string,
@@ -98,7 +87,6 @@ export const SignInPage = () => {
       };
 
       if (response.statusCode === 200) {
-        // Redirect người dùng sang link Google:
         window.location.href = response.data.url;
       } else {
         message.error(response.message || 'Google Login failed');
@@ -173,7 +161,7 @@ export const SignInPage = () => {
                     { required: true, message: 'Please input your password!' },
                   ]}
                 >
-                  <Input.Password />
+                  <Input.Password autoComplete="current-password" />
                 </Form.Item>
               </Col>
             </Row>
@@ -205,7 +193,7 @@ export const SignInPage = () => {
             >
               Sign in with Google
             </Button>
-            {/* Nếu cần, thêm Facebook, Twitter... */}
+            {/* You can add Facebook, Twitter login buttons here if needed */}
           </Flex>
         </Flex>
       </Col>

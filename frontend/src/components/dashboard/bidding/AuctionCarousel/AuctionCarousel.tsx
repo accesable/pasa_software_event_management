@@ -157,8 +157,8 @@ export const AuctionCarousel = ({ data, error, loading }: Props) => {
     <Loader />
   ) : (
     <Carousel {...settings}>
-      {data.map((_) => (
-        <CardItem key={_.auction_id} item={_} />
+      {data.map((item) => ( // Changed _ to item for clarity
+        <CardItem key={item.auction_id} item={item} /> // Added key prop here
       ))}
     </Carousel>
   );

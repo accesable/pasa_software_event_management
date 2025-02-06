@@ -1,3 +1,4 @@
+// src\services\authService.ts
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8080/api/v1/auth';
@@ -126,6 +127,37 @@ const authService = {
       throw error.response.data;
     }
   },
+  deleteEvent: async (eventId: string, accessToken: string) => { // Function to delete event
+    try {
+      const response = await axios.delete(
+        `${API_EVENT_BASE_URL}/${eventId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  updateEvent: async (eventId: string, eventData: any, accessToken: string) => { // Function to update event
+    try {
+      const response = await axios.patch(
+        `${API_EVENT_BASE_URL}/${eventId}`,
+        eventData,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
   getOrganizedEvents: async (status?: string, accessToken?: string) => { // Function to fetch organized events, status is optional
     try {
       const headers: any = {
@@ -139,6 +171,24 @@ const authService = {
         url += `?status=${status}`; // Append status query parameter if provided
       }
       const response = await axios.get(url, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  uploadEventFiles: async (eventId: string, field: string, formData: FormData, accessToken: string) => { // Function to upload event files
+    try {
+      const response = await axios.post(
+        `${API_EVENT_BASE_URL}/${eventId}/files`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data', // Quan trọng: set Content-Type
+            'Authorization': `Bearer ${accessToken}`,
+            'field': field // Truyền field vào header
+          },
+        }
+      );
       return response.data;
     } catch (error: any) {
       throw error.response.data;

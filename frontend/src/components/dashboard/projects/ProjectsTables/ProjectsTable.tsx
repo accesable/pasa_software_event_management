@@ -1,3 +1,4 @@
+// src\components\dashboard\projects\ProjectsTables\ProjectsTable.tsx
 import {
   Badge,
   BadgeProps,
@@ -8,19 +9,20 @@ import {
   Typography,
 } from 'antd';
 import { Projects } from '../../../../types';
+import { ColumnsType } from 'antd/es/table'; // Import ColumnsType
 
-const COLUMNS = [
+const COLUMNS: ColumnsType<Projects> = [ // Specify ColumnsType<Projects>
   {
     title: 'Name',
     dataIndex: 'project_name',
     key: 'proj_name',
-    render: (_: any, { project_name }: Projects) => (
+    render: (_: any, { project_name }: Projects) => ( // Ensure record is of type Projects
       <Typography.Paragraph
         ellipsis={{ rows: 1 }}
         className="text-capitalize"
         style={{ marginBottom: 0 }}
       >
-        {project_name.substring(0, 20)}
+        {project_name?.substring(0, 20)}  // Optional chaining for safety
       </Typography.Paragraph>
     ),
   },
@@ -66,7 +68,7 @@ const COLUMNS = [
 
       if (_ === 'on hold') {
         status = 'default';
-      } else if (_ === 'completed') {
+      } else if (_ === 'finished') { // Đã sửa thành finished
         status = 'success';
       } else {
         status = 'processing';
@@ -94,11 +96,12 @@ const COLUMNS = [
 
 type Props = {
   data: Projects[];
-} & TableProps<any>;
+} & TableProps<Projects>; // Fixed type to TableProps<Projects>
 
 export const ProjectsTable = ({ data, ...others }: Props) => {
   return (
     <Table
+      rowKey="project_id" // Thêm rowKey="project_id"
       dataSource={data}
       columns={COLUMNS}
       className="overflow-scroll"

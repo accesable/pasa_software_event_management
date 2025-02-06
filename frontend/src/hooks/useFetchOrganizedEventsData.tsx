@@ -2,12 +2,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import authService from '../services/authService';
 
-const useFetchOrganizedEventsData = (status: string = 'SCHEDULED') => { // Default status là 'SCHEDULED'
+const useFetchOrganizedEventsData = (status?: string) => { // status now is optional
     const [data, setData] = useState<any>([]);
     const [error, setError] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (statusParam?: string) => { // fetchData now accepts statusParam
         setLoading(true);
         setError(null);
         try {
@@ -16,21 +16,24 @@ const useFetchOrganizedEventsData = (status: string = 'SCHEDULED') => { // Defau
                 throw new Error("No access token found. Please login again.");
             }
 
-            const apiEndpoint = `http://localhost:8080/api/v1/events/organized-events?status=${status}`; // Luôn call API với status, default là SCHEDULED
-            const response = await authService.getOrganizedEvents(status, accessToken); // Pass status và accessToken
-            setData(response);
+            const response = await authService.getOrganizedEvents(statusParam, accessToken); // Pass statusParam to API call
+            if (response && typeof response === 'object' && 'data' in response && response.data && typeof response.data === 'object' && 'events' in response.data) {
+                setData(response.data.events);
+            } else {
+                throw new Error("Unexpected response format");
+            }
         } catch (error: any) {
             setError(error);
         } finally {
             setLoading(false);
         }
-    }, [status]); // Depend on status để refetch khi statusFilter changes
+    }, []); // fetchData dependency array is now empty, status is handled in useCallback argument
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        fetchData(status); // Call fetchData with status from hook argument
+    }, [fetchData, status]); // fetchData and status are dependencies
 
-    return { data, error, loading };
+    return { data, error, loading, fetchData }; // Return fetchData for refresh
 };
 
 export default useFetchOrganizedEventsData;

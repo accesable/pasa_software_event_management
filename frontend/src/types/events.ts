@@ -14,7 +14,7 @@ export interface Events {
   banner?: string;
   videoIntro?: string;
   documents?: string[];
-  status: string;
+  status: 'SCHEDULED' | 'CANCELED' | 'FINISHED';
   createdAt: string;
   updatedAt: string;
   createdBy: {
