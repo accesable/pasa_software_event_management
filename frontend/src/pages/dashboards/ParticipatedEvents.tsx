@@ -1,15 +1,15 @@
-// src\pages\dashboards\EventsList.tsx
+// src\pages\dashboards\ParticipatedEvents.tsx
+import React, { useState } from 'react';
 import { Alert, Button, Card, Space, Table, Tag, Select } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageHeader, Loader } from '../../components';
-import useFetchData from '../../hooks/useFetchData'; // Updated import path
 import { ColumnsType } from 'antd/es/table';
 import { Events } from '../../types';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
+import useFetchParticipatedEventsData from '../../hooks/useFetchParticipatedEventsData';
 
 const EVENT_COLUMNS: ColumnsType<Events> = [
     {
@@ -70,18 +70,15 @@ const EVENT_STATUS_OPTIONS = [
     { value: 'FINISHED', label: 'Finished' },
 ];
 
-const EventsListPage = () => {
+const ParticipatedEventsPage = () => {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const { data: eventsData, error: eventsError, loading: eventsLoading } = useFetchData(
-        `http://localhost:8080/api/v1/events?page=${currentPage}&limit=${pageSize}${statusFilter !== 'all' ? `&status=${statusFilter}` : ''}`,
-        localStorage.getItem('accessToken') || undefined
-    );
+    const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } = useFetchParticipatedEventsData(statusFilter === 'all' ? undefined : statusFilter);
 
     const onStatusFilterChange = (value: string) => {
         setStatusFilter(value);
-        setCurrentPage(1); // Reset page to 1 when filter changes
+        setCurrentPage(1);
     };
 
     const handlePaginationChange = (page: number, pageSize: number) => {
@@ -89,13 +86,16 @@ const EventsListPage = () => {
         setPageSize(pageSize);
     };
 
+    const isEmptyData = eventsData?.events === undefined || eventsData?.events?.length === 0;
+
+
     return (
         <div>
             <Helmet>
-                <title>Events List | Antd Dashboard</title>
+                <title>Participated Events | Antd Dashboard</title>
             </Helmet>
             <PageHeader
-                title="Events List"
+                title="Participated Events"
                 breadcrumbs={[
                     {
                         title: (
@@ -113,21 +113,21 @@ const EventsListPage = () => {
                                 <span>Dashboards</span>
                             </>
                         ),
-                        menu: {
-                            items: DASHBOARD_ITEMS.map((d) => ({
-                                key: d.title,
-                                title: <Link to={d.path}>{d.title}</Link>,
-                            })),
-                        },
+                        // menu: {
+                        //     items: DASHBOARD_ITEMS.map((d) => ({
+                        //         key: d.title,
+                        //         label: <Link to={d.path}>{d.title}</Link>, // Sử dụng label thay vì title
+                        //     }) as MenuProps['items'][number]),
+                        // },
                     },
                     {
-                        title: 'Events List',
+                        title: 'Participated Events',
                     },
                 ]}
             />
 
             <Card
-                title="Events"
+                title="List of Participated Events"
                 extra={
                     <Select
                         defaultValue="all"
@@ -147,23 +147,27 @@ const EventsListPage = () => {
                     />
                 )}
 
-                <Table
-                    columns={EVENT_COLUMNS}
-                    dataSource={eventsData?.data?.events || []}
-                    loading={eventsLoading}
-                    pagination={{
-                        current: currentPage,
-                        pageSize: pageSize,
-                        total: eventsData?.data?.meta?.totalItems,
-                        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-                        pageSizeOptions: ['10', '20', '50', '100'],
-                        showSizeChanger: true,
-                        onChange: handlePaginationChange,
-                    }}
-                />
+                {isEmptyData ? (
+                    <Alert message="No events participated yet." type="info" showIcon />
+                ) : (
+                    <Table
+                        columns={EVENT_COLUMNS}
+                        dataSource={eventsData?.events || []}
+                        loading={eventsLoading}
+                        pagination={{
+                            current: currentPage,
+                            pageSize: pageSize,
+                            total: eventsData?.meta?.totalItems || 0,
+                            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                            pageSizeOptions: ['10', '20', '50', '100'],
+                            showSizeChanger: true,
+                            onChange: handlePaginationChange,
+                        }}
+                    />
+                )}
             </Card>
         </div>
     );
 };
 
-export default EventsListPage;
+export default ParticipatedEventsPage;

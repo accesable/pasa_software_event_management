@@ -208,6 +208,24 @@ const authService = {
       throw error.response.data;
     }
   },
+  getParticipatedEvents: async (status?: string, accessToken?: string) => { // Function to fetch participated events
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      let url = `${API_EVENT_BASE_URL}/participated-events`; // Correct API endpoint
+      if (status && status !== 'all') { // Only add status param if status is not 'all'
+        url += `?status=${status}`;
+      }
+      const response = await axios.get(url, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default authService;

@@ -2554,9 +2554,9 @@ const EVENT_COLUMNS = (navigate: ReturnType<typeof useNavigate>) => [
     key: 'id',
     render: (/* value bị xóa */_: any, record: any) => ( // Xóa parameter value
       <div>
-      <Button type="primary" onClick={() => navigate(`/details/events/${record.id}`)}>
-        Details
-      </Button>
+        <Button type="primary" onClick={() => navigate(`/details/events/${record.id}`)}> {/* Đảm bảo URL là `/details/events/${record.id}` */}
+          Details
+        </Button>
       </div>
     )
   }
@@ -2566,29 +2566,29 @@ interface EventTableProps {
   error?: string;
   loading: boolean;
 }
-export const EventTable : React.FC<EventTableProps> = ({data,error,loading} ) => {
-const navigate = useNavigate();
-return (
-  <div>
-        <Card title="Your Events" extra={<a href="/create/events">Create Your Events</a>}>
-          {error ? (
-            <Alert
-              message="Error"
-              description={error.toString()}
-              type="error"
-              showIcon
-            />
-          ) : (
-            <Table
-              columns={EVENT_COLUMNS(navigate)}
-              dataSource={data}
-              loading={loading}
-              className="overflow-scroll"
-            />
-          )}
-        </Card>
-  </div>
-)
+export const EventTable: React.FC<EventTableProps> = ({ data, error, loading }) => {
+  const navigate = useNavigate();
+  return (
+    <div>
+      <Card title="Your Events" extra={<a href="/create/events">Create Your Events</a>}>
+        {error ? (
+          <Alert
+            message="Error"
+            description={error.toString()}
+            type="error"
+            showIcon
+          />
+        ) : (
+          <Table
+            columns={EVENT_COLUMNS(navigate)}
+            dataSource={data}
+            loading={loading}
+            className="overflow-scroll"
+          />
+        )}
+      </Card>
+    </div>
+  )
 }
 
 src\components\dashboard\events\index.tsx:
@@ -7841,6 +7841,7 @@ export const PATH_DASHBOARD = {
   events : path(ROOTS_DASHBOARD, '/events-list'),
   my_events : path(ROOTS_DASHBOARD, '/my-events'),
   users : path(ROOTS_DASHBOARD, '/users'),
+  participated_events: path(ROOTS_DASHBOARD, '/participated-events'),
 };
 
 export const PATH_SITEMAP = {
@@ -8181,6 +8182,47 @@ const useFetchOrganizedEventsData = (status?: string) => { // status now is opti
 };
 
 export default useFetchOrganizedEventsData;
+
+src\hooks\useFetchParticipatedEventsData.tsx:
+// src\hooks\useFetchParticipatedEventsData.tsx
+import { useCallback, useEffect, useState } from 'react';
+import authService from '../services/authService';
+
+const useFetchParticipatedEventsData = (status?: string) => {
+    const [data, setData] = useState<any>([]);
+    const [error, setError] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    const fetchData = useCallback(async (statusParam?: string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                throw new Error("No access token found. Please login again.");
+            }
+
+            const response = await authService.getParticipatedEvents(statusParam, accessToken); // Call API for participated events
+             if (response && typeof response === 'object' && 'data' in response && response.data && typeof response.data === 'object' && 'events' in response.data) {
+                setData(response.data); // Set entire response data, including meta
+            } else {
+                throw new Error("Unexpected response format");
+            }
+        } catch (error: any) {
+            setError(error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData(status);
+    }, [fetchData, status]);
+
+    return { data, error, loading, fetchData };
+};
+
+export default useFetchParticipatedEventsData;
 
 src\hooks\usePageContext.tsx:
 import { useOutletContext } from 'react-router-dom';
@@ -8599,6 +8641,11 @@ const items: MenuProps['items'] = [
     getItem(
       <Link to={PATH_DASHBOARD.my_events}>My Events</Link>,
       'my events',
+      null
+    ),
+    getItem(
+      <Link to={PATH_DASHBOARD.participated_events}>Participated Events</Link>, // Add participated events item
+      'participated-events',
       null
     ),
     getItem(
@@ -12612,6 +12659,7 @@ src\pages\dashboards\EventParticipantsTable.tsx:
 // src\components\dashboard\events\EventParticipantsTable.tsx
 import React from 'react';
 import { Table, TableProps, Alert } from 'antd';
+
 import dayjs from 'dayjs';
 import { Loader } from '../../components';
 import { useFetchData } from '../../hooks';
@@ -12641,22 +12689,21 @@ const PARTICIPANTS_COLUMNS = [
         title: 'Check-in Time',
         dataIndex: 'checkInAt',
         key: 'checkInAt',
-        render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '-',
+        render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
     },
     {
         title: 'Check-out Time',
         dataIndex: 'checkOutAt',
         key: 'checkOutAt',
-        render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '-',
+        render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
     },
 ];
 
 const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId }) => {
     const { data: participantsData, error: participantsError, loading: participantsLoading } = useFetchData(
-        eventId ? `/events/${eventId}/participants` : '',
+        eventId ? `/events/${eventId}/participants` : "",
         localStorage.getItem('accessToken') || undefined
     );
-
     if (!eventId) {
         return <Alert message="Event ID is missing." type="warning" showIcon />;
     }
@@ -12665,6 +12712,12 @@ const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId
         return <Loader />;
     }
 
+    // Kiểm tra nếu không có dữ liệu người tham gia
+    if (!participantsData?.data || participantsData.data.length === 0) {
+        return <Alert message="No participants found for this event." type="info" showIcon />;
+    }
+
+    // Kiểm tra cụ thể nếu participantsData.data là undefined hoặc mảng rỗng
     if (participantsError) {
         return <Alert message="Error loading participants" description={participantsError.toString()} type="error" showIcon />;
     }
@@ -12672,7 +12725,7 @@ const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId
     return (
         <div>
             <Table
-                dataSource={participantsData?.data || []}
+                dataSource={participantsData.data} // Dùng participantsData.data thay vì participantsData?.data || []
                 columns={PARTICIPANTS_COLUMNS}
                 loading={participantsLoading}
                 pagination={{ pageSize: 5 }}
@@ -12682,7 +12735,7 @@ const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId
     );
 };
 
-export { EventParticipantsTable }; // Named export - Corrected export statement
+export { EventParticipantsTable };
 
 src\pages\dashboards\Events.tsx:
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
@@ -12759,24 +12812,24 @@ export default EventsDashboardPage
 
 src\pages\dashboards\EventsList.tsx:
 // src\pages\dashboards\EventsList.tsx
-import { Alert, Button, Card, message, Space, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Space, Table, Tag, Select } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageHeader, Loader } from '../../components';
 import { useFetchData } from '../../hooks';
 import { ColumnsType } from 'antd/es/table';
 import { Events } from '../../types';
 import dayjs from 'dayjs';
-
+import React, { useState } from 'react';
 
 const EVENT_COLUMNS: ColumnsType<Events> = [
     {
-        title: 'Name', // Cột "Name" chính, hiển thị link
+        title: 'Name',
         dataIndex: 'name',
         key: 'name',
-        render: (text, record) => <Link to={`/details/events/${record.id}`}> {text}</Link>, // Link tới trang chi tiết
+        render: (text, record) => <Link to={`/details/events/${record.id}`}> {text}</Link>,
     },
     {
         title: 'Location',
@@ -12811,21 +12864,36 @@ const EVENT_COLUMNS: ColumnsType<Events> = [
         ),
     },
     {
-        title: 'Actions', // Cột "Actions" chỉ còn nút "Details"
+        title: 'Actions',
         key: 'actions',
         render: (_, record) => (
             <Space size="middle">
                 <Button type="primary" size="small">
-                    <Link to={`/details/events/${record.id}`}>Details</Link> {/* Nút Details link tới trang chi tiết */}
+                    <Link to={`/details/events/${record.id}`}>Details</Link>
                 </Button>
             </Space>
         ),
     },
 ];
 
+const EVENT_STATUS_OPTIONS = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'SCHEDULED', label: 'Scheduled' },
+    { value: 'CANCELED', label: 'Canceled' },
+    { value: 'FINISHED', label: 'Finished' },
+];
 
 const EventsListPage = () => {
-    const { data: eventsData, error: eventsError, loading: eventsLoading } = useFetchData('http://localhost:8080/api/v1/events');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const { data: eventsData, error: eventsError, loading: eventsLoading } = useFetchData(
+        `http://localhost:8080/api/v1/events${statusFilter !== 'all' ? `?status=${statusFilter}` : ''}`,
+        localStorage.getItem('accessToken') || undefined
+    );
+
+
+    const onStatusFilterChange = (value: string) => {
+        setStatusFilter(value);
+    };
 
     return (
         <div>
@@ -12864,7 +12932,17 @@ const EventsListPage = () => {
                 ]}
             />
 
-            <Card>
+            <Card
+                title="Events"
+                extra={
+                    <Select
+                        defaultValue="all"
+                        style={{ width: 200 }}
+                        onChange={onStatusFilterChange}
+                        options={EVENT_STATUS_OPTIONS}
+                    />
+                }
+            >
                 {eventsError && (
                     <Alert
                         message="Error"
@@ -12877,12 +12955,12 @@ const EventsListPage = () => {
 
                 <Table
                     columns={EVENT_COLUMNS}
-                    dataSource={eventsData?.data?.events || []} // Use data from API response
+                    dataSource={eventsData?.data?.events || []}
                     loading={eventsLoading}
                     pagination={{
                         total: eventsData?.data?.meta?.totalItems,
                         showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-                        pageSize: 10, // Adjust as needed
+                        pageSize: 10,
                         showSizeChanger: true,
                         pageSizeOptions: ['10', '20', '50', '100'],
                     }}
@@ -13568,6 +13646,165 @@ export const MyEventDashboardPage = () => {
 };
 
 export default MyEventDashboardPage
+
+src\pages\dashboards\ParticipatedEvents.tsx:
+// src\pages\dashboards\ParticipatedEvents.tsx
+import React, { useState } from 'react';
+import { Alert, Button, Card, Space, Table, Tag, Select, MenuProps } from 'antd';
+import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
+import { DASHBOARD_ITEMS } from '../../constants';
+import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { PageHeader, Loader } from '../../components';
+import { ColumnsType } from 'antd/es/table';
+import { Events } from '../../types';
+import dayjs from 'dayjs';
+import useFetchParticipatedEventsData from '../../hooks/useFetchParticipatedEventsData';
+
+const EVENT_COLUMNS: ColumnsType<Events> = [
+    {
+        title: 'Name',
+        dataIndex: 'name',
+        key: 'name',
+        render: (text, record) => <Link to={`/details/events/${record.id}`}> {text}</Link>,
+    },
+    {
+        title: 'Location',
+        dataIndex: 'location',
+        key: 'location',
+    },
+    {
+        title: 'Start Date',
+        dataIndex: 'startDate',
+        key: 'startDate',
+        render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+    },
+    {
+        title: 'End Date',
+        dataIndex: 'endDate',
+        key: 'endDate',
+        render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+    },
+    {
+        title: 'Category',
+        dataIndex: 'categoryId',
+        key: 'categoryId',
+    },
+    {
+        title: 'Status',
+        dataIndex: 'status',
+        key: 'status',
+        render: (status) => (
+            <Tag color={status === 'SCHEDULED' ? 'blue' : status === 'CANCELED' ? 'red' : 'green'}>
+                {status}
+            </Tag>
+        ),
+    },
+    {
+        title: 'Actions',
+        key: 'actions',
+        render: (_, record) => (
+            <Space size="middle">
+                <Button type="primary" size="small">
+                    <Link to={`/details/events/${record.id}`}>Details</Link>
+                </Button>
+            </Space>
+        ),
+    },
+];
+
+const EVENT_STATUS_OPTIONS = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'SCHEDULED', label: 'Scheduled' },
+    { value: 'CANCELED', label: 'Canceled' },
+    { value: 'FINISHED', label: 'Finished' },
+];
+
+const ParticipatedEventsPage = () => {
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } = useFetchParticipatedEventsData(statusFilter === 'all' ? undefined : statusFilter); // Use new hook
+
+    const onStatusFilterChange = (value: string) => {
+        setStatusFilter(value);
+        fetchData(value === 'all' ? undefined : value);
+    };
+
+    return (
+        <div>
+            <Helmet>
+                <title>Participated Events | Antd Dashboard</title>
+            </Helmet>
+            <PageHeader
+                title="Participated Events"
+                breadcrumbs={[
+                    {
+                        title: (
+                            <>
+                                <HomeOutlined />
+                                <span>Home</span>
+                            </>
+                        ),
+                        path: '/',
+                    },
+                    {
+                        title: (
+                            <>
+                                <PieChartOutlined />
+                                <span>Dashboards</span>
+                            </>
+                        ),
+                        // menu: {
+                        //     items: DASHBOARD_ITEMS.map((d) => ({
+                        //         key: d.title,
+                        //         label: <Link to={d.path}>{d.title}</Link>, // Sử dụng label thay vì title
+                        //     }) as MenuProps['items'][number]), // Type cast menu items
+                        // },
+                    },
+                    {
+                        title: 'Participated Events',
+                    },
+                ]}
+            />
+
+            <Card
+                title="List of Participated Events"
+                extra={
+                    <Select
+                        defaultValue="all"
+                        style={{ width: 200 }}
+                        onChange={onStatusFilterChange}
+                        options={EVENT_STATUS_OPTIONS}
+                    />
+                }
+            >
+                {eventsError && (
+                    <Alert
+                        message="Error"
+                        description={eventsError.toString()}
+                        type="error"
+                        showIcon
+                        closable
+                    />
+                )}
+
+                <Table
+                    columns={EVENT_COLUMNS}
+                    dataSource={eventsData || []} // Use eventsData directly (data is already extracted in hook)
+                    loading={eventsLoading}
+                    pagination={{
+                        total: eventsData?.meta?.totalItems,
+                        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['10', '20', '50', '100'],
+                    }}
+                />
+            </Card>
+        </div>
+    );
+};
+
+export default ParticipatedEventsPage;
 
 src\pages\dashboards\Projects.tsx:
 import { Alert, Button, Col, Row, Segmented, Space } from 'antd';
@@ -14292,7 +14529,7 @@ export const UserDashboardPage = () => {
 src\pages\details\EventDetailsPage.tsx:
 // src\pages\details\EventDetailsPage.tsx
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
     Alert,
     Button,
@@ -14309,22 +14546,23 @@ import {
     Tag,
     Typography,
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, UserAddOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { Link, useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { PageHeader, Loader } from '../../components';
 import { useFetchData } from '../../hooks';
 import dayjs from 'dayjs';
-import authService from '../../services/authService'; // Import authService
-import { Events } from '../../types'; // Import Events type
+import authService from '../../services/authService';
+import { Events } from '../../types';
+import { EventParticipantsTable } from '../dashboards/EventParticipantsTable'; // Import EventParticipantsTable
+import jsPDF from 'jspdf'; // Import jsPDF
+import { Helmet } from 'react-helmet-async';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
-const EventDetailsPage: React.FC = () => {
+export const EventDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const [eventDetails, setEventDetails] = useState<Events | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
@@ -14368,7 +14606,7 @@ const EventDetailsPage: React.FC = () => {
                 return;
             }
 
-            const response = await authService.registerEvent(eventDetails.id, [], accessToken) as { statusCode: number; message: string }; // sessionIds is empty array for now
+            const response = await authService.registerEvent(eventDetails.id, [], accessToken) as { statusCode: number; message: string };
             if (response && response.statusCode === 201) {
                 message.success(response.message);
                 // Optionally redirect or update UI after successful registration
@@ -14381,6 +14619,10 @@ const EventDetailsPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleDownloadPdf = async () => {
+        message.info("Download PDF function is not implemented yet for general events."); // Updated message
     };
 
 
@@ -14519,6 +14761,17 @@ const EventDetailsPage: React.FC = () => {
                             </Card>
                         </Col>
                     )}
+                     {eventDetails?.status === 'FINISHED' && (
+                        <Col span={24}>
+                            <Card title="Participants Check-in/Check-out List"
+                                extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading} disabled={true}> {/* Nút Download PDF bị vô hiệu hóa */}
+                                    Download PDF
+                                </Button>}
+                            >
+                                <EventParticipantsTable eventId={id || ''} />
+                            </Card>
+                        </Col>
+                    )}
                 </Row>
             </Card>
         </div>
@@ -14608,7 +14861,7 @@ export {DetailMyEventPage} from './MyEvent.tsx';
 
 src\pages\details\MyEvent.tsx:
 // src\pages\details\MyEventPage.tsx
-import React, { useEffect } from 'react'; // Import useEffect
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
     Col,
@@ -14620,29 +14873,40 @@ import {
     message,
     Alert
 } from 'antd';
-import { Card } from '../../components';
+import { Card, Loader } from '../../components';
 import { useStylesContext } from '../../context';
 import {
     EventTimelineCard,
     MyEventTimelineCard
 } from '../../components/dashboard';
-import { useFetchData } from '../../hooks'; // No longer used directly
+import { useFetchData } from '../../hooks';
 import { ActivityTable } from '../../components/dashboard/events';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { DownloadOutlined } from '@ant-design/icons';
-import authService from '../../services/authService'; // Import authService
-import { Loader } from '../../components'; // Import Loader and Alert
+import authService from '../../services/authService';
 import { fetchEventDetailsStart, setEventDetails, fetchEventDetailsFailure, clearEventDetails } from '../../redux/eventDetailsSlice';
+import jsPDF from 'jspdf';
 import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
+import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
+
+export interface ParticipantData {
+    id: string;
+    name: string;
+    email: string;
+    phoneNumber: string;
+    checkInAt: string | null;
+    checkOutAt: string | null;
+}
+
 
 export const DetailMyEventPage = () => {
     const { id } = useParams<{ id: string }>();
     const stylesContext = useStylesContext();
-    const dispatch = useDispatch<any>(); // Dispatch type
-    const eventDetails = useSelector((state: RootState) => state.eventDetails.eventDetails); // Get eventDetails from Redux state
+    const dispatch = useDispatch<any>();
+    const eventDetails = useSelector((state: RootState) => state.eventDetails.eventDetails);
     const eventDetailsLoading = useSelector((state: RootState) => state.eventDetails.loading);
     const eventDetailsError = useSelector((state: RootState) => state.eventDetails.error);
 
@@ -14651,7 +14915,7 @@ export const DetailMyEventPage = () => {
         data: timelineData,
         loading: timelineDataLoading,
         error: timelineDataError,
-    } = useFetchData('../../mocks/scheduleTimeline.json'); // Still using mock data for timeline and activities table
+    } = useFetchData('../../mocks/scheduleTimeline.json');
     const {
         data: activitiesTableData,
         loading: activitiesTableLoading,
@@ -14663,14 +14927,14 @@ export const DetailMyEventPage = () => {
         const loadEventDetails = async () => {
             if (!id) return;
 
-            dispatch(fetchEventDetailsStart()); // Dispatch loading start action
+            dispatch(fetchEventDetailsStart());
             try {
                 const accessToken = localStorage.getItem('accessToken');
                 const response = await authService.getEventDetails(id, accessToken || undefined) as { data: { event: any } };
-                dispatch(setEventDetails(response.data.event)); // Dispatch success action and set event details in store
+                dispatch(setEventDetails(response.data.event));
 
             } catch (error: any) {
-                dispatch(fetchEventDetailsFailure(error.message || 'Failed to load event details')); // Dispatch failure action
+                dispatch(fetchEventDetailsFailure(error.message || 'Failed to load event details'));
                 message.error(error.message || 'Failed to load event details');
             }
         };
@@ -14678,15 +14942,55 @@ export const DetailMyEventPage = () => {
         loadEventDetails();
 
         return () => {
-            dispatch(clearEventDetails()); // Clear event details on unmount
+            dispatch(clearEventDetails());
         };
 
 
     }, [id, dispatch]);
 
 
-    const handleDownloadPdf = () => {
-        message.info("Download PDF chức năng is not implemented yet.");
+    const [loading, setLoading] = useState(false);
+
+    const handleDownloadPdf = async () => {
+        if (!id) {
+            message.error("Event ID is missing for PDF download.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                message.error("No access token found. Please login again.");
+                return;
+            }
+
+            const response = await authService.getEventParticipants(id, accessToken) as { statusCode: number, data: ParticipantData[], message?: string };
+            if (response.statusCode === 200 && response.data) {
+                const participants: ParticipantData[] = response.data; // Type response data
+
+                // Generate PDF using jsPDF
+                const pdfDoc = new jsPDF();
+                pdfDoc.text(`Participants List - Event: ${eventDetails?.name}`, 10, 10);
+
+                let yPosition = 20;
+                participants.forEach((participant, index) => {
+                    pdfDoc.text(`${index + 1}. Name: ${participant.name}, Email: ${participant.email}, Check-in: ${participant.checkInAt ? dayjs(participant.checkInAt).format('YYYY-MM-DD HH:mm:ss') : 'N/A'}, Check-out: ${participant.checkOutAt ? dayjs(participant.checkOutAt).format('YYYY-MM-DD HH:mm:ss') : 'N/A'}`, 10, yPosition);
+                    yPosition += 10; // Increase yPosition for next line
+                });
+
+                pdfDoc.save(`participants-list-event-${eventDetails?.name}.pdf`); // Trigger download
+
+                message.success("PDF Download started.");
+            } else {
+                message.error(response.message || 'Failed to fetch participants for PDF');
+            }
+        } catch (error: any) {
+            console.error('Error fetching participants for PDF:', error);
+            message.error(error.message || 'Failed to fetch participants for PDF');
+        } finally {
+            setLoading(false);
+        }
     };
 
 
@@ -14744,7 +15048,7 @@ export const DetailMyEventPage = () => {
                 {eventDetails?.status === 'FINISHED' && (
                     <Col span={24}>
                         <Card title="Participants Check-in/Check-out List"
-                            extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf}>
+                            extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
                                 Download PDF
                             </Button>}
                         >
@@ -16693,6 +16997,7 @@ import EventsDashboardPage from '../pages/dashboards/Events.tsx';
 import EventsListPage from '../pages/dashboards/EventsList.tsx';
 import EventDetailsPage from '../pages/details/EventDetailsPage.tsx';
 import EditEventPage from '../pages/edit/EditEventPage.tsx';
+import ParticipatedEventsPage from '../pages/dashboards/ParticipatedEvents.tsx';
 
 // Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
@@ -16770,6 +17075,10 @@ const router = createBrowserRouter([
     element: <PageWrapper children={<DashboardLayout />} />,
     errorElement: <ErrorPage />,
     children: [
+      {
+        path: 'participated-events',  // Add route for participated events page
+        element: <ParticipatedEventsPage />,
+      },
       {
         index: true,
         path: 'default',
@@ -17168,6 +17477,38 @@ const authService = {
           },
         }
       );
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getEventParticipants: async (eventId: string | undefined, accessToken?: string) => { // Function to fetch event participants
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axios.get(`${API_EVENT_BASE_URL}/${eventId}/participants`, { headers }); // Call API to get participants
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getParticipatedEvents: async (status?: string, accessToken?: string) => { // Function to fetch participated events
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      let url = `${API_EVENT_BASE_URL}/participated-events`; // Correct API endpoint
+      if (status && status !== 'all') { // Only add status param if status is not 'all'
+        url += `?status=${status}`;
+      }
+      const response = await axios.get(url, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;
