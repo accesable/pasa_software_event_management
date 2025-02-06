@@ -3,12 +3,13 @@ import { configureStore } from '@reduxjs/toolkit';
 import themeReducer from './theme/themeSlice';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-import userReducer from './userSlice';  // Import userReducer, update import path
+import userReducer from './userSlice';
+import eventDetailsReducer from './eventDetailsSlice'; // Import eventDetailsReducer
 
 const persistConfig = {
   key: 'root',
   storage,
-  blacklist: ['user'],
+  blacklist: ['user', 'eventDetails'], // Blacklist eventDetails too if needed
 };
 
 const persistedThemeReducer = persistReducer(persistConfig, themeReducer);
@@ -17,6 +18,7 @@ export const store = configureStore({
   reducer: {
     theme: persistedThemeReducer,
     user: userReducer,
+    eventDetails: eventDetailsReducer, // Add eventDetailsReducer here
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

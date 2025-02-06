@@ -1,6 +1,6 @@
 // src\pages\details\EventDetailsPage.tsx
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
     Alert,
     Button,
@@ -17,22 +17,23 @@ import {
     Tag,
     Typography,
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, UserAddOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { Link, useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { PageHeader, Loader } from '../../components';
 import { useFetchData } from '../../hooks';
 import dayjs from 'dayjs';
-import authService from '../../services/authService'; // Import authService
-import { Events } from '../../types'; // Import Events type
+import authService from '../../services/authService';
+import { Events } from '../../types';
+import { EventParticipantsTable } from '../dashboards/EventParticipantsTable'; // Import EventParticipantsTable
+import jsPDF from 'jspdf'; // Import jsPDF
+import { Helmet } from 'react-helmet-async';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
-const EventDetailsPage: React.FC = () => {
+export const EventDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const [eventDetails, setEventDetails] = useState<Events | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
@@ -76,7 +77,7 @@ const EventDetailsPage: React.FC = () => {
                 return;
             }
 
-            const response = await authService.registerEvent(eventDetails.id, [], accessToken) as { statusCode: number; message: string }; // sessionIds is empty array for now
+            const response = await authService.registerEvent(eventDetails.id, [], accessToken) as { statusCode: number; message: string };
             if (response && response.statusCode === 201) {
                 message.success(response.message);
                 // Optionally redirect or update UI after successful registration
@@ -89,6 +90,10 @@ const EventDetailsPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleDownloadPdf = async () => {
+        message.info("Download PDF function is not implemented yet for general events."); // Updated message
     };
 
 
@@ -224,6 +229,17 @@ const EventDetailsPage: React.FC = () => {
                                         </List.Item>
                                     )}
                                 />
+                            </Card>
+                        </Col>
+                    )}
+                     {eventDetails?.status === 'FINISHED' && (
+                        <Col span={24}>
+                            <Card title="Participants Check-in/Check-out List"
+                                extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading} disabled={true}> {/* Nút Download PDF bị vô hiệu hóa */}
+                                    Download PDF
+                                </Button>}
+                            >
+                                <EventParticipantsTable eventId={id || ''} />
                             </Card>
                         </Col>
                     )}

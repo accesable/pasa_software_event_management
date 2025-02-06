@@ -74,3 +74,13 @@ export type {
   ActivityTimeline,
   Events,
 };
+
+export interface Participants {
+  id: string;
+  email: string;
+  name: string;
+  phoneNumber: string;
+  checkInAt: string | null; // Có thể null nếu chưa check-in
+  eventId: string;
+  checkOutAt: string | null; // Có thể null nếu chưa check-out
+}

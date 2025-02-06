@@ -194,6 +194,20 @@ const authService = {
       throw error.response.data;
     }
   },
+  getEventParticipants: async (eventId: string | undefined, accessToken?: string) => { // Function to fetch event participants
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axios.get(`${API_EVENT_BASE_URL}/${eventId}/participants`, { headers }); // Call API to get participants
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default authService;

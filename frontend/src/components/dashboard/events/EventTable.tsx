@@ -49,9 +49,9 @@ const EVENT_COLUMNS = (navigate: ReturnType<typeof useNavigate>) => [
     key: 'id',
     render: (/* value bị xóa */_: any, record: any) => ( // Xóa parameter value
       <div>
-      <Button type="primary" onClick={() => navigate(`/details/events/${record.id}`)}>
-        Details
-      </Button>
+        <Button type="primary" onClick={() => navigate(`/details/events/${record.id}`)}> {/* Đảm bảo URL là `/details/events/${record.id}` */}
+          Details
+        </Button>
       </div>
     )
   }
@@ -61,27 +61,27 @@ interface EventTableProps {
   error?: string;
   loading: boolean;
 }
-export const EventTable : React.FC<EventTableProps> = ({data,error,loading} ) => {
-const navigate = useNavigate();
-return (
-  <div>
-        <Card title="Your Events" extra={<a href="/create/events">Create Your Events</a>}>
-          {error ? (
-            <Alert
-              message="Error"
-              description={error.toString()}
-              type="error"
-              showIcon
-            />
-          ) : (
-            <Table
-              columns={EVENT_COLUMNS(navigate)}
-              dataSource={data}
-              loading={loading}
-              className="overflow-scroll"
-            />
-          )}
-        </Card>
-  </div>
-)
+export const EventTable: React.FC<EventTableProps> = ({ data, error, loading }) => {
+  const navigate = useNavigate();
+  return (
+    <div>
+      <Card title="Your Events" extra={<a href="/create/events">Create Your Events</a>}>
+        {error ? (
+          <Alert
+            message="Error"
+            description={error.toString()}
+            type="error"
+            showIcon
+          />
+        ) : (
+          <Table
+            columns={EVENT_COLUMNS(navigate)}
+            dataSource={data}
+            loading={loading}
+            className="overflow-scroll"
+          />
+        )}
+      </Card>
+    </div>
+  )
 }

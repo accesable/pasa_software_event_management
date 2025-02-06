@@ -907,13 +907,12 @@ export const AuctionCarousel = ({ data, error, loading }: Props) => {
     <Loader />
   ) : (
     <Carousel {...settings}>
-      {data.map((_) => (
-        <CardItem key={_.auction_id} item={_} />
+      {data.map((item) => ( // Changed _ to item for clarity
+        <CardItem key={item.auction_id} item={item} /> // Added key prop here
       ))}
     </Carousel>
   );
 };
-
 
 src\components\dashboard\bidding\AuctionCarousel\styles.css:
 .auction-carousel {
@@ -2504,93 +2503,93 @@ export const EventTimelineCard = ({ data, error, loading, ...others }: Props) =>
 
 
 src\components\dashboard\events\EventTable.tsx:
+// src\components\dashboard\events\EventTable.tsx
 import {
-    Alert,
-    Button,
-    Table,
+  Alert,
+  Button,
+  Table,
 } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../';
 
 const EVENT_COLUMNS = (navigate: ReturnType<typeof useNavigate>) => [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-    },
-    {
-      title: 'Event Name',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-    },
-    {
-      title: 'Attendees',
-      dataIndex: 'capacity',
-      key: 'capacity',
-    },
-    {
-      title: 'Location',
-      dataIndex: 'location',
-      key: 'location',
-    },
-    {
-      title: 'Start At',
-      dataIndex: 'startDate',
-      key: 'startDate',
-    },
-    {
-      title: 'End At',
-      dataIndex: 'endDate',
-      key: 'endDate',
-    },
-    {
-      title: 'Actions',
-      dataIndex: 'id',
-      key: 'id',
-      render: (value,record) => (
-        <div>
-        <Button type="primary" onClick={() => navigate(`/details/events/${record.id}`)}>
-          Details
-        </Button>
-        </div>
-      )
-    }
-  ];
-  interface EventTableProps {
-    data: [];
-    error?: string;
-    loading: boolean;
+  {
+    title: 'ID',
+    dataIndex: 'id',
+    key: 'id',
+  },
+  {
+    title: 'Event Name',
+    dataIndex: 'name',
+    key: 'name',
+  },
+  {
+    title: 'Description',
+    dataIndex: 'description',
+    key: 'description',
+  },
+  {
+    title: 'Attendees',
+    dataIndex: 'capacity',
+    key: 'capacity',
+  },
+  {
+    title: 'Location',
+    dataIndex: 'location',
+    key: 'location',
+  },
+  {
+    title: 'Start At',
+    dataIndex: 'startDate',
+    key: 'startDate',
+  },
+  {
+    title: 'End At',
+    dataIndex: 'endDate',
+    key: 'endDate',
+  },
+  {
+    title: 'Actions',
+    dataIndex: 'id',
+    key: 'id',
+    render: (/* value bị xóa */_: any, record: any) => ( // Xóa parameter value
+      <div>
+      <Button type="primary" onClick={() => navigate(`/details/events/${record.id}`)}>
+        Details
+      </Button>
+      </div>
+    )
   }
-export const EventTable : React.FC<EventTableProps> = ({data,error,loading} ) => {
-  const navigate = useNavigate();
-  return (
-    <div>
-          <Card title="Your Events" extra={<a href="/create/events">Create Your Events</a>}>
-            {error ? (
-              <Alert
-                message="Error"
-                description={error.toString()}
-                type="error"
-                showIcon
-              />
-            ) : (
-              <Table
-                columns={EVENT_COLUMNS(navigate)}
-                dataSource={data}
-                loading={loading}
-                className="overflow-scroll"
-              />
-            )}
-          </Card>
-    </div>
-  )
+];
+interface EventTableProps {
+  data: [];
+  error?: string;
+  loading: boolean;
 }
-
+export const EventTable : React.FC<EventTableProps> = ({data,error,loading} ) => {
+const navigate = useNavigate();
+return (
+  <div>
+        <Card title="Your Events" extra={<a href="/create/events">Create Your Events</a>}>
+          {error ? (
+            <Alert
+              message="Error"
+              description={error.toString()}
+              type="error"
+              showIcon
+            />
+          ) : (
+            <Table
+              columns={EVENT_COLUMNS(navigate)}
+              dataSource={data}
+              loading={loading}
+              className="overflow-scroll"
+            />
+          )}
+        </Card>
+  </div>
+)
+}
 
 src\components\dashboard\events\index.tsx:
 export {EventTable} from './EventTable.tsx';
@@ -2599,66 +2598,57 @@ export {MyEventTimelineCard} from './MyEventTimelineCard.tsx';
 export {ActivityTable} from './ActivityTable.tsx';
 
 src\components\dashboard\events\MyEventTable.tsx:
+// src\components\dashboard\events\MyEventTable.tsx
 import {
-    Badge,
-    BadgeProps,
-    Button,
-    Space,
-    Table,
-    TableProps,
-    Tag,
-    TagProps,
-    Typography,
-  } from 'antd';
-import { Events } from '../../../types';  
+  Badge,
+  BadgeProps,
+  Button,
+  Popconfirm,
+  Space,
+  Table,
+  TableProps,
+  Tag,
+  TagProps,
+  Typography,
+  message,
+} from 'antd';
 import { useNavigate } from 'react-router-dom';
-  const COLUMNS = (navigate: ReturnType<typeof useNavigate>) => [
+import { useState } from 'react';
+import authService from '../../../services/authService';
+import { Events } from '../../../types';
+import { ColumnsType } from 'antd/es/table';
+
+type Props = {
+  data: Events[];
+  loading: boolean;
+  fetchData: () => void;
+  activeTabKey: string;
+} & TableProps<Events>;
+
+export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...others }: Props) => {
+  const navigate = useNavigate();
+  const [tableLoading, setTableLoading] = useState(false);
+
+  const COLUMNS = (navigate: ReturnType<typeof useNavigate>, setLoading: (loading: boolean) => void, fetchData: () => void, activeTabKey: string): ColumnsType<Events> => [
     {
       title: 'Name',
-      dataIndex: 'event_name',
+      dataIndex: 'name',
       key: 'proj_name',
-      render: (_: any, { event_name }: Events) => (
+      render: (_: any, record: Events) => (
         <Typography.Paragraph
           ellipsis={{ rows: 1 }}
           className="text-capitalize"
           style={{ marginBottom: 0 }}
         >
-          {event_name.substring(0, 20)}
+          {record.name?.substring(0, 20)}
         </Typography.Paragraph>
       ),
     },
-    // {
-    //   title: 'Client',
-    //   dataIndex: 'client_name',
-    //   key: 'proj_client_name',
-    // },
     {
       title: 'Category',
-      dataIndex: 'event_category',
+      dataIndex: 'categoryId',
       key: 'event_category',
       render: (_: any) => <span className="text-capitalize">{_}</span>,
-    },
-    {
-      title: 'Priority',
-      dataIndex: 'priority',
-      key: 'event_priority',
-      render: (_: any) => {
-        let color: TagProps['color'];
-  
-        if (_ === 'low') {
-          color = 'cyan';
-        } else if (_ === 'medium') {
-          color = 'geekblue';
-        } else {
-          color = 'magenta';
-        }
-  
-        return (
-          <Tag color={color} className="text-capitalize">
-            {_}
-          </Tag>
-        );
-      },
     },
     {
       title: 'Status',
@@ -2666,71 +2656,107 @@ import { useNavigate } from 'react-router-dom';
       key: 'proj_status',
       render: (_: any) => {
         let status: BadgeProps['status'];
-  
-        if (_ === 'Scheduled') {
+
+        if (_ === 'SCHEDULED') {
           status = 'default';
-        } else if (_ === 'Completed') {
+        } else if (_ === 'FINISHED') {
           status = 'success';
-        } else if (_ === "Postponed") {
+        } else if (_ === "CANCELED") {
           status = 'error';
         } else {
-            status = 'processing'
+          status = 'processing'
         }
-  
+
         return <Badge status={status} text={_} className="text-capitalize" />;
       },
     },
     {
       title: 'Capacity',
-      dataIndex: 'capacity',
+      dataIndex: 'maxParticipants',
       key: 'event_capacity',
     },
     {
       title: 'Start Date',
-      dataIndex: 'start_date',
+      dataIndex: 'startDate',
       key: 'event_start_date',
     },
     {
       title: 'End Date',
-      dataIndex: 'end_date',
+      dataIndex: 'endDate',
       key: 'event_end_date',
     },
     {
       title: 'Actions',
-      dataIndex: 'event_id',
+      dataIndex: 'id',
       key: 'event_actions',
-      render: (_: any, { event_id }: Events) => (
-        <Space size="small">
-          <Button type="primary" onClick={() => navigate(`/details/my-events/${event_id}`)}>
-            Details
-          </Button>
-          {/* <Button type="primary" onClick={() => navigate(`/edit/events/${event_id}`)}>
-            Edit
-          </Button>
-          <Button type="primary" danger onClick={() => navigate(`/delete/events/${event_id}`)}>
-            Delete
-          </Button> */}
-        </Space>
-      )
+      render: (eventId: string, record: Events) => {
+        return (
+          <Space size="small">
+            <Button type="primary" onClick={() => navigate(`/details/events/${record.id}`)}> {/* Đã sửa URL navigate */}
+              Details
+            </Button>
+            {activeTabKey !== 'CANCELED' && activeTabKey !== 'FINISHED' && (
+              <Button type="primary" onClick={() => navigate(`/edit/events/${record.id}`)}>
+                Update
+              </Button>
+            )}
+            {activeTabKey !== 'CANCELED' && activeTabKey !== 'FINISHED' && (
+              <Popconfirm
+                title="Cancel Event"
+                description="Are you sure to cancel this event?"
+                onConfirm={() => handleCancel(eventId, setTableLoading, fetchData)}
+                onCancel={() => message.info('Cancel cancel')}
+                okText="Yes, Cancel"
+                cancelText="No"
+                placement="topRight" // Thử thay đổi placement
+                overlayInnerStyle={{ width: 300 }} // Thử set width
+              >
+                <Button danger>
+                  Cancel
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
-  
-  type Props = {
-    data: Events[];
-  } & TableProps<any>;
-  
-  export const MyEventsTable = ({ data, ...others }: Props) => {
-    const navigate = useNavigate();
-    return (
-      <Table
-        dataSource={data}
-        columns={COLUMNS(navigate)}
-        className="overflow-scroll"
-        {...others}
-      />
-    );
+
+  const handleCancel = async (eventId: string, setLoading: (loading: boolean) => void, fetchData: () => void) => {
+    setLoading(true);
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error("No access token found. Please login again.");
+        return;
+      }
+
+      const response = await authService.deleteEvent(eventId, accessToken) as { statusCode: number, message: string };
+      if (response.statusCode === 200) {
+        message.success(response.message);
+        fetchData();
+      } else {
+        message.error(response.message || 'Failed to cancel event');
+      }
+    } catch (error: any) {
+      console.error('Error canceling event:', error);
+      message.error(error.message || 'Failed to cancel event');
+    } finally {
+      setLoading(false);
+    }
   };
-  
+
+  return (
+    <Table
+      rowKey="id"
+      dataSource={data}
+      columns={COLUMNS(navigate, setTableLoading, fetchData, activeTabKey)}
+      className="overflow-scroll"
+      loading={loading || tableLoading}
+      {...others}
+    />
+  );
+};
 
 src\components\dashboard\events\MyEventTimelineCard.tsx:
 import { Alert, Button, CardProps, Flex, Form, Input, Modal, Timeline, Typography } from 'antd';
@@ -4995,6 +5021,7 @@ src\components\dashboard\projects\ProjectsCountCard\styles.scss:
 
 
 src\components\dashboard\projects\ProjectsTables\ProjectsTable.tsx:
+// src\components\dashboard\projects\ProjectsTables\ProjectsTable.tsx
 import {
   Badge,
   BadgeProps,
@@ -5005,19 +5032,20 @@ import {
   Typography,
 } from 'antd';
 import { Projects } from '../../../../types';
+import { ColumnsType } from 'antd/es/table'; // Import ColumnsType
 
-const COLUMNS = [
+const COLUMNS: ColumnsType<Projects> = [ // Specify ColumnsType<Projects>
   {
     title: 'Name',
     dataIndex: 'project_name',
     key: 'proj_name',
-    render: (_: any, { project_name }: Projects) => (
+    render: (_: any, { project_name }: Projects) => ( // Ensure record is of type Projects
       <Typography.Paragraph
         ellipsis={{ rows: 1 }}
         className="text-capitalize"
         style={{ marginBottom: 0 }}
       >
-        {project_name.substring(0, 20)}
+        {project_name?.substring(0, 20)}  // Optional chaining for safety
       </Typography.Paragraph>
     ),
   },
@@ -5063,7 +5091,7 @@ const COLUMNS = [
 
       if (_ === 'on hold') {
         status = 'default';
-      } else if (_ === 'completed') {
+      } else if (_ === 'finished') { // Đã sửa thành finished
         status = 'success';
       } else {
         status = 'processing';
@@ -5091,11 +5119,12 @@ const COLUMNS = [
 
 type Props = {
   data: Projects[];
-} & TableProps<any>;
+} & TableProps<Projects>; // Fixed type to TableProps<Projects>
 
 export const ProjectsTable = ({ data, ...others }: Props) => {
   return (
     <Table
+      rowKey="project_id" // Thêm rowKey="project_id"
       dataSource={data}
       columns={COLUMNS}
       className="overflow-scroll"
@@ -5104,7 +5133,6 @@ export const ProjectsTable = ({ data, ...others }: Props) => {
   );
 };
 
-
 src\components\dashboard\shared\index.ts:
 export { RevenueCard } from './RevenueCard/RevenueCard.tsx';
 export { PostsCard } from './PostsCard/PostsCard.tsx';
@@ -5112,159 +5140,121 @@ export { ProjectsCard } from './ProjectsCard/ProjectsCard.tsx';
 export {EventsCard } from './EventsCard/EventsCard.tsx';
 
 src\components\dashboard\shared\EventsCard\EventsCard.tsx:
+// src\components\dashboard\shared\EventsCard\EventsCard.tsx
 import {
-    Card as AntdCard,
-    CardProps,
-    Descriptions,
-    DescriptionsProps,
-    Flex,
-    Tooltip,
-    Typography,
-  } from 'antd';
-  import {
-    CalendarOutlined,
-    // ClockCircleOutlined,
-    UsergroupAddOutlined,
-  } from '@ant-design/icons';
-  import { Events } from '../../../../types';
-  
-  import './styles.css';
-  
-  const { Text, Title } = Typography;
-  
-  type Props = {
-    event: Events;
-    size?: 'small' | 'default';
-  } & CardProps;
-  
-  export const EventsCard = (props: Props) => {
-    const {
-      size,
-      event: {
-        event_id,
-        event_name,
-        start_date,
-        end_date,
-        event_type,
-        event_location,
-        priority,
-        capacity,
-        status,
-      },
-      ...others
-    } = props;
-  
-    const items: DescriptionsProps['items'] = [
-      {
-        key: 'event_name',
-        label: 'Title',
-        children: (
-          <span className="text-capitalize">{event_name.slice(0, 36)}...</span>
-        ),
-        span: 24,
-      },
-      {
-        key: 'event_id',
-        label: 'ID',
-        children: event_id,
-        span: 24,
-      },
-    //   {
-    //     key: 'project_client',
-    //     label: 'Client',
-    //     children: client_name,
-    //     span: 24,
-    //   },
-      {
-        key: 'event_type',
-        label: 'Type',
-        children: <span className="text-capitalize">{event_type}</span>,
-        span: 24,
-      },
-      {
-        key: 'project_location',
-        label: 'Location',
-        children: event_location,
-        span: 24,
-      },
-      {
-        key: 'project_priority',
-        label: 'Priority',
-        children: <span className="text-capitalize">{priority}</span>,
-      },
-      {
-        key: 'project_status',
-        label: 'Status',
-        children: <span className="text-capitalize">{status}</span>,
-      },
-      {
-        key: 'team_size',
-        label: <UsergroupAddOutlined />,
-        children: (
-          <Tooltip title="Team size">
-            <Typography.Text>{capacity}</Typography.Text>
-          </Tooltip>
-        ),
-      },
-    //   {
-    //     key: 'period',
-    //     label: <ClockCircleOutlined />,
-    //     children: (
-    //       <Tooltip title="Project duration (months)">
-    //         <Typography.Text>{project_duration}</Typography.Text>
-    //       </Tooltip>
-    //     ),
-    //   },
-      {
-        key: 'start_date',
-        label: <CalendarOutlined />,
-        children: (
-          <Tooltip title="Project date">
-            <Typography.Text>{start_date} - {end_date}</Typography.Text>
-          </Tooltip>
-        ),
-      },
-    ];
-  
-    return size === 'small' ? (
-      <AntdCard
-        bordered
-        hoverable={true}
-        className="project-small-card"
-        {...others}
-      >
-        <Title level={5} className="text-capitalize m-0">
-          {event_name.slice(0, 15)}
-        </Title>
-        <br />
-        <Flex wrap="wrap" gap="small" className="text-capitalize">
-          {/* <Text>
-            Owner: <b>{project_manager},</b>
-          </Text>
-          <Text>
-            Client: <b>{client_name},</b>
-          </Text> */}
-          <Text>
-            Priority: <b>{priority},</b>
-          </Text>
-          <Text>
-            Type: <b>{event_type},</b>
-          </Text>
-          <Text>
-            Location: <b>{event_location}</b>
-          </Text>
-        </Flex>
-      </AntdCard>
-    ) : (
-      <AntdCard bordered hoverable={true} {...others}>
-        <Descriptions
-          items={items}
-          column={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
-        />
-      </AntdCard>
-    );
-  };
-  
+  Card as AntdCard,
+  CardProps,
+  Descriptions,
+  DescriptionsProps,
+  Flex,
+  Tooltip,
+  Typography,
+} from 'antd';
+import {
+  CalendarOutlined,
+  UsergroupAddOutlined,
+} from '@ant-design/icons';
+
+import './styles.css';
+import { Events } from '../../../../types';
+
+const { Text, Title } = Typography;
+
+type Props = {
+  event?: Events; // Make event prop optional
+  size?: 'small' | 'default';
+} & CardProps;
+
+export const EventsCard = (props: Props) => {
+  const {
+    size,
+    event, // Event can be potentially undefined
+    ...others
+  } = props;
+
+  // Check if event is defined before accessing its properties
+  const items: DescriptionsProps['items'] = event ? [
+    {
+      key: 'event_name',
+      label: 'Title',
+      children: (
+        <span className="text-capitalize">{event.name?.slice(0, 36)}...</span> // Use optional chaining
+      ),
+      span: 24,
+    },
+    {
+      key: 'event_id',
+      label: 'ID',
+      children: event.id,
+      span: 24,
+    },
+    {
+      key: 'event_type',
+      label: 'Category', // Changed label to "Category"
+      children: <span className="text-capitalize">{event.categoryId}</span>, // Changed to categoryId
+      span: 24,
+    },
+    {
+      key: 'project_location',
+      label: 'Location',
+      children: event.location,
+      span: 24,
+    },
+    {
+      key: 'project_status',
+      label: 'Status',
+      children: <span className="text-capitalize">{event.status}</span>,
+    },
+    {
+      key: 'team_size',
+      label: <UsergroupAddOutlined />,
+      children: (
+        <Tooltip title="Team size">
+          <Typography.Text>{event.maxParticipants}</Typography.Text>
+        </Tooltip>
+      ),
+    },
+    {
+      key: 'start_date',
+      label: <CalendarOutlined />,
+      children: (
+        <Tooltip title="Project date">
+          <Typography.Text>{event.startDate} - {event.endDate}</Typography.Text>
+        </Tooltip>
+      ),
+    },
+  ] : []; // Render empty descriptions if event is undefined
+
+
+  return size === 'small' ? (
+    <AntdCard
+      bordered
+      hoverable={true}
+      className="project-small-card"
+      {...others}
+    >
+      <Title level={5} className="text-capitalize m-0">
+        {event?.name?.slice(0, 15)} {/* Use optional chaining here too */}
+      </Title>
+      <br />
+      <Flex wrap="wrap" gap="small" className="text-capitalize">
+        <Text>
+          Category: <b>{event?.categoryId},</b> {/* Changed to categoryId */}
+        </Text>
+        <Text>
+          Location: <b>{event?.location}</b>
+        </Text>
+      </Flex>
+    </AntdCard>
+  ) : (
+    <AntdCard bordered hoverable={true} {...others}>
+      <Descriptions
+        items={items}
+        column={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
+      />
+    </AntdCard>
+  );
+};
 
 src\components\dashboard\shared\EventsCard\styles.css:
 .project-small-card .ant-card-body {
@@ -8156,12 +8146,12 @@ src\hooks\useFetchOrganizedEventsData.tsx:
 import { useCallback, useEffect, useState } from 'react';
 import authService from '../services/authService';
 
-const useFetchOrganizedEventsData = (status: string = 'SCHEDULED') => { // Default status là 'SCHEDULED'
+const useFetchOrganizedEventsData = (status?: string) => { // status now is optional
     const [data, setData] = useState<any>([]);
     const [error, setError] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (statusParam?: string) => { // fetchData now accepts statusParam
         setLoading(true);
         setError(null);
         try {
@@ -8170,21 +8160,24 @@ const useFetchOrganizedEventsData = (status: string = 'SCHEDULED') => { // Defau
                 throw new Error("No access token found. Please login again.");
             }
 
-            const apiEndpoint = `http://localhost:8080/api/v1/events/organized-events?status=${status}`; // Luôn call API với status, default là SCHEDULED
-            const response = await authService.getOrganizedEvents(status, accessToken); // Pass status và accessToken
-            setData(response);
+            const response = await authService.getOrganizedEvents(statusParam, accessToken); // Pass statusParam to API call
+            if (response && typeof response === 'object' && 'data' in response && response.data && typeof response.data === 'object' && 'events' in response.data) {
+                setData(response.data.events);
+            } else {
+                throw new Error("Unexpected response format");
+            }
         } catch (error: any) {
             setError(error);
         } finally {
             setLoading(false);
         }
-    }, [status]); // Depend on status để refetch khi statusFilter changes
+    }, []); // fetchData dependency array is now empty, status is handled in useCallback argument
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        fetchData(status); // Call fetchData with status from hook argument
+    }, [fetchData, status]); // fetchData and status are dependencies
 
-    return { data, error, loading };
+    return { data, error, loading, fetchData }; // Return fetchData for refresh
 };
 
 export default useFetchOrganizedEventsData;
@@ -9940,6 +9933,7 @@ src\pages\authentication\ResetPassword.tsx:
 
 
 src\pages\authentication\SignIn.tsx:
+// src\pages\authentication\SignIn.tsx
 import React, { useState } from 'react';
 import {
   Button,
@@ -9961,7 +9955,7 @@ import {
 import { useMediaQuery } from 'react-responsive';
 import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
 import { useNavigate } from 'react-router-dom';
-import authService from '../../services/authService'; // Import service
+import authService from '../../services/authService';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../../redux/userSlice';
 
@@ -9981,7 +9975,6 @@ export const SignInPage = () => {
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
 
-  // Xử lý login bằng email + password
   const onFinish = async (values: FieldType) => {
     setLoading(true);
     try {
@@ -9997,13 +9990,8 @@ export const SignInPage = () => {
       if (response.statusCode === 200) {
         message.success(response.message);
 
-        // Lưu token vào localStorage
         localStorage.setItem('accessToken', response.data.accessToken);
-
-        // Lưu thông tin người dùng vào localStorage
         localStorage.setItem('user', JSON.stringify(response.data.user));
-
-        // dispatch action để lưu vào Redux store
         dispatch(setUser(response.data.user));
 
         setTimeout(() => {
@@ -10024,15 +10012,9 @@ export const SignInPage = () => {
     console.log('Failed:', errorInfo);
   };
 
-  // Xử lý login bằng Google
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      /** 
-       * Ở đây ta mong muốn server trả về: 
-       * { statusCode: 200, data: { url: "https://accounts.google.com/..." } } 
-       * => ta redirect sang Google
-       */
       const response = await authService.googleLogin() as unknown as {
         statusCode: number,
         message: string,
@@ -10040,7 +10022,6 @@ export const SignInPage = () => {
       };
 
       if (response.statusCode === 200) {
-        // Redirect người dùng sang link Google:
         window.location.href = response.data.url;
       } else {
         message.error(response.message || 'Google Login failed');
@@ -10115,7 +10096,7 @@ export const SignInPage = () => {
                     { required: true, message: 'Please input your password!' },
                   ]}
                 >
-                  <Input.Password />
+                  <Input.Password autoComplete="current-password" />
                 </Form.Item>
               </Col>
             </Row>
@@ -10147,14 +10128,13 @@ export const SignInPage = () => {
             >
               Sign in with Google
             </Button>
-            {/* Nếu cần, thêm Facebook, Twitter... */}
+            {/* You can add Facebook, Twitter login buttons here if needed */}
           </Flex>
         </Flex>
       </Col>
     </Row>
   );
 };
-
 
 src\pages\authentication\SignUp.tsx:
 import React, { useState } from 'react';
@@ -12628,6 +12608,82 @@ export const EcommerceDashboardPage = () => {
 };
 
 
+src\pages\dashboards\EventParticipantsTable.tsx:
+// src\components\dashboard\events\EventParticipantsTable.tsx
+import React from 'react';
+import { Table, TableProps, Alert } from 'antd';
+import dayjs from 'dayjs';
+import { Loader } from '../../components';
+import { useFetchData } from '../../hooks';
+import { Participants } from '../../types';
+
+interface EventParticipantsTableProps extends TableProps<Participants> {
+    eventId: string;
+}
+
+const PARTICIPANTS_COLUMNS = [
+    {
+        title: 'ID',
+        dataIndex: 'id',
+        key: 'id',
+    },
+    {
+        title: 'Name',
+        dataIndex: 'name',
+        key: 'name',
+    },
+    {
+        title: 'Email',
+        dataIndex: 'email',
+        key: 'email',
+    },
+    {
+        title: 'Check-in Time',
+        dataIndex: 'checkInAt',
+        key: 'checkInAt',
+        render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '-',
+    },
+    {
+        title: 'Check-out Time',
+        dataIndex: 'checkOutAt',
+        key: 'checkOutAt',
+        render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '-',
+    },
+];
+
+const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId }) => {
+    const { data: participantsData, error: participantsError, loading: participantsLoading } = useFetchData(
+        eventId ? `/events/${eventId}/participants` : '',
+        localStorage.getItem('accessToken') || undefined
+    );
+
+    if (!eventId) {
+        return <Alert message="Event ID is missing." type="warning" showIcon />;
+    }
+
+    if (participantsLoading) {
+        return <Loader />;
+    }
+
+    if (participantsError) {
+        return <Alert message="Error loading participants" description={participantsError.toString()} type="error" showIcon />;
+    }
+
+    return (
+        <div>
+            <Table
+                dataSource={participantsData?.data || []}
+                columns={PARTICIPANTS_COLUMNS}
+                loading={participantsLoading}
+                pagination={{ pageSize: 5 }}
+                rowKey="id"
+            />
+        </div>
+    );
+};
+
+export { EventParticipantsTable }; // Named export - Corrected export statement
+
 src\pages\dashboards\Events.tsx:
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { useStylesContext } from '../../context';
@@ -13329,181 +13385,189 @@ export const MarketingDashboardPage = () => {
 
 
 src\pages\dashboards\MyEvents.tsx:
-import { Alert, Button, Col, Row, Space } from 'antd';
+// src\pages\dashboards\MyEvents.tsx
+import { Alert, Button, Col, Row, Space, Spin } from 'antd';
 import {
-  Card,
-  Loader,
-  PageHeader,
+    Card,
+    Loader,
+    PageHeader,
 } from '../../components';
 import { Events } from '../../types';
 import { useState } from 'react';
 import {
-  CloudUploadOutlined,
-  HomeOutlined,
-  PieChartOutlined,
-  PlusOutlined,
+    CloudUploadOutlined,
+    HomeOutlined,
+    PieChartOutlined,
+    PlusOutlined,
 } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { useFetchData } from '../../hooks';
+import useFetchOrganizedEventsData from '../../hooks/useFetchOrganizedEventsData';
 import { EventsCard } from '../../components/dashboard/shared';
-import { MyEventsTable } from '../../components/dashboard/events/MyEventTable';
-
+import { MyEventsTable } from '../../components/dashboard/events/MyEventTable'; // Corrected import here (Named import)
 
 const EVENT_TABS = [
-  {
-    key: 'all',
-    label: 'All events',
-  },
-  {
-    key: 'OnGoing',
-    label: 'Active',
-  },
-  {
-    key: 'Postponed',
-    label: 'Delaying',
-  },
+    {
+        key: 'all',
+        label: 'All events',
+    },
+    {
+        key: 'SCHEDULED',
+        label: 'Scheduled',
+    },
+    {
+        key: 'CANCELED',
+        label: 'Canceled',
+    },
+    {
+        key: 'FINISHED',
+        label: 'Finished',
+    },
 ];
 
 export const MyEventDashboardPage = () => {
 
-  const {
-    data: eventsData,
-    error: eventsDataError,
-    loading: eventsDataLoading,
-  } = useFetchData('../mocks/MyEvents.json');
+    const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } = useFetchOrganizedEventsData();
+    const [eventTabKey, setEventTabKey] = useState<string>('all');
+    const navigate = useNavigate();
 
-  const [eventTabKey, setEventTabKey] = useState<string>('all');
+    const getFilteredEvents = (status?: string) => {
+        return (eventsData || []).filter((event: Events) => status ? event.status === status : true);
+    };
 
-  const navigate = useNavigate();
+    const EVENT_TABS_CONTENT: Record<string, React.ReactNode> = {
+        all: <MyEventsTable key="all-events-table" data={getFilteredEvents()} loading={eventsLoading} fetchData={fetchData} activeTabKey={eventTabKey} />,
+        SCHEDULED: (
+            <MyEventsTable
+                key="scheduled-events-table"
+                data={getFilteredEvents('SCHEDULED')}
+                loading={eventsLoading}
+                fetchData={() => fetchData('SCHEDULED')}
+                activeTabKey={eventTabKey}
+            />
+        ),
+        CANCELED: (
+            <MyEventsTable
+                key="canceled-events-table"
+                data={getFilteredEvents('CANCELED')}
+                loading={eventsLoading}
+                fetchData={() => fetchData('CANCELED')}
+                activeTabKey={eventTabKey}
+            />
+        ),
+        FINISHED: (
+            <MyEventsTable
+                key="finished-events-table"
+                data={getFilteredEvents('FINISHED')}
+                loading={eventsLoading}
+                fetchData={() => fetchData('FINISHED')}
+                activeTabKey={eventTabKey}
+            />
+        ),
+    };
 
-  const EVENT_TABS_CONTENT: Record<string, React.ReactNode> = {
-    all: <MyEventsTable key="all-projects-table" data={eventsData} />,
-    OnGoing: (
-      <MyEventsTable
-        key="in-progress-projects-table"
-        data={eventsData.filter((_: Events) => _.status === 'On Going')}
-      />
-    ),
-    Postponed: (
-      <MyEventsTable
-        key="on-hold-projects-table"
-        data={eventsData.filter((_: Events) => _.status === 'Postponed')}
-      />
-    ),
-  };
 
-  const onEventTabChange = (key: string) => {
-    setEventTabKey(key);
-  };
+    const onEventTabChange = (key: string) => {
+        setEventTabKey(key);
+        fetchData(key === 'all' ? undefined : key);
+    };
 
-  return (
-    <div>
-      <Helmet>
-        <title>My Events | Antd Dashboard</title>
-      </Helmet>
-      <PageHeader
-        title="your event dashboard"
-        breadcrumbs={[
-          {
-            title: (
-              <>
-                <HomeOutlined />
-                <span>home</span>
-              </>
-            ),
-            path: '/',
-          },
-          {
-            title: (
-              <>
-                <PieChartOutlined />
-                <span>dashboards</span>
-              </>
-            ),
-            menu: {
-              items: DASHBOARD_ITEMS.map((d) => ({
-                key: d.title,
-                title: <Link to={d.path}>{d.title}</Link>,
-              })),
-            },
-          },
-          {
-            title: 'projects',
-          },
-        ]}
-      />
-      <Row
-        gutter={[
-          { xs: 8, sm: 16, md: 24, lg: 32 },
-          { xs: 8, sm: 16, md: 24, lg: 32 },
-        ]}
-      >
-        {/* <Col xs={24} sm={12} lg={6}>
-          <RevenueCard title="Total revenue" value={1556.3} diff={280} />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <RevenueCard title="Spent this week" value={1806.3} diff={180} />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <RevenueCard title="Worked this week" value="35:12" diff={-10.0} />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <RevenueCard title="Worked today" value="05:30:00" diff={-20.1} />
-        </Col> */}
-        <Col span={24}>
-          <Card
-            title="Recently added events"
-            // extra={<Button>View all projects</Button>}
-          >
-            {eventsDataError ? (
-              <Alert
-                message="Error"
-                description={eventsDataError}
-                type="error"
-                showIcon
-              />
-            ) : eventsDataLoading ? (
-              <Loader />
-            ) : (
-              <Row gutter={[16, 16]}>
-                {eventsData.slice(0, 4).map((o: Events) => {
-                  return (
-                    <Col xs={24} sm={12} xl={6} key={o.event_id}>
-                      <EventsCard
-                        event={o}
-                        type="inner"
-                        style={{ height: '100%' }}
-                      />
-                    </Col>
-                  );
-                })}
-              </Row>
-            )}
-          </Card>
-        </Col>
-        <Col span={24}>
-          <Card
-            title="Your Events"
-            extra={
-              <Space>
-                {/* <Button icon={<CloudUploadOutlined />}>Import</Button> */}
-                <Button onClick={()=>navigate("/create/events")} icon={<PlusOutlined />}>New Event</Button>
-              </Space>
-            }
-            tabList={EVENT_TABS}
-            activeTabKey={eventTabKey}
-            onTabChange={onEventTabChange}
-          >
-            {EVENT_TABS_CONTENT[eventTabKey]}
-          </Card>
-        </Col>
-      </Row>
-    </div>
-  );
+
+    return (
+        <div>
+            <Helmet>
+                <title>My Events | Antd Dashboard</title>
+            </Helmet>
+            <PageHeader
+                title="your event dashboard"
+                breadcrumbs={[
+                    {
+                        title: (
+                            <>
+                                <HomeOutlined />
+                                <span>home</span>
+                            </>
+                        ),
+                        path: '/',
+                    },
+                    {
+                        title: (
+                            <>
+                                <PieChartOutlined />
+                                <span>dashboards</span>
+                            </>
+                        ),
+                        menu: {
+                            items: DASHBOARD_ITEMS.map((d) => ({
+                                key: d.title,
+                                title: <Link to={d.path}>{d.title}</Link>,
+                            })),
+                        },
+                    },
+                    {
+                        title: 'my events',
+                    },
+                ]}
+            />
+            <Row
+                gutter={[
+                    { xs: 8, sm: 16, md: 24, lg: 32 },
+                    { xs: 8, sm: 16, md: 24, lg: 32 },
+                ]}
+            >
+                <Col span={24}>
+                    <Card
+                        title="Recently added events"
+                    >
+                        {eventsError && (
+                            <Alert
+                                message="Error"
+                                description={eventsError.toString()}
+                                type="error"
+                                showIcon
+                            />
+                        )}
+                        {eventsLoading ? (
+                            <Loader />
+                        ) : (
+                            <Row gutter={[16, 16]}>
+                                {getFilteredEvents().slice(0, 4).map((o: Events) => {
+                                    return (
+                                        <Col xs={24} sm={12} xl={6} key={o.id}>
+                                            <EventsCard
+                                                event={o}
+                                                type="inner"
+                                                style={{ height: '100%' }}
+                                            />
+                                        </Col>
+                                    );
+                                })}
+                            </Row>
+                        )}
+                    </Card>
+                </Col>
+                <Col span={24}>
+                    <Card
+                        title="Your Events"
+                        extra={
+                            <Space>
+                                <Button onClick={() => navigate("/create/events")} icon={<PlusOutlined />}>New Event</Button>
+                            </Space>
+                        }
+                        tabList={EVENT_TABS}
+                        activeTabKey={eventTabKey}
+                        onTabChange={onEventTabChange}
+                    >
+                        {eventsLoading ? <Loader /> : EVENT_TABS_CONTENT[eventTabKey]}
+                    </Card>
+                </Col>
+            </Row>
+        </div>
+    );
 };
 
+export default MyEventDashboardPage
 
 src\pages\dashboards\Projects.tsx:
 import { Alert, Button, Col, Row, Segmented, Space } from 'antd';
@@ -14543,95 +14607,446 @@ export {DetailEventPage} from './Events'
 export {DetailMyEventPage} from './MyEvent.tsx';
 
 src\pages\details\MyEvent.tsx:
+// src\pages\details\MyEventPage.tsx
+import React, { useEffect } from 'react'; // Import useEffect
 import { useParams } from 'react-router-dom';
 import {
-  Col,
-  Flex,
-  Image,
-  Row,
-  Typography,
+    Col,
+    Flex,
+    Image,
+    Row,
+    Typography,
+    Button,
+    message,
+    Alert
 } from 'antd';
 import { Card } from '../../components';
 import { useStylesContext } from '../../context';
 import {
-  EventTimelineCard,
-  MyEventTimelineCard
+    EventTimelineCard,
+    MyEventTimelineCard
 } from '../../components/dashboard';
-import { useFetchData } from '../../hooks';
+import { useFetchData } from '../../hooks'; // No longer used directly
 import { ActivityTable } from '../../components/dashboard/events';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../../redux/store';
+import { DownloadOutlined } from '@ant-design/icons';
+import authService from '../../services/authService'; // Import authService
+import { Loader } from '../../components'; // Import Loader and Alert
+import { fetchEventDetailsStart, setEventDetails, fetchEventDetailsFailure, clearEventDetails } from '../../redux/eventDetailsSlice';
+import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
+
 const { Title, Text, Paragraph } = Typography;
 
 export const DetailMyEventPage = () => {
     const { id } = useParams<{ id: string }>();
     const stylesContext = useStylesContext();
+    const dispatch = useDispatch<any>(); // Dispatch type
+    const eventDetails = useSelector((state: RootState) => state.eventDetails.eventDetails); // Get eventDetails from Redux state
+    const eventDetailsLoading = useSelector((state: RootState) => state.eventDetails.loading);
+    const eventDetailsError = useSelector((state: RootState) => state.eventDetails.error);
+
+
     const {
-      data: timelineData,
-      loading: timelineDataLoading,
-      error: timelineDataError,
-    } = useFetchData('../../mocks/scheduleTimeline.json');
+        data: timelineData,
+        loading: timelineDataLoading,
+        error: timelineDataError,
+    } = useFetchData('../../mocks/scheduleTimeline.json'); // Still using mock data for timeline and activities table
     const {
-      data: activitiesTableData,
-      loading: activitiesTableLoading,
-      error: activitiesTableError,
+        data: activitiesTableData,
+        loading: activitiesTableLoading,
+        error: activitiesTableError,
     } = useFetchData('../../mocks/PaticipatedActivities.json');
-  return (
-    <div>
-      <Row {...stylesContext?.rowProps}>
-        <Col span={24}>
-          <Card title={<Title level={3}>About This Event (Event ID : {id})</Title>}>
-            <Flex gap="small" vertical>
-              <Text>Job Fair 101.</Text>
-              <Image
-                src='https://mvdirona.com/cache/433x324-0/trips/seattle2022/images/PXL_20221118_225253182_2.web.jpg'
-                alt="event banner"
-                width="100%"
-              />
-              <Paragraph>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua. Non
-                tellus orci ac auctor augue mauris augue. Id diam vel quam
-                elementum pulvinar. Nunc scelerisque viverra mauris in. Tortor
-                aliquam nulla facilisi cras fermentum odio eu. Eleifend mi in
-                nulla posuere sollicitudin aliquam ultrices. Quis commodo odio
-                aenean sed adipiscing diam donec adipiscing tristique. Pharetra
-                magna ac placerat vestibulum lectus mauris ultrices. Viverra
-                accumsan in nisl nisi scelerisque eu ultrices vitae. Etiam
-                tempor orci eu lobortis elementum nibh tellus molestie nunc.
-                Iaculis eu non diam phasellus vestibulum lorem sed risus
-                ultricies. Vestibulum lectus mauris ultrices eros in cursus
-                turpis. Risus nec feugiat in fermentum posuere urna nec. Nam at
-                lectus urna duis.
-              </Paragraph>
-              <Paragraph>
-                Sit amet purus gravida quis blandit turpis cursus. Vulputate eu
-                scelerisque felis imperdiet proin fermentum leo vel orci. Fusce
-                id velit ut tortor pretium viverra suspendisse potenti.
-              </Paragraph>
-            </Flex>
-          </Card>
-        </Col>
-        <Col span={24}>
-          <MyEventTimelineCard 
-                title="Event's Activities"
-                data={timelineData}
-                loading={timelineDataLoading}
-                error={timelineDataError}
-          />
-        </Col>
-        <Col span={24}>
-          <ActivityTable
-            data={activitiesTableData}
-            loading={activitiesTableLoading}
-            error={activitiesTableError}
-          />
-        </Col>
-      </Row>
-    </div>
-  )
+
+
+    useEffect(() => {
+        const loadEventDetails = async () => {
+            if (!id) return;
+
+            dispatch(fetchEventDetailsStart()); // Dispatch loading start action
+            try {
+                const accessToken = localStorage.getItem('accessToken');
+                const response = await authService.getEventDetails(id, accessToken || undefined) as { data: { event: any } };
+                dispatch(setEventDetails(response.data.event)); // Dispatch success action and set event details in store
+
+            } catch (error: any) {
+                dispatch(fetchEventDetailsFailure(error.message || 'Failed to load event details')); // Dispatch failure action
+                message.error(error.message || 'Failed to load event details');
+            }
+        };
+
+        loadEventDetails();
+
+        return () => {
+            dispatch(clearEventDetails()); // Clear event details on unmount
+        };
+
+
+    }, [id, dispatch]);
+
+
+    const handleDownloadPdf = () => {
+        message.info("Download PDF chức năng is not implemented yet.");
+    };
+
+
+    if (eventDetailsLoading) { // Use Redux loading state
+        return <Loader />;
+    }
+
+    if (eventDetailsError) { // Use Redux error state
+        return <Alert message="Error" description={eventDetailsError} type="error" showIcon />;
+    }
+
+    if (!eventDetails) { // Check if eventDetails is null (not loaded)
+        return <Alert message="Event not found" description="Could not load event details" type="warning" showIcon />;
+    }
+
+
+    return (
+        <div>
+            <Row {...stylesContext?.rowProps}>
+                <Col span={24}>
+                    <Card title={<Title level={3}>About This Event (Event ID : {id})</Title>}>
+                        <Flex gap="small" vertical>
+                            <Text>Job Fair 101.</Text>
+                            <Image
+                                src={eventDetails.banner || 'https://placehold.co/1920x1080'} // Use eventDetails.banner
+                                alt="event banner"
+                                width="100%"
+                            />
+                            <Paragraph>
+                                {eventDetails.description}
+                            </Paragraph>
+                            <Paragraph>
+                                Sit amet purus gravida quis blandit turpis cursus. Vulputate eu
+                                scelerisque felis imperdiet proin fermentum leo vel orci. Fusce
+                                id velit ut tortor pretium viverra suspendisse potenti.
+                            </Paragraph>
+                        </Flex>
+                    </Card>
+                </Col>
+                <Col span={24}>
+                    <MyEventTimelineCard
+                        title="Event's Activities"
+                        data={timelineData}
+                        loading={timelineDataLoading}
+                        error={timelineDataError}
+                    />
+                </Col>
+                <Col span={24}>
+                    <ActivityTable
+                        data={activitiesTableData}
+                        loading={activitiesTableLoading}
+                        error={activitiesTableError}
+                    />
+                </Col>
+                {eventDetails?.status === 'FINISHED' && (
+                    <Col span={24}>
+                        <Card title="Participants Check-in/Check-out List"
+                            extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf}>
+                                Download PDF
+                            </Button>}
+                        >
+                            <EventParticipantsTable eventId={id || ''} />
+                        </Card>
+                    </Col>
+                )}
+            </Row>
+        </div>
+    )
 }
 
+export default DetailMyEventPage;
+
+src\pages\edit\EditEventPage.tsx:
+// src\pages\edit\EditEventPage.tsx
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import {
+    Alert,
+    Button,
+    Card,
+    Col,
+    DatePicker,
+    Form,
+    Input,
+    InputNumber,
+    Row,
+    Select,
+    Typography,
+    message,
+} from 'antd';
+import { HomeOutlined, PieChartOutlined, SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { DASHBOARD_ITEMS } from '../../constants';
+import { PageHeader, Loader } from '../../components';
+import { Events } from '../../types';
+import authService from '../../services/authService';
+import dayjs from 'dayjs';
+import { Helmet } from 'react-helmet-async';
+
+const EditEventPage: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
+    const [eventDetails, setEventDetails] = useState<Events | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [form] = Form.useForm();
+    const navigate = useNavigate();
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchEventDetails = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const accessToken = localStorage.getItem('accessToken');
+                const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+                if (response.statusCode === 200 && response.data.event) {
+                    setEventDetails(response.data.event);
+                    form.setFieldsValue({
+                        name: response.data.event.name,
+                        description: response.data.event.description,
+                        startDate: dayjs(response.data.event.startDate),
+                        endDate: dayjs(response.data.event.endDate),
+                        location: response.data.event.location,
+                        categoryId: response.data.event.categoryId,
+                        maxParticipants: response.data.event.maxParticipants,
+                        banner: response.data.event.banner,
+                        videoIntro: response.data.event.videoIntro,
+                        status: response.data.event.status, // Pre-fill status field
+                    });
+                } else {
+                    setError(response?.message || 'Failed to load event details');
+                    message.error(response?.message || 'Failed to load event details');
+                }
+            } catch (error: any) {
+                console.error('Error fetching event details:', error);
+                setError(error.message || 'Failed to load event details');
+                message.error(error.message || 'Failed to load event details');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEventDetails();
+    }, [id, form, navigate]);
+
+    const onFinish = async (values: any) => {
+        setLoading(true);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                message.error("No access token found. Please login again.");
+                navigate('/auth/signin');
+                return;
+            }
+
+            const eventData = { ...values, startDate: values.startDate.toISOString(), endDate: values.endDate.toISOString() };
+            const response = await authService.updateEvent(id!, eventData, accessToken) as { statusCode: number; message: string };
+            if (response.statusCode === 200) {
+                message.success(response.message);
+                setTimeout(() => {
+                    navigate('/dashboards/my-events');
+                }, 1000);
+            } else {
+                message.error(response.message || 'Failed to update event');
+            }
+        } catch (error: any) {
+            console.error('Error updating event:', error);
+            message.error(error.message || 'Failed to update event');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onFinishFailed = (errorInfo: any) => {
+        console.log('Failed:', errorInfo);
+    };
+
+    if (loading && !eventDetails) {
+        return <Loader />;
+    }
+
+    if (error) {
+        return <Alert message="Error" description={error} type="error" showIcon />;
+    }
+
+
+    return (
+        <div>
+            <Helmet>
+                <title>Edit Event | Antd Dashboard</title>
+            </Helmet>
+            <PageHeader
+                title="Edit Event"
+                breadcrumbs={[
+                    {
+                        title: (
+                            <>
+                                <HomeOutlined />
+                                <span>Home</span>
+                            </>
+                        ),
+                        path: '/',
+                    },
+                    {
+                        title: (
+                            <>
+                                <PieChartOutlined />
+                                <span>Dashboards</span>
+                            </>
+                        ),
+                        menu: {
+                            items: DASHBOARD_ITEMS.map((d) => ({
+                                key: d.title,
+                                title: <Link to={d.path}>{d.title}</Link>,
+                            })),
+                        },
+                    },
+                    {
+                        title: 'Edit Event',
+                    },
+                ]}
+            />
+
+            <Card title={`Edit Event: ${eventDetails?.name}`} extra={<Button onClick={() => navigate(-1)} icon={<ArrowLeftOutlined />}>Cancel</Button>}>
+                <Form
+                    form={form}
+                    name="edit-event-form"
+                    layout="vertical"
+                    onFinish={onFinish}
+                    onFinishFailed={onFinishFailed}
+                    autoComplete="off"
+                    requiredMark={false}
+                >
+                    <Row gutter={[16, 0]}>
+                        <Col sm={24} lg={24}>
+                            <Form.Item<any>
+                                label="Event's Name"
+                                name="name"
+                                rules={[{ required: true, message: 'Please input your event name!' }]}
+                            >
+                                <Input placeholder='Tech Conference 2026' />
+                            </Form.Item>
+                        </Col>
+                        <Col sm={24} lg={24}>
+                            <Form.Item<any>
+                                label="Event's Description"
+                                name="description"
+                                rules={[{ required: false }]}
+                            >
+                                <Input.TextArea rows={3} placeholder='A major event about technology and innovation (optional)' />
+                            </Form.Item>
+                        </Col>
+                        <Col sm={24} lg={8}>
+                            <Form.Item<any>
+                                label="Event's Capacity"
+                                name="maxParticipants"
+                                rules={[{ required: false, message: 'Please input event capacity!' }]}
+                            >
+                                <InputNumber style={{ width: "100%" }} min={0} placeholder="Unlimited if empty" />
+                            </Form.Item>
+                        </Col>
+                        <Col sm={24} lg={8}>
+                            <Form.Item<any>
+                                label="Start At"
+                                name="startDate"
+                                rules={[
+                                    { required: true, message: 'Please input your start of event' },
+                                ]}
+                            >
+                                <DatePicker style={{ width: "100%" }} showTime format="YYYY-MM-DD HH:mm:ss" />
+                            </Form.Item>
+                        </Col>
+                        <Col sm={24} lg={8}>
+                            <Form.Item<any>
+                                label="End At"
+                                name="endDate"
+                                rules={[
+                                    { required: true, message: 'Please input your end of event' },
+                                ]}
+                            >
+                                <DatePicker style={{ width: "100%" }} showTime format="YYYY-MM-DD HH:mm:ss" />
+                            </Form.Item>
+                        </Col>
+                        <Col sm={24} lg={12}>
+                            <Form.Item<any>
+                                label="Location"
+                                name="location"
+                                rules={[{ required: true, message: 'Please input event location!' }]}
+                            >
+                                <Input placeholder="Hall A, University Campus" />
+                            </Form.Item>
+                        </Col>
+                        <Col sm={24} lg={12}>
+                            <Form.Item<any>
+                                label="Event Type"
+                                name="categoryId"
+                                rules={[
+                                    { required: true, message: 'Please input your event type!' },
+                                ]}
+                            >
+                                <Select
+                                    options={[
+                                        { value: '678a2141f8a1c0593de58562', label: 'IT' }, // Replace with actual categories from API later
+                                        { value: '676b9128c0ea46752f9a5c89', label: 'Technology' },
+                                    ]}
+                                    placeholder="Select Event Type"
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col sm={24} lg={12}>
+                            <Form.Item<any>
+                                label="Banner URL (Optional)"
+                                name="banner"
+                                rules={[{ required: false }]}
+                            >
+                                <Input placeholder="https://example.com/banner.jpg" />
+                            </Form.Item>
+                        </Col>
+                        <Col sm={24} lg={12}>
+                            <Form.Item<any>
+                                label="Video Intro URL (Optional)"
+                                name="videoIntro"
+                                rules={[{ required: false }]}
+                            >
+                                <Input placeholder="https://example.com/video.mp4" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={24} lg={12}>
+                            <Form.Item<any>
+                                label="Status"
+                                name="status"
+                                rules={[{ required: true, message: 'Please select event status!' }]}
+                            >
+                                <Select
+                                    options={[
+                                        { value: 'SCHEDULED', label: 'Scheduled' },
+                                        { value: 'CANCELED', label: 'Canceled' },
+                                        { value: 'FINISHED', label: 'Finished' },
+                                    ]}
+                                    placeholder="Select Event Status"
+                                />
+                            </Form.Item>
+                        </Col>
+
+
+                    </Row>
+
+                    <Form.Item>
+                        <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading}>
+                            Save changes
+                        </Button>
+                    </Form.Item>
+                </Form>
+            </Card>
+        </div>
+    );
+};
+
+export default EditEventPage;
 
 src\pages\errors\Error.tsx:
+// src\pages\errors\Error.tsx
 import { useRouteError } from 'react-router-dom';
 import { Result, Typography } from 'antd';
 import { BackBtn, RefreshBtn } from '../../components';
@@ -14649,7 +15064,7 @@ export const ErrorPage = () => {
       status="error"
       title="Oops!"
       subTitle="Sorry, an unexpected error has occurred."
-      extra={[<BackBtn type="primary" />, <RefreshBtn />]}
+      extra={[<BackBtn key="back-btn" type="primary" />, <RefreshBtn key="refresh-btn" />]} // Added key props here
     >
       <div className="desc">
         <Paragraph>
@@ -14667,7 +15082,6 @@ export const ErrorPage = () => {
     </Result>
   );
 };
-
 
 src\pages\errors\Error400.tsx:
 import { Result, Typography } from 'antd';
@@ -16072,18 +16486,71 @@ export const UserProfileSecurityPage = () => {
 };
 
 
+src\redux\eventDetailsSlice.tsx:
+// src\redux\eventDetailsSlice.tsx
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { Events } from '../types'; // Import your Events type
+
+interface EventDetailsState {
+    eventDetails: Events | null;
+    loading: boolean;
+    error: string | null;
+}
+
+const initialState: EventDetailsState = {
+    eventDetails: null,
+    loading: false,
+    error: null,
+};
+
+const eventDetailsSlice = createSlice({
+    name: 'eventDetails',
+    initialState,
+    reducers: {
+        setEventDetails: (state, action: PayloadAction<Events>) => {
+            state.eventDetails = action.payload;
+            state.loading = false;
+            state.error = null;
+        },
+        fetchEventDetailsStart: (state) => {
+            state.loading = true;
+            state.error = null;
+        },
+        fetchEventDetailsFailure: (state, action: PayloadAction<string>) => {
+            state.loading = false;
+            state.error = action.payload;
+            state.eventDetails = null;
+        },
+        clearEventDetails: (state) => {
+            state.eventDetails = null;
+            state.loading = false;
+            state.error = null;
+        },
+    },
+});
+
+export const {
+    setEventDetails,
+    fetchEventDetailsStart,
+    fetchEventDetailsFailure,
+    clearEventDetails,
+} = eventDetailsSlice.actions;
+
+export default eventDetailsSlice.reducer;
+
 src\redux\store.ts:
 // src/redux/store.ts
 import { configureStore } from '@reduxjs/toolkit';
 import themeReducer from './theme/themeSlice';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-import userReducer from './userSlice';  // Import userReducer, update import path
+import userReducer from './userSlice';
+import eventDetailsReducer from './eventDetailsSlice'; // Import eventDetailsReducer
 
 const persistConfig = {
   key: 'root',
   storage,
-  blacklist: ['user'],
+  blacklist: ['user', 'eventDetails'], // Blacklist eventDetails too if needed
 };
 
 const persistedThemeReducer = persistReducer(persistConfig, themeReducer);
@@ -16092,6 +16559,7 @@ export const store = configureStore({
   reducer: {
     theme: persistedThemeReducer,
     user: userReducer,
+    eventDetails: eventDetailsReducer, // Add eventDetailsReducer here
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -16224,6 +16692,7 @@ import { AboutPage } from '../pages/About.tsx';
 import EventsDashboardPage from '../pages/dashboards/Events.tsx';
 import EventsListPage from '../pages/dashboards/EventsList.tsx';
 import EventDetailsPage from '../pages/details/EventDetailsPage.tsx';
+import EditEventPage from '../pages/edit/EditEventPage.tsx';
 
 // Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
@@ -16281,15 +16750,14 @@ const router = createBrowserRouter([
     ],
   },
   {
-    // details/events
     path: '/details',
     element: <PageWrapper children={<EventDetailLayout />} />,
     errorElement: <ErrorPage />,
     children: [
       {
         index: true,
-        path: 'events/:id', // Path cho trang chi tiết sự kiện
-        element: <EventDetailsPage />, // Sử dụng đúng component DetailEventPage (đã rename)
+        path: 'events/:id',
+        element: <EventDetailsPage />,
       },
       {
         path: 'my-events/:id',
@@ -16456,6 +16924,17 @@ const router = createBrowserRouter([
     ],
   },
   {
+    path: '/edit', // Add route for edit event page
+    element: <PageWrapper children={<DashboardLayout />} />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: 'events/:id',
+        element: <EditEventPage />, // Use EditEventPage component
+      },
+    ],
+  },
+  {
     path: 'errors',
     errorElement: <ErrorPage />,
     children: [
@@ -16498,6 +16977,7 @@ const router = createBrowserRouter([
 export default router;
 
 src\services\authService.ts:
+// src\services\authService.ts
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8080/api/v1/auth';
@@ -16626,6 +17106,37 @@ const authService = {
       throw error.response.data;
     }
   },
+  deleteEvent: async (eventId: string, accessToken: string) => { // Function to delete event
+    try {
+      const response = await axios.delete(
+        `${API_EVENT_BASE_URL}/${eventId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  updateEvent: async (eventId: string, eventData: any, accessToken: string) => { // Function to update event
+    try {
+      const response = await axios.patch(
+        `${API_EVENT_BASE_URL}/${eventId}`,
+        eventData,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
   getOrganizedEvents: async (status?: string, accessToken?: string) => { // Function to fetch organized events, status is optional
     try {
       const headers: any = {
@@ -16639,6 +17150,24 @@ const authService = {
         url += `?status=${status}`; // Append status query parameter if provided
       }
       const response = await axios.get(url, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  uploadEventFiles: async (eventId: string, field: string, formData: FormData, accessToken: string) => { // Function to upload event files
+    try {
+      const response = await axios.post(
+        `${API_EVENT_BASE_URL}/${eventId}/files`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data', // Quan trọng: set Content-Type
+            'Authorization': `Bearer ${accessToken}`,
+            'field': field // Truyền field vào header
+          },
+        }
+      );
       return response.data;
     } catch (error: any) {
       throw error.response.data;

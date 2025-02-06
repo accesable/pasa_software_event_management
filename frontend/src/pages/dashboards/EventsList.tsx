@@ -1,22 +1,22 @@
 // src\pages\dashboards\EventsList.tsx
-import { Alert, Button, Card, message, Space, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Space, Table, Tag, Select } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageHeader, Loader } from '../../components';
 import { useFetchData } from '../../hooks';
 import { ColumnsType } from 'antd/es/table';
 import { Events } from '../../types';
 import dayjs from 'dayjs';
-
+import React, { useState } from 'react';
 
 const EVENT_COLUMNS: ColumnsType<Events> = [
     {
-        title: 'Name', // Cột "Name" chính, hiển thị link
+        title: 'Name',
         dataIndex: 'name',
         key: 'name',
-        render: (text, record) => <Link to={`/details/events/${record.id}`}> {text}</Link>, // Link tới trang chi tiết
+        render: (text, record) => <Link to={`/details/events/${record.id}`}> {text}</Link>,
     },
     {
         title: 'Location',
@@ -51,21 +51,36 @@ const EVENT_COLUMNS: ColumnsType<Events> = [
         ),
     },
     {
-        title: 'Actions', // Cột "Actions" chỉ còn nút "Details"
+        title: 'Actions',
         key: 'actions',
         render: (_, record) => (
             <Space size="middle">
                 <Button type="primary" size="small">
-                    <Link to={`/details/events/${record.id}`}>Details</Link> {/* Nút Details link tới trang chi tiết */}
+                    <Link to={`/details/events/${record.id}`}>Details</Link>
                 </Button>
             </Space>
         ),
     },
 ];
 
+const EVENT_STATUS_OPTIONS = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'SCHEDULED', label: 'Scheduled' },
+    { value: 'CANCELED', label: 'Canceled' },
+    { value: 'FINISHED', label: 'Finished' },
+];
 
 const EventsListPage = () => {
-    const { data: eventsData, error: eventsError, loading: eventsLoading } = useFetchData('http://localhost:8080/api/v1/events');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const { data: eventsData, error: eventsError, loading: eventsLoading } = useFetchData(
+        `http://localhost:8080/api/v1/events${statusFilter !== 'all' ? `?status=${statusFilter}` : ''}`,
+        localStorage.getItem('accessToken') || undefined
+    );
+
+
+    const onStatusFilterChange = (value: string) => {
+        setStatusFilter(value);
+    };
 
     return (
         <div>
@@ -104,7 +119,17 @@ const EventsListPage = () => {
                 ]}
             />
 
-            <Card>
+            <Card
+                title="Events"
+                extra={
+                    <Select
+                        defaultValue="all"
+                        style={{ width: 200 }}
+                        onChange={onStatusFilterChange}
+                        options={EVENT_STATUS_OPTIONS}
+                    />
+                }
+            >
                 {eventsError && (
                     <Alert
                         message="Error"
@@ -117,12 +142,12 @@ const EventsListPage = () => {
 
                 <Table
                     columns={EVENT_COLUMNS}
-                    dataSource={eventsData?.data?.events || []} // Use data from API response
+                    dataSource={eventsData?.data?.events || []}
                     loading={eventsLoading}
                     pagination={{
                         total: eventsData?.data?.meta?.totalItems,
                         showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-                        pageSize: 10, // Adjust as needed
+                        pageSize: 10,
                         showSizeChanger: true,
                         pageSizeOptions: ['10', '20', '50', '100'],
                     }}
