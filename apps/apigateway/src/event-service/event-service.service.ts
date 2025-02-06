@@ -96,7 +96,6 @@ export class EventServiceService implements OnModuleInit {
         users: users,
         event: event,
       };
-
       return lastValueFrom(
         this.eventService.sendEventInvites(payload),
       );

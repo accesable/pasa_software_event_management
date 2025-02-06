@@ -50,7 +50,7 @@ export class EventServiceController {
       event
     );
   }
-
+ 
   @Get(':id/participants')
   @ResponseMessage('Get participants success')
   async getParticipantsEvent(@Param('id') eventId: string) {

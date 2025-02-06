@@ -44,7 +44,7 @@ export class EventService {
 
 
     // tự động gửi tbao nhắc nhỡ mỗi 1h
-    @Cron(CronExpression.EVERY_30_SECONDS, { name: 'sendRemindersCron', timeZone: 'UTC' })
+    // @Cron(CronExpression.EVERY_30_SECONDS, { name: 'sendRemindersCron', timeZone: 'UTC' })
     async sendReminders(): Promise<void> {
         try {
             const now = new Date();
@@ -129,6 +129,7 @@ export class EventService {
                         eventId: event.id,
                         email: user.email,
                         status: 'pending',
+                        userId: user.id,
                     });
 
                     await invitedUser.save();
