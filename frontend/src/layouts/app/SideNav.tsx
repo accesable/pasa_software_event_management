@@ -95,8 +95,8 @@ const items: MenuProps['items'] = [
       null
     ),
     getItem(
-      <Link to={PATH_DASHBOARD.logistics}>Logistics</Link>,
-      'logistics',
+      <Link to={PATH_DASHBOARD.speaker_guest}>Speaker & Guest</Link>,
+      'speakers-guests',
       null
     ),
   ]),

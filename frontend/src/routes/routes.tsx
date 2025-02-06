@@ -55,6 +55,8 @@ import EventsListPage from '../pages/dashboards/EventsList.tsx';
 import EventDetailsPage from '../pages/details/EventDetailsPage.tsx';
 import EditEventPage from '../pages/edit/EditEventPage.tsx';
 import ParticipatedEventsPage from '../pages/dashboards/ParticipatedEvents.tsx';
+import SpeakerManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
+import SpeakerGuestManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
 
 // Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
@@ -132,6 +134,10 @@ const router = createBrowserRouter([
     element: <PageWrapper children={<DashboardLayout />} />,
     errorElement: <ErrorPage />,
     children: [
+      {
+        path: 'speakers-guests', // Updated route path
+        element: <SpeakerGuestManagementPage />, // Use combined management page
+      },
       {
         path: 'participated-events',  // Add route for participated events page
         element: <ParticipatedEventsPage />,

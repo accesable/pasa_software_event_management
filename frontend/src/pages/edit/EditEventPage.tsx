@@ -1,6 +1,6 @@
 // src\pages\edit\EditEventPage.tsx
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+// src\pages\edit\EditEventPage.tsx
+import React, { useEffect, useState, useCallback } from 'react';
 import {
     Alert,
     Button,
@@ -14,14 +14,18 @@ import {
     Select,
     Typography,
     message,
+    Space
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { DASHBOARD_ITEMS } from '../../constants';
+import { DASHBOARD_ITEMS, PATH_DASHBOARD } from '../../constants';
 import { PageHeader, Loader } from '../../components';
 import { Events } from '../../types';
 import authService from '../../services/authService';
 import dayjs from 'dayjs';
 import { Helmet } from 'react-helmet-async';
+import EventFileUploadForm from './EventFileUploadForm';
+import axiosInstance from '../../api/axiosInstance';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { HomeOutlined, PieChartOutlined, ArrowLeftOutlined, CloseOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
 
 const EditEventPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -30,43 +34,84 @@ const EditEventPage: React.FC = () => {
     const [form] = Form.useForm();
     const navigate = useNavigate();
     const [error, setError] = useState<string | null>(null);
+    const [speakersOptions, setSpeakersOptions] = useState<any>([]);
+
+    const fetchEventDetails = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+            if (response.statusCode === 200 && response.data.event) {
+                setEventDetails(response.data.event);
+                form.setFieldsValue({
+                    name: response.data.event.name,
+                    description: response.data.event.description,
+                    startDate: dayjs(response.data.event.startDate),
+                    endDate: dayjs(response.data.event.endDate),
+                    location: response.data.event.location,
+                    categoryId: response.data.event.categoryId,
+                    maxParticipants: response.data.event.maxParticipants,
+                    banner: response.data.event.banner,
+                    videoIntro: response.data.event.videoIntro,
+                    status: response.data.event.status,
+                    schedule: response.data.event.schedule?.map((session: any) => ({
+                        ...session,
+                        startTime: dayjs(session.startTime),
+                        endTime: dayjs(session.endTime),
+                    })) || [], // Treat schedule as empty array if null or undefined
+                });
+            } else {
+                setError(response?.message || 'Failed to load event details');
+                message.error(response?.message || 'Failed to load event details');
+            }
+        } catch (error: any) {
+            console.error('Error fetching event details:', error);
+            setError(error.message || 'Failed to load event details');
+            message.error(error.message || 'Failed to load event details');
+        } finally {
+            setLoading(false);
+        }
+    }, [id, form, navigate]);
+
+    const fetchSpeakersOptions = useCallback(async () => {
+        setLoading(true);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                message.error("No access token found. Please login again.");
+                navigate(PATH_DASHBOARD.default);
+                return;
+            }
+            const response = await axiosInstance.get('/speakers', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+
+            const data = response.data as { statusCode: number; data: { speakers: any[] } };
+            if (data.statusCode === 200 && data.data?.speakers) {
+                const speakerList = (response.data as { data: { speakers: any[] } }).data.speakers;
+                setSpeakersOptions(speakerList.map((speaker: any) => ({
+                    value: speaker.id,
+                    label: speaker.name,
+                })));
+            } else {
+                setError("Failed to load speakers options.");
+                message.error("Failed to load speakers options.");
+            }
+        } catch (error: any) {
+            console.error("Failed to load speakers options:", error);
+            setError("Failed to load speakers options.");
+            message.error("Failed to load speakers options.");
+        } finally {
+            setLoading(false);
+        }
+    }, [navigate]);
+
 
     useEffect(() => {
-        const fetchEventDetails = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const accessToken = localStorage.getItem('accessToken');
-                const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
-                if (response.statusCode === 200 && response.data.event) {
-                    setEventDetails(response.data.event);
-                    form.setFieldsValue({
-                        name: response.data.event.name,
-                        description: response.data.event.description,
-                        startDate: dayjs(response.data.event.startDate),
-                        endDate: dayjs(response.data.event.endDate),
-                        location: response.data.event.location,
-                        categoryId: response.data.event.categoryId,
-                        maxParticipants: response.data.event.maxParticipants,
-                        banner: response.data.event.banner,
-                        videoIntro: response.data.event.videoIntro,
-                        status: response.data.event.status, // Pre-fill status field
-                    });
-                } else {
-                    setError(response?.message || 'Failed to load event details');
-                    message.error(response?.message || 'Failed to load event details');
-                }
-            } catch (error: any) {
-                console.error('Error fetching event details:', error);
-                setError(error.message || 'Failed to load event details');
-                message.error(error.message || 'Failed to load event details');
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchEventDetails();
-    }, [id, form, navigate]);
+        fetchSpeakersOptions();
+    }, [fetchEventDetails, fetchSpeakersOptions]);
 
     const onFinish = async (values: any) => {
         setLoading(true);
@@ -78,7 +123,11 @@ const EditEventPage: React.FC = () => {
                 return;
             }
 
-            const eventData = { ...values, startDate: values.startDate.toISOString(), endDate: values.endDate.toISOString() };
+            const eventData = { ...values, startDate: values.startDate.toISOString(), endDate: values.endDate.toISOString(), schedule: values.schedule?.map((session: any) => ({
+                ...session,
+                startTime: session.startTime.toISOString(),
+                endTime: session.endTime.toISOString(),
+            })) };
             const response = await authService.updateEvent(id!, eventData, accessToken) as { statusCode: number; message: string };
             if (response.statusCode === 200) {
                 message.success(response.message);
@@ -153,7 +202,7 @@ const EditEventPage: React.FC = () => {
                     layout="vertical"
                     onFinish={onFinish}
                     onFinishFailed={onFinishFailed}
-                    autoComplete="off"
+                    autoComplete="on"
                     requiredMark={false}
                 >
                     <Row gutter={[16, 0]}>
@@ -219,9 +268,7 @@ const EditEventPage: React.FC = () => {
                             <Form.Item<any>
                                 label="Event Type"
                                 name="categoryId"
-                                rules={[
-                                    { required: true, message: 'Please input your event type!' },
-                                ]}
+                                rules={[{ required: true, message: 'Please input your event type!' }]}
                             >
                                 <Select
                                     options={[
@@ -267,6 +314,69 @@ const EditEventPage: React.FC = () => {
                             </Form.Item>
                         </Col>
 
+                        <Col span={24}>
+                            <Form.List name="schedule" >
+                                {(fields, { add, remove }, { errors }) => (
+                                    <>
+                                        {fields.map(({ key, name, fieldKey, ...restField }) => (
+                                            <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'title']}
+                                                    fieldKey={[fieldKey || 0 , 'title']}
+                                                    rules={[{ required: true, message: 'Missing session title' }]}
+                                                >
+                                                    <Input placeholder="Title" />
+                                                </Form.Item>
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'startTime']}
+                                                    fieldKey={[fieldKey || 0, 'startTime']}
+                                                    rules={[{ required: true, message: 'Missing start time' }]}
+                                                >
+                                                    <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" placeholder="Start Time" />
+                                                </Form.Item>
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'endTime']}
+                                                    fieldKey={[fieldKey || 0, 'endTime']}
+                                                    rules={[{ required: true, message: 'Missing end time' }]}
+                                                >
+                                                    <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" placeholder="End Time" />
+                                                </Form.Item>
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'description']}
+                                                    fieldKey={[fieldKey || 0, 'description']}
+                                                >
+                                                    <Input placeholder="Description" />
+                                                </Form.Item>
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'speakerIds']}
+                                                    fieldKey={[fieldKey || 0, 'speakerIds']}
+                                                    label="Speakers"
+                                                >
+                                                    <Select
+                                                        mode="multiple"
+                                                        placeholder="Select Speakers"
+                                                        options={speakersOptions}
+                                                        allowClear
+                                                    />
+                                                </Form.Item>
+                                                <Button danger icon={<CloseOutlined />} onClick={() => remove(name)} />
+                                            </Space>
+                                        ))}
+                                        <Form.ErrorList errors={errors} />
+                                        <Form.Item>
+                                            <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                                                Add Session
+                                            </Button>
+                                        </Form.Item>
+                                    </>
+                                )}
+                            </Form.List>
+                        </Col>
 
                     </Row>
 
@@ -276,6 +386,10 @@ const EditEventPage: React.FC = () => {
                         </Button>
                     </Form.Item>
                 </Form>
+            </Card>
+
+            <Card title="Upload Files" style={{ marginTop: 24 }}>
+                <EventFileUploadForm eventId={id!} />
             </Card>
         </div>
     );

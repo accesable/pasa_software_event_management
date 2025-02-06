@@ -46,6 +46,8 @@ export const PATH_DASHBOARD = {
   my_events : path(ROOTS_DASHBOARD, '/my-events'),
   users : path(ROOTS_DASHBOARD, '/users'),
   participated_events: path(ROOTS_DASHBOARD, '/participated-events'),
+  events_list: path(ROOTS_DASHBOARD, '/events-list'),
+  speaker_guest: path(ROOTS_DASHBOARD, '/speakers-guests'),
 };
 
 export const PATH_SITEMAP = {

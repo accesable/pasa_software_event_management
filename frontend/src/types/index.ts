@@ -84,3 +84,42 @@ export interface Participants {
   eventId: string;
   checkOutAt: string | null; // Có thể null nếu chưa check-out
 }
+
+export interface Speaker {
+  id?: string;
+  name: string;
+  bio?: string;
+  linkFb?: string; // Nếu có
+  avatar?: string; // Nếu có
+  email: string;
+  jobTitle?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Guest { // Add Guest interface
+  id?: string;
+  name: string;
+  jobTitle?: string;
+  organization?: string;
+  linkSocial?: string;
+  avatar?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  email: string;
+}
+
+export interface SpeakerGuestData {
+  entityType: string;
+  id?: string;
+  name: string;
+  bio?: string;
+  linkFb?: string;
+  avatar?: string;
+  email: string;
+  jobTitle?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  organization?: string;
+  linkSocial?: string;
+}
