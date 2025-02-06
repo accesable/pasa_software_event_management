@@ -365,6 +365,7 @@ body {
 
 
 src\main.tsx:
+// src\main.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
@@ -372,6 +373,7 @@ import './index.css';
 import { store, persistor } from './redux/store.ts';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <PersistGate persistor={persistor}>
@@ -382,7 +384,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     ,
   </React.StrictMode>
 );
-
 
 src\vite-env.d.ts:
 /// <reference types="vite/client" />
@@ -407,64 +408,69 @@ import { setUser } from '../redux/userSlice';
 const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'; // Sử dụng biến môi trường hoặc giá trị mặc định
 
 const axiosInstance = axios.create({
-    baseURL: baseURL,
-    withCredentials: true, // Cho phép gửi cookie (nếu cần thiết cho refresh token)
+  baseURL: baseURL,
+  withCredentials: true, // Cho phép gửi cookie (nếu cần thiết cho refresh token)
 });
 
 axiosInstance.interceptors.request.use(
-    (config) => {
-        const accessToken = localStorage.getItem('accessToken');
-        if (accessToken && config.headers) {
-            config.headers['Authorization'] = `Bearer ${accessToken}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
+  (config) => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken && config.headers) {
+      config.headers['Authorization'] = `Bearer ${accessToken}`;
     }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 axiosInstance.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    async (error) => {
-        const originalRequest = error.config;
-        if (error.response?.status === 401 && !originalRequest._retry) { // Check for 401 and prevent infinite loop
-            originalRequest._retry = true; // Mark as retried
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    console.log("Interceptor Response: Error Status", error.response?.status); // Log status code
 
-            try {
-                const refreshTokenResponse = await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true }); // Refresh token endpoint
-                if (refreshTokenResponse.status === 200) {
-                    const newAccessToken = (refreshTokenResponse.data as { data: { accessToken: string, user: any } }).data.accessToken;
-                    const user = (refreshTokenResponse.data as { data: { accessToken: string, user: any } }).data.user;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      console.log("Interceptor Response: 401 Error intercepted, attempting refresh token..."); // Log 401 interception
 
-                    localStorage.setItem('accessToken', newAccessToken);
-                    localStorage.setItem('user', JSON.stringify(user));
-                    store.dispatch(setUser(user)); // Dispatch setUser action to update Redux store
+      try {
+        console.log("Interceptor Response: Calling refresh token API..."); // Log refresh token request
+        const refreshTokenResponse = await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true });
+        console.log("Interceptor Response: Refresh token API Status", refreshTokenResponse.status); // Log refresh token response status
 
-                    originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`; // Update header for the original request
-                    return axiosInstance(originalRequest); // Retry the original request with new token
-                } else {
-                    // Refresh token failed, redirect to login
-                    localStorage.removeItem('accessToken');
-                    localStorage.removeItem('user');
-                    window.location.href = '/auth/signin'; // Or use navigate if you have access to history
-                    return Promise.reject(error);
-                }
-            } catch (refreshError) {
-                // Handle refresh token error (e.g., redirect to login)
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('user');
-                window.location.href = '/auth/signin'; // Or use navigate
-                return Promise.reject(refreshError);
-            }
+        if (refreshTokenResponse.status === 200) {
+          const newAccessToken = (refreshTokenResponse.data as { data: { accessToken: string, user: any } }).data.accessToken;
+          const user = (refreshTokenResponse.data as { data: { accessToken: string, user: any } }).data.user;
+
+          localStorage.setItem('accessToken', newAccessToken);
+          localStorage.setItem('user', JSON.stringify(user));
+          store.dispatch(setUser(user));
+
+          originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+          return axiosInstance(originalRequest);
+        } else {
+          console.log("Interceptor Response: Refresh token failed (non-200 status), redirecting to login"); // Log refresh token failure
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('user');
+          window.location.href = '/auth/signin';
+          return Promise.reject(error);
         }
-
-        return Promise.reject(error);
+      } catch (refreshError) {
+        console.error("Interceptor Response: Error during refresh token process:", refreshError); // Log refresh token error
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        window.location.href = '/auth/signin';
+        return Promise.reject(refreshError);
+      }
     }
-);
 
+    return Promise.reject(error);
+  }
+);
 
 export default axiosInstance;
 
@@ -7914,6 +7920,8 @@ export const PATH_DASHBOARD = {
   my_events : path(ROOTS_DASHBOARD, '/my-events'),
   users : path(ROOTS_DASHBOARD, '/users'),
   participated_events: path(ROOTS_DASHBOARD, '/participated-events'),
+  events_list: path(ROOTS_DASHBOARD, '/events-list'),
+  speaker_guest: path(ROOTS_DASHBOARD, '/speakers-guests'),
 };
 
 export const PATH_SITEMAP = {
@@ -8738,8 +8746,8 @@ const items: MenuProps['items'] = [
       null
     ),
     getItem(
-      <Link to={PATH_DASHBOARD.logistics}>Logistics</Link>,
-      'logistics',
+      <Link to={PATH_DASHBOARD.speaker_guest}>Speaker & Guest</Link>,
+      'speakers-guests',
       null
     ),
   ]),
@@ -9910,9 +9918,6 @@ src\pages\authentication\ChangePassword.tsx:
 src\pages\authentication\ForgotPassword.tsx:
 
 
-src\pages\authentication\GoogleLogin.tsx:
-
-
 src\pages\authentication\index.ts:
 // src/pages/authentication/index.ts
 export { SignUpPage } from './SignUp';
@@ -10092,7 +10097,7 @@ export const SignInPage = () => {
   const isMobile = useMediaQuery({ maxWidth: 769 });
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const dispatch = useDispatch();
+  const useDispatchHook = useDispatch();
 
   const onFinish = async (values: FieldType) => {
     setLoading(true);
@@ -10111,7 +10116,7 @@ export const SignInPage = () => {
 
         localStorage.setItem('accessToken', response.data.accessToken);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        dispatch(setUser(response.data.user));
+        useDispatchHook(setUser(response.data.user));
 
         setTimeout(() => {
           navigate(PATH_DASHBOARD.default);
@@ -10132,24 +10137,11 @@ export const SignInPage = () => {
   };
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
     try {
-      const response = await authService.googleLogin() as unknown as {
-        statusCode: number,
-        message: string,
-        data: { url: string }
-      };
-
-      if (response.statusCode === 200) {
-        window.location.href = response.data.url;
-      } else {
-        message.error(response.message || 'Google Login failed');
-      }
+      await authService.googleLogin(); // Gọi hàm googleLogin đã được sửa đổi
+      // **Không cần navigate hoặc xử lý token ở đây.** Backend sẽ lo chuyển hướng frontend sau khi đăng nhập Google thành công.
     } catch (error: any) {
-      console.error('Google Login failed:', error);
-      message.error(error.message || 'Google Login failed');
-    } finally {
-      setLoading(false);
+      message.error(error.message || 'Google login failed');
     }
   };
 
@@ -10242,12 +10234,11 @@ export const SignInPage = () => {
           >
             <Button
               icon={<GoogleOutlined />}
-              onClick={handleGoogleLogin}
               loading={loading}
+              onClick={() => handleGoogleLogin} // Gọi hàm login từ useGoogleLogin
             >
               Sign in with Google
             </Button>
-            {/* You can add Facebook, Twitter login buttons here if needed */}
           </Flex>
         </Flex>
       </Col>
@@ -13732,15 +13723,15 @@ src\pages\dashboards\ParticipatedEvents.tsx:
 // src/pages/dashboards/ParticipatedEvents.tsx
 import React, { useState } from 'react';
 import {
-  Alert,
-  Button,
-  Card,
-  Space,
-  Table,
-  Tag,
-  Select,
-  message,
-  Popconfirm,
+    Alert,
+    Button,
+    Card,
+    Space,
+    Table,
+    Tag,
+    Select,
+    message,
+    Popconfirm,
 } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
@@ -13753,161 +13744,161 @@ import useFetchParticipatedEventsData from '../../hooks/useFetchParticipatedEven
 import authService from '../../services/authService';
 
 const EVENT_STATUS_OPTIONS = [
-  { value: 'all', label: 'All Statuses' },
-  { value: 'SCHEDULED', label: 'Scheduled' },
-  { value: 'CANCELED', label: 'Canceled' },
-  { value: 'FINISHED', label: 'Finished' },
+    { value: 'all', label: 'All Statuses' },
+    { value: 'SCHEDULED', label: 'Scheduled' },
+    { value: 'CANCELED', label: 'Canceled' },
+    { value: 'FINISHED', label: 'Finished' },
 ];
 
 const ParticipatedEventsPage = () => {
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  // Sử dụng hook custom để fetch dữ liệu tham gia event
-  const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } =
-    useFetchParticipatedEventsData(statusFilter === 'all' ? undefined : statusFilter);
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    // Sử dụng hook custom để fetch dữ liệu tham gia event
+    const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } =
+        useFetchParticipatedEventsData(statusFilter === 'all' ? undefined : statusFilter);
 
-  // loading dành cho thao tác update/delete
-  const [actionLoading, setActionLoading] = useState(false);
+    // loading dành cho thao tác update/delete
+    const [actionLoading, setActionLoading] = useState(false);
 
-  const onStatusFilterChange = (value: string) => {
-    setStatusFilter(value);
-    setCurrentPage(1);
-  };
+    const onStatusFilterChange = (value: string) => {
+        setStatusFilter(value);
+        setCurrentPage(1);
+    };
 
-  const handlePaginationChange = (page: number, pageSize: number) => {
-    setCurrentPage(page);
-    setPageSize(pageSize);
-  };
+    const handlePaginationChange = (page: number, pageSize: number) => {
+        setCurrentPage(page);
+        setPageSize(pageSize);
+    };
 
-  const isEmptyData = eventsData?.events === undefined || eventsData?.events?.length === 0;
+    const isEmptyData = eventsData?.events === undefined || eventsData?.events?.length === 0;
 
-  // Hàm xử lý Unregister (delete) event
-  const handleLeaveEvent = async (participantId: string) => {
-    setActionLoading(true);
-    try {
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error('No access token found. Please login again.');
-        return;
-      }
-      // Gọi API để unregister event
-      // Giả sử authService.unregisterEvent sử dụng endpoint: /participants/{participantId}
-      const response = (await authService.unregisterEvent(
-        participantId,
-        accessToken
-      )) as { statusCode: number; message: string };
+    // Hàm xử lý Unregister (delete) event
+    const handleLeaveEvent = async (participantId: string) => {
+        setActionLoading(true);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                message.error('No access token found. Please login again.');
+                return;
+            }
+            // Gọi API để unregister event
+            // Giả sử authService.unregisterEvent sử dụng endpoint: /participants/{participantId}
+            const response = (await authService.unregisterEvent(
+                participantId,
+                accessToken
+            )) as { statusCode: number; message: string, error?: string };
 
-      if (response.statusCode === 200) {
-        message.success(response.message);
-        // Refresh dữ liệu sau khi delete
-        fetchData(statusFilter === 'all' ? undefined : statusFilter);
-      } else {
-        message.error(response.message || 'Failed to unregister from event');
-      }
-    } catch (error: any) {
-      console.error('Error unregistering from event:', error);
-      message.error(error.message || 'Failed to unregister from event');
-    } finally {
-      setActionLoading(false);
-    }
-  };
+            if (response.statusCode === 200) {
+                message.success(response.message);
+                // Refresh dữ liệu sau khi delete
+                fetchData(statusFilter === 'all' ? undefined : statusFilter);
+            } else {
+                message.error(response.error || 'Failed to unregister from event');
+            }
+        } catch (error: any) {
+            console.error('Error unregistering from event:', error);
+            message.error(error.error || 'Failed to unregister from event');
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
-  // Hàm xử lý Update Sessions (update lại các session) của participant
-  const handleUpdateSessions = async (participantId: string) => {
-    setActionLoading(true);
-    try {
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error('No access token found. Please login again.');
-        return;
-      }
-      // Gọi API để update sessions
-      // Giả sử authService.updateParticipantSessions sử dụng endpoint: /participants/{participantId}
-      // Và có thể truyền thêm dữ liệu cần update (ở đây minh demo truyền rỗng)
-      const response = (await authService.updateParticipantSessions(
-        participantId,
-        {}, // dữ liệu update, thay đổi theo yêu cầu của backend
-        accessToken
-      )) as { statusCode: number; message: string };
+    // Hàm xử lý Update Sessions (update lại các session) của participant
+    const handleUpdateSessions = async (participantId: string) => {
+        setActionLoading(true);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                message.error('No access token found. Please login again.');
+                return;
+            }
+            // Gọi API để update sessions
+            // Giả sử authService.updateParticipantSessions sử dụng endpoint: /participants/{participantId}
+            // Và có thể truyền thêm dữ liệu cần update (ở đây minh demo truyền rỗng)
+            const response = (await authService.updateParticipantSessions(
+                participantId,
+                {}, // dữ liệu update, thay đổi theo yêu cầu của backend
+                accessToken
+            )) as { statusCode: number; message: string, error?: string };
 
-      if (response.statusCode === 200) {
-        message.success(response.message || 'Sessions updated successfully');
-        // Refresh dữ liệu sau khi update
-        fetchData(statusFilter === 'all' ? undefined : statusFilter);
-      } else {
-        message.error(response.message || 'Failed to update sessions');
-      }
-    } catch (error: any) {
-      console.error('Error updating sessions:', error);
-      message.error(error.message || 'Failed to update sessions');
-    } finally {
-      setActionLoading(false);
-    }
-  };
+            if (response.statusCode === 200) {
+                message.success(response.error || 'Sessions updated successfully');
+                // Refresh dữ liệu sau khi update
+                fetchData(statusFilter === 'all' ? undefined : statusFilter);
+            } else {
+                message.error(response.error || 'Failed to update sessions');
+            }
+        } catch (error: any) {
+            console.error('Error updating sessions:', error);
+            message.error(error.error || 'Failed to update sessions');
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
-  // Định nghĩa các cột của bảng bên trong component để có thể truy cập các hàm handleLeaveEvent, handleUpdateSessions
-  const columns: ColumnsType<Events> = [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => (
-        <Link to={`/details/events/${record.id}`}>{text}</Link>
-      ),
-    },
-    {
-      title: 'Location',
-      dataIndex: 'location',
-      key: 'location',
-    },
-    {
-      title: 'Start Date',
-      dataIndex: 'startDate',
-      key: 'startDate',
-      render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
-    },
-    {
-      title: 'End Date',
-      dataIndex: 'endDate',
-      key: 'endDate',
-      render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
-    },
-    {
-      title: 'Category',
-      dataIndex: 'categoryId',
-      key: 'categoryId',
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag
-          color={
-            status === 'SCHEDULED'
-              ? 'blue'
-              : status === 'CANCELED'
-              ? 'red'
-              : 'green'
-          }
-        >
-          {status}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space size="middle">
-          <Button type="primary" size="small">
-            <Link to={`/details/events/${record.id}`}>Details</Link>
-          </Button>
-          <Button onClick={() => handleUpdateSessions(record.id)} size="small">
-            Update Sessions
-          </Button>
-          <Popconfirm
+    // Định nghĩa các cột của bảng bên trong component để có thể truy cập các hàm handleLeaveEvent, handleUpdateSessions
+    const columns: ColumnsType<Events> = [
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+            render: (text, record) => (
+                <Link to={`/details/events/${record.id}`}>{text}</Link>
+            ),
+        },
+        {
+            title: 'Location',
+            dataIndex: 'location',
+            key: 'location',
+        },
+        {
+            title: 'Start Date',
+            dataIndex: 'startDate',
+            key: 'startDate',
+            render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+        },
+        {
+            title: 'End Date',
+            dataIndex: 'endDate',
+            key: 'endDate',
+            render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+        },
+        {
+            title: 'Category',
+            dataIndex: 'categoryId',
+            key: 'categoryId',
+        },
+        {
+            title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+            render: (status) => (
+                <Tag
+                    color={
+                        status === 'SCHEDULED'
+                            ? 'blue'
+                            : status === 'CANCELED'
+                                ? 'red'
+                                : 'green'
+                    }
+                >
+                    {status}
+                </Tag>
+            ),
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            render: (_, record) => (
+                <Space size="middle">
+                    <Button type="primary" size="small">
+                        <Link to={`/details/events/${record.id}`}>Details</Link>
+                    </Button>
+                    <Button onClick={() => handleUpdateSessions(record.id)} size="small">
+                        Update Sessions
+                    </Button>
+                    {/* <Popconfirm
             title="Unregister from event"
             description="Are you sure you want to unregister from this event?"
             onConfirm={() => handleLeaveEvent(record.id)}
@@ -13918,90 +13909,104 @@ const ParticipatedEventsPage = () => {
             <Button danger size="small">
               Unregister
             </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
-  return (
-    <div>
-      <Helmet>
-        <title>Participated Events | Antd Dashboard</title>
-      </Helmet>
-      <PageHeader
-        title="Participated Events"
-        breadcrumbs={[
-          {
-            title: (
-              <>
-                <HomeOutlined />
-                <span>Home</span>
-              </>
+          </Popconfirm> */}
+                    <Popconfirm
+                        title="Cancel Event"
+                        description="Are you sure to unregister from this event?"
+                        onConfirm={() => handleLeaveEvent(record.id)}
+                        onCancel={() => message.info('Cancel')}
+                        okText="Yes, Cancel"
+                        cancelText="No"
+                        placement="topRight" // Thử thay đổi placement
+                        overlayInnerStyle={{ width: 200 }} // Thử set width
+                    >
+                        <Button danger>
+                            Unregister
+                        </Button>
+                    </Popconfirm>
+                </Space>
             ),
-            path: '/',
-          },
-          {
-            title: (
-              <>
-                <PieChartOutlined />
-                <span>Dashboards</span>
-              </>
-            ),
-          },
-          {
-            title: 'Participated Events',
-          },
-        ]}
-      />
+        },
+    ];
 
-      <Card
-        title="List of Participated Events"
-        extra={
-          <Select
-            defaultValue="all"
-            style={{ width: 200 }}
-            onChange={onStatusFilterChange}
-            options={EVENT_STATUS_OPTIONS}
-          />
-        }
-      >
-        {eventsError && (
-          <Alert
-            message="Error"
-            description={eventsError.toString()}
-            type="error"
-            showIcon
-            closable
-          />
-        )}
+    return (
+        <div>
+            <Helmet>
+                <title>Participated Events | Antd Dashboard</title>
+            </Helmet>
+            <PageHeader
+                title="Participated Events"
+                breadcrumbs={[
+                    {
+                        title: (
+                            <>
+                                <HomeOutlined />
+                                <span>Home</span>
+                            </>
+                        ),
+                        path: '/',
+                    },
+                    {
+                        title: (
+                            <>
+                                <PieChartOutlined />
+                                <span>Dashboards</span>
+                            </>
+                        ),
+                    },
+                    {
+                        title: 'Participated Events',
+                    },
+                ]}
+            />
 
-        {isEmptyData ? (
-          <Alert
-            message="No events participated yet."
-            type="info"
-            showIcon
-          />
-        ) : (
-          <Table
-            columns={columns}
-            dataSource={eventsData?.events || []}
-            loading={eventsLoading || actionLoading}
-            pagination={{
-              current: currentPage,
-              pageSize: pageSize,
-              total: eventsData?.meta?.totalItems || 0,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} items`,
-              pageSizeOptions: ['10', '20', '50', '100'],
-              showSizeChanger: true,
-              onChange: handlePaginationChange,
-            }}
-          />
-        )}
-      </Card>
-    </div>
-  );
+            <Card
+                title="List of Participated Events"
+                extra={
+                    <Select
+                        defaultValue="all"
+                        style={{ width: 200 }}
+                        onChange={onStatusFilterChange}
+                        options={EVENT_STATUS_OPTIONS}
+                    />
+                }
+            >
+                {eventsError && (
+                    <Alert
+                        message="Error"
+                        description={eventsError.toString()}
+                        type="error"
+                        showIcon
+                        closable
+                    />
+                )}
+
+                {isEmptyData ? (
+                    <Alert
+                        message="No events participated yet."
+                        type="info"
+                        showIcon
+                    />
+                ) : (
+                    <Table
+                        columns={columns}
+                        dataSource={eventsData?.events || []}
+                        loading={eventsLoading || actionLoading}
+                        pagination={{
+                            current: currentPage,
+                            pageSize: pageSize,
+                            total: eventsData?.meta?.totalItems || 0,
+                            showTotal: (total, range) =>
+                                `${range[0]}-${range[1]} of ${total} items`,
+                            pageSizeOptions: ['10', '20', '50', '100'],
+                            showSizeChanger: true,
+                            onChange: handlePaginationChange,
+                        }}
+                    />
+                )}
+            </Card>
+        </div>
+    );
 };
 
 export default ParticipatedEventsPage;
@@ -14657,6 +14662,369 @@ export const SocialDashboardPage = () => {
 };
 
 
+src\pages\dashboards\SpeakerManagementPage.tsx:
+// src\pages\dashboards\SpeakerGuestManagementPage.tsx
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+    Button,
+    Card,
+    message,
+    Popconfirm,
+    Space,
+    Table,
+    Modal,
+    Form,
+    Input,
+    Typography,
+    Alert,
+    Tabs,
+} from 'antd';
+import {
+    HomeOutlined,
+    PieChartOutlined,
+    EditOutlined,
+    PlusOutlined,
+    SaveOutlined,
+    DeleteOutlined,
+    CloseOutlined
+} from '@ant-design/icons';
+import { DASHBOARD_ITEMS } from '../../constants';
+import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { PageHeader, Loader } from '../../components';
+import { ColumnsType } from 'antd/es/table';
+import { Speaker, Guest, SpeakerGuestData } from '../../types'; // Import both Speaker and Guest types
+import axiosInstance from '../../api/axiosInstance';
+
+
+const SpeakerGuestManagementPage: React.FC = () => {
+    const [speakers, setSpeakers] = useState<Speaker[]>([]);
+    const [guests, setGuests] = useState<Guest[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [form] = Form.useForm();
+    const [editingItemId, setEditingItemId] = useState<string | null>(null); // Could be speakerId or guestId
+    const [activeTabKey, setActiveTabKey] = useState<'speakers' | 'guests'>('speakers'); // Tab state
+
+
+    const fetchSpeakers = useCallback(async () => { // Fetch speakers (same as before)
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await axiosInstance.get('/speakers');
+            setSpeakers((response.data as { data: { speakers: Speaker[] } }).data.speakers);
+        } catch (error: any) {
+            setError(error.message || 'Failed to load speakers');
+            message.error(error.message || 'Failed to load speakers');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const fetchGuests = useCallback(async () => { // Fetch guests (similar to fetchSpeakers)
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await axiosInstance.get('/guests');
+            setGuests((response.data as { data: { guests: Guest[] } }).data.guests);
+        } catch (error: any) {
+            setError(error.message || 'Failed to load guests');
+            message.error(error.message || 'Failed to load guests');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchSpeakers();
+        fetchGuests();
+    }, [fetchSpeakers, fetchGuests]);
+
+    const handleCreateItem = () => { // Generic create handler
+        setEditingItemId(null);
+        form.resetFields();
+        setIsModalOpen(true);
+    };
+
+    const handleEditItem = (id: string, entityType: 'speaker' | 'guest') => { // Generic edit handler
+        setEditingItemId(id);
+        const itemToEdit = entityType === 'speaker'
+            ? speakers.find(speaker => speaker.id === id)
+            : guests.find(guest => guest.id === id);
+
+        if (itemToEdit) {
+            form.setFieldsValue({ ...itemToEdit, entityType }); // Include entityType in form values
+            setIsModalOpen(true);
+        }
+    };
+
+
+    const handleModalOk = () => {
+        form.submit();
+    };
+
+    const handleModalCancel = () => {
+        setIsModalOpen(false);
+    };
+
+    const onTabChange = (key: string) => {
+        setActiveTabKey(key as 'speakers' | 'guests');
+    };
+
+
+    const onFinish = async (values: any) => {
+        setLoading(true);
+        setError(null);
+        try {
+            let response;
+            const isSpeaker = values.entityType === 'speaker';
+            const endpoint = isSpeaker ? '/speakers' : '/guests';
+            const idToEdit = editingItemId;
+
+            if (idToEdit) {
+                response = await axiosInstance.patch(`${endpoint}/${idToEdit}`, values); // Generic update endpoint
+                message.success(`${isSpeaker ? 'Speaker' : 'Guest'} updated successfully`);
+            } else {
+                response = await axiosInstance.post(endpoint, values); // Generic create endpoint
+                message.success(`${isSpeaker ? 'Speaker' : 'Guest'} created successfully`);
+            }
+
+            if (isSpeaker) {
+                fetchSpeakers(); // Refresh speaker or guest list based on tab
+            } else {
+                fetchGuests();
+            }
+            setIsModalOpen(false);
+            form.resetFields();
+        } catch (error: any) {
+            setError(error.message || `Failed to save ${values.entityType}`);
+            message.error(error.message || `Failed to save  ${values.entityType}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onFinishFailed = (errorInfo: any) => {
+        console.log('Failed:', errorInfo);
+    };
+
+
+    const speakerColumns: ColumnsType<SpeakerGuestData> = [ // Columns for Speakers
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: 'Job Title',
+            dataIndex: 'jobTitle',
+            key: 'jobTitle',
+        },
+        {
+            title: 'Email',
+            dataIndex: 'email',
+            key: 'email',
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            render: (_, record) => (
+                <Space size="middle">
+                    <Button icon={<EditOutlined />} size="small" onClick={() => handleEditItem(record.id!, 'speaker')}>
+                        Edit
+                    </Button>
+                </Space>
+            ),
+        },
+    ];
+
+    const guestColumns: ColumnsType<SpeakerGuestData> = [ // Columns for Guests
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: 'Job Title',
+            dataIndex: 'jobTitle',
+            key: 'jobTitle',
+        },
+        {
+            title: 'Organization',
+            dataIndex: 'organization',
+            key: 'organization',
+        },
+        {
+            title: 'Email',
+            dataIndex: 'email',
+            key: 'email',
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            render: (_, record) => (
+                <Space size="middle">
+                    <Button icon={<EditOutlined />} size="small" onClick={() => handleEditItem(record.id!, 'guest')}>
+                        Edit
+                    </Button>
+                </Space>
+            ),
+        },
+    ];
+
+
+    return (
+        <div>
+            <Helmet>
+                <title>Speaker & Guest Management | Antd Dashboard</title>
+            </Helmet>
+            <PageHeader
+                title="Speaker & Guest Management"
+                breadcrumbs={[
+                    {
+                        title: (
+                            <>
+                                <HomeOutlined />
+                                <span>Home</span>
+                            </>
+                        ),
+                        path: '/',
+                    },
+                    {
+                        title: (
+                            <>
+                                <PieChartOutlined />
+                                <span>Dashboards</span>
+                            </>
+                        ),
+                        menu: {
+                            items: DASHBOARD_ITEMS.map((d) => ({
+                                key: d.title,
+                                title: <Link to={d.path}>{d.title}</Link>,
+                            })),
+                        },
+                    },
+                    {
+                        title: 'Speaker & Guest Management',
+                    },
+                ]}
+            />
+
+            <Card
+                title="Speaker & Guest List"
+                extra={
+                    <Button icon={<PlusOutlined />} type="primary" onClick={handleCreateItem}>
+                        Create
+                    </Button>
+                }
+                tabList={[ // Tabs for Speakers and Guests
+                    { key: 'speakers', tab: 'Speakers' },
+                    { key: 'guests', tab: 'Guests' },
+                ]}
+                activeTabKey={activeTabKey}
+                onTabChange={onTabChange}
+            >
+                {error && (
+                    <Alert
+                        message="Error"
+                        description={error}
+                        type="error"
+                        showIcon
+                        closable
+                        onClose={() => setError(null)}
+                        style={{ marginBottom: 16 }}
+                    />
+                )}
+                <Table
+                    columns={activeTabKey === 'speakers' ? speakerColumns : guestColumns} // Conditional columns
+                    dataSource={activeTabKey === 'speakers'
+                        ? speakers.map(speaker => ({ ...speaker, entityType: 'speaker' })) // Add entityType to dataSource
+                        : guests.map(guest => ({ ...guest, entityType: 'guest' }))}
+                    loading={loading}
+                    rowKey="id"
+                    pagination={{ pageSize: 5 }}
+                />
+            </Card>
+
+            <Modal
+                title={editingItemId ? `Edit ${form.getFieldValue('entityType') === 'speaker' ? 'Speaker' : 'Guest'}` : "Create New Speaker/Guest"} // Dynamic modal title
+                open={isModalOpen}
+                onOk={handleModalOk}
+                onCancel={handleModalCancel}
+                confirmLoading={loading}
+                destroyOnClose
+            >
+                <Form
+                    form={form}
+                    layout="vertical"
+                    name="speaker-guest-form"
+                    onFinish={onFinish}
+                    onFinishFailed={onFinishFailed}
+                    autoComplete="off"
+                    initialValues={{ entityType: 'speaker' }} // Default entity type to speaker
+                    requiredMark={false}
+                >
+                    <Form.Item name="entityType" hidden>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item
+                        label="Name"
+                        name="name"
+                        rules={[{ required: true, message: 'Please input name!' }]}
+                    >
+                        <Input placeholder="Name" />
+                    </Form.Item>
+                    <Form.Item
+                        label="Job Title"
+                        name="jobTitle"
+                        rules={[{ required: true, message: 'Please input job title!' }]}
+                    >
+                        <Input placeholder="Job Title" />
+                    </Form.Item>
+                    <Form.Item
+                        label="Email"
+                        name="email"
+                        rules={[
+                            { required: true, message: 'Please input Email!' },
+                            { type: 'email', message: 'Please enter a valid email!' },
+                        ]}
+                    >
+                        <Input placeholder="Email" />
+                    </Form.Item>
+                    {form.getFieldValue('entityType') === 'guest' && (
+                        <Form.Item
+                            label="Organization"
+                            name="organization"
+                            rules={[{ required: true, message: 'Please input organization!' }]}
+                        >
+                            <Input placeholder="Organization" />
+                        </Form.Item>
+                    )}
+                    {form.getFieldValue('entityType') === 'guest' && (
+                        <Form.Item
+                            label="Social Link"
+                            name="linkSocial"
+                        >
+                            <Input placeholder="Social Link" />
+                        </Form.Item>
+                    )}
+                    {form.getFieldValue('entityType') === 'speaker' && (
+                        <Form.Item
+                            label="Bio"
+                            name="bio"
+                        >
+                            <Input.TextArea rows={4} placeholder="Bio" />
+                        </Form.Item>
+                    )}
+                </Form>
+            </Modal>
+        </div>
+    );
+};
+
+export default SpeakerGuestManagementPage;
+
 src\pages\dashboards\Users.tsx:
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { useStylesContext } from '../../context';
@@ -15296,8 +15664,7 @@ export default DetailMyEventPage;
 src\pages\edit\EditEventPage.tsx:
 // src\pages\edit\EditEventPage.tsx
 // src\pages\edit\EditEventPage.tsx
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
     Alert,
     Button,
@@ -15311,15 +15678,18 @@ import {
     Select,
     Typography,
     message,
+    Space
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { DASHBOARD_ITEMS } from '../../constants';
+import { DASHBOARD_ITEMS, PATH_DASHBOARD } from '../../constants';
 import { PageHeader, Loader } from '../../components';
 import { Events } from '../../types';
 import authService from '../../services/authService';
 import dayjs from 'dayjs';
 import { Helmet } from 'react-helmet-async';
-import EventFileUploadForm from './EventFileUploadForm'; // Import EventFileUploadForm
+import EventFileUploadForm from './EventFileUploadForm';
+import axiosInstance from '../../api/axiosInstance';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { HomeOutlined, PieChartOutlined, ArrowLeftOutlined, CloseOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
 
 const EditEventPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -15328,43 +15698,84 @@ const EditEventPage: React.FC = () => {
     const [form] = Form.useForm();
     const navigate = useNavigate();
     const [error, setError] = useState<string | null>(null);
+    const [speakersOptions, setSpeakersOptions] = useState<any>([]);
+
+    const fetchEventDetails = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+            if (response.statusCode === 200 && response.data.event) {
+                setEventDetails(response.data.event);
+                form.setFieldsValue({
+                    name: response.data.event.name,
+                    description: response.data.event.description,
+                    startDate: dayjs(response.data.event.startDate),
+                    endDate: dayjs(response.data.event.endDate),
+                    location: response.data.event.location,
+                    categoryId: response.data.event.categoryId,
+                    maxParticipants: response.data.event.maxParticipants,
+                    banner: response.data.event.banner,
+                    videoIntro: response.data.event.videoIntro,
+                    status: response.data.event.status,
+                    schedule: response.data.event.schedule?.map((session: any) => ({
+                        ...session,
+                        startTime: dayjs(session.startTime),
+                        endTime: dayjs(session.endTime),
+                    })) || [], // Treat schedule as empty array if null or undefined
+                });
+            } else {
+                setError(response?.message || 'Failed to load event details');
+                message.error(response?.message || 'Failed to load event details');
+            }
+        } catch (error: any) {
+            console.error('Error fetching event details:', error);
+            setError(error.message || 'Failed to load event details');
+            message.error(error.message || 'Failed to load event details');
+        } finally {
+            setLoading(false);
+        }
+    }, [id, form, navigate]);
+
+    const fetchSpeakersOptions = useCallback(async () => {
+        setLoading(true);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                message.error("No access token found. Please login again.");
+                navigate(PATH_DASHBOARD.default);
+                return;
+            }
+            const response = await axiosInstance.get('/speakers', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+
+            const data = response.data as { statusCode: number; data: { speakers: any[] } };
+            if (data.statusCode === 200 && data.data?.speakers) {
+                const speakerList = (response.data as { data: { speakers: any[] } }).data.speakers;
+                setSpeakersOptions(speakerList.map((speaker: any) => ({
+                    value: speaker.id,
+                    label: speaker.name,
+                })));
+            } else {
+                setError("Failed to load speakers options.");
+                message.error("Failed to load speakers options.");
+            }
+        } catch (error: any) {
+            console.error("Failed to load speakers options:", error);
+            setError("Failed to load speakers options.");
+            message.error("Failed to load speakers options.");
+        } finally {
+            setLoading(false);
+        }
+    }, [navigate]);
+
 
     useEffect(() => {
-        const fetchEventDetails = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const accessToken = localStorage.getItem('accessToken');
-                const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
-                if (response.statusCode === 200 && response.data.event) {
-                    setEventDetails(response.data.event);
-                    form.setFieldsValue({
-                        name: response.data.event.name,
-                        description: response.data.event.description,
-                        startDate: dayjs(response.data.event.startDate),
-                        endDate: dayjs(response.data.event.endDate),
-                        location: response.data.event.location,
-                        categoryId: response.data.event.categoryId,
-                        maxParticipants: response.data.event.maxParticipants,
-                        banner: response.data.event.banner,
-                        videoIntro: response.data.event.videoIntro,
-                        status: response.data.event.status, // Pre-fill status field
-                    });
-                } else {
-                    setError(response?.message || 'Failed to load event details');
-                    message.error(response?.message || 'Failed to load event details');
-                }
-            } catch (error: any) {
-                console.error('Error fetching event details:', error);
-                setError(error.message || 'Failed to load event details');
-                message.error(error.message || 'Failed to load event details');
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchEventDetails();
-    }, [id, form, navigate]);
+        fetchSpeakersOptions();
+    }, [fetchEventDetails, fetchSpeakersOptions]);
 
     const onFinish = async (values: any) => {
         setLoading(true);
@@ -15376,7 +15787,11 @@ const EditEventPage: React.FC = () => {
                 return;
             }
 
-            const eventData = { ...values, startDate: values.startDate.toISOString(), endDate: values.endDate.toISOString() };
+            const eventData = { ...values, startDate: values.startDate.toISOString(), endDate: values.endDate.toISOString(), schedule: values.schedule?.map((session: any) => ({
+                ...session,
+                startTime: session.startTime.toISOString(),
+                endTime: session.endTime.toISOString(),
+            })) };
             const response = await authService.updateEvent(id!, eventData, accessToken) as { statusCode: number; message: string };
             if (response.statusCode === 200) {
                 message.success(response.message);
@@ -15517,9 +15932,7 @@ const EditEventPage: React.FC = () => {
                             <Form.Item<any>
                                 label="Event Type"
                                 name="categoryId"
-                                rules={[
-                                    { required: true, message: 'Please input your event type!' },
-                                ]}
+                                rules={[{ required: true, message: 'Please input your event type!' }]}
                             >
                                 <Select
                                     options={[
@@ -15565,6 +15978,69 @@ const EditEventPage: React.FC = () => {
                             </Form.Item>
                         </Col>
 
+                        <Col span={24}>
+                            <Form.List name="schedule" >
+                                {(fields, { add, remove }, { errors }) => (
+                                    <>
+                                        {fields.map(({ key, name, fieldKey, ...restField }) => (
+                                            <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'title']}
+                                                    fieldKey={[fieldKey || 0 , 'title']}
+                                                    rules={[{ required: true, message: 'Missing session title' }]}
+                                                >
+                                                    <Input placeholder="Title" />
+                                                </Form.Item>
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'startTime']}
+                                                    fieldKey={[fieldKey || 0, 'startTime']}
+                                                    rules={[{ required: true, message: 'Missing start time' }]}
+                                                >
+                                                    <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" placeholder="Start Time" />
+                                                </Form.Item>
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'endTime']}
+                                                    fieldKey={[fieldKey || 0, 'endTime']}
+                                                    rules={[{ required: true, message: 'Missing end time' }]}
+                                                >
+                                                    <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" placeholder="End Time" />
+                                                </Form.Item>
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'description']}
+                                                    fieldKey={[fieldKey || 0, 'description']}
+                                                >
+                                                    <Input placeholder="Description" />
+                                                </Form.Item>
+                                                <Form.Item
+                                                    {...restField}
+                                                    name={[name, 'speakerIds']}
+                                                    fieldKey={[fieldKey || 0, 'speakerIds']}
+                                                    label="Speakers"
+                                                >
+                                                    <Select
+                                                        mode="multiple"
+                                                        placeholder="Select Speakers"
+                                                        options={speakersOptions}
+                                                        allowClear
+                                                    />
+                                                </Form.Item>
+                                                <Button danger icon={<CloseOutlined />} onClick={() => remove(name)} />
+                                            </Space>
+                                        ))}
+                                        <Form.ErrorList errors={errors} />
+                                        <Form.Item>
+                                            <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                                                Add Session
+                                            </Button>
+                                        </Form.Item>
+                                    </>
+                                )}
+                            </Form.List>
+                        </Col>
 
                     </Row>
 
@@ -17356,6 +17832,8 @@ import EventsListPage from '../pages/dashboards/EventsList.tsx';
 import EventDetailsPage from '../pages/details/EventDetailsPage.tsx';
 import EditEventPage from '../pages/edit/EditEventPage.tsx';
 import ParticipatedEventsPage from '../pages/dashboards/ParticipatedEvents.tsx';
+import SpeakerManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
+import SpeakerGuestManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
 
 // Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
@@ -17433,6 +17911,10 @@ const router = createBrowserRouter([
     element: <PageWrapper children={<DashboardLayout />} />,
     errorElement: <ErrorPage />,
     children: [
+      {
+        path: 'speakers-guests', // Updated route path
+        element: <SpeakerGuestManagementPage />, // Use combined management page
+      },
       {
         path: 'participated-events',  // Add route for participated events page
         element: <ParticipatedEventsPage />,
@@ -17644,7 +18126,7 @@ const router = createBrowserRouter([
 export default router;
 
 src\services\authService.ts:
-// src/services/authService.ts
+// src\services\authService.ts
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8080/api/v1/auth';
@@ -17671,18 +18153,6 @@ const authService = {
       throw error.response.data;
     }
   },
-
-  googleLogin: async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/google/login`);
-      const data = response.data as { url: string };
-      console.log(data.url);
-      return (window.location.href = data.url);
-    } catch (error: any) {
-      throw error.response.data;
-    }
-  },
-
   createEvent: async (eventData: any, accessToken: string) => {
     try {
       const response = await axios.post(`${API_EVENT_BASE_URL}`, eventData, {
@@ -17909,8 +18379,18 @@ const authService = {
       throw error.response.data;
     }
   },
+  googleLogin: async () => { // Hàm googleLogin cho Server-Side Flow
+    try {
+      const response = await axios.get(`${API_BASE_URL}/google/login`);
+      const data = response.data as { url: string }; // Backend có thể trả về URL đăng nhập Google (tùy chọn)
+      window.location.href = data.url; // Chuyển hướng trình duyệt đến trang đăng nhập Google (nếu backend trả về url)
+      // Hoặc, nếu backend không trả về URL, bạn có thể chỉ cần:
+      // window.location.href = `${API_BASE_URL}/google/login`; // Chuyển hướng trực tiếp đến endpoint login của backend
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default authService;
-
 

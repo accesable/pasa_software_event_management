@@ -23,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 import authService from '../../services/authService';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../../redux/userSlice';
+import GoogleLoginButton from '../../components/GoogleLoginButton'; // Import GoogleLoginButton
 
 const { Title, Text, Link } = Typography;
 
@@ -38,7 +39,7 @@ export const SignInPage = () => {
   const isMobile = useMediaQuery({ maxWidth: 769 });
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const dispatch = useDispatch();
+  const useDispatchHook = useDispatch();
 
   const onFinish = async (values: FieldType) => {
     setLoading(true);
@@ -57,7 +58,7 @@ export const SignInPage = () => {
 
         localStorage.setItem('accessToken', response.data.accessToken);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        dispatch(setUser(response.data.user));
+        useDispatchHook(setUser(response.data.user));
 
         setTimeout(() => {
           navigate(PATH_DASHBOARD.default);
@@ -77,27 +78,20 @@ export const SignInPage = () => {
     console.log('Failed:', errorInfo);
   };
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    try {
-      const response = await authService.googleLogin() as unknown as {
-        statusCode: number,
-        message: string,
-        data: { url: string }
-      };
-
-      if (response.statusCode === 200) {
-        window.location.href = response.data.url;
-      } else {
-        message.error(response.message || 'Google Login failed');
-      }
-    } catch (error: any) {
-      console.error('Google Login failed:', error);
-      message.error(error.message || 'Google Login failed');
-    } finally {
-      setLoading(false);
-    }
+  const handleGoogleLoginSuccess = (accessToken: string, user: any) => {
+    console.log('Google Login Success!', accessToken, user);
+    // Lưu accessToken và user info vào local storage, Redux, ...
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('user', JSON.stringify(user));
+    useDispatchHook(setUser(user));
+    navigate(PATH_DASHBOARD.default); // Redirect to dashboard
   };
+
+  const handleGoogleLoginFailure = (error: string) => {
+    console.error('Google Login Failed:', error);
+    message.error('Google login failed: ' + error);
+  };
+
 
   return (
     <Row style={{ minHeight: isMobile ? 'auto' : '100vh', overflow: 'hidden' }}>
@@ -186,14 +180,13 @@ export const SignInPage = () => {
             wrap="wrap"
             style={{ width: '100%' }}
           >
-            <Button
-              icon={<GoogleOutlined />}
-              onClick={handleGoogleLogin}
-              loading={loading}
-            >
-              Sign in with Google
-            </Button>
-            {/* You can add Facebook, Twitter login buttons here if needed */}
+            <GoogleLoginButton
+              clientId="752824572639-0nbbmbqgqj28oue1bsi2ouee2923oloj.apps.googleusercontent.com" // **Thay bằng Client ID của bạn**
+              redirectUri="http://localhost:5173/auth/google/callback" // **Callback URI của frontend**
+              scope="email profile openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
+              onLoginSuccess={handleGoogleLoginSuccess}
+              onLoginFailure={handleGoogleLoginFailure}
+            />
           </Flex>
         </Flex>
       </Col>

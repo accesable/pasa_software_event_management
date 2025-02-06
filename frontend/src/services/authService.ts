@@ -1,4 +1,4 @@
-// src/services/authService.ts
+// src\services\authService.ts
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8080/api/v1/auth';
@@ -25,18 +25,6 @@ const authService = {
       throw error.response.data;
     }
   },
-
-  googleLogin: async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/google/login`);
-      const data = response.data as { url: string };
-      console.log(data.url);
-      return (window.location.href = data.url);
-    } catch (error: any) {
-      throw error.response.data;
-    }
-  },
-
   createEvent: async (eventData: any, accessToken: string) => {
     try {
       const response = await axios.post(`${API_EVENT_BASE_URL}`, eventData, {
@@ -258,6 +246,45 @@ const authService = {
           },
         }
       );
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  googleLogin: async () => { // Hàm googleLogin cho Server-Side Flow
+    try {
+      const response = await axios.get(`${API_BASE_URL}/google/login`);
+      const data = response.data as { url: string }; // Backend có thể trả về URL đăng nhập Google (tùy chọn)
+      window.location.href = data.url; // Chuyển hướng trình duyệt đến trang đăng nhập Google (nếu backend trả về url)
+      // Hoặc, nếu backend không trả về URL, bạn có thể chỉ cần:
+      // window.location.href = `${API_BASE_URL}/google/login`; // Chuyển hướng trực tiếp đến endpoint login của backend
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getTicketByParticipantId: async (participantId: string, accessToken?: string) => { // Add getTicketByParticipantId function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axios.get(`${API_PARTICIPANTS_BASE_URL}/${participantId}/tickets`, { headers }); // Use correct endpoint
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getParticipantIdByUserIdEventId: async (eventId: string, accessToken?: string) => { // Updated function - Removed userId parameter
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axios.get(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/participant-id`, { headers }); // Updated API call - Removed userId from URL
       return response.data;
     } catch (error: any) {
       throw error.response.data;

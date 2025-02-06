@@ -123,3 +123,29 @@ export interface SpeakerGuestData {
   organization?: string;
   linkSocial?: string;
 }
+
+// src\types\index.ts
+
+export interface TicketType { // Example TicketType interface - adjust based on your actual backend DTO
+  id: string;
+  participantId: string;
+  qrCodeUrl: string;
+  status: string;
+  usedAt?: string | null;
+  // ... other ticket properties ...
+}
+
+export interface Participation { // Example Participation interface - adjust based on your actual backend DTO
+  id: string;
+  eventId: string;
+  userId: string;
+  sessionIds: string[];
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  checkedInAt?: string | null;
+  checkedOutAt?: string | null;
+  // ... other participation properties ...
+}
+
+// ... other types ...
