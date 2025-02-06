@@ -13,6 +13,22 @@ export const protobufPackage = "ticket";
 export interface Empty {
 }
 
+/** Message request mới */
+export interface TicketByParticipantIdRequest {
+  participantId: string;
+}
+
+/** New request message */
+export interface GetParticipantIdByUserIdEventIdRequest {
+  userId: string;
+  eventId: string;
+}
+
+/** New response message */
+export interface GetParticipantIdByUserIdEventIdResponse {
+  participantId: string;
+}
+
 export interface GetUserParticipationByEventIdResponse {
   participants: UserParticipationResponse[];
 }
@@ -124,15 +140,7 @@ export const TICKET_PACKAGE_NAME = "ticket";
 export interface TicketServiceProtoClient {
   getAllTicket(request: QueryParamsRequest): Observable<AllTicketResponse>;
 
-  getTicketById(request: TicketByIdRequest): Observable<TicketResponse>;
-
-  updateTicket(request: UpdateTicketRequest): Observable<TicketResponse>;
-
-  deleteTicket(request: TicketByIdRequest): Observable<TicketResponse>;
-
   checkIn(request: TicketByIdRequest): Observable<TicketResponse>;
-
-  cancelTicket(request: TicketByIdRequest): Observable<TicketResponse>;
 
   scanTicket(request: ScanTicketRequest): Observable<ScanTicketResponse>;
 
@@ -149,6 +157,12 @@ export interface TicketServiceProtoClient {
   getUserParticipationByEventId(
     request: GetParticipantByEventIdRequest,
   ): Observable<GetUserParticipationByEventIdResponse>;
+
+  getTicketByParticipantId(request: TicketByParticipantIdRequest): Observable<TicketResponse>;
+
+  getParticipantIdByUserIdEventId(
+    request: GetParticipantIdByUserIdEventIdRequest,
+  ): Observable<GetParticipantIdByUserIdEventIdResponse>;
 }
 
 export interface TicketServiceProtoController {
@@ -156,15 +170,7 @@ export interface TicketServiceProtoController {
     request: QueryParamsRequest,
   ): Promise<AllTicketResponse> | Observable<AllTicketResponse> | AllTicketResponse;
 
-  getTicketById(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse;
-
-  updateTicket(request: UpdateTicketRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse;
-
-  deleteTicket(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse;
-
   checkIn(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse;
-
-  cancelTicket(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse;
 
   scanTicket(
     request: ScanTicketRequest,
@@ -197,17 +203,24 @@ export interface TicketServiceProtoController {
     | Promise<GetUserParticipationByEventIdResponse>
     | Observable<GetUserParticipationByEventIdResponse>
     | GetUserParticipationByEventIdResponse;
+
+  getTicketByParticipantId(
+    request: TicketByParticipantIdRequest,
+  ): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse;
+
+  getParticipantIdByUserIdEventId(
+    request: GetParticipantIdByUserIdEventIdRequest,
+  ):
+    | Promise<GetParticipantIdByUserIdEventIdResponse>
+    | Observable<GetParticipantIdByUserIdEventIdResponse>
+    | GetParticipantIdByUserIdEventIdResponse;
 }
 
 export function TicketServiceProtoControllerMethods() {
   return function (constructor: Function) {
     const grpcMethods: string[] = [
       "getAllTicket",
-      "getTicketById",
-      "updateTicket",
-      "deleteTicket",
       "checkIn",
-      "cancelTicket",
       "scanTicket",
       "createParticipant",
       "getParticipantByEventId",
@@ -215,6 +228,8 @@ export function TicketServiceProtoControllerMethods() {
       "updateParticipant",
       "deleteParticipant",
       "getUserParticipationByEventId",
+      "getTicketByParticipantId",
+      "getParticipantIdByUserIdEventId",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

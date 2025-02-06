@@ -9,8 +9,8 @@ export type TicketDocument = Ticket & Document & {
 
 @Schema({ timestamps: true, versionKey: false })
 export class Ticket {
-  @Prop({ required: true, type: Types.ObjectId, ref: Participant.name })
-  participantId: Types.ObjectId;
+  @Prop({ required: true })
+  participantId: string;
 
   @Prop({ required: true })
   code: string;

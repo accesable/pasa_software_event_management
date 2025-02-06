@@ -8,7 +8,7 @@ import * as QRCode from 'qrcode';
 import { UsersServiceClient, USERS_SERVICE_NAME, QueryParamsRequest } from '../../../libs/common/src';
 import { handleRpcException } from '../../../libs/common/src/filters/handleException';
 import { EVENT_SERVICE_NAME, EventServiceClient } from '../../../libs/common/src/types/event';
-import { ScanTicketResponse, CreateParticipationRequest, Participation, TicketType } from '../../../libs/common/src/types/ticket';
+import { ScanTicketResponse, CreateParticipationRequest, Participation, TicketType, GetParticipantIdByUserIdEventIdRequest } from '../../../libs/common/src/types/ticket';
 import { EVENT_SERVICE, AUTH_SERVICE } from '../../apigateway/src/constants/service.constant';
 import { Participant, ParticipantDocument } from './schemas/participant';
 import { Ticket, TicketDocument } from './schemas/ticket';
@@ -258,13 +258,13 @@ export class TicketServiceService implements OnModuleInit {
       });
       const baseUrl = this.configService.get<string>('BASE_URL');
       const code = `${participant._id}`;
-      const url = baseUrl + '/tickets/scan?code=' + code;
-      const qrCodeUrl = await QRCode.toDataURL(url, {
-        errorCorrectionLevel: 'H', // Mức sửa lỗi cao
-        type: 'image/png',
-        width: 300,
-      });
-      const ticket = await this.ticketModel.create({ participantId: participant._id, qrCodeUrl, code });
+      const url = `${baseUrl}/tickets/scan?code=${code}`;
+      // const qrCodeUrl = await QRCode.toDataURL(url, {
+      //   errorCorrectionLevel: 'H', // Mức sửa lỗi cao
+      //   type: 'image/png',
+      //   width: 300,
+      // });
+      const ticket = await this.ticketModel.create({ participantId: participant._id.toString(), qrCodeUrl: url, code });
       this.clientEvent.emit('ticket_created', { eventId: request.eventId });
       return {
         participation: this.transformParticipant(participant),
@@ -310,6 +310,21 @@ export class TicketServiceService implements OnModuleInit {
     }
   }
 
+  async getTicketByParticipantId(participantId: string) {
+    try {
+      const ticket = await this.ticketModel.findOne({ participantId: participantId });
+      if (!ticket) {
+        throw new RpcException({
+          message: 'Ticket not found for participant id',
+          code: HttpStatus.NOT_FOUND,
+        });
+      }
+      return { ticket: this.transformTicket(ticket) };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get ticket by participant id');
+    }
+  }
+
   async getParticipantByEventId(eventId: string) {
     try {
       const participants = await this.participantModel.find(
@@ -336,6 +351,22 @@ export class TicketServiceService implements OnModuleInit {
       return { participants: response };
     } catch (error) {
       throw handleRpcException(error, 'Failed to get participant by event ID');
+    }
+  }
+
+  async getParticipantIdByUserIdEventId(request: GetParticipantIdByUserIdEventIdRequest) { // New service function implementation
+    try {
+      const { userId, eventId } = request;
+      const participant = await this.participantModel.findOne({ userId: userId, eventId: eventId }); // Find participant by userId and eventId
+      if (!participant) {
+        throw new RpcException({
+          message: 'Participant not found for user and event id',
+          code: HttpStatus.NOT_FOUND,
+        });
+      }
+      return { participantId: participant.id }; // Return participantId
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get participant id by user and event id');
     }
   }
 
@@ -443,7 +474,7 @@ export class TicketServiceService implements OnModuleInit {
   transformTicket(ticket: TicketDocument): TicketType {
     return {
       id: ticket._id.toString(),
-      participantId: ticket.participantId.toString(),
+      participantId: ticket.participantId,
       qrCodeUrl: ticket.qrCodeUrl,
       status: ticket.status,
       usedAt: ticket.usedAt?.toISOString(),

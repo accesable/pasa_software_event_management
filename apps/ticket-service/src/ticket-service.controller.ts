@@ -2,12 +2,16 @@ import { Controller, Get } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
 import { Observable } from 'rxjs';
 import { EventPattern } from '@nestjs/microservices';
-import { TicketServiceProtoControllerMethods, TicketServiceProtoController, GetParticipantByEventIdRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, ParticipationResponse, ParticipationByIdRequest, CreateParticipationRequest, UpdateTicketRequest, QueryParamsRequest, GetUserParticipationByEventIdResponse } from '../../../libs/common/src/types/ticket';
+import { TicketServiceProtoControllerMethods, TicketServiceProtoController, GetParticipantByEventIdRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, ParticipationResponse, ParticipationByIdRequest, CreateParticipationRequest, UpdateTicketRequest, QueryParamsRequest, GetUserParticipationByEventIdResponse, TicketByParticipantIdRequest, GetParticipantIdByUserIdEventIdRequest } from '../../../libs/common/src/types/ticket';
 
 @Controller()
 @TicketServiceProtoControllerMethods()
 export class TicketServiceController implements TicketServiceProtoController {
   constructor(private readonly ticketServiceService: TicketServiceService) {}
+  getParticipantIdByUserIdEventId(request: GetParticipantIdByUserIdEventIdRequest) { // New controller function
+    return this.ticketServiceService.getParticipantIdByUserIdEventId(request);
+  }
+
   getUserParticipationByEventId(request: GetParticipantByEventIdRequest) {
     return this.ticketServiceService.getUserParticipationByEventId(request.eventId);
   }
@@ -40,9 +44,6 @@ export class TicketServiceController implements TicketServiceProtoController {
   checkIn(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse {
     throw new Error('Method not implemented.');
   }
-  cancelTicket(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse {
-    throw new Error('Method not implemented.');
-  }
   getParticipantById(request: ParticipationByIdRequest): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse {
     throw new Error('Method not implemented.');
   }
@@ -56,16 +57,9 @@ export class TicketServiceController implements TicketServiceProtoController {
   getAllTicket(request: QueryParamsRequest) {
     return this.ticketServiceService.getAllTicket(request);
   }
-  
-  getTicketById(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse {
-    throw new Error('Method not implemented.');
-  }
-  
-  updateTicket(request: UpdateTicketRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse {
-    throw new Error('Method not implemented.');
-  }
-  deleteTicket(request: TicketByIdRequest): Promise<TicketResponse> | Observable<TicketResponse> | TicketResponse {
-    throw new Error('Method not implemented.');
+
+  getTicketByParticipantId(request: TicketByParticipantIdRequest) { // Function mới
+    return this.ticketServiceService.getTicketByParticipantId(request.participantId);
   }
 
   createParticipant(request: CreateParticipationRequest) {

@@ -4,11 +4,7 @@ package ticket;
 
 service TicketServiceProto{
     rpc GetAllTicket(QueryParamsRequest) returns (AllTicketResponse);
-    rpc GetTicketById(TicketByIdRequest) returns (TicketResponse);
-    rpc UpdateTicket(UpdateTicketRequest) returns (TicketResponse);
-    rpc DeleteTicket(TicketByIdRequest) returns (TicketResponse);
     rpc CheckIn(TicketByIdRequest) returns (TicketResponse);
-    rpc CancelTicket(TicketByIdRequest) returns (TicketResponse);
     rpc ScanTicket(ScanTicketRequest) returns (ScanTicketResponse);
 
     rpc CreateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
@@ -17,9 +13,24 @@ service TicketServiceProto{
     rpc UpdateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
     rpc DeleteParticipant(ParticipationByIdRequest) returns (Empty);
     rpc GetUserParticipationByEventId(GetParticipantByEventIdRequest) returns (GetUserParticipationByEventIdResponse);
+    rpc GetTicketByParticipantId(TicketByParticipantIdRequest) returns (TicketResponse);
+    rpc GetParticipantIdByUserIdEventId(GetParticipantIdByUserIdEventIdRequest) returns (GetParticipantIdByUserIdEventIdResponse);
 }
 
 message Empty{}
+
+message TicketByParticipantIdRequest{ // Message request mới
+    string participantId = 1;
+}
+
+message GetParticipantIdByUserIdEventIdRequest { // New request message
+    string userId = 1;
+    string eventId = 2;
+}
+
+message GetParticipantIdByUserIdEventIdResponse { // New response message
+    string participantId = 1;
+}
 
 message GetUserParticipationByEventIdResponse{
   repeated UserParticipationResponse participants = 1;

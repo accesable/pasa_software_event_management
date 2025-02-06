@@ -29,6 +29,14 @@ export class TicketServiceService {
         }
     }
 
+    async getParticipantIdByUserIdEventId (request: { userId: string, eventId: string }) { // Function mới
+        try {
+            return await this.ticketService.getParticipantIdByUserIdEventId(request).toPromise();
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get participant id by user id and event id');
+        }
+    }
+
     async updateParticipant(request: CreateParticipationRequest) {
         try {
             const res = await this.eventService.isExistEvent(request.eventId);
@@ -61,6 +69,14 @@ export class TicketServiceService {
         }
     }
 
+    async getTicketByParticipantId(participantId: string) { // Function mới
+        try {
+            return await this.ticketService.getTicketByParticipantId({ participantId }).toPromise();
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get ticket by participant id');
+        }
+    }
+
     async checkEvent(event: any) {
         try {
             if (event.status === 'CANCELED') {
@@ -87,19 +103,19 @@ export class TicketServiceService {
             const result = await this.ticketService.scanTicket({ code }).toPromise();
             const cacheKey = `event:${result.result.eventId}:checkInOut`;
             const cacheData = await this.redisCacheService.get<any>(cacheKey);
-            if(!result.result.checkOutAt){
-                if(cacheData){
+            if (!result.result.checkOutAt) {
+                if (cacheData) {
                     cacheData.push(result.result);
                     await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
                 }
-                else{
+                else {
                     await this.redisCacheService.set(cacheKey, JSON.stringify([result.result]));
                 }
             }
-            else{
-                if(cacheData){
+            else {
+                if (cacheData) {
                     const index = cacheData.findIndex((item: any) => item.id === result.result.id);
-                    if(index !== -1){
+                    if (index !== -1) {
                         cacheData[index].checkOutAt = result.result.checkOutAt;
                         await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
                     }
