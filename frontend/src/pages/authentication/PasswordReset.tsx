@@ -1,4 +1,5 @@
-// src/pages/authentication/PasswordReset.tsx
+// src\pages\authentication\PasswordReset.tsx
+import React, { useState } from 'react';
 import {
   Button,
   Col,
@@ -9,13 +10,13 @@ import {
   Row,
   theme,
   Typography,
+  Alert, // Import Alert
 } from 'antd';
 import { Logo } from '../../components';
 import { useMediaQuery } from 'react-responsive';
-import { PATH_DASHBOARD } from '../../constants';
+import { PATH_AUTH } from '../../constants';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import axios from 'axios';
+import authService from '../../services/authService'; // Import authService
 
 const { Title, Text } = Typography;
 
@@ -30,22 +31,21 @@ export const PasswordResetPage = () => {
   const isMobile = useMediaQuery({ maxWidth: 769 });
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); // State error
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: FieldType) => {
     setLoading(true);
+    setError(null); // Reset error khi bắt đầu submit
     try {
-      const response = await axios.post('/api/v1/auth/forgot-password', values);
-      const data = response.data as { message: string };
-      message.success(data.message);
+      const response = await authService.forgotPassword(values.email as string) as { message: string }; // Gọi authService.forgotPassword
+      message.success(response.message);
       setTimeout(() => {
-        navigate(PATH_DASHBOARD.default);
-      }, 5000);
-
-    } catch (error) {
-      // message.error(error.response.data.message);
-      message.error("Password reset failed!");
-    }
-    finally {
+        navigate(PATH_AUTH.signin); // Redirect về trang signin sau khi thành công
+      }, 3000); // Giảm thời gian redirect xuống 3 giây
+    } catch (error: any) {
+      setError(error.message || "Password reset failed!"); // Set error message
+      // message.error(error.message || "Password reset failed!"); // Không cần message.error ở đây, Alert sẽ hiển thị lỗi
+    } finally {
       setLoading(false);
     }
   };
@@ -62,11 +62,10 @@ export const PasswordResetPage = () => {
         >
           <Logo color="white" />
           <Title level={2} className="text-white">
-            Welcome back to Antd Admin
+            Forgot Password
           </Title>
           <Text className="text-white" style={{ fontSize: 18 }}>
-            A dynamic and versatile multipurpose dashboard utilizing Ant Design,
-            React, TypeScript, and Vite.
+            Enter your email to reset your password.
           </Text>
         </Flex>
       </Col>
@@ -79,13 +78,13 @@ export const PasswordResetPage = () => {
           style={{ height: '100%', width: '100%', padding: '2rem' }}
         >
           <Title className="m-0">Forgot password</Title>
-          <Text>Enter your email to rest your password.</Text>
+          {error && <Alert message="Error" description={error} type="error" showIcon closable onClose={() => setError(null)} />} {/* Hiển thị Alert lỗi */}
           <Form
-            name="sign-up-form"
+            name="password-reset-form" // Đổi tên form
             layout="vertical"
             labelCol={{ span: 24 }}
             wrapperCol={{ span: 24 }}
-            initialValues={{ remember: true }}
+            initialValues={{}} // Loại bỏ remember: true
             onFinish={onFinish}
             autoComplete="off"
             requiredMark={false}
@@ -94,11 +93,12 @@ export const PasswordResetPage = () => {
             <Form.Item<FieldType>
               label="Email"
               name="email"
-              rules={[{ required: true, message: 'Please input your email' },
-              { type: 'email', message: 'Please enter a valid email' },
+              rules={[
+                { required: true, message: 'Please input your email' },
+                { type: 'email', message: 'Please enter a valid email' },
               ]}
             >
-              <Input />
+              <Input placeholder="Your email address" />
             </Form.Item>
             <Form.Item>
               <Flex align="center" gap="small">
@@ -110,7 +110,7 @@ export const PasswordResetPage = () => {
                 >
                   Submit
                 </Button>
-                <Button type="text" size="middle" loading={loading}>
+                <Button type="text" size="middle" loading={loading} onClick={() => navigate(PATH_AUTH.signin)}> {/* Thêm onClick handler để cancel */}
                   Cancel
                 </Button>
               </Flex>
@@ -118,6 +118,6 @@ export const PasswordResetPage = () => {
           </Form>
         </Flex>
       </Col>
-    </Row>
+    </Row >
   );
 };

@@ -6,7 +6,9 @@ import './styles.css';
 type Props = {
   title: string;
   breadcrumbs: BreadcrumbProps['items'];
+  btnBack?: React.ReactNode;
 } & React.HTMLAttributes<HTMLDivElement>;
+
 
 export const PageHeader = ({ breadcrumbs, title, ...others }: Props) => {
   return (

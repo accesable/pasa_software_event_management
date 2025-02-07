@@ -48,7 +48,8 @@ export const SignInPage = () => {
         data: {
           accessToken: string,
           user: any
-        }
+        },
+        error? : string
       };
 
       if (response.statusCode === 200) {
@@ -62,11 +63,10 @@ export const SignInPage = () => {
           navigate('/dashboards/default');
         }, 1000);
       } else {
-        message.error(response.message || 'Login failed');
+        message.error(response.error || 'Login failed');
       }
     } catch (error: any) {
-      console.error('Login failed:', error);
-      message.error(error.message || 'Login failed');
+      message.error(error.error || 'Login failed');
     } finally {
       setLoading(false);
     }

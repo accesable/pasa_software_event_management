@@ -2,7 +2,6 @@ import { Button, Col, Flex, Image, Row, theme, Typography } from 'antd';
 import { useMediaQuery } from 'react-responsive';
 import {
   PATH_AUTH,
-  PATH_CORPORATE,
   PATH_DASHBOARD,
   PATH_ERROR,
   PATH_GITHUB,
@@ -74,14 +73,9 @@ const DASHBOARDS = [
 
 const APPS = [
   {
-    title: 'corporate',
-    link: PATH_CORPORATE.team,
-    image: '/showcase/corporate/team.png',
-  },
-  {
     title: 'user profile',
-    link: PATH_USER_PROFILE.details,
-    image: '/showcase/profile/details.png',
+    link: PATH_USER_PROFILE.personalInformation,
+    image: '/showcase/profile/personalInformation.png',
   },
   {
     title: 'auth',

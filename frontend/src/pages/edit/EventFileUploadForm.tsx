@@ -30,33 +30,28 @@ const EventFileUploadForm: React.FC<EventFileUploadFormProps> = ({ eventId }) =>
 
         setUploading(true);
         setUploadError(null);
+
         const formData = new FormData();
+        formData.append('field', selectedField); // append field trước
         formData.append('files', uploadedFile);
-        formData.append('field', selectedField);
-        
+
         try {
             const response = await axiosInstance.post(`/events/${eventId}/files`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'field': selectedField,
-                },
+                // Loại bỏ header Content-Type
+                // headers: {
+                //     'Content-Type': 'multipart/form-data',
+                // },
             });
-            const responseData = response.data as { statusCode: number, message: string };
-            if (responseData.statusCode === 201) {
-                message.success(`Uploaded ${selectedField} successfully`);
-                setUploadedFile(null); // Clear selected file after successful upload
-            } else {
-                const responseData = response.data as { message: string };
-                setUploadError(`Upload ${selectedField} failed: ${responseData.message}`);
-                message.error(`Upload ${selectedField} failed: ${responseData.message}`);
-            }
+            console.log('Upload response:', response);
+            message.success(`Uploaded ${selectedField} successfully`);
         } catch (error: any) {
-            setUploadError(`Upload ${selectedField} failed: ${error.message}`);
-            message.error(`Upload ${selectedField} failed: ${error.message}`);
+            message.error(`${error.response?.data?.message || error.message}`);
+            setUploadError(`Upload ${selectedField} failed: ${error.response?.data?.message || error.message}`);
         } finally {
             setUploading(false);
         }
     };
+
 
     const fieldOptions = [
         { value: 'videoIntro', label: 'Video Intro (MP4)', accept: '.mp4,video/mp4', multiple: false },

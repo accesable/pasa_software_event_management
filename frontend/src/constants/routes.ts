@@ -68,25 +68,10 @@ export const PATH_LAYOUT = {
   },
 };
 
-export const PATH_CORPORATE = {
-  root: ROOTS_CORPORATE,
-  about: path(ROOTS_CORPORATE, '/about'),
-  team: path(ROOTS_CORPORATE, '/team'),
-  faqs: path(ROOTS_CORPORATE, '/faqs'),
-  contact: path(ROOTS_CORPORATE, '/contact'),
-  pricing: path(ROOTS_CORPORATE, '/pricing'),
-  license: path(ROOTS_CORPORATE, '/license'),
-};
-
 export const PATH_USER_PROFILE = {
   root: ROOTS_PROFILE,
-  details: path(ROOTS_PROFILE, '/details'),
-  preferences: path(ROOTS_PROFILE, '/preferences'),
   personalInformation: path(ROOTS_PROFILE, '/personal-information'),
   security: path(ROOTS_PROFILE, '/security'),
-  activity: path(ROOTS_PROFILE, '/activity'),
-  action: path(ROOTS_PROFILE, '/actions'),
-  help: path(ROOTS_PROFILE, '/help'),
   feedback: path(ROOTS_PROFILE, '/feedback'),
 };
 

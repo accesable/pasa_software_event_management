@@ -2,7 +2,6 @@ import { SitemapCard } from '../components';
 import { Col, Flex, Row, Typography } from 'antd';
 import {
   AUTHENTICATION_ITEMS,
-  CORPORATE_ITEMS,
   DASHBOARD_ITEMS,
   ERROR_ITEMS,
   USER_PROFILE_ITEMS,
@@ -14,10 +13,6 @@ const SITES = [
   {
     title: 'dashboard',
     links: DASHBOARD_ITEMS,
-  },
-  {
-    title: 'corporate',
-    links: CORPORATE_ITEMS,
   },
   {
     title: 'user profile',

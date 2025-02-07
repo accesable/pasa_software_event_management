@@ -28,7 +28,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageHeader, Loader } from '../../components';
 import { ColumnsType } from 'antd/es/table';
-import { Speaker, Guest, SpeakerGuestData } from '../../types'; // Import both Speaker and Guest types
+import { Speaker, Guest, SpeakerGuestData } from '../../types';
 import axiosInstance from '../../api/axiosInstance';
 
 
@@ -39,16 +39,23 @@ const SpeakerGuestManagementPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [form] = Form.useForm();
-    const [editingItemId, setEditingItemId] = useState<string | null>(null); // Could be speakerId or guestId
-    const [activeTabKey, setActiveTabKey] = useState<'speakers' | 'guests'>('speakers'); // Tab state
+    const [editingItemId, setEditingItemId] = useState<string | null>(null);
+    const [activeTabKey, setActiveTabKey] = useState<'speakers' | 'guests'>('speakers');
+    const [noSpeakersData, setNoSpeakersData] = useState<boolean>(false);
+    const [noGuestsData, setNoGuestsData] = useState<boolean>(false);
 
 
-    const fetchSpeakers = useCallback(async () => { // Fetch speakers (same as before)
+    const fetchSpeakers = useCallback(async () => {
         setLoading(true);
         setError(null);
+        setNoSpeakersData(false);
         try {
             const response = await axiosInstance.get('/speakers');
-            setSpeakers((response.data as { data: { speakers: Speaker[] } }).data.speakers);
+            const speakerData = (response.data as { data: { speakers: Speaker[], meta: { totalItems: number } } }).data;
+            setSpeakers(speakerData.speakers);
+            if (speakerData.meta.totalItems === 0) {
+                setNoSpeakersData(true);
+            }
         } catch (error: any) {
             setError(error.message || 'Failed to load speakers');
             message.error(error.message || 'Failed to load speakers');
@@ -57,12 +64,17 @@ const SpeakerGuestManagementPage: React.FC = () => {
         }
     }, []);
 
-    const fetchGuests = useCallback(async () => { // Fetch guests (similar to fetchSpeakers)
+    const fetchGuests = useCallback(async () => {
         setLoading(true);
         setError(null);
+        setNoGuestsData(false);
         try {
             const response = await axiosInstance.get('/guests');
-            setGuests((response.data as { data: { guests: Guest[] } }).data.guests);
+            const guestData = (response.data as { data: { guests: Guest[], meta: { totalItems: number } } }).data;
+            setGuests(guestData.guests);
+            if (guestData.meta.totalItems === 0) {
+                setNoGuestsData(true);
+            }
         } catch (error: any) {
             setError(error.message || 'Failed to load guests');
             message.error(error.message || 'Failed to load guests');
@@ -76,20 +88,20 @@ const SpeakerGuestManagementPage: React.FC = () => {
         fetchGuests();
     }, [fetchSpeakers, fetchGuests]);
 
-    const handleCreateItem = () => { // Generic create handler
+    const handleCreateItem = () => {
         setEditingItemId(null);
         form.resetFields();
         setIsModalOpen(true);
     };
 
-    const handleEditItem = (id: string, entityType: 'speaker' | 'guest') => { // Generic edit handler
+    const handleEditItem = (id: string, entityType: 'speaker' | 'guest') => {
         setEditingItemId(id);
         const itemToEdit = entityType === 'speaker'
             ? speakers.find(speaker => speaker.id === id)
             : guests.find(guest => guest.id === id);
 
         if (itemToEdit) {
-            form.setFieldsValue({ ...itemToEdit, entityType }); // Include entityType in form values
+            form.setFieldsValue({ ...itemToEdit, entityType, ...itemToEdit }); // ** giữ lại itemToEdit để set giá trị đúng **
             setIsModalOpen(true);
         }
     };
@@ -117,16 +129,24 @@ const SpeakerGuestManagementPage: React.FC = () => {
             const endpoint = isSpeaker ? '/speakers' : '/guests';
             const idToEdit = editingItemId;
 
+            const payload = { // ** Tạo payload theo đúng format backend yêu cầu **
+                name: values.name,
+                jobTitle: values.jobTitle,
+                email: values.email,
+                ...(isSpeaker ? { bio: values.bio } : { organization: values.organization, linkSocial: values.linkSocial }) // ** Conditional payload cho speaker và guest **
+            };
+
+
             if (idToEdit) {
-                response = await axiosInstance.patch(`${endpoint}/${idToEdit}`, values); // Generic update endpoint
+                response = await axiosInstance.patch(`${endpoint}/${idToEdit}`, payload); // ** Gửi payload đã format **
                 message.success(`${isSpeaker ? 'Speaker' : 'Guest'} updated successfully`);
             } else {
-                response = await axiosInstance.post(endpoint, values); // Generic create endpoint
+                response = await axiosInstance.post(endpoint, payload); // ** Gửi payload đã format **
                 message.success(`${isSpeaker ? 'Speaker' : 'Guest'} created successfully`);
             }
 
             if (isSpeaker) {
-                fetchSpeakers(); // Refresh speaker or guest list based on tab
+                fetchSpeakers();
             } else {
                 fetchGuests();
             }
@@ -145,7 +165,7 @@ const SpeakerGuestManagementPage: React.FC = () => {
     };
 
 
-    const speakerColumns: ColumnsType<SpeakerGuestData> = [ // Columns for Speakers
+    const speakerColumns: ColumnsType<SpeakerGuestData> = [
         {
             title: 'Name',
             dataIndex: 'name',
@@ -174,7 +194,7 @@ const SpeakerGuestManagementPage: React.FC = () => {
         },
     ];
 
-    const guestColumns: ColumnsType<SpeakerGuestData> = [ // Columns for Guests
+    const guestColumns: ColumnsType<SpeakerGuestData> = [
         {
             title: 'Name',
             dataIndex: 'name',
@@ -271,19 +291,25 @@ const SpeakerGuestManagementPage: React.FC = () => {
                         style={{ marginBottom: 16 }}
                     />
                 )}
-                <Table
-                    columns={activeTabKey === 'speakers' ? speakerColumns : guestColumns} // Conditional columns
-                    dataSource={activeTabKey === 'speakers'
-                        ? speakers.map(speaker => ({ ...speaker, entityType: 'speaker' })) // Add entityType to dataSource
-                        : guests.map(guest => ({ ...guest, entityType: 'guest' }))}
-                    loading={loading}
-                    rowKey="id"
-                    pagination={{ pageSize: 5 }}
-                />
+                {activeTabKey === 'speakers' && noSpeakersData && !loading ? (
+                    <Alert message="No speakers available." type="info" showIcon />
+                ) : activeTabKey === 'guests' && noGuestsData && !loading ? (
+                    <Alert message="No guests available." type="info" showIcon />
+                ) : (
+                    <Table
+                        columns={activeTabKey === 'speakers' ? speakerColumns : guestColumns}
+                        dataSource={activeTabKey === 'speakers'
+                            ? speakers.map(speaker => ({ ...speaker, entityType: 'speaker' }))
+                            : guests.map(guest => ({ ...guest, entityType: 'guest' }))}
+                        loading={loading}
+                        rowKey="id"
+                        pagination={{ pageSize: 5 }}
+                    />
+                )}
             </Card>
 
             <Modal
-                title={editingItemId ? `Edit ${form.getFieldValue('entityType') === 'speaker' ? 'Speaker' : 'Guest'}` : "Create New Speaker/Guest"} // Dynamic modal title
+                title={editingItemId ? `Edit ${form.getFieldValue('entityType') === 'speaker' ? 'Speaker' : 'Guest'}` : "Create New Speaker/Guest"}
                 open={isModalOpen}
                 onOk={handleModalOk}
                 onCancel={handleModalCancel}
@@ -297,7 +323,7 @@ const SpeakerGuestManagementPage: React.FC = () => {
                     onFinish={onFinish}
                     onFinishFailed={onFinishFailed}
                     autoComplete="off"
-                    initialValues={{ entityType: 'speaker' }} // Default entity type to speaker
+                    initialValues={{ entityType: 'speaker' }}
                     requiredMark={false}
                 >
                     <Form.Item name="entityType" hidden>

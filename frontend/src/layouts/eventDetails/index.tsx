@@ -7,10 +7,8 @@ import {
   PageHeader,
 } from '../../components';
 import { HomeOutlined, IdcardOutlined } from '@ant-design/icons';
-import { CORPORATE_ITEMS } from '../../constants';
 import { useStylesContext } from '../../context';
 
-const { Text, Title } = Typography;
 export const EventDetailLayout = () => {
   const { pathname } = useLocation();
   const stylesContext = useStylesContext();
@@ -38,12 +36,6 @@ export const EventDetailLayout = () => {
                   <span>event</span>
                 </>
               ),
-              menu: {
-                items: CORPORATE_ITEMS.map((d) => ({
-                  key: d.title,
-                  title: <Link to={d.path}>{d.title}</Link>,
-                })),
-              },
             },
             {
               title: pathname.split('/')[pathname.split('/').length - 1] || '',

@@ -171,3 +171,8 @@
     overflow: hidden;
   }
 }
+
+.event-banner-container {
+  max-width: 1920px; /* Kích thước chiều rộng tối đa mong muốn */
+  margin: 0 auto;     /* Căn giữa container trên trang */
+}

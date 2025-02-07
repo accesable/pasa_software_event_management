@@ -195,7 +195,7 @@ const EditEventPage: React.FC = () => {
                 ]}
             />
 
-            <Card title={`Edit Event: ${eventDetails?.name}`} extra={<Button onClick={() => navigate(-1)} icon={<ArrowLeftOutlined />}>Cancel</Button>}>
+            <Card title={`Edit Event: ${eventDetails?.name}`} extra={<Button onClick={() => navigate(-1)} icon={<ArrowLeftOutlined />}>Back</Button>}>
                 <Form
                     form={form}
                     name="edit-event-form"

@@ -55,7 +55,7 @@ const api = {
     });
     return handleResponse(response);
   },
-    // ... you can add more methods here for PATCH, etc.
+  // ... you can add more methods here for PATCH, etc.
   patch: async <T>(url: string, data?: any, config?: RequestInit): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${url}`, {
       ...config,
@@ -76,8 +76,8 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
   const data = text && JSON.parse(text); // Parse JSON only if not empty
 
   if (!response.ok) {
-      const error = data?.error || data?.message || response.statusText || 'An unexpected error occurred.';
-      return Promise.reject(new Error(error));
+    const error = data?.error || data?.message || response.statusText || 'An unexpected error occurred.';
+    return Promise.reject(new Error(error));
   }
 
   return data;

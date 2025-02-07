@@ -135,9 +135,8 @@ export const MyEventDashboardPage = () => {
                     >
                         {eventsError && (
                             <Alert
-                                message="Error"
-                                description={eventsError.toString()}
-                                type="error"
+                                message="No events participated yet."
+                                type="info"
                                 showIcon
                             />
                         )}

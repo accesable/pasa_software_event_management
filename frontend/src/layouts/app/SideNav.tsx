@@ -18,7 +18,6 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   PATH_ABOUT,
   PATH_AUTH,
-  PATH_CORPORATE,
   PATH_DASHBOARD,
   PATH_DOCS,
   PATH_ERROR,
@@ -77,18 +76,18 @@ const items: MenuProps['items'] = [
       'participated-events',
       null
     ),
-    getItem(
-      <Link to={PATH_DASHBOARD.users}>Users</Link>,
-      'users',
-      null
-    ),
-    getItem(
-      <Link to={PATH_DASHBOARD.marketing}>Marketing</Link>,
-      'marketing',
-      null
-    ),
-    getItem(<Link to={PATH_DASHBOARD.social}>Social</Link>, 'social', null),
-    getItem(<Link to={PATH_DASHBOARD.bidding}>Bidding</Link>, 'bidding', null),
+    // getItem(
+    //   <Link to={PATH_DASHBOARD.users}>Users</Link>,
+    //   'users',
+    //   null
+    // ),
+    // getItem(
+    //   <Link to={PATH_DASHBOARD.marketing}>Marketing</Link>,
+    //   'marketing',
+    //   null
+    // ),
+    // getItem(<Link to={PATH_DASHBOARD.social}>Social</Link>, 'social', null),
+    // getItem(<Link to={PATH_DASHBOARD.bidding}>Bidding</Link>, 'bidding', null),
     getItem(
       <Link to={PATH_DASHBOARD.learning}>Learning</Link>,
       'learning',
@@ -113,30 +112,7 @@ const items: MenuProps['items'] = [
 
   getItem('Pages', 'pages', null, [], 'group'),
 
-  getItem('Corporate', 'corporate', <IdcardOutlined />, [
-    getItem(<Link to={PATH_CORPORATE.about}>About</Link>, 'about', null),
-    getItem(<Link to={PATH_CORPORATE.team}>Team</Link>, 'team', null),
-    getItem(<Link to={PATH_CORPORATE.faqs}>FAQ</Link>, 'faqs', null),
-    getItem(
-      <Link to={PATH_CORPORATE.contact}>Contact us</Link>,
-      'contact us',
-      null
-    ),
-    getItem(<Link to={PATH_CORPORATE.pricing}>Pricing</Link>, 'pricing', null),
-    getItem(<Link to={PATH_CORPORATE.license}>License</Link>, 'license', null),
-  ]),
-
   getItem('User profile', 'user-profile', <UserOutlined />, [
-    getItem(
-      <Link to={PATH_USER_PROFILE.details}>Details</Link>,
-      'details',
-      null
-    ),
-    getItem(
-      <Link to={PATH_USER_PROFILE.preferences}>Preferences</Link>,
-      'preferences',
-      null
-    ),
     getItem(
       <Link to={PATH_USER_PROFILE.personalInformation}>Information</Link>,
       'personal-information',
@@ -147,17 +123,6 @@ const items: MenuProps['items'] = [
       'security',
       null
     ),
-    getItem(
-      <Link to={PATH_USER_PROFILE.activity}>Activity</Link>,
-      'activity',
-      null
-    ),
-    getItem(
-      <Link to={PATH_USER_PROFILE.action}>Actions</Link>,
-      'actions',
-      null
-    ),
-    getItem(<Link to={PATH_USER_PROFILE.help}>Help</Link>, 'help', null),
     getItem(
       <Link to={PATH_USER_PROFILE.feedback}>Feedback</Link>,
       'feedback',

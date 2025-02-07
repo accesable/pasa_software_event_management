@@ -1,12 +1,10 @@
+// src\components\UserAvatar\UserAvatar.tsx
 import { Avatar, AvatarProps, Flex, FlexProps, theme, Typography } from 'antd';
 import { colourNameToHex, getNameInitials, isColorLight } from '../../utils';
 import { CheckCircleFilled, UserOutlined } from '@ant-design/icons';
 import { blue } from '@ant-design/colors';
 import { CSSProperties } from 'react';
 
-/**
- * mark - not a full name user, just a single user name
- */
 type Props = {
   fullName: string;
   mark?: boolean;
@@ -14,6 +12,7 @@ type Props = {
   verified?: boolean;
   color?: CSSProperties['color'];
   textWidth?: CSSProperties['width'];
+  avatarUrl?: string | null; // Add avatarUrl prop
 } & Omit<FlexProps, 'children'>;
 
 export const UserAvatar = ({
@@ -23,6 +22,7 @@ export const UserAvatar = ({
   verified,
   color,
   textWidth,
+  avatarUrl, // Use avatarUrl prop
   ...others
 }: Props) => {
   const {
@@ -31,6 +31,8 @@ export const UserAvatar = ({
 
   const avatarProps: AvatarProps = {
     size: size === 'large' ? 36 : size === 'small' ? 18 : 24,
+    src: avatarUrl, // Set src from avatarUrl prop
+    icon: !avatarUrl ? <UserOutlined /> : undefined, // Show default icon if no avatarUrl
   };
 
   return (
@@ -56,7 +58,7 @@ export const UserAvatar = ({
           }}
           {...avatarProps}
         >
-          {getNameInitials(fullName)}
+          {!avatarUrl && getNameInitials(fullName)} {/* Show initials only if no avatarUrl */}
         </Avatar>
       )}
       <Typography.Text

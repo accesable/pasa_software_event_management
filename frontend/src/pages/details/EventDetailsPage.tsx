@@ -81,16 +81,15 @@ export const EventDetailsPage: React.FC = () => {
                 return;
             }
 
-            const response = await authService.registerEvent(eventDetails.id, selectedSessionIds, accessToken) as { statusCode: number; message: string };
+            const response = await authService.registerEvent(eventDetails.id, selectedSessionIds, accessToken) as { statusCode: number; message: string; error?: string };
             if (response && response.statusCode === 201) {
                 message.success(response.message);
                 // Optionally redirect or update UI after successful registration
             } else {
-                message.error(response?.message || 'Failed to register for event');
+                message.error(response?.error || 'Failed to register for event');
             }
         } catch (error: any) {
-            console.error('Error registering for event:', error);
-            message.error(error.message || 'Failed to register for event');
+            message.error(error.error || 'Failed to register for event');
         } finally {
             setLoading(false);
         }
@@ -230,13 +229,13 @@ export const EventDetailsPage: React.FC = () => {
                             )}
                         </Card>
                     </Col>
-                    {eventDetails.videoIntro && (
+                    {eventDetails.banner && (
                         <Col span={24}>
-                            <Card title="Video Introduction">
+                            <Card title="Banner">
                                 <iframe
                                     width="100%"
                                     height="480"
-                                    src={eventDetails.videoIntro}
+                                    src={eventDetails.banner}
                                     title="Event Introduction Video"
                                     frameBorder="0"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

@@ -1,4 +1,4 @@
-// src/pages/dashboards/ParticipatedEvents.tsx
+// src\pages\dashboards\ParticipatedEventsPage.tsx
 import React, { useState } from 'react';
 import {
     Alert,
@@ -20,6 +20,7 @@ import { Events } from '../../types';
 import dayjs from 'dayjs';
 import useFetchParticipatedEventsData from '../../hooks/useFetchParticipatedEventsData';
 import authService from '../../services/authService';
+import { DASHBOARD_ITEMS } from '../../constants';
 
 const EVENT_STATUS_OPTIONS = [
     { value: 'all', label: 'All Statuses' },
@@ -32,7 +33,6 @@ const ParticipatedEventsPage = () => {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    // Sử dụng hook custom để fetch dữ liệu tham gia event
     const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } =
         useFetchParticipatedEventsData(statusFilter === 'all' ? undefined : statusFilter);
 
@@ -52,7 +52,7 @@ const ParticipatedEventsPage = () => {
     const isEmptyData = eventsData?.events === undefined || eventsData?.events?.length === 0;
 
     // Hàm xử lý Unregister (delete) event
-    const handleLeaveEvent = async (participantId: string) => {
+    const handleLeaveEvent = async (eventId: string) => { // Pass eventId instead of participantId
         setActionLoading(true);
         try {
             const accessToken = localStorage.getItem('accessToken');
@@ -60,10 +60,14 @@ const ParticipatedEventsPage = () => {
                 message.error('No access token found. Please login again.');
                 return;
             }
-            // Gọi API để unregister event
-            // Giả sử authService.unregisterEvent sử dụng endpoint: /participants/{participantId}
+
+            // 1. Get Participant ID
+            const participantIdResponse = await authService.getParticipantIdByEventId(eventId, accessToken) as any;
+            const participantId = participantIdResponse.data.participantId;
+
+            // 2. Unregister Event using participantId
             const response = (await authService.unregisterEvent(
-                participantId,
+                participantId, // Use participantId here
                 accessToken
             )) as { statusCode: number; message: string, error?: string };
 
@@ -82,38 +86,6 @@ const ParticipatedEventsPage = () => {
         }
     };
 
-    // Hàm xử lý Update Sessions (update lại các session) của participant
-    const handleUpdateSessions = async (participantId: string) => {
-        setActionLoading(true);
-        try {
-            const accessToken = localStorage.getItem('accessToken');
-            if (!accessToken) {
-                message.error('No access token found. Please login again.');
-                return;
-            }
-            // Gọi API để update sessions
-            // Giả sử authService.updateParticipantSessions sử dụng endpoint: /participants/{participantId}
-            // Và có thể truyền thêm dữ liệu cần update (ở đây minh demo truyền rỗng)
-            const response = (await authService.updateParticipantSessions(
-                participantId,
-                {}, // dữ liệu update, thay đổi theo yêu cầu của backend
-                accessToken
-            )) as { statusCode: number; message: string, error?: string };
-
-            if (response.statusCode === 200) {
-                message.success(response.error || 'Sessions updated successfully');
-                // Refresh dữ liệu sau khi update
-                fetchData(statusFilter === 'all' ? undefined : statusFilter);
-            } else {
-                message.error(response.error || 'Failed to update sessions');
-            }
-        } catch (error: any) {
-            console.error('Error updating sessions:', error);
-            message.error(error.error || 'Failed to update sessions');
-        } finally {
-            setActionLoading(false);
-        }
-    };
 
     // Định nghĩa các cột của bảng bên trong component để có thể truy cập các hàm handleLeaveEvent, handleUpdateSessions
     const columns: ColumnsType<Events> = [
@@ -122,7 +94,7 @@ const ParticipatedEventsPage = () => {
             dataIndex: 'name',
             key: 'name',
             render: (text, record) => (
-                <Link to={`/details/events/${record.id}`}>{text}</Link>
+                <Link to={`/details/participated-events/${record.id}`}>{text}</Link>
             ),
         },
         {
@@ -171,32 +143,17 @@ const ParticipatedEventsPage = () => {
             render: (_, record) => (
                 <Space size="middle">
                     <Button type="primary" size="small">
-                        <Link to={`/details/events/${record.id}`}>Details</Link>
+                        <Link to={`/details/participated-events/${record.id}`}>Details</Link>
                     </Button>
-                    <Button onClick={() => handleUpdateSessions(record.id)} size="small">
-                        Update Sessions
-                    </Button>
-                    {/* <Popconfirm
-            title="Unregister from event"
-            description="Are you sure you want to unregister from this event?"
-            onConfirm={() => handleLeaveEvent(record.id)}
-            onCancel={() => message.info('Cancel unregister event')}
-            okText="Yes, Unregister"
-            cancelText="No"
-          >
-            <Button danger size="small">
-              Unregister
-            </Button>
-          </Popconfirm> */}
                     <Popconfirm
                         title="Cancel Event"
                         description="Are you sure to unregister from this event?"
-                        onConfirm={() => handleLeaveEvent(record.id)}
+                        onConfirm={() => handleLeaveEvent(record.id)} // Pass eventId to handleLeaveEvent
                         onCancel={() => message.info('Cancel')}
                         okText="Yes, Cancel"
                         cancelText="No"
-                        placement="topRight" // Thử thay đổi placement
-                        overlayInnerStyle={{ width: 200 }} // Thử set width
+                        placement="topRight"
+                        overlayInnerStyle={{ width: 200 }}
                     >
                         <Button danger>
                             Unregister
@@ -231,6 +188,12 @@ const ParticipatedEventsPage = () => {
                                 <span>Dashboards</span>
                             </>
                         ),
+                        menu: {
+                            items: DASHBOARD_ITEMS.map((d) => ({
+                                key: d.title,
+                                title: <Link to={d.path}>{d.title}</Link>,
+                            })),
+                        },
                     },
                     {
                         title: 'Participated Events',
@@ -249,15 +212,7 @@ const ParticipatedEventsPage = () => {
                     />
                 }
             >
-                {eventsError && (
-                    <Alert
-                        message="Error"
-                        description={eventsError.toString()}
-                        type="error"
-                        showIcon
-                        closable
-                    />
-                )}
+                
 
                 {isEmptyData ? (
                     <Alert

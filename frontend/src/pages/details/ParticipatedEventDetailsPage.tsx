@@ -1,4 +1,4 @@
-// src\pages\details\MyEventPage.tsx
+// src\pages\details\ParticipatedEventDetailsPage.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
@@ -16,46 +16,30 @@ import {
     Table,
     Tag,
     Typography,
-    Checkbox,
 } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { PageHeader, Loader, UserAvatar, BackBtn } from '../../components';
+import { PageHeader, Loader, BackBtn } from '../../components';
 import { useFetchData } from '../../hooks';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
-import { Events, TicketType, User } from '../../types';
+import { Events, TicketType } from '../../types';
 import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
-import jsPDF from 'jspdf';
 import { Helmet } from 'react-helmet-async';
 import { EventScheduleItem } from '../../types/schedule';
-import TicketDetailsModal from '../../components/TicketDetailsModal';
-import InviteUsersModal from '../../components/InviteUsersModal';
-import { useDispatch } from 'react-redux';
+import TicketDetailsModal from '../../components/TicketDetailsModal'; // Import TicketDetailsModal
 
 const { Title, Text, Paragraph } = Typography;
 
-export interface ParticipantData {
-    id: string;
-    name: string;
-    email: string;
-    phoneNumber: string;
-    checkInAt: string | null;
-    checkOutAt: string | null;
-}
-
-
-const DetailMyEventPage: React.FC = () => {
+const ParticipatedEventDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const [eventDetails, setEventDetails] = useState<Events | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
-    const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
     const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
-    const [ticketData, setTicketData] = useState<any | null>(null);
-    const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
-    const dispatch = useDispatch(); // Thêm dispatch để gọi action Redux (nếu bạn dùng Redux)
+    const [ticketData, setTicketData] = useState<TicketType | null>(null);
+
 
     useEffect(() => {
         const fetchEventDetails = async () => {
@@ -86,9 +70,6 @@ const DetailMyEventPage: React.FC = () => {
         message.info("Download PDF function is not implemented yet for general events.");
     };
 
-    const onSessionSelectChange = (selectedKeys: React.Key[]) => {
-        setSelectedSessionIds(selectedKeys as string[]);
-    };
 
     const scheduleColumns = [
         {
@@ -113,18 +94,41 @@ const DetailMyEventPage: React.FC = () => {
             dataIndex: 'description',
             key: 'description'
         },
-        // **Không có cột "Select Session" ở đây**
     ];
+
+    const showTicketModal = async () => {
+        setIsTicketModalVisible(true);
+        setLoading(true);
+        setError(null);
+        try {
+            if (!eventDetails?.id) {
+                message.error("Missing user or event information.");
+                return;
+            }
+
+            const participantIdResponse = await authService.getParticipantIdByUserIdEventId(eventDetails.id, localStorage.getItem('accessToken') || undefined) as any;
+            const participantId = participantIdResponse.data.participantId;
+
+            const response = await authService.getTicketByParticipantId(participantId, localStorage.getItem('accessToken') || undefined) as { statusCode: number; data: { ticket: TicketType }; message: string, error?: string };
+            if (response && response.statusCode === 200 && response.data.ticket) {
+                setTicketData(response.data.ticket);
+            } else {
+                setError(response?.error || 'Failed to load ticket details');
+                message.error(response?.error || 'Failed to load ticket details');
+                setTicketData(null);
+            }
+        } catch (error: any) {
+            console.error('Error fetching ticket details:', error);
+            setError(error.error || 'Failed to load ticket details');
+            message.error(error.error || 'Failed to load ticket details');
+            setTicketData(null);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const hideTicketModal = () => {
         setIsTicketModalVisible(false);
-    };
-    const showInviteModal = () => {
-        setIsInviteModalVisible(true);
-    };
-
-    const hideInviteModal = () => {
-        setIsInviteModalVisible(false);
     };
 
 
@@ -139,7 +143,7 @@ const DetailMyEventPage: React.FC = () => {
                 return;
             }
 
-            const response = await authService.updateParticipantSessions(ticketData?.participantId, { sessionIds }, accessToken) as any;
+            const response = await authService.updateParticipantSessions(ticketData!.participantId, { sessionIds }, accessToken) as any;
             if (response && response.statusCode === 200) {
                 message.success(response.message || 'Sessions updated successfully');
                 setIsTicketModalVisible(false);
@@ -158,7 +162,7 @@ const DetailMyEventPage: React.FC = () => {
     return (
         <div>
             <Helmet>
-                <title>Details | Antd Dashboard</title>
+                <title>Event Details</title>
             </Helmet>
             <PageHeader
                 title="Event Details"
@@ -187,17 +191,18 @@ const DetailMyEventPage: React.FC = () => {
                         },
                     },
                     {
-                        title: 'My Event Details', // Đổi breadcrumb title
+                        title: 'Participated Event Details',
                     },
                 ]}
+                btnBack={<BackBtn />}
             />
-            <BackBtn />
 
             <Card title={<Title level={3}>{eventDetails?.name}</Title>}
                 extra={
                     <Space>
-                        <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>Download Participants PDF</Button>
-                        <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal} >Invite Users</Button>
+                        <Button type="primary" onClick={showTicketModal} >
+                            View Ticket / Update Sessions
+                        </Button>
                     </Space>
                 }
             >
@@ -216,17 +221,7 @@ const DetailMyEventPage: React.FC = () => {
                                 />
                             </Card>
                         ) : (
-                            <Image
-                                src={eventDetails?.banner || "https://placehold.co/1920x1080"}
-                                alt="Event Banner"
-                                style={{
-                                    width: '100%',
-                                    height: '480px',            // Đặt chiều cao cố định
-                                    objectFit: 'cover',         // Đảm bảo hình ảnh được cắt xén vừa vặn
-                                    borderRadius: '10px',
-                                }}
-                                fallback="https://placehold.co/1920x1080"
-                            />
+                            <Image src={eventDetails?.banner || "https://placehold.co/1920x1080"} alt="Event Banner" style={{ width: '100%', borderRadius: '10px' }} fallback="https://placehold.co/1920x1080" />
                         )}
                     </Col>
 
@@ -264,16 +259,17 @@ const DetailMyEventPage: React.FC = () => {
                     </Col>
                     {eventDetails?.banner && (
                         <Image
-                        src={eventDetails?.banner || "https://placehold.co/1920x1080"}
-                        alt="Event Banner"
-                        style={{
-                            width: '100%',
-                            height: '480px',            // Đặt chiều cao cố định
-                            objectFit: 'cover',         // Đảm bảo hình ảnh được cắt xén vừa vặn
-                            borderRadius: '10px',
-                        }}
-                        fallback="https://placehold.co/1920x1080"
-                    />
+                            src={eventDetails?.banner || "https://placehold.co/1920x1080"}
+                            alt="Event Banner"
+                            style={{
+                                width: '100%',
+                                height: 'auto',
+                                borderRadius: '10px',
+                            }}
+                            fallback="https://placehold.co/1920x1080"
+                            preview={false}
+                        />
+
                     )}
                     {eventDetails?.documents && eventDetails.documents.length > 0 && (
                         <Col span={24}>
@@ -311,14 +307,8 @@ const DetailMyEventPage: React.FC = () => {
                 onSessionsChange={handleUpdateSessionsForTicket}
                 eventSchedule={eventDetails?.schedule || []}
             />
-            <InviteUsersModal
-                visible={isInviteModalVisible}
-                onCancel={hideInviteModal}
-                eventId={id || ''}
-                onInvitationsSent={() => { }} // Example callback
-            />
         </div>
     );
 };
 
-export default DetailMyEventPage;
+export default ParticipatedEventDetailsPage;

@@ -183,6 +183,10 @@ src\App.css:
   }
 }
 
+.event-banner-container {
+  max-width: 1920px; /* Kích thước chiều rộng tối đa mong muốn */
+  margin: 0 auto;     /* Căn giữa container trên trang */
+}
 
 src\App.tsx:
 // src\App.tsx:
@@ -405,11 +409,11 @@ import axios from 'axios';
 import { store } from '../redux/store';
 import { setUser } from '../redux/userSlice';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'; // Sử dụng biến môi trường hoặc giá trị mặc định
+const baseURL = 'http://localhost:8080/api/v1'; // Sử dụng biến môi trường hoặc giá trị mặc định
 
 const axiosInstance = axios.create({
   baseURL: baseURL,
-  withCredentials: true, // Cho phép gửi cookie (nếu cần thiết cho refresh token)
+  withCredentials: true, 
 });
 
 axiosInstance.interceptors.request.use(
@@ -421,6 +425,7 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('Interceptor Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -431,16 +436,14 @@ axiosInstance.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
-    console.log("Interceptor Response: Error Status", error.response?.status); // Log status code
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && (error.response.data?.message === "Invalid token" || error.response.data?.error === "Unauthorized") && !originalRequest._retry) {
       originalRequest._retry = true;
-      console.log("Interceptor Response: 401 Error intercepted, attempting refresh token..."); // Log 401 interception
+      console.log("Interceptor Response: 401 Error intercepted, attempting refresh token...");
 
       try {
-        console.log("Interceptor Response: Calling refresh token API..."); // Log refresh token request
+        console.log("Interceptor Response: Calling refresh token API...");
         const refreshTokenResponse = await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true });
-        console.log("Interceptor Response: Refresh token API Status", refreshTokenResponse.status); // Log refresh token response status
 
         if (refreshTokenResponse.status === 200) {
           const newAccessToken = (refreshTokenResponse.data as { data: { accessToken: string, user: any } }).data.accessToken;
@@ -451,23 +454,27 @@ axiosInstance.interceptors.response.use(
           store.dispatch(setUser(user));
 
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-          return axiosInstance(originalRequest);
+          console.log("Interceptor Response: Refresh token successful, retrying original request.");
+          return axiosInstance(originalRequest); // Retry request with new token
         } else {
-          console.log("Interceptor Response: Refresh token failed (non-200 status), redirecting to login"); // Log refresh token failure
+          // Refresh token API trả về lỗi (non-200 status)
+          console.log("Interceptor Response: Refresh token failed (non-200 status), redirecting to login");
           localStorage.removeItem('accessToken');
           localStorage.removeItem('user');
           window.location.href = '/auth/signin';
-          return Promise.reject(error);
+          return Promise.reject(error); // Logout và reject lỗi ban đầu
         }
       } catch (refreshError) {
-        console.error("Interceptor Response: Error during refresh token process:", refreshError); // Log refresh token error
+        // Lỗi trong quá trình gọi refresh token API (ví dụ: network error)
+        console.error("Interceptor Response: Error during refresh token process:", refreshError);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
         window.location.href = '/auth/signin';
-        return Promise.reject(refreshError);
+        return Promise.reject(refreshError); // Logout và reject lỗi refresh token
       }
     }
 
+    // Nếu không phải lỗi 401 hoặc đã retry refresh token rồi thì reject lỗi ban đầu
     return Promise.reject(error);
   }
 );
@@ -634,16 +641,21 @@ const InviteUsersModal: React.FC<InviteUsersModalProps> = ({ visible, onCancel, 
             const response = await axiosInstance.post(`/events/${eventId}/invite`, { users: usersToInvite });
             const responseData = response.data as { statusCode: number; message: string };
             if (responseData.statusCode === 201) {
+                console.log("Before message.success: Invitations sent successfully!");
                 message.success((response.data as { message: string }).message);
-                onInvitationsSent(); // Gọi callback thông báo gửi lời mời thành công
-                onCancel(); // Đóng modal sau khi gửi lời mời thành công
+                onInvitationsSent();
+                onCancel();
             } else {
-                const responseData = response.data as { message: string };
-                setError(responseData.message || 'Failed to send invitations.');
+                // **Lấy message lỗi từ responseData (nếu có)**
+                const errorMessage = responseData.message || 'Failed to send invitations.';
+                setError(errorMessage);
+                message.error(errorMessage);
             }
         } catch (error: any) {
-            setError(error.message || 'Failed to send invitations.');
-            message.error(error.message || 'Failed to send invitations.');
+            // **Lấy message lỗi từ error.response.data (thêm vào)**
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to send invitations.';
+            setError(errorMessage);
+            message.error(errorMessage);
         } finally {
             setInviting(false);
         }
@@ -7620,7 +7632,9 @@ import './styles.css';
 type Props = {
   title: string;
   breadcrumbs: BreadcrumbProps['items'];
+  btnBack?: React.ReactNode;
 } & React.HTMLAttributes<HTMLDivElement>;
+
 
 export const PageHeader = ({ breadcrumbs, title, ...others }: Props) => {
   return (
@@ -7976,15 +7990,13 @@ export const TimelineCard = ({ data, error, loading, ...others }: Props) => {
 
 
 src\components\UserAvatar\UserAvatar.tsx:
+// src\components\UserAvatar\UserAvatar.tsx
 import { Avatar, AvatarProps, Flex, FlexProps, theme, Typography } from 'antd';
 import { colourNameToHex, getNameInitials, isColorLight } from '../../utils';
 import { CheckCircleFilled, UserOutlined } from '@ant-design/icons';
 import { blue } from '@ant-design/colors';
 import { CSSProperties } from 'react';
 
-/**
- * mark - not a full name user, just a single user name
- */
 type Props = {
   fullName: string;
   mark?: boolean;
@@ -7992,6 +8004,7 @@ type Props = {
   verified?: boolean;
   color?: CSSProperties['color'];
   textWidth?: CSSProperties['width'];
+  avatarUrl?: string | null; // Add avatarUrl prop
 } & Omit<FlexProps, 'children'>;
 
 export const UserAvatar = ({
@@ -8001,6 +8014,7 @@ export const UserAvatar = ({
   verified,
   color,
   textWidth,
+  avatarUrl, // Use avatarUrl prop
   ...others
 }: Props) => {
   const {
@@ -8009,6 +8023,8 @@ export const UserAvatar = ({
 
   const avatarProps: AvatarProps = {
     size: size === 'large' ? 36 : size === 'small' ? 18 : 24,
+    src: avatarUrl, // Set src from avatarUrl prop
+    icon: !avatarUrl ? <UserOutlined /> : undefined, // Show default icon if no avatarUrl
   };
 
   return (
@@ -8034,7 +8050,7 @@ export const UserAvatar = ({
           }}
           {...avatarProps}
         >
-          {getNameInitials(fullName)}
+          {!avatarUrl && getNameInitials(fullName)} {/* Show initials only if no avatarUrl */}
         </Avatar>
       )}
       <Typography.Text
@@ -8052,7 +8068,6 @@ export const UserAvatar = ({
   );
 };
 
-
 src\constants\index.ts:
 import {
   PATH_CALENDAR,
@@ -8063,7 +8078,6 @@ import {
   PATH_CAREERS,
   PATH_CHANGELOG,
   PATH_CONTACTS,
-  PATH_CORPORATE,
   PATH_DASHBOARD,
   PATH_DOCS,
   PATH_ERROR,
@@ -8085,35 +8099,24 @@ import {
 
 const DASHBOARD_ITEMS = [
   { title: 'default', path: PATH_DASHBOARD.default },
-  { title: 'projects', path: PATH_DASHBOARD.projects },
-  { title: 'ecommerce', path: PATH_DASHBOARD.ecommerce },
-  { title: 'marketing', path: PATH_DASHBOARD.marketing },
-  { title: 'social', path: PATH_DASHBOARD.social },
-  { title: 'bidding', path: PATH_DASHBOARD.bidding },
-  { title: 'learning', path: PATH_DASHBOARD.learning },
-  { title: 'logistics', path: PATH_DASHBOARD.logistics },
+  // { title: 'projects', path: PATH_DASHBOARD.projects },
+  // { title: 'ecommerce', path: PATH_DASHBOARD.ecommerce },
+  // { title: 'marketing', path: PATH_DASHBOARD.marketing },
+  // { title: 'social', path: PATH_DASHBOARD.social },
+  // { title: 'bidding', path: PATH_DASHBOARD.bidding },
+  // { title: 'learning', path: PATH_DASHBOARD.learning },
+  // { title: 'logistics', path: PATH_DASHBOARD.logistics },
+  {title: 'participated events', path: PATH_DASHBOARD.participated_events},
+  { title: 'guests & speakers', path: PATH_DASHBOARD.speaker_guest },
   { title: 'events', path: PATH_DASHBOARD.events },
   { title: 'my events', path: PATH_DASHBOARD.my_events },
   { title: 'users', path: PATH_DASHBOARD.users },
 ];
 
-const CORPORATE_ITEMS = [
-  { title: 'about', path: PATH_CORPORATE.about },
-  { title: 'team', path: PATH_CORPORATE.team },
-  { title: 'faq', path: PATH_CORPORATE.faqs },
-  { title: 'contact us', path: PATH_CORPORATE.contact },
-  { title: 'pricing', path: PATH_CORPORATE.pricing },
-  { title: 'license', path: PATH_CORPORATE.license },
-];
-
 const USER_PROFILE_ITEMS = [
   { title: 'details', path: PATH_USER_PROFILE.details },
-  { title: 'preferences', path: PATH_USER_PROFILE.preferences },
   { title: 'information', path: PATH_USER_PROFILE.personalInformation },
   { title: 'security', path: PATH_USER_PROFILE.security },
-  { title: 'activity', path: PATH_USER_PROFILE.activity },
-  { title: 'actions', path: PATH_USER_PROFILE.action },
-  { title: 'help', path: PATH_USER_PROFILE.help },
   { title: 'feedback', path: PATH_USER_PROFILE.feedback },
 ];
 
@@ -8140,7 +8143,6 @@ export {
   PATH_INBOX,
   PATH_PROJECTS,
   PATH_LAYOUT,
-  PATH_CORPORATE,
   PATH_CONTACTS,
   PATH_DASHBOARD,
   PATH_CHANGELOG,
@@ -8160,7 +8162,6 @@ export {
   PATH_LANDING,
   PATH_SITEMAP,
   DASHBOARD_ITEMS,
-  CORPORATE_ITEMS,
   USER_PROFILE_ITEMS,
   PATH_SOCIALS,
   AUTHENTICATION_ITEMS,
@@ -8240,25 +8241,11 @@ export const PATH_LAYOUT = {
   },
 };
 
-export const PATH_CORPORATE = {
-  root: ROOTS_CORPORATE,
-  about: path(ROOTS_CORPORATE, '/about'),
-  team: path(ROOTS_CORPORATE, '/team'),
-  faqs: path(ROOTS_CORPORATE, '/faqs'),
-  contact: path(ROOTS_CORPORATE, '/contact'),
-  pricing: path(ROOTS_CORPORATE, '/pricing'),
-  license: path(ROOTS_CORPORATE, '/license'),
-};
-
 export const PATH_USER_PROFILE = {
   root: ROOTS_PROFILE,
   details: path(ROOTS_PROFILE, '/details'),
-  preferences: path(ROOTS_PROFILE, '/preferences'),
   personalInformation: path(ROOTS_PROFILE, '/personal-information'),
   security: path(ROOTS_PROFILE, '/security'),
-  activity: path(ROOTS_PROFILE, '/activity'),
-  action: path(ROOTS_PROFILE, '/actions'),
-  help: path(ROOTS_PROFILE, '/help'),
   feedback: path(ROOTS_PROFILE, '/feedback'),
 };
 
@@ -8967,7 +8954,6 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   PATH_ABOUT,
   PATH_AUTH,
-  PATH_CORPORATE,
   PATH_DASHBOARD,
   PATH_DOCS,
   PATH_ERROR,
@@ -9026,18 +9012,18 @@ const items: MenuProps['items'] = [
       'participated-events',
       null
     ),
-    getItem(
-      <Link to={PATH_DASHBOARD.users}>Users</Link>,
-      'users',
-      null
-    ),
-    getItem(
-      <Link to={PATH_DASHBOARD.marketing}>Marketing</Link>,
-      'marketing',
-      null
-    ),
-    getItem(<Link to={PATH_DASHBOARD.social}>Social</Link>, 'social', null),
-    getItem(<Link to={PATH_DASHBOARD.bidding}>Bidding</Link>, 'bidding', null),
+    // getItem(
+    //   <Link to={PATH_DASHBOARD.users}>Users</Link>,
+    //   'users',
+    //   null
+    // ),
+    // getItem(
+    //   <Link to={PATH_DASHBOARD.marketing}>Marketing</Link>,
+    //   'marketing',
+    //   null
+    // ),
+    // getItem(<Link to={PATH_DASHBOARD.social}>Social</Link>, 'social', null),
+    // getItem(<Link to={PATH_DASHBOARD.bidding}>Bidding</Link>, 'bidding', null),
     getItem(
       <Link to={PATH_DASHBOARD.learning}>Learning</Link>,
       'learning',
@@ -9062,28 +9048,10 @@ const items: MenuProps['items'] = [
 
   getItem('Pages', 'pages', null, [], 'group'),
 
-  getItem('Corporate', 'corporate', <IdcardOutlined />, [
-    getItem(<Link to={PATH_CORPORATE.about}>About</Link>, 'about', null),
-    getItem(<Link to={PATH_CORPORATE.team}>Team</Link>, 'team', null),
-    getItem(<Link to={PATH_CORPORATE.faqs}>FAQ</Link>, 'faqs', null),
-    getItem(
-      <Link to={PATH_CORPORATE.contact}>Contact us</Link>,
-      'contact us',
-      null
-    ),
-    getItem(<Link to={PATH_CORPORATE.pricing}>Pricing</Link>, 'pricing', null),
-    getItem(<Link to={PATH_CORPORATE.license}>License</Link>, 'license', null),
-  ]),
-
   getItem('User profile', 'user-profile', <UserOutlined />, [
     getItem(
       <Link to={PATH_USER_PROFILE.details}>Details</Link>,
       'details',
-      null
-    ),
-    getItem(
-      <Link to={PATH_USER_PROFILE.preferences}>Preferences</Link>,
-      'preferences',
       null
     ),
     getItem(
@@ -9096,17 +9064,6 @@ const items: MenuProps['items'] = [
       'security',
       null
     ),
-    getItem(
-      <Link to={PATH_USER_PROFILE.activity}>Activity</Link>,
-      'activity',
-      null
-    ),
-    getItem(
-      <Link to={PATH_USER_PROFILE.action}>Actions</Link>,
-      'actions',
-      null
-    ),
-    getItem(<Link to={PATH_USER_PROFILE.help}>Help</Link>, 'help', null),
     getItem(
       <Link to={PATH_USER_PROFILE.feedback}>Feedback</Link>,
       'feedback',
@@ -9255,7 +9212,6 @@ import {
   SocialMediaCard,
 } from '../../components';
 import { HomeOutlined, IdcardOutlined } from '@ant-design/icons';
-import { CORPORATE_ITEMS } from '../../constants';
 import { useStylesContext } from '../../context';
 
 const { Text, Title } = Typography;
@@ -9297,12 +9253,6 @@ export const CorporateLayout = () => {
                   <span>corporate</span>
                 </>
               ),
-              menu: {
-                items: CORPORATE_ITEMS.map((d) => ({
-                  key: d.title,
-                  title: <Link to={d.path}>{d.title}</Link>,
-                })),
-              },
             },
             {
               title: pathname.split('/')[pathname.split('/').length - 1] || '',
@@ -9379,10 +9329,8 @@ import {
   PageHeader,
 } from '../../components';
 import { HomeOutlined, IdcardOutlined } from '@ant-design/icons';
-import { CORPORATE_ITEMS } from '../../constants';
 import { useStylesContext } from '../../context';
 
-const { Text, Title } = Typography;
 export const EventDetailLayout = () => {
   const { pathname } = useLocation();
   const stylesContext = useStylesContext();
@@ -9410,12 +9358,6 @@ export const EventDetailLayout = () => {
                   <span>event</span>
                 </>
               ),
-              menu: {
-                items: CORPORATE_ITEMS.map((d) => ({
-                  key: d.title,
-                  title: <Link to={d.path}>{d.title}</Link>,
-                })),
-              },
             },
             {
               title: pathname.split('/')[pathname.split('/').length - 1] || '',
@@ -9452,6 +9394,7 @@ src\layouts\guest\Guest.tsx:
 
 
 src\layouts\userAccount\index.tsx:
+// src\layouts\userAccount\index.tsx
 import { AppLayout } from '../app';
 import {
   Col,
@@ -9464,6 +9407,9 @@ import {
   TabsProps,
   theme,
   Typography,
+  Button, // Import Button
+  message, // Import message
+  Spin, // Import Spin
 } from 'antd';
 import { Card } from '../../components';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -9473,57 +9419,11 @@ import { useStylesContext } from '../../context';
 const { Link } = Typography;
 
 import './styles.css';
-import { useEffect, useState } from 'react';
-
-const DESCRIPTION_ITEMS: DescriptionsProps['items'] = [
-  {
-    key: 'full-name',
-    label: 'Name',
-    children: <span>Kelvin Kiptum Kiprop</span>,
-  },
-  {
-    key: 'job-title',
-    label: 'Job title',
-    children: <span>Software Engineer</span>,
-  },
-  {
-    key: 'email',
-    label: 'Email',
-    children: (
-      <Link href="mailto:kelvin.kiprop96@gmail.com">
-        kelvin.kiprop96@gmail.com
-      </Link>
-    ),
-  },
-  {
-    key: 'telephone',
-    label: 'Phone',
-    children: <Link href="tel:+254706094433">+254 706 094 4433</Link>,
-  },
-  {
-    key: 'github',
-    label: 'Github',
-    children: (
-      <Link href="https://github.com/kelvink96" target="_blank">
-        kelvink96
-      </Link>
-    ),
-  },
-  {
-    key: 'twitter',
-    label: 'Twitter',
-    children: (
-      <Link href="https://twitter.com/kelvink_96" target="_blank">
-        @kelvink_96
-      </Link>
-    ),
-  },
-];
-
-const TAB_ITEMS: TabsProps['items'] = USER_PROFILE_ITEMS.map((u) => ({
-  key: u.title,
-  label: u.title,
-}));
+import { useEffect, useRef, useState } from 'react'; // Import useRef, useState
+import { useSelector, useDispatch } from 'react-redux'; // Import useDispatch
+import { RootState } from '../../redux/store';
+import authService from '../../services/authService'; // Import authService
+import { updateUserProfile } from '../../redux/userSlice'; // Import updateUserProfile
 
 export const UserAccountLayout = () => {
   const {
@@ -9532,20 +9432,85 @@ export const UserAccountLayout = () => {
   const navigate = useNavigate();
   const stylesContext = useStylesContext();
   const location = useLocation();
+  const TAB_ITEMS: TabsProps['items'] = USER_PROFILE_ITEMS.map((u) => ({
+    key: u.title,
+    label: u.title,
+  }));
   const [activeKey, setActiveKey] = useState(TAB_ITEMS[0].key);
+  const user = useSelector((state: RootState) => state.user); // Get user from Redux
+  const dispatch = useDispatch(); // Get dispatch from useDispatch
+  const [uploadLoading, setUploadLoading] = useState(false); // Thêm state loading cho upload
+  const fileInputRef = useRef<HTMLInputElement>(null); // Tạo ref cho input file
 
   const onChange = (key: string) => {
     navigate(key);
   };
 
   useEffect(() => {
-    console.log(location);
     const k =
       TAB_ITEMS.find((d) => location.pathname.includes(d.key))?.key || '';
-
-    console.log(k);
     setActiveKey(k);
   }, [location]);
+
+  const DESCRIPTION_ITEMS: DescriptionsProps['items'] = [
+    {
+      key: 'full-name',
+      label: 'Name',
+      children: <span>{user.name || 'N/A'}</span>, // Display name from user state
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      children: (
+        <Link href={`mailto:${user.email}`}>
+          {user.email || 'N/A'} {/* Display email from user state */}
+        </Link>
+      ),
+    },
+    {
+      key: 'phone',
+      label: 'Phone',
+      children: user.phoneNumber || 'N/A', // Display phone from user state
+    },
+  ];
+
+  const handleUploadAvatar = async (file: File) => {
+    setUploadLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Bạn chưa đăng nhập.');
+        return;
+      }
+      const response = await authService.uploadAvatar(formData, accessToken);
+      const res = response as { statusCode: number; message: string; data: { user: { avatar: string } } };
+      if (res.statusCode === 201) {
+        message.success(res.message);
+        dispatch(updateUserProfile({ avatar: res.data.user.avatar } as any)); // Cập nhật avatar trong Redux store
+        localStorage.setItem('user', JSON.stringify(res.data.user)); // Cập nhật user trong localStorage
+      } else {
+        message.error(res.message || 'Upload avatar không thành công.');
+      }
+    } catch (error: any) {
+      message.error(error?.message || 'Đã có lỗi xảy ra khi upload avatar.');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleUploadAvatar(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click(); // Kích hoạt input file ẩn khi button được click
+  };
+
 
   return (
     <>
@@ -9573,14 +9538,27 @@ export const UserAccountLayout = () => {
           ]}
         >
           <Row {...stylesContext?.rowProps}>
-            <Col xs={24} sm={8} lg={4}>
+            <Col xs={24} sm={8} lg={4} style={{ textAlign: 'center' }}> {/* Thêm textAlign: 'center' */}
               <Image
-                src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dXNlcnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60"
+                src={user.avatar || "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dXNlcnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60"}
                 alt="user profile image"
                 height="100%"
                 width="100%"
-                style={{ borderRadius }}
+                style={{ borderRadius, objectFit: 'cover' }}
+                fallback="https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dXNlcnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60"
               />
+              <div style={{ marginTop: '10px' }}>
+                <Button onClick={triggerFileInput} loading={uploadLoading}> {/* Thêm nút Upload Avatar */}
+                  {uploadLoading ? <Spin size="small" /> : 'Change Avatar'}
+                </Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleFileChange}
+                  accept="image/*" // Chỉ cho phép chọn file ảnh
+                />
+              </div>
             </Col>
             <Col xs={24} sm={16} lg={20}>
               <Descriptions
@@ -9598,7 +9576,6 @@ export const UserAccountLayout = () => {
     </>
   );
 };
-
 
 src\layouts\userAccount\styles.css:
 .user-profile-card-nav .ant-tabs-nav {
@@ -9731,7 +9708,6 @@ import { Button, Col, Flex, Image, Row, theme, Typography } from 'antd';
 import { useMediaQuery } from 'react-responsive';
 import {
   PATH_AUTH,
-  PATH_CORPORATE,
   PATH_DASHBOARD,
   PATH_ERROR,
   PATH_GITHUB,
@@ -9802,11 +9778,6 @@ const DASHBOARDS = [
 ];
 
 const APPS = [
-  {
-    title: 'corporate',
-    link: PATH_CORPORATE.team,
-    image: '/showcase/corporate/team.png',
-  },
   {
     title: 'user profile',
     link: PATH_USER_PROFILE.details,
@@ -10094,7 +10065,6 @@ src\pages\index.ts:
 export { HomePage } from './Home.tsx';
 export { SitemapPage } from './Sitemap.tsx';
 export * from './dashboards';
-export * from './corporate';
 export * from './userAccount';
 export * from './authentication';
 export * from './errors';
@@ -10106,7 +10076,6 @@ import { SitemapCard } from '../components';
 import { Col, Flex, Row, Typography } from 'antd';
 import {
   AUTHENTICATION_ITEMS,
-  CORPORATE_ITEMS,
   DASHBOARD_ITEMS,
   ERROR_ITEMS,
   USER_PROFILE_ITEMS,
@@ -10118,10 +10087,6 @@ const SITES = [
   {
     title: 'dashboard',
     links: DASHBOARD_ITEMS,
-  },
-  {
-    title: 'corporate',
-    links: CORPORATE_ITEMS,
   },
   {
     title: 'user profile',
@@ -10405,7 +10370,8 @@ export { AccountDeactivePage } from './AccountDeactivate';
 
 
 src\pages\authentication\PasswordReset.tsx:
-// src/pages/authentication/PasswordReset.tsx
+// src\pages\authentication\PasswordReset.tsx
+import React, { useState } from 'react';
 import {
   Button,
   Col,
@@ -10416,13 +10382,13 @@ import {
   Row,
   theme,
   Typography,
+  Alert, // Import Alert
 } from 'antd';
 import { Logo } from '../../components';
 import { useMediaQuery } from 'react-responsive';
-import { PATH_DASHBOARD } from '../../constants';
+import { PATH_AUTH } from '../../constants';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import axios from 'axios';
+import authService from '../../services/authService'; // Import authService
 
 const { Title, Text } = Typography;
 
@@ -10437,22 +10403,21 @@ export const PasswordResetPage = () => {
   const isMobile = useMediaQuery({ maxWidth: 769 });
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); // State error
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: FieldType) => {
     setLoading(true);
+    setError(null); // Reset error khi bắt đầu submit
     try {
-      const response = await axios.post('/api/v1/auth/forgot-password', values);
-      const data = response.data as { message: string };
-      message.success(data.message);
+      const response = await authService.forgotPassword(values.email as string) as { message: string }; // Gọi authService.forgotPassword
+      message.success(response.message);
       setTimeout(() => {
-        navigate(PATH_DASHBOARD.default);
-      }, 5000);
-
-    } catch (error) {
-      // message.error(error.response.data.message);
-      message.error("Password reset failed!");
-    }
-    finally {
+        navigate(PATH_AUTH.signin); // Redirect về trang signin sau khi thành công
+      }, 3000); // Giảm thời gian redirect xuống 3 giây
+    } catch (error: any) {
+      setError(error.message || "Password reset failed!"); // Set error message
+      // message.error(error.message || "Password reset failed!"); // Không cần message.error ở đây, Alert sẽ hiển thị lỗi
+    } finally {
       setLoading(false);
     }
   };
@@ -10469,11 +10434,10 @@ export const PasswordResetPage = () => {
         >
           <Logo color="white" />
           <Title level={2} className="text-white">
-            Welcome back to Antd Admin
+            Forgot Password
           </Title>
           <Text className="text-white" style={{ fontSize: 18 }}>
-            A dynamic and versatile multipurpose dashboard utilizing Ant Design,
-            React, TypeScript, and Vite.
+            Enter your email to reset your password.
           </Text>
         </Flex>
       </Col>
@@ -10486,13 +10450,13 @@ export const PasswordResetPage = () => {
           style={{ height: '100%', width: '100%', padding: '2rem' }}
         >
           <Title className="m-0">Forgot password</Title>
-          <Text>Enter your email to rest your password.</Text>
+          {error && <Alert message="Error" description={error} type="error" showIcon closable onClose={() => setError(null)} />} {/* Hiển thị Alert lỗi */}
           <Form
-            name="sign-up-form"
+            name="password-reset-form" // Đổi tên form
             layout="vertical"
             labelCol={{ span: 24 }}
             wrapperCol={{ span: 24 }}
-            initialValues={{ remember: true }}
+            initialValues={{}} // Loại bỏ remember: true
             onFinish={onFinish}
             autoComplete="off"
             requiredMark={false}
@@ -10501,11 +10465,12 @@ export const PasswordResetPage = () => {
             <Form.Item<FieldType>
               label="Email"
               name="email"
-              rules={[{ required: true, message: 'Please input your email' },
-              { type: 'email', message: 'Please enter a valid email' },
+              rules={[
+                { required: true, message: 'Please input your email' },
+                { type: 'email', message: 'Please enter a valid email' },
               ]}
             >
-              <Input />
+              <Input placeholder="Your email address" />
             </Form.Item>
             <Form.Item>
               <Flex align="center" gap="small">
@@ -10517,7 +10482,7 @@ export const PasswordResetPage = () => {
                 >
                   Submit
                 </Button>
-                <Button type="text" size="middle" loading={loading}>
+                <Button type="text" size="middle" loading={loading} onClick={() => navigate(PATH_AUTH.signin)}> {/* Thêm onClick handler để cancel */}
                   Cancel
                 </Button>
               </Flex>
@@ -10525,12 +10490,9 @@ export const PasswordResetPage = () => {
           </Form>
         </Flex>
       </Col>
-    </Row>
+    </Row >
   );
 };
-
-src\pages\authentication\ResetPassword.tsx:
-
 
 src\pages\authentication\SignIn.tsx:
 // src\pages\authentication\SignInPage.tsx
@@ -10583,7 +10545,8 @@ export const SignInPage = () => {
         data: {
           accessToken: string,
           user: any
-        }
+        },
+        error? : string
       };
 
       if (response.statusCode === 200) {
@@ -10597,11 +10560,10 @@ export const SignInPage = () => {
           navigate('/dashboards/default');
         }, 1000);
       } else {
-        message.error(response.message || 'Login failed');
+        message.error(response.error || 'Login failed');
       }
     } catch (error: any) {
-      console.error('Login failed:', error);
-      message.error(error.message || 'Login failed');
+      message.error(error.error || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -10977,455 +10939,6 @@ export const WelcomePage = () => {
         </Button>
       </Link>
     </Flex>
-  );
-};
-
-
-src\pages\corporate\About.tsx:
-import {
-  Alert,
-  Card as AntdCard,
-  Col,
-  Flex,
-  Image,
-  List,
-  Row,
-  Typography,
-} from 'antd';
-import { Card, EmployeeCard } from '../../components';
-import { Employee } from '../../types';
-import { useStylesContext } from '../../context';
-import CountUp from 'react-countup';
-import { useFetchData } from '../../hooks';
-
-const { Title, Text, Paragraph } = Typography;
-
-export const CorporateAboutPage = () => {
-  const stylesContext = useStylesContext();
-  const {
-    data: employeesData,
-    loading: employeesDataLoading,
-    error: employeesDataError,
-  } = useFetchData('../mocks/Employees.json');
-
-  return (
-    <div>
-      <Row {...stylesContext?.rowProps}>
-        <Col span={24}>
-          <Card title={<Title level={3}>About Design Sparx</Title>}>
-            <Flex gap="small" vertical>
-              <Text>Save time and resources by using our templates.</Text>
-              <Image
-                src="https://images.unsplash.com/photo-1483058712412-4245e9b90334?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTR8fGJyYW5kfGVufDB8MHwwfHx8MA%3D%3D&auto=format&fit=crop&w=400&q=60"
-                alt="about us hero image"
-                width="100%"
-              />
-              <Paragraph>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua. Non
-                tellus orci ac auctor augue mauris augue. Id diam vel quam
-                elementum pulvinar. Nunc scelerisque viverra mauris in. Tortor
-                aliquam nulla facilisi cras fermentum odio eu. Eleifend mi in
-                nulla posuere sollicitudin aliquam ultrices. Quis commodo odio
-                aenean sed adipiscing diam donec adipiscing tristique. Pharetra
-                magna ac placerat vestibulum lectus mauris ultrices. Viverra
-                accumsan in nisl nisi scelerisque eu ultrices vitae. Etiam
-                tempor orci eu lobortis elementum nibh tellus molestie nunc.
-                Iaculis eu non diam phasellus vestibulum lorem sed risus
-                ultricies. Vestibulum lectus mauris ultrices eros in cursus
-                turpis. Risus nec feugiat in fermentum posuere urna nec. Nam at
-                lectus urna duis.
-              </Paragraph>
-              <Paragraph>
-                Sit amet purus gravida quis blandit turpis cursus. Vulputate eu
-                scelerisque felis imperdiet proin fermentum leo vel orci. Fusce
-                id velit ut tortor pretium viverra suspendisse potenti.
-              </Paragraph>
-            </Flex>
-          </Card>
-        </Col>
-        <Col span={24}>
-          <Card title="Our great team">
-            {employeesDataError ? (
-              <Alert
-                message="Error"
-                description={employeesDataError.toString()}
-                type="error"
-                showIcon
-              />
-            ) : (
-              <List
-                grid={{
-                  gutter: 16,
-                  xs: 1,
-                  sm: 2,
-                  md: 3,
-                  lg: 3,
-                  xl: 4,
-                  xxl: 4,
-                }}
-                pagination={{
-                  onChange: (page) => {
-                    console.log(page);
-                  },
-                  pageSize: 4,
-                  align: 'center',
-                }}
-                dataSource={employeesData}
-                loading={employeesDataLoading}
-                renderItem={(item: Employee) => (
-                  <List.Item key={item.employee_id}>
-                    <EmployeeCard data={item} />
-                  </List.Item>
-                )}
-              />
-            )}
-          </Card>
-        </Col>
-        <Col span={24}>
-          <Card title="Our statistics">
-            <Row gutter={[8, 8]}>
-              <Col lg={8}>
-                <AntdCard hoverable={false} className="text-center">
-                  <Title className="m-0">
-                    <CountUp end={100} /> %
-                  </Title>
-                  <Text>Satisfaction</Text>
-                </AntdCard>
-              </Col>
-              <Col lg={8}>
-                <AntdCard hoverable={false} className="text-center">
-                  <Title className="m-0">
-                    <CountUp end={124} /> K
-                  </Title>
-                  <Text>Customers</Text>
-                </AntdCard>
-              </Col>
-              <Col lg={8}>
-                <AntdCard hoverable={false} className="text-center">
-                  <Title className="m-0">
-                    $<CountUp end={24} /> K
-                  </Title>
-                  <Text>Worth in transactions</Text>
-                </AntdCard>
-              </Col>
-            </Row>
-          </Card>
-        </Col>
-      </Row>
-    </div>
-  );
-};
-
-
-src\pages\corporate\Contact.tsx:
-import { Col, Row, RowProps, Space, Typography } from 'antd';
-import { Card, ContactForm } from '../../components';
-import { MailFilled, PhoneFilled } from '@ant-design/icons';
-
-const { Link, Text, Paragraph } = Typography;
-
-const ROW_PROPS: RowProps = {
-  gutter: [
-    { xs: 8, sm: 16, md: 24, lg: 32 },
-    { xs: 8, sm: 16, md: 24, lg: 32 },
-  ],
-};
-
-const textStyles: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-};
-
-const cardStyles: React.CSSProperties = {
-  height: '100%',
-};
-
-export const CorporateContactPage = () => {
-  return (
-    <div>
-      <Row {...ROW_PROPS}>
-        <Col sm={24} lg={12}>
-          <Card title="Phone" extra={<PhoneFilled />} style={cardStyles}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Text style={textStyles}>
-                Nairobi: <Link strong>(254) 000-0000</Link>
-              </Text>
-              <Text style={textStyles}>
-                Kampala: <Link strong>(255) 000-0000</Link>
-              </Text>
-              <Text style={textStyles}>
-                Dodoma: <Link strong>(256) 000-0000</Link>
-              </Text>
-            </Space>
-            <Paragraph style={{ textAlign: 'center', margin: '1rem 0 0 0' }}>
-              We are available during weekdays and office hours (8AM-5PM), feel
-              free to leave us a call.
-            </Paragraph>
-          </Card>
-        </Col>
-        <Col sm={24} lg={12}>
-          <Card title="Email" extra={<MailFilled />} style={cardStyles}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Text style={textStyles}>
-                Sales: <Link strong>biz@sparx.com</Link>
-              </Text>
-              <Text style={textStyles}>
-                Support: <Link strong>help@sparx.com</Link>
-              </Text>
-            </Space>
-            <Paragraph style={{ textAlign: 'center', margin: '1rem 0 0 0' }}>
-              We are available everyday, feel free to write to us.
-            </Paragraph>
-          </Card>
-        </Col>
-        <Col span={24}>
-          <Card title="Contact form">
-            <ContactForm />
-          </Card>
-        </Col>
-      </Row>
-    </div>
-  );
-};
-
-
-src\pages\corporate\Faqs.tsx:
-import { Alert, Col, Row, Space, Typography } from 'antd';
-import { Card, FaqCollapse, Loader } from '../../components';
-import * as _ from 'lodash';
-import { useEffect, useState } from 'react';
-import { Faq } from '../../types';
-import { useStylesContext } from '../../context';
-import { useFetchData } from '../../hooks';
-
-export const CorporateFaqPage = () => {
-  const {
-    data: faqsData,
-    loading: faqsDataLoading,
-    error: faqsDataError,
-  } = useFetchData('../mocks/Faqs.json');
-  const [faqs, setFaqs] = useState<{ category: string; items: Faq[] }[]>([]);
-  const stylesContext = useStylesContext();
-
-  useEffect(() => {
-    const data = _.chain(faqsData)
-      .groupBy('category')
-      .map((items, category) => {
-        return {
-          category,
-          items: items.slice(0, 4).map((i) => ({
-            ...i,
-            label: i.question.slice(0, 50) + '...?',
-            children: i.answer,
-          })),
-        };
-      })
-      .orderBy('category')
-      .value();
-
-    setFaqs(data);
-  }, [faqsData]);
-
-  return (
-    <div>
-      <Row {...stylesContext?.rowProps}>
-        <Col span={24}>
-          <Card title="Frequently askes questions (FAQs)">
-            {faqsDataError ? (
-              <Alert
-                message="Error"
-                description={faqsDataError.toString()}
-                type="error"
-                showIcon
-              />
-            ) : faqsDataLoading ? (
-              <Loader />
-            ) : (
-              <Space
-                direction="vertical"
-                size="middle"
-                style={{ width: '100%' }}
-              >
-                {faqs.map((f) => (
-                  <>
-                    <Typography.Text strong>{f.category}</Typography.Text>
-                    <FaqCollapse items={f.items} accordion />
-                  </>
-                ))}
-              </Space>
-            )}
-          </Card>
-        </Col>
-      </Row>
-    </div>
-  );
-};
-
-
-src\pages\corporate\index.ts:
-export { CorporateAboutPage } from './About.tsx';
-export { CorporateTeamPage } from './Team.tsx';
-export { CorporateFaqPage } from './Faqs.tsx';
-export { CorporateContactPage } from './Contact.tsx';
-export { CorporatePricingPage } from './Pricing.tsx';
-export { CorporateLicensePage } from './Licence.tsx';
-
-
-src\pages\corporate\Licence.tsx:
-import { Alert, Card as AntCard, Col, Row, Typography } from 'antd';
-import { Card, Loader } from '../../components';
-import { useStylesContext } from '../../context';
-import { useFetchData } from '../../hooks';
-
-export const CorporateLicensePage = () => {
-  const stylesContext = useStylesContext();
-  const {
-    data: licenseData,
-    error: licenseDataError,
-    loading: licenseDataLoading,
-  } = useFetchData('../mocks/License.json');
-
-  return (
-    <div>
-      <Row {...stylesContext?.rowProps}>
-        <Col span={24}>
-          <Card title="licence comparisons">
-            {licenseDataError ? (
-              <Alert
-                message="Error"
-                description={licenseDataError.toString()}
-                type="error"
-                showIcon
-              />
-            ) : licenseDataLoading ? (
-              <Loader />
-            ) : (
-              licenseData.map((l: any) => (
-                <AntCard
-                  title={`${l.title} plan license`}
-                  bordered={true}
-                  style={{ marginBottom: '1rem' }}
-                >
-                  <Typography.Text>{l.description}</Typography.Text>
-                </AntCard>
-              ))
-            )}
-          </Card>
-        </Col>
-        <Col span={24}>
-          <Card title="general terms and conditions">
-            <ul>
-              <li>
-                All licenses are subject to adherence to the terms of service
-                and acceptable use policies outlined by the provider.
-              </li>
-              <li>
-                Users must not remove or alter any copyright notices or branding
-                present in the template.
-              </li>
-              <li>
-                Users are responsible for the content and data they upload or
-                display using the dashboard template.
-              </li>
-              <li>
-                The provider reserves the right to terminate the license in case
-                of violation of terms or misuse of the template.
-              </li>
-              <li>
-                Refunds are subject to the refund policy of the provider and are
-                applicable within the specified period after the purchase.
-              </li>
-            </ul>
-          </Card>
-        </Col>
-      </Row>
-    </div>
-  );
-};
-
-
-src\pages\corporate\Pricing.tsx:
-import { PricingTable } from '../../components';
-import { useFetchData } from '../../hooks';
-
-export const CorporatePricingPage = () => {
-  const {
-    data: pricingData,
-    error: pricingDataError,
-    loading: pricingDataLoading,
-  } = useFetchData('../mocks/Pricing.json');
-
-  return (
-    <div>
-      <PricingTable
-        data={pricingData}
-        error={pricingDataError}
-        loading={pricingDataLoading}
-      />
-    </div>
-  );
-};
-
-
-src\pages\corporate\Team.tsx:
-import { Alert, Col, List, Row } from 'antd';
-import { Card, EmployeeCard } from '../../components';
-import { Employee } from '../../types';
-import { useFetchData } from '../../hooks';
-import { useStylesContext } from '../../context';
-
-export const CorporateTeamPage = () => {
-  const stylesContext = useStylesContext();
-  const {
-    data: employeesData,
-    loading: employeesDataLoading,
-    error: employeesDataError,
-  } = useFetchData('../mocks/Employees.json');
-
-  return (
-    <div>
-      <Row {...stylesContext?.rowProps}>
-        <Col span={24}>
-          <Card title="Our team">
-            {employeesDataError ? (
-              <Alert
-                message="Error"
-                description={employeesDataError.toString()}
-                type="error"
-                showIcon
-              />
-            ) : (
-              <List
-                grid={{
-                  gutter: 16,
-                  xs: 1,
-                  sm: 2,
-                  md: 3,
-                  lg: 3,
-                  xl: 4,
-                  xxl: 4,
-                }}
-                pagination={{
-                  onChange: (page) => {
-                    console.log(page);
-                  },
-                  pageSize: 10,
-                  align: 'center',
-                }}
-                loading={employeesDataLoading}
-                dataSource={employeesData}
-                renderItem={(item: Employee) => (
-                  <List.Item key={item.employee_id}>
-                    <EmployeeCard data={item} showInfo={true} />
-                  </List.Item>
-                )}
-              />
-            )}
-          </Card>
-        </Col>
-      </Row>
-    </div>
   );
 };
 
@@ -14141,9 +13654,8 @@ export const MyEventDashboardPage = () => {
                     >
                         {eventsError && (
                             <Alert
-                                message="Error"
-                                description={eventsError.toString()}
-                                type="error"
+                                message="No events participated yet."
+                                type="info"
                                 showIcon
                             />
                         )}
@@ -14189,7 +13701,7 @@ export const MyEventDashboardPage = () => {
 export default MyEventDashboardPage
 
 src\pages\dashboards\ParticipatedEvents.tsx:
-// src/pages/dashboards/ParticipatedEvents.tsx
+// src\pages\dashboards\ParticipatedEventsPage.tsx
 import React, { useState } from 'react';
 import {
     Alert,
@@ -14211,6 +13723,7 @@ import { Events } from '../../types';
 import dayjs from 'dayjs';
 import useFetchParticipatedEventsData from '../../hooks/useFetchParticipatedEventsData';
 import authService from '../../services/authService';
+import { DASHBOARD_ITEMS } from '../../constants';
 
 const EVENT_STATUS_OPTIONS = [
     { value: 'all', label: 'All Statuses' },
@@ -14223,7 +13736,6 @@ const ParticipatedEventsPage = () => {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    // Sử dụng hook custom để fetch dữ liệu tham gia event
     const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } =
         useFetchParticipatedEventsData(statusFilter === 'all' ? undefined : statusFilter);
 
@@ -14243,7 +13755,7 @@ const ParticipatedEventsPage = () => {
     const isEmptyData = eventsData?.events === undefined || eventsData?.events?.length === 0;
 
     // Hàm xử lý Unregister (delete) event
-    const handleLeaveEvent = async (participantId: string) => {
+    const handleLeaveEvent = async (eventId: string) => { // Pass eventId instead of participantId
         setActionLoading(true);
         try {
             const accessToken = localStorage.getItem('accessToken');
@@ -14251,10 +13763,14 @@ const ParticipatedEventsPage = () => {
                 message.error('No access token found. Please login again.');
                 return;
             }
-            // Gọi API để unregister event
-            // Giả sử authService.unregisterEvent sử dụng endpoint: /participants/{participantId}
+
+            // 1. Get Participant ID
+            const participantIdResponse = await authService.getParticipantIdByEventId(eventId, accessToken) as any;
+            const participantId = participantIdResponse.data.participantId;
+
+            // 2. Unregister Event using participantId
             const response = (await authService.unregisterEvent(
-                participantId,
+                participantId, // Use participantId here
                 accessToken
             )) as { statusCode: number; message: string, error?: string };
 
@@ -14273,38 +13789,6 @@ const ParticipatedEventsPage = () => {
         }
     };
 
-    // Hàm xử lý Update Sessions (update lại các session) của participant
-    const handleUpdateSessions = async (participantId: string) => {
-        setActionLoading(true);
-        try {
-            const accessToken = localStorage.getItem('accessToken');
-            if (!accessToken) {
-                message.error('No access token found. Please login again.');
-                return;
-            }
-            // Gọi API để update sessions
-            // Giả sử authService.updateParticipantSessions sử dụng endpoint: /participants/{participantId}
-            // Và có thể truyền thêm dữ liệu cần update (ở đây minh demo truyền rỗng)
-            const response = (await authService.updateParticipantSessions(
-                participantId,
-                {}, // dữ liệu update, thay đổi theo yêu cầu của backend
-                accessToken
-            )) as { statusCode: number; message: string, error?: string };
-
-            if (response.statusCode === 200) {
-                message.success(response.error || 'Sessions updated successfully');
-                // Refresh dữ liệu sau khi update
-                fetchData(statusFilter === 'all' ? undefined : statusFilter);
-            } else {
-                message.error(response.error || 'Failed to update sessions');
-            }
-        } catch (error: any) {
-            console.error('Error updating sessions:', error);
-            message.error(error.error || 'Failed to update sessions');
-        } finally {
-            setActionLoading(false);
-        }
-    };
 
     // Định nghĩa các cột của bảng bên trong component để có thể truy cập các hàm handleLeaveEvent, handleUpdateSessions
     const columns: ColumnsType<Events> = [
@@ -14313,7 +13797,7 @@ const ParticipatedEventsPage = () => {
             dataIndex: 'name',
             key: 'name',
             render: (text, record) => (
-                <Link to={`/details/events/${record.id}`}>{text}</Link>
+                <Link to={`/details/participated-events/${record.id}`}>{text}</Link>
             ),
         },
         {
@@ -14362,32 +13846,17 @@ const ParticipatedEventsPage = () => {
             render: (_, record) => (
                 <Space size="middle">
                     <Button type="primary" size="small">
-                        <Link to={`/details/events/${record.id}`}>Details</Link>
+                        <Link to={`/details/participated-events/${record.id}`}>Details</Link>
                     </Button>
-                    <Button onClick={() => handleUpdateSessions(record.id)} size="small">
-                        Update Sessions
-                    </Button>
-                    {/* <Popconfirm
-            title="Unregister from event"
-            description="Are you sure you want to unregister from this event?"
-            onConfirm={() => handleLeaveEvent(record.id)}
-            onCancel={() => message.info('Cancel unregister event')}
-            okText="Yes, Unregister"
-            cancelText="No"
-          >
-            <Button danger size="small">
-              Unregister
-            </Button>
-          </Popconfirm> */}
                     <Popconfirm
                         title="Cancel Event"
                         description="Are you sure to unregister from this event?"
-                        onConfirm={() => handleLeaveEvent(record.id)}
+                        onConfirm={() => handleLeaveEvent(record.id)} // Pass eventId to handleLeaveEvent
                         onCancel={() => message.info('Cancel')}
                         okText="Yes, Cancel"
                         cancelText="No"
-                        placement="topRight" // Thử thay đổi placement
-                        overlayInnerStyle={{ width: 200 }} // Thử set width
+                        placement="topRight"
+                        overlayInnerStyle={{ width: 200 }}
                     >
                         <Button danger>
                             Unregister
@@ -14422,6 +13891,12 @@ const ParticipatedEventsPage = () => {
                                 <span>Dashboards</span>
                             </>
                         ),
+                        menu: {
+                            items: DASHBOARD_ITEMS.map((d) => ({
+                                key: d.title,
+                                title: <Link to={d.path}>{d.title}</Link>,
+                            })),
+                        },
                     },
                     {
                         title: 'Participated Events',
@@ -14440,15 +13915,7 @@ const ParticipatedEventsPage = () => {
                     />
                 }
             >
-                {eventsError && (
-                    <Alert
-                        message="Error"
-                        description={eventsError.toString()}
-                        type="error"
-                        showIcon
-                        closable
-                    />
-                )}
+                
 
                 {isEmptyData ? (
                     <Alert
@@ -14480,6 +13947,136 @@ const ParticipatedEventsPage = () => {
 
 export default ParticipatedEventsPage;
 
+src\pages\dashboards\ParticipationStats.tsx:
+// src\pages\dashboards\ParticipationStats.tsx
+import React, { useState, useEffect } from 'react';
+import { Card, Spin, Alert, Table } from 'antd';
+import { PageHeader } from '../../components';
+import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
+import { DASHBOARD_ITEMS } from '../../constants';
+import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import axiosInstance from '../../api/axiosInstance';
+
+interface TimelineData {
+  timeSlot: string;
+  checkInCount: number;
+  checkOutCount: number;
+}
+
+interface ParticipationData {
+    eventId: string;
+    registeredCount: number;
+    checkInCount: number;
+    checkOutCount: number;
+}
+
+const columns = [
+  {
+    title: 'Event ID',
+    dataIndex: 'eventId',
+    key: 'eventId',
+  },
+  {
+    title: 'Registered Count',
+    dataIndex: 'registeredCount',
+    key: 'registeredCount',
+  },
+  {
+    title: 'Check-in Count',
+    dataIndex: 'checkInCount',
+    key: 'checkInCount',
+  },
+  {
+    title: 'Check-out Count',
+    dataIndex: 'checkOutCount',
+    key: 'checkOutCount',
+  },
+];
+
+export const ParticipationStatsPage: React.FC = () => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [statsData, setStatsData] = useState<ParticipationData | null>(null);
+
+  useEffect(() => {
+    const fetchParticipationStats = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axiosInstance.get<any>(`/reports/participation-stats`); // call api here
+        setStatsData(response.data.data);
+      } catch (e: any) {
+        setError(e.message);
+        setStatsData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchParticipationStats();
+  }, []);
+
+  return (
+    <div>
+      <Helmet>
+        <title>Participation Stats | Antd Dashboard</title>
+      </Helmet>
+      <PageHeader
+        title="Participation Statistics"
+        breadcrumbs={[
+          {
+            title: (
+              <>
+                <HomeOutlined />
+                <span>home</span>
+              </>
+            ),
+            path: '/',
+          },
+          {
+            title: (
+              <>
+                <PieChartOutlined />
+                <span>Dashboards</span>
+              </>
+            ),
+            menu: {
+              items: DASHBOARD_ITEMS.map((d) => ({
+                key: d.title,
+                title: <Link to={d.path}>{d.title}</Link>,
+              })),
+            },
+          },
+          {
+            title: 'Participation Stats',
+          },
+        ]}
+      />
+      <Card>
+        {error && (
+          <Alert
+            message="Error"
+            description={error}
+            type="error"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        )}
+        {loading ? (
+          <Spin tip="Loading timeline report..." />
+        ) : (
+          <Table
+            dataSource={statsData ? [statsData] : []}
+            columns={columns}
+            pagination={false}
+            rowKey="eventId"
+          />
+        )}
+      </Card>
+    </div>
+  );
+};
 
 src\pages\dashboards\Projects.tsx:
 import { Alert, Button, Col, Row, Segmented, Space } from 'antd';
@@ -15162,7 +14759,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageHeader, Loader } from '../../components';
 import { ColumnsType } from 'antd/es/table';
-import { Speaker, Guest, SpeakerGuestData } from '../../types'; // Import both Speaker and Guest types
+import { Speaker, Guest, SpeakerGuestData } from '../../types';
 import axiosInstance from '../../api/axiosInstance';
 
 
@@ -15173,16 +14770,23 @@ const SpeakerGuestManagementPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [form] = Form.useForm();
-    const [editingItemId, setEditingItemId] = useState<string | null>(null); // Could be speakerId or guestId
-    const [activeTabKey, setActiveTabKey] = useState<'speakers' | 'guests'>('speakers'); // Tab state
+    const [editingItemId, setEditingItemId] = useState<string | null>(null);
+    const [activeTabKey, setActiveTabKey] = useState<'speakers' | 'guests'>('speakers');
+    const [noSpeakersData, setNoSpeakersData] = useState<boolean>(false);
+    const [noGuestsData, setNoGuestsData] = useState<boolean>(false);
 
 
-    const fetchSpeakers = useCallback(async () => { // Fetch speakers (same as before)
+    const fetchSpeakers = useCallback(async () => {
         setLoading(true);
         setError(null);
+        setNoSpeakersData(false);
         try {
             const response = await axiosInstance.get('/speakers');
-            setSpeakers((response.data as { data: { speakers: Speaker[] } }).data.speakers);
+            const speakerData = (response.data as { data: { speakers: Speaker[], meta: { totalItems: number } } }).data;
+            setSpeakers(speakerData.speakers);
+            if (speakerData.meta.totalItems === 0) {
+                setNoSpeakersData(true);
+            }
         } catch (error: any) {
             setError(error.message || 'Failed to load speakers');
             message.error(error.message || 'Failed to load speakers');
@@ -15191,12 +14795,17 @@ const SpeakerGuestManagementPage: React.FC = () => {
         }
     }, []);
 
-    const fetchGuests = useCallback(async () => { // Fetch guests (similar to fetchSpeakers)
+    const fetchGuests = useCallback(async () => {
         setLoading(true);
         setError(null);
+        setNoGuestsData(false);
         try {
             const response = await axiosInstance.get('/guests');
-            setGuests((response.data as { data: { guests: Guest[] } }).data.guests);
+            const guestData = (response.data as { data: { guests: Guest[], meta: { totalItems: number } } }).data;
+            setGuests(guestData.guests);
+            if (guestData.meta.totalItems === 0) {
+                setNoGuestsData(true);
+            }
         } catch (error: any) {
             setError(error.message || 'Failed to load guests');
             message.error(error.message || 'Failed to load guests');
@@ -15210,20 +14819,20 @@ const SpeakerGuestManagementPage: React.FC = () => {
         fetchGuests();
     }, [fetchSpeakers, fetchGuests]);
 
-    const handleCreateItem = () => { // Generic create handler
+    const handleCreateItem = () => {
         setEditingItemId(null);
         form.resetFields();
         setIsModalOpen(true);
     };
 
-    const handleEditItem = (id: string, entityType: 'speaker' | 'guest') => { // Generic edit handler
+    const handleEditItem = (id: string, entityType: 'speaker' | 'guest') => {
         setEditingItemId(id);
         const itemToEdit = entityType === 'speaker'
             ? speakers.find(speaker => speaker.id === id)
             : guests.find(guest => guest.id === id);
 
         if (itemToEdit) {
-            form.setFieldsValue({ ...itemToEdit, entityType }); // Include entityType in form values
+            form.setFieldsValue({ ...itemToEdit, entityType, ...itemToEdit }); // ** giữ lại itemToEdit để set giá trị đúng **
             setIsModalOpen(true);
         }
     };
@@ -15251,16 +14860,24 @@ const SpeakerGuestManagementPage: React.FC = () => {
             const endpoint = isSpeaker ? '/speakers' : '/guests';
             const idToEdit = editingItemId;
 
+            const payload = { // ** Tạo payload theo đúng format backend yêu cầu **
+                name: values.name,
+                jobTitle: values.jobTitle,
+                email: values.email,
+                ...(isSpeaker ? { bio: values.bio } : { organization: values.organization, linkSocial: values.linkSocial }) // ** Conditional payload cho speaker và guest **
+            };
+
+
             if (idToEdit) {
-                response = await axiosInstance.patch(`${endpoint}/${idToEdit}`, values); // Generic update endpoint
+                response = await axiosInstance.patch(`${endpoint}/${idToEdit}`, payload); // ** Gửi payload đã format **
                 message.success(`${isSpeaker ? 'Speaker' : 'Guest'} updated successfully`);
             } else {
-                response = await axiosInstance.post(endpoint, values); // Generic create endpoint
+                response = await axiosInstance.post(endpoint, payload); // ** Gửi payload đã format **
                 message.success(`${isSpeaker ? 'Speaker' : 'Guest'} created successfully`);
             }
 
             if (isSpeaker) {
-                fetchSpeakers(); // Refresh speaker or guest list based on tab
+                fetchSpeakers();
             } else {
                 fetchGuests();
             }
@@ -15279,7 +14896,7 @@ const SpeakerGuestManagementPage: React.FC = () => {
     };
 
 
-    const speakerColumns: ColumnsType<SpeakerGuestData> = [ // Columns for Speakers
+    const speakerColumns: ColumnsType<SpeakerGuestData> = [
         {
             title: 'Name',
             dataIndex: 'name',
@@ -15308,7 +14925,7 @@ const SpeakerGuestManagementPage: React.FC = () => {
         },
     ];
 
-    const guestColumns: ColumnsType<SpeakerGuestData> = [ // Columns for Guests
+    const guestColumns: ColumnsType<SpeakerGuestData> = [
         {
             title: 'Name',
             dataIndex: 'name',
@@ -15405,19 +15022,25 @@ const SpeakerGuestManagementPage: React.FC = () => {
                         style={{ marginBottom: 16 }}
                     />
                 )}
-                <Table
-                    columns={activeTabKey === 'speakers' ? speakerColumns : guestColumns} // Conditional columns
-                    dataSource={activeTabKey === 'speakers'
-                        ? speakers.map(speaker => ({ ...speaker, entityType: 'speaker' })) // Add entityType to dataSource
-                        : guests.map(guest => ({ ...guest, entityType: 'guest' }))}
-                    loading={loading}
-                    rowKey="id"
-                    pagination={{ pageSize: 5 }}
-                />
+                {activeTabKey === 'speakers' && noSpeakersData && !loading ? (
+                    <Alert message="No speakers available." type="info" showIcon />
+                ) : activeTabKey === 'guests' && noGuestsData && !loading ? (
+                    <Alert message="No guests available." type="info" showIcon />
+                ) : (
+                    <Table
+                        columns={activeTabKey === 'speakers' ? speakerColumns : guestColumns}
+                        dataSource={activeTabKey === 'speakers'
+                            ? speakers.map(speaker => ({ ...speaker, entityType: 'speaker' }))
+                            : guests.map(guest => ({ ...guest, entityType: 'guest' }))}
+                        loading={loading}
+                        rowKey="id"
+                        pagination={{ pageSize: 5 }}
+                    />
+                )}
             </Card>
 
             <Modal
-                title={editingItemId ? `Edit ${form.getFieldValue('entityType') === 'speaker' ? 'Speaker' : 'Guest'}` : "Create New Speaker/Guest"} // Dynamic modal title
+                title={editingItemId ? `Edit ${form.getFieldValue('entityType') === 'speaker' ? 'Speaker' : 'Guest'}` : "Create New Speaker/Guest"}
                 open={isModalOpen}
                 onOk={handleModalOk}
                 onCancel={handleModalCancel}
@@ -15431,7 +15054,7 @@ const SpeakerGuestManagementPage: React.FC = () => {
                     onFinish={onFinish}
                     onFinishFailed={onFinishFailed}
                     autoComplete="off"
-                    initialValues={{ entityType: 'speaker' }} // Default entity type to speaker
+                    initialValues={{ entityType: 'speaker' }}
                     requiredMark={false}
                 >
                     <Form.Item name="entityType" hidden>
@@ -15648,16 +15271,15 @@ export const EventDetailsPage: React.FC = () => {
                 return;
             }
 
-            const response = await authService.registerEvent(eventDetails.id, selectedSessionIds, accessToken) as { statusCode: number; message: string };
+            const response = await authService.registerEvent(eventDetails.id, selectedSessionIds, accessToken) as { statusCode: number; message: string; error?: string };
             if (response && response.statusCode === 201) {
                 message.success(response.message);
                 // Optionally redirect or update UI after successful registration
             } else {
-                message.error(response?.message || 'Failed to register for event');
+                message.error(response?.error || 'Failed to register for event');
             }
         } catch (error: any) {
-            console.error('Error registering for event:', error);
-            message.error(error.message || 'Failed to register for event');
+            message.error(error.error || 'Failed to register for event');
         } finally {
             setLoading(false);
         }
@@ -15797,13 +15419,13 @@ export const EventDetailsPage: React.FC = () => {
                             )}
                         </Card>
                     </Col>
-                    {eventDetails.videoIntro && (
+                    {eventDetails.banner && (
                         <Col span={24}>
-                            <Card title="Video Introduction">
+                            <Card title="Banner">
                                 <iframe
                                     width="100%"
                                     height="480"
-                                    src={eventDetails.videoIntro}
+                                    src={eventDetails.banner}
                                     title="Event Introduction Video"
                                     frameBorder="0"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -15924,381 +15546,7 @@ export const DetailEventPage = () => {
 
 src\pages\details\index.ts:
 export {DetailEventPage} from './Events'
-export {DetailMyEventPage} from './MyEvent.tsx';
-
-src\pages\details\MyEvent.tsx:
-import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import {
-    Alert,
-    Button,
-    Card,
-    Col,
-    Descriptions,
-    Flex,
-    Image,
-    List,
-    message,
-    Row,
-    Space,
-    Table,
-    Tag,
-    Typography,
-    Checkbox,
-} from 'antd';
-import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
-import { DASHBOARD_ITEMS } from '../../constants';
-import { PageHeader, Loader } from '../../components';
-import { useFetchData } from '../../hooks';
-import dayjs from 'dayjs';
-import authService from '../../services/authService';
-import { Events, TicketType } from '../../types';
-
-import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
-import jsPDF from 'jspdf';
-import { Helmet } from 'react-helmet-async';
-import { EventScheduleItem } from '../../types/schedule';
-import TicketDetailsModal from '../../components/TicketDetailsModal';
-import InviteUsersModal from '../../components/InviteUsersModal';
-
-const { Title, Text, Paragraph } = Typography;
-
-export interface ParticipantData {
-    id: string;
-    name: string;
-    email: string;
-    phoneNumber: string;
-    checkInAt: string | null;
-    checkOutAt: string | null;
-}
-
-
-export const DetailMyEventPage = () => {
-    const { id } = useParams<{ id: string }>();
-    const [eventDetails, setEventDetails] = useState<Events | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const navigate = useNavigate();
-    const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
-    const [isParticipatedEvent, setIsParticipatedEvent] = useState(true);
-    const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
-    const [ticketData, setTicketData] = useState<any | null>(null);
-    const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
-
-    useEffect(() => {
-        const fetchEventDetails = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const accessToken = localStorage.getItem('accessToken');
-                const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
-                if (response && response.statusCode === 200) {
-                    setEventDetails(response.data.event);
-                    setIsParticipatedEvent(true);
-                } else {
-                    setError(response?.message || 'Failed to load event details');
-                    message.error(response?.message || 'Failed to load event details');
-                }
-            } catch (error: any) {
-                console.error('Error fetching event details:', error);
-                setError(error.message || 'Failed to load event details');
-                message.error(error.message || 'Failed to load event details');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchEventDetails();
-    }, [id, navigate]);
-
-    const handleRegisterEvent = async () => {
-        setLoading(true);
-        try {
-            const accessToken = localStorage.getItem('accessToken');
-            if (!accessToken) {
-                message.error("No access token found. Please login again.");
-                navigate('/auth/signin');
-                return;
-            }
-
-            if (!eventDetails?.id) {
-                message.error("Event ID is missing.");
-                return;
-            }
-
-            const response = await authService.registerEvent(eventDetails.id, selectedSessionIds, accessToken) as { statusCode: number; message: string; error?: string };
-            if (response && response.statusCode === 201) {
-                message.success(response.message);
-                setIsParticipatedEvent(true);
-            } else {
-                message.error(response?.error || 'Failed to register for event');
-            }
-        } catch (error: any) {
-            console.error('Error registering for event:', error);
-            message.error(error?.error || 'Failed to register for event');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDownloadPdf = async () => {
-        message.info("Download PDF function is not implemented yet for general events.");
-    };
-
-    const onSessionSelectChange = (selectedKeys: React.Key[]) => {
-        setSelectedSessionIds(selectedKeys as string[]);
-    };
-
-    const scheduleColumns = [
-        {
-            title: 'Title',
-            dataIndex: 'name',
-            key: 'name'
-        },
-        {
-            title: 'Start Time',
-            dataIndex: 'startTime',
-            key: 'startTime',
-            render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
-        },
-        {
-            title: 'End Time',
-            dataIndex: 'endTime',
-            key: 'endTime',
-            render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
-        },
-        {
-            title: 'Description',
-            dataIndex: 'description',
-            key: 'description'
-        },
-        {
-            title: 'Select Session',
-            key: 'select',
-            render: (_: any, record: EventScheduleItem) => (
-                <Checkbox value={record.id} />
-            ),
-        }
-    ];
-
-    const showTicketModal = async () => {
-        setIsTicketModalVisible(true);
-        setLoading(true);
-        setError(null);
-        try {
-            if (!eventDetails?.id) {
-                message.error("Missing user or event information.");
-                return;
-            }
-
-            const participantIdResponse = await authService.getParticipantIdByUserIdEventId(eventDetails.id, localStorage.getItem('accessToken') || undefined) as any;
-            const participantId = participantIdResponse.data.participantId;
-
-
-            const response = await authService.getTicketByParticipantId(participantId, localStorage.getItem('accessToken') || undefined) as { statusCode: number; data: { ticket: TicketType }; message: string };
-            if (response && response.statusCode === 200 && response.data.ticket) {
-                setTicketData(response.data.ticket);
-            } else {
-                setError(response?.message || 'Failed to load ticket details');
-                message.error(response?.message || 'Failed to load ticket details');
-                setTicketData(null);
-            }
-        } catch (error: any) {
-            console.error('Error fetching ticket details:', error);
-            setError(error.message || 'Failed to load ticket details');
-            message.error(error.message || 'Failed to load ticket details');
-            setTicketData(null);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const hideTicketModal = () => {
-        setIsTicketModalVisible(false);
-    };
-    const showInviteModal = () => {
-        setIsInviteModalVisible(true);
-    };
-
-    const hideInviteModal = () => {
-        setIsInviteModalVisible(false);
-    };
-
-
-    const handleUpdateSessionsForTicket = async (sessionIds: string[]) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const accessToken = localStorage.getItem('accessToken');
-            if (!accessToken) {
-                message.error("No access token found. Please login again.");
-                navigate('/auth/signin');
-                return;
-            }
-
-            const response = await authService.updateParticipantSessions(ticketData?.participantId, { sessionIds }, accessToken) as any;
-            if (response && response.statusCode === 200) {
-                message.success(response.message || 'Sessions updated successfully');
-                setIsTicketModalVisible(false);
-            } else {
-                message.error(response.message || 'Failed to update sessions');
-            }
-        } catch (error: any) {
-            console.error('Error updating sessions:', error);
-            message.error(error.message || 'Failed to update sessions');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    return (
-        <div>
-            <Helmet>
-                <title>{eventDetails?.name} Details | Antd Dashboard</title>
-            </Helmet>
-            <PageHeader
-                title="event details"
-                breadcrumbs={[
-                    {
-                        title: (
-                            <>
-                                <HomeOutlined />
-                                <span>home</span>
-                            </>
-                        ),
-                        path: '/',
-                    },
-                    {
-                        title: (
-                            <>
-                                <PieChartOutlined />
-                                <span>dashboards</span>
-                            </>
-                        ),
-                    },
-                    {
-                        title: 'events',
-                    },
-                    {
-                        title: 'details',
-                    },
-                ]}
-            />
-
-            <Card title={<Title level={3}>{eventDetails?.name}</Title>}
-                extra={
-                    <Space>
-                        <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>Download Participants PDF</Button>
-                        <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal} >Invite Participants</Button>
-                        <Button type="primary" onClick={showTicketModal} >
-                            View Ticket / Update Sessions
-                        </Button>
-                    </Space>
-                }
-            >
-                <Row gutter={[16, 16]}>
-                    <Col span={24}>
-                        <Image src={eventDetails?.banner || "https://placehold.co/1920x1080"} alt="Event Banner" style={{ width: '100%', borderRadius: '10px' }} fallback="https://placehold.co/1920x1080" />
-                    </Col>
-                    <Col span={24}>
-                        <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
-                            <Descriptions.Item label="Name">{eventDetails?.name}</Descriptions.Item>
-                            <Descriptions.Item label="Category">{eventDetails?.categoryId}</Descriptions.Item>
-                            <Descriptions.Item label="Location">{eventDetails?.location}</Descriptions.Item>
-                            <Descriptions.Item label="Start Date">
-                                {dayjs(eventDetails?.startDate).format('YYYY-MM-DD HH:mm:ss')}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="End Date">
-                                {dayjs(eventDetails?.endDate).format('YYYY-MM-DD HH:mm:ss')}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Status"><Tag color={eventDetails?.status === 'SCHEDULED' ? 'blue' : eventDetails?.status === 'CANCELED' ? 'red' : 'green'}>{eventDetails?.status}</Tag></Descriptions.Item>
-                            <Descriptions.Item label="Max Participants">{eventDetails?.maxParticipants || 'Unlimited'}</Descriptions.Item>
-                            <Descriptions.Item span={3} label="Description">
-                                {eventDetails?.description || "No description provided."}
-                            </Descriptions.Item>
-                        </Descriptions>
-                    </Col>
-                    <Col span={24}>
-                        <Card title="Schedule">
-                            {eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
-                                <Table
-                                    rowKey="id"
-                                    dataSource={eventDetails?.schedule}
-                                    columns={scheduleColumns}
-                                    pagination={false}
-                                    rowSelection={{
-                                        columnWidth: 80,
-                                        onChange: onSessionSelectChange,
-                                    }}
-                                />
-                            ) : (
-                                <Alert message="No schedule available for this event." type="info" showIcon />
-                            )}
-                        </Card>
-                    </Col>
-                    {eventDetails?.videoIntro && (
-                        <Col span={24}>
-                            <Card title="Video Introduction">
-                                <iframe
-                                    width="100%"
-                                    height="480"
-                                    src={eventDetails?.videoIntro}
-                                    title="Event Introduction Video"
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    allowFullScreen
-                                />
-                            </Card>
-                        </Col>
-                    )}
-                    {eventDetails?.documents && eventDetails.documents.length > 0 && (
-                        <Col span={24}>
-                            <Card title="Event Documents">
-                                <List
-                                    dataSource={eventDetails?.documents}
-                                    renderItem={item => (
-                                        <List.Item>
-                                            <Typography.Link href={item} target="_blank">
-                                                {item}
-                                            </Typography.Link>
-                                        </List.Item>
-                                    )}
-                                />
-                            </Card>
-                        </Col>
-                    )}
-                    {eventDetails?.status === 'FINISHED' && (
-                        <Col span={24}>
-                            <Card title="Participants Check-in/Check-out List"
-                                extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
-                                    Download PDF
-                                </Button>}
-                            >
-                                <EventParticipantsTable eventId={id || ''} />
-                            </Card>
-                        </Col>
-                    )}
-                </Row>
-            </Card>
-            <TicketDetailsModal
-                visible={isTicketModalVisible}
-                onCancel={hideTicketModal}
-                ticket={ticketData}
-                onSessionsChange={handleUpdateSessionsForTicket}
-                eventSchedule={eventDetails?.schedule || []}
-            />
-            +           <InviteUsersModal
-                visible={isInviteModalVisible}
-                onCancel={hideInviteModal}
-                eventId={id || ''}
-                onInvitationsSent={() => message.success("Invitations sent successfully!")} // Example callback
-            />
-        </div>
-    );
-};
-
-export default DetailMyEventPage;
+// export {DetailMyEventPage} from './MyEvent.tsx';
 
 src\pages\details\MyEventPage.tsx:
 // src\pages\details\MyEventPage.tsx
@@ -16323,7 +15571,7 @@ import {
 } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { PageHeader, Loader, UserAvatar } from '../../components';
+import { PageHeader, Loader, UserAvatar, BackBtn } from '../../components';
 import { useFetchData } from '../../hooks';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
@@ -16419,38 +15667,6 @@ const DetailMyEventPage: React.FC = () => {
         // **Không có cột "Select Session" ở đây**
     ];
 
-    const showTicketModal = async () => {
-        setIsTicketModalVisible(true);
-        setLoading(true);
-        setError(null);
-        try {
-            if (!eventDetails?.id) {
-                message.error("Missing user or event information.");
-                return;
-            }
-
-            const participantIdResponse = await authService.getParticipantIdByUserIdEventId(eventDetails.id, localStorage.getItem('accessToken') || undefined) as any;
-            const participantId = participantIdResponse.data.participantId;
-
-
-            const response = await authService.getTicketByParticipantId(participantId, localStorage.getItem('accessToken') || undefined) as { statusCode: number; data: { ticket: TicketType }; message: string };
-            if (response && response.statusCode === 200 && response.data.ticket) {
-                setTicketData(response.data.ticket);
-            } else {
-                setError(response?.message || 'Failed to load ticket details');
-                message.error(response?.message || 'Failed to load ticket details');
-                setTicketData(null);
-            }
-        } catch (error: any) {
-            console.error('Error fetching ticket details:', error);
-            setError(error.message || 'Failed to load ticket details');
-            message.error(error.message || 'Failed to load ticket details');
-            setTicketData(null);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const hideTicketModal = () => {
         setIsTicketModalVisible(false);
     };
@@ -16493,7 +15709,7 @@ const DetailMyEventPage: React.FC = () => {
     return (
         <div>
             <Helmet>
-                <title>{eventDetails?.name} Details | Antd Dashboard</title>
+                <title>Details | Antd Dashboard</title>
             </Helmet>
             <PageHeader
                 title="Event Details"
@@ -16526,22 +15742,45 @@ const DetailMyEventPage: React.FC = () => {
                     },
                 ]}
             />
+            <BackBtn />
 
             <Card title={<Title level={3}>{eventDetails?.name}</Title>}
                 extra={
                     <Space>
                         <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>Download Participants PDF</Button>
                         <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal} >Invite Users</Button>
-                        <Button type="primary" onClick={showTicketModal} >
-                            View Ticket / Update Sessions
-                        </Button>
                     </Space>
                 }
             >
                 <Row gutter={[16, 16]}>
                     <Col span={24}>
-                        <Image src={eventDetails?.banner || "https://placehold.co/1920x1080"} alt="Event Banner" style={{ width: '100%', borderRadius: '10px' }} fallback="https://placehold.co/1920x1080" />
+                        {eventDetails?.videoIntro ? (
+                            <Card title="Video Introduction">
+                                <iframe
+                                    width="100%"
+                                    height="480"
+                                    src={eventDetails.videoIntro}
+                                    title="Event Introduction Video"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                />
+                            </Card>
+                        ) : (
+                            <Image
+                                src={eventDetails?.banner || "https://placehold.co/1920x1080"}
+                                alt="Event Banner"
+                                style={{
+                                    width: '100%',
+                                    height: '480px',            // Đặt chiều cao cố định
+                                    objectFit: 'cover',         // Đảm bảo hình ảnh được cắt xén vừa vặn
+                                    borderRadius: '10px',
+                                }}
+                                fallback="https://placehold.co/1920x1080"
+                            />
+                        )}
                     </Col>
+
                     <Col span={24}>
                         <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
                             <Descriptions.Item label="Name">{eventDetails?.name}</Descriptions.Item>
@@ -16574,20 +15813,18 @@ const DetailMyEventPage: React.FC = () => {
                             )}
                         </Card>
                     </Col>
-                    {eventDetails?.videoIntro && (
-                        <Col span={24}>
-                            <Card title="Video Introduction">
-                                <iframe
-                                    width="100%"
-                                    height="480"
-                                    src={eventDetails?.videoIntro}
-                                    title="Event Introduction Video"
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    allowFullScreen
-                                />
-                            </Card>
-                        </Col>
+                    {eventDetails?.banner && (
+                        <Image
+                        src={eventDetails?.banner || "https://placehold.co/1920x1080"}
+                        alt="Event Banner"
+                        style={{
+                            width: '100%',
+                            height: '480px',            // Đặt chiều cao cố định
+                            objectFit: 'cover',         // Đảm bảo hình ảnh được cắt xén vừa vặn
+                            borderRadius: '10px',
+                        }}
+                        fallback="https://placehold.co/1920x1080"
+                    />
                     )}
                     {eventDetails?.documents && eventDetails.documents.length > 0 && (
                         <Col span={24}>
@@ -16629,13 +15866,329 @@ const DetailMyEventPage: React.FC = () => {
                 visible={isInviteModalVisible}
                 onCancel={hideInviteModal}
                 eventId={id || ''}
-                onInvitationsSent={() => message.success("Invitations sent successfully!")} // Example callback
+                onInvitationsSent={() => { }} // Example callback
             />
         </div>
     );
 };
 
 export default DetailMyEventPage;
+
+src\pages\details\ParticipatedEventDetailsPage.tsx:
+// src\pages\details\ParticipatedEventDetailsPage.tsx
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import {
+    Alert,
+    Button,
+    Card,
+    Col,
+    Descriptions,
+    Flex,
+    Image,
+    List,
+    message,
+    Row,
+    Space,
+    Table,
+    Tag,
+    Typography,
+} from 'antd';
+import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
+import { DASHBOARD_ITEMS } from '../../constants';
+import { PageHeader, Loader, BackBtn } from '../../components';
+import { useFetchData } from '../../hooks';
+import dayjs from 'dayjs';
+import authService from '../../services/authService';
+import { Events, TicketType } from '../../types';
+import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
+import { Helmet } from 'react-helmet-async';
+import { EventScheduleItem } from '../../types/schedule';
+import TicketDetailsModal from '../../components/TicketDetailsModal'; // Import TicketDetailsModal
+
+const { Title, Text, Paragraph } = Typography;
+
+const ParticipatedEventDetailsPage: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
+    const [eventDetails, setEventDetails] = useState<Events | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
+    const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
+    const [ticketData, setTicketData] = useState<TicketType | null>(null);
+
+
+    useEffect(() => {
+        const fetchEventDetails = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const accessToken = localStorage.getItem('accessToken');
+                const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+                if (response && response.statusCode === 200) {
+                    setEventDetails(response.data.event);
+                } else {
+                    setError(response?.message || 'Failed to load event details');
+                    message.error(response?.message || 'Failed to load event details');
+                }
+            } catch (error: any) {
+                console.error('Error fetching event details:', error);
+                setError(error.message || 'Failed to load event details');
+                message.error(error.message || 'Failed to load event details');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEventDetails();
+    }, [id, navigate]);
+
+    const handleDownloadPdf = async () => {
+        message.info("Download PDF function is not implemented yet for general events.");
+    };
+
+
+    const scheduleColumns = [
+        {
+            title: 'Title',
+            dataIndex: 'name',
+            key: 'name'
+        },
+        {
+            title: 'Start Time',
+            dataIndex: 'startTime',
+            key: 'startTime',
+            render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+        },
+        {
+            title: 'End Time',
+            dataIndex: 'endTime',
+            key: 'endTime',
+            render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+        },
+        {
+            title: 'Description',
+            dataIndex: 'description',
+            key: 'description'
+        },
+    ];
+
+    const showTicketModal = async () => {
+        setIsTicketModalVisible(true);
+        setLoading(true);
+        setError(null);
+        try {
+            if (!eventDetails?.id) {
+                message.error("Missing user or event information.");
+                return;
+            }
+
+            const participantIdResponse = await authService.getParticipantIdByUserIdEventId(eventDetails.id, localStorage.getItem('accessToken') || undefined) as any;
+            const participantId = participantIdResponse.data.participantId;
+
+            const response = await authService.getTicketByParticipantId(participantId, localStorage.getItem('accessToken') || undefined) as { statusCode: number; data: { ticket: TicketType }; message: string, error?: string };
+            if (response && response.statusCode === 200 && response.data.ticket) {
+                setTicketData(response.data.ticket);
+            } else {
+                setError(response?.error || 'Failed to load ticket details');
+                message.error(response?.error || 'Failed to load ticket details');
+                setTicketData(null);
+            }
+        } catch (error: any) {
+            console.error('Error fetching ticket details:', error);
+            setError(error.error || 'Failed to load ticket details');
+            message.error(error.error || 'Failed to load ticket details');
+            setTicketData(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const hideTicketModal = () => {
+        setIsTicketModalVisible(false);
+    };
+
+
+    const handleUpdateSessionsForTicket = async (sessionIds: string[]) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                message.error("No access token found. Please login again.");
+                navigate('/auth/signin');
+                return;
+            }
+
+            const response = await authService.updateParticipantSessions(ticketData!.participantId, { sessionIds }, accessToken) as any;
+            if (response && response.statusCode === 200) {
+                message.success(response.message || 'Sessions updated successfully');
+                setIsTicketModalVisible(false);
+            } else {
+                message.error(response.message || 'Failed to update sessions');
+            }
+        } catch (error: any) {
+            console.error('Error updating sessions:', error);
+            message.error(error.message || 'Failed to update sessions');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    return (
+        <div>
+            <Helmet>
+                <title>Event Details</title>
+            </Helmet>
+            <PageHeader
+                title="Event Details"
+                breadcrumbs={[
+                    {
+                        title: (
+                            <>
+                                <HomeOutlined />
+                                <span>Home</span>
+                            </>
+                        ),
+                        path: '/',
+                    },
+                    {
+                        title: (
+                            <>
+                                <PieChartOutlined />
+                                <span>Dashboards</span>
+                            </>
+                        ),
+                        menu: {
+                            items: DASHBOARD_ITEMS.map((d) => ({
+                                key: d.title,
+                                title: <Link to={d.path}>{d.title}</Link>,
+                            })),
+                        },
+                    },
+                    {
+                        title: 'Participated Event Details',
+                    },
+                ]}
+                btnBack={<BackBtn />}
+            />
+
+            <Card title={<Title level={3}>{eventDetails?.name}</Title>}
+                extra={
+                    <Space>
+                        <Button type="primary" onClick={showTicketModal} >
+                            View Ticket / Update Sessions
+                        </Button>
+                    </Space>
+                }
+            >
+                <Row gutter={[16, 16]}>
+                    <Col span={24}>
+                        {eventDetails?.videoIntro ? (
+                            <Card title="Video Introduction">
+                                <iframe
+                                    width="100%"
+                                    height="480"
+                                    src={eventDetails.videoIntro}
+                                    title="Event Introduction Video"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                />
+                            </Card>
+                        ) : (
+                            <Image src={eventDetails?.banner || "https://placehold.co/1920x1080"} alt="Event Banner" style={{ width: '100%', borderRadius: '10px' }} fallback="https://placehold.co/1920x1080" />
+                        )}
+                    </Col>
+
+                    <Col span={24}>
+                        <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
+                            <Descriptions.Item label="Name">{eventDetails?.name}</Descriptions.Item>
+                            <Descriptions.Item label="Category">{eventDetails?.categoryId}</Descriptions.Item>
+                            <Descriptions.Item label="Location">{eventDetails?.location}</Descriptions.Item>
+                            <Descriptions.Item label="Start Date">
+                                {dayjs(eventDetails?.startDate).format('YYYY-MM-DD HH:mm:ss')}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="End Date">
+                                {dayjs(eventDetails?.endDate).format('YYYY-MM-DD HH:mm:ss')}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Status"><Tag color={eventDetails?.status === 'SCHEDULED' ? 'blue' : eventDetails?.status === 'CANCELED' ? 'red' : 'green'}>{eventDetails?.status}</Tag></Descriptions.Item>
+                            <Descriptions.Item label="Max Participants">{eventDetails?.maxParticipants || 'Unlimited'}</Descriptions.Item>
+                            <Descriptions.Item span={3} label="Description">
+                                {eventDetails?.description || "No description provided."}
+                            </Descriptions.Item>
+                        </Descriptions>
+                    </Col>
+                    <Col span={24}>
+                        <Card title="Schedule">
+                            {eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
+                                <Table
+                                    rowKey="id"
+                                    dataSource={eventDetails?.schedule}
+                                    columns={scheduleColumns}
+                                    pagination={false}
+                                />
+                            ) : (
+                                <Alert message="No schedule available for this event." type="info" showIcon />
+                            )}
+                        </Card>
+                    </Col>
+                    {eventDetails?.banner && (
+                        <Image
+                            src={eventDetails?.banner || "https://placehold.co/1920x1080"}
+                            alt="Event Banner"
+                            style={{
+                                width: '100%',
+                                height: 'auto',
+                                borderRadius: '10px',
+                            }}
+                            fallback="https://placehold.co/1920x1080"
+                            preview={false}
+                        />
+
+                    )}
+                    {eventDetails?.documents && eventDetails.documents.length > 0 && (
+                        <Col span={24}>
+                            <Card title="Event Documents">
+                                <List
+                                    dataSource={eventDetails?.documents}
+                                    renderItem={item => (
+                                        <List.Item>
+                                            <Typography.Link href={item} target="_blank">
+                                                {item}
+                                            </Typography.Link>
+                                        </List.Item>
+                                    )}
+                                />
+                            </Card>
+                        </Col>
+                    )}
+                    {eventDetails?.status === 'FINISHED' && (
+                        <Col span={24}>
+                            <Card title="Participants Check-in/Check-out List"
+                                extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
+                                    Download PDF
+                                </Button>}
+                            >
+                                <EventParticipantsTable eventId={id || ''} />
+                            </Card>
+                        </Col>
+                    )}
+                </Row>
+            </Card>
+            <TicketDetailsModal
+                visible={isTicketModalVisible}
+                onCancel={hideTicketModal}
+                ticket={ticketData}
+                onSessionsChange={handleUpdateSessionsForTicket}
+                eventSchedule={eventDetails?.schedule || []}
+            />
+        </div>
+    );
+};
+
+export default ParticipatedEventDetailsPage;
 
 src\pages\edit\EditEventPage.tsx:
 // src\pages\edit\EditEventPage.tsx
@@ -16835,7 +16388,7 @@ const EditEventPage: React.FC = () => {
                 ]}
             />
 
-            <Card title={`Edit Event: ${eventDetails?.name}`} extra={<Button onClick={() => navigate(-1)} icon={<ArrowLeftOutlined />}>Cancel</Button>}>
+            <Card title={`Edit Event: ${eventDetails?.name}`} extra={<Button onClick={() => navigate(-1)} icon={<ArrowLeftOutlined />}>Back</Button>}>
                 <Form
                     form={form}
                     name="edit-event-form"
@@ -17070,33 +16623,28 @@ const EventFileUploadForm: React.FC<EventFileUploadFormProps> = ({ eventId }) =>
 
         setUploading(true);
         setUploadError(null);
+
         const formData = new FormData();
+        formData.append('field', selectedField); // append field trước
         formData.append('files', uploadedFile);
-        formData.append('field', selectedField);
-        
+
         try {
             const response = await axiosInstance.post(`/events/${eventId}/files`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'field': selectedField,
-                },
+                // Loại bỏ header Content-Type
+                // headers: {
+                //     'Content-Type': 'multipart/form-data',
+                // },
             });
-            const responseData = response.data as { statusCode: number, message: string };
-            if (responseData.statusCode === 201) {
-                message.success(`Uploaded ${selectedField} successfully`);
-                setUploadedFile(null); // Clear selected file after successful upload
-            } else {
-                const responseData = response.data as { message: string };
-                setUploadError(`Upload ${selectedField} failed: ${responseData.message}`);
-                message.error(`Upload ${selectedField} failed: ${responseData.message}`);
-            }
+            console.log('Upload response:', response);
+            message.success(`Uploaded ${selectedField} successfully`);
         } catch (error: any) {
-            setUploadError(`Upload ${selectedField} failed: ${error.message}`);
-            message.error(`Upload ${selectedField} failed: ${error.message}`);
+            message.error(`${error.response?.data?.message || error.message}`);
+            setUploadError(`Upload ${selectedField} failed: ${error.response?.data?.message || error.message}`);
         } finally {
             setUploading(false);
         }
     };
+
 
     const fieldOptions = [
         { value: 'videoIntro', label: 'Video Intro (MP4)', accept: '.mp4,video/mp4', multiple: false },
@@ -17919,8 +17467,6 @@ export const UserProfileHelpPage = () => {
 
 src\pages\userAccount\index.ts:
 export { UserProfileDetailsPage } from './Details.tsx';
-export { UserProfilePreferencesPage } from './Preferences.tsx';
-export { UserProfileInformationPage } from './Information.tsx';
 export { UserProfileSecurityPage } from './Security.tsx';
 export { UserProfileActivityPage } from './Activity.tsx';
 export { UserProfileActionsPage } from './Actions.tsx';
@@ -17929,8 +17475,12 @@ export { UserProfileFeedbackPage } from './Feedback.tsx';
 
 
 src\pages\userAccount\Information.tsx:
+// src\pages\userAccount\Information.tsx
+import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   Button,
+  Card,
   Checkbox,
   Col,
   DatePicker,
@@ -17939,15 +17489,15 @@ import {
   Input,
   Row,
   Select,
+  Spin,
+  message,
 } from 'antd';
-import { Card } from '../../components';
-import {
-  MinusCircleOutlined,
-  PlusOutlined,
-  SaveOutlined,
-} from '@ant-design/icons';
-import { useStylesContext } from '../../context';
-import * as dayjs from 'dayjs';
+import { SaveOutlined, UploadOutlined, MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../redux/store';
+import authService from '../../services/authService';
+import dayjs from 'dayjs';
+import { updateUserProfile } from '../../redux/userSlice';
 
 const SOCIALS = [
   'Facebook',
@@ -17964,61 +17514,150 @@ const SOCIALS = [
   'WeChat',
 ];
 
-type FieldType = {
+interface FieldType {
+  name?: string;
+  phoneNumber?: string;
   country?: string;
   addressLine1?: string;
   addressLine2?: string;
   city?: string;
   postalCode?: string;
   preferred?: boolean;
-};
+  dob?: dayjs.Dayjs;
+  socialLinks?: { social?: string; username?: string }[];
+}
 
 type BirthdayFieldType = {
   dob?: string;
 };
 
 export const UserProfileInformationPage = () => {
-  const context = useStylesContext();
-  const onFinish = (values: any) => {
-    console.log('Success:', values);
+  const [form] = Form.useForm<FieldType>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const accessToken = localStorage.getItem('accessToken') || undefined;
+        const response = await authService.getUserProfile(accessToken) as any;
+        if (response.statusCode === 200 && response.data.user) {
+          form.setFieldsValue({
+            name: response.data.user.name,
+            phoneNumber: response.data.user.phoneNumber,
+            country: 'Kenya', // Giá trị mặc định, bạn có thể thay đổi hoặc lấy từ API nếu có
+            addressLine1: '828, 18282 ABC Drive, XYZ Rd', // Giá trị mặc định
+            city: 'Nairobi', // Giá trị mặc định
+            postalCode: '00100', // Giá trị mặc định
+            preferred: true, // Giá trị mặc định
+            dob: dayjs('1996/04/27'), // Giá trị mặc định
+            socialLinks: [], // Giá trị mặc định, có thể cần fetch từ API nếu có
+          });
+        } else {
+          setError(response?.message || 'Failed to load user profile');
+          message.error(response?.message || 'Failed to load user profile');
+        }
+      } catch (error: any) {
+        setError(error.message || 'Failed to load user profile');
+        message.error(error.message || 'Failed to load user profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [form, dispatch]);
+
+
+  const onFinish = async (values: FieldType) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const accessToken = localStorage.getItem('accessToken') || '';
+      const response = await authService.updateUserProfile(values, accessToken) as any;
+      if (response.statusCode === 200 && response.data.user) {
+        message.success(response.message);
+        dispatch(updateUserProfile({ name: response.data.user.name, phoneNumber: response.data.user.phoneNumber })); // Dispatch action to update user info in Redux
+        localStorage.setItem('user', JSON.stringify(response.data.user)); // Update localStorage
+      } else {
+        setError(response?.message || 'Failed to update user profile');
+        message.error(response?.message || 'Failed to update user profile');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to update user profile');
+      message.error(error.message || 'Failed to update user profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onFinishFailed = (errorInfo: any) => {
     console.log('Failed:', errorInfo);
   };
 
+
   return (
-    <Row {...context?.rowProps}>
-      <Col span={24}>
-        <Card title="Address book">
+    <div>
+      {error && (
+        <Alert
+          message="Error"
+          description={error}
+          type="error"
+          showIcon
+          closable
+          onClose={() => setError(null)}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      <Card title="Personal Information">
+        <Flex gap="large" vertical>
+
+
           <Form
-            name="user-profile-address-form"
+            form={form}
+            name="user-profile-info-form"
             layout="vertical"
-            initialValues={{
-              country: 'Kenya',
-              addressLine1: '828, 18282 ABC Drive, XYZ Rd',
-              city: 'Nairobi',
-              postalCode: '00100',
-              preferred: true,
-            }}
+            initialValues={{ remember: true }}
             onFinish={onFinish}
             onFinishFailed={onFinishFailed}
-            autoComplete="on"
+            autoComplete="off"
             requiredMark={false}
           >
             <Row gutter={[16, 0]}>
+              <Col sm={24} lg={12}>
+                <Form.Item<FieldType>
+                  label="Name"
+                  name="name"
+                  rules={[{ required: true, message: 'Please input your name!' }]}
+                >
+                  <Input placeholder="Your Name" />
+                </Form.Item>
+              </Col>
+              <Col sm={24} lg={12}>
+                <Form.Item<FieldType>
+                  label="Phone Number"
+                  name="phoneNumber"
+                  rules={[{ required: false }]}
+                >
+                  <Input placeholder="Your Phone Number (Optional)" />
+                </Form.Item>
+              </Col>
               <Col sm={24} lg={12}>
                 <Form.Item<FieldType>
                   label="Country"
                   name="country"
                   rules={[
                     {
-                      required: true,
+                      required: false,
                       message: 'Please select your country or region!',
                     },
                   ]}
                 >
-                  <Select options={[]} />
+                  <Select options={[]} placeholder="Country" />
                 </Form.Item>
               </Col>
               <Col sm={24} lg={12}>
@@ -18026,10 +17665,10 @@ export const UserProfileInformationPage = () => {
                   label="City"
                   name="city"
                   rules={[
-                    { required: true, message: 'Please enter your city!' },
+                    { required: false, message: 'Please enter your city!' },
                   ]}
                 >
-                  <Input />
+                  <Input placeholder="City" />
                 </Form.Item>
               </Col>
               <Col sm={24} lg={12}>
@@ -18038,12 +17677,12 @@ export const UserProfileInformationPage = () => {
                   name="addressLine1"
                   rules={[
                     {
-                      required: true,
+                      required: false,
                       message: 'Please enter your address line!',
                     },
                   ]}
                 >
-                  <Input.TextArea />
+                  <Input.TextArea placeholder="Address line 1" />
                 </Form.Item>
               </Col>
               <Col sm={24} lg={12}>
@@ -18057,419 +17696,166 @@ export const UserProfileInformationPage = () => {
                     },
                   ]}
                 >
-                  <Input.TextArea />
+                  <Input.TextArea placeholder="Address line 2" />
                 </Form.Item>
               </Col>
-              <Col sm={24} lg={12}>
-                <Form.Item<FieldType>
-                  label="Postal code"
-                  name="postalCode"
+
+
+              <Col sm={24} lg={8}>
+                <Form.Item<BirthdayFieldType>
+                  label="Birth date"
+                  name="dob"
                   rules={[
-                    {
-                      required: true,
-                      message: 'Please enter your postal code!',
-                    },
+                    { required: false, message: 'Please select your birthday!' },
                   ]}
                 >
-                  <Input />
+                  <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
-              <Col sm={24} lg={24}>
-                <Form.Item<FieldType> name="preferred">
-                  <Checkbox>
-                    Set as a preferred billing and shipping address
-                  </Checkbox>
-                </Form.Item>
-              </Col>
+
+
             </Row>
 
             <Form.Item>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading}>
                 Save changes
               </Button>
             </Form.Item>
           </Form>
-        </Card>
-      </Col>
-      <Col sm={24} lg={16}>
-        <Card title="Social links">
-          <Form
-            name="user-profile-social-form"
-            onFinish={onFinish}
-            autoComplete="off"
-          >
-            <Form.List name="social-links">
-              {(fields, { add, remove }) => (
-                <>
-                  {fields.map(({ key, name, ...restField }) => (
-                    <Flex
-                      key={key}
-                      align="baseline"
-                      gap="small"
-                      style={{ marginBottom: 8 }}
-                    >
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'social']}
-                        rules={[{ required: true, message: 'Missing social' }]}
-                        style={{ width: 200 }}
-                      >
-                        <Select
-                          placeholder="social"
-                          options={SOCIALS.map((s) => ({ value: s, label: s }))}
-                        />
-                      </Form.Item>
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'username']}
-                        rules={[
-                          { required: true, message: 'Missing username' },
-                        ]}
-                      >
-                        <Input placeholder="username" />
-                      </Form.Item>
-                      <Button
-                        type="text"
-                        icon={<MinusCircleOutlined />}
-                        onClick={() => remove(name)}
-                      ></Button>
-                    </Flex>
-                  ))}
-                  <Form.Item>
-                    <Button
-                      type="default"
-                      onClick={() => add()}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Add link
-                    </Button>
-                  </Form.Item>
-                </>
-              )}
-            </Form.List>
-            <Form.Item>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
-                Save changes
-              </Button>
-            </Form.Item>
-          </Form>
-        </Card>
-      </Col>
-      <Col sm={24} lg={8}>
-        <Card title="Birthday">
-          <Form
-            name="user-profile-birhday-form"
-            layout="vertical"
-            initialValues={{
-              dob: dayjs('1996/04/27'),
-            }}
-            onFinish={onFinish}
-            onFinishFailed={onFinishFailed}
-            autoComplete="on"
-            requiredMark={false}
-          >
-            <Form.Item<BirthdayFieldType>
-              label="Birth date"
-              name="dob"
-              rules={[
-                { required: true, message: 'Please select your birthday!' },
-              ]}
-            >
-              <DatePicker />
-            </Form.Item>
-
-            <Form.Item>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
-                Save changes
-              </Button>
-            </Form.Item>
-          </Form>
-        </Card>
-      </Col>
-    </Row>
-  );
-};
-
-
-src\pages\userAccount\Preferences.tsx:
-import {
-  Button,
-  ButtonProps,
-  Card as AntdCard,
-  Col,
-  Flex,
-  Row,
-  Switch,
-  Typography,
-} from 'antd';
-import { Card } from '../../components';
-import { useStylesContext } from '../../context';
-import { useMediaQuery } from 'react-responsive';
-
-const { Text } = Typography;
-
-const BUTTON_PROPS: ButtonProps = {
-  type: 'dashed',
-};
-
-export const UserProfilePreferencesPage = () => {
-  const context = useStylesContext();
-  const isMobile = useMediaQuery({ maxWidth: 600 });
-
-  const notificationsOnChange = (checked: boolean) => {
-    console.log(`switch to ${checked}`);
-  };
-
-  return (
-    <Flex vertical gap="middle">
-      <Card title="language info">
-        <Flex vertical gap="small">
-          <Flex
-            vertical={isMobile}
-            align={isMobile ? 'flex-start' : 'center'}
-            gap={4}
-          >
-            <Text style={{ width: 200 }}>Display Language</Text>
-            <Button {...BUTTON_PROPS}>English (Unites States)</Button>
-          </Flex>
-          <Flex
-            vertical={isMobile}
-            align={isMobile ? 'flex-start' : 'center'}
-            gap={4}
-          >
-            <Text style={{ width: 200 }}>Preferred Language</Text>
-            <Button {...BUTTON_PROPS}>--Add your preferred language--</Button>
-          </Flex>
-          <Flex
-            vertical={isMobile}
-            align={isMobile ? 'flex-start' : 'center'}
-            gap={4}
-          >
-            <Text style={{ width: 200 }}>Regional Format</Text>
-            <Button {...BUTTON_PROPS}>
-              English (Kenya) - {new Date().toLocaleDateString()} :{' '}
-              {new Date().toLocaleTimeString()}
-            </Button>
-          </Flex>
         </Flex>
       </Card>
-      <Card title="manage notifications">
-        <Row {...context?.rowProps}>
-          <Col sm={24} lg={12}>
-            <AntdCard title="activities" style={{ marginBottom: '1rem' }}>
-              <Flex vertical gap="middle">
-                <Flex align="center" justify="space-between">
-                  <Text>Someone comments on my content</Text>
-                  <Switch
-                    defaultChecked={false}
-                    onChange={notificationsOnChange}
-                  />
-                </Flex>
-                <Flex align="center" justify="space-between">
-                  <Text>Someone mentions my profile</Text>
-                  <Switch defaultChecked onChange={notificationsOnChange} />
-                </Flex>
-                <Flex align="center" justify="space-between">
-                  <Text>I received a like on my content</Text>
-                  <Switch onChange={notificationsOnChange} />
-                </Flex>
-                <Flex align="center" justify="space-between">
-                  <Text>Anyone follows me</Text>
-                  <Switch
-                    defaultChecked={false}
-                    onChange={notificationsOnChange}
-                  />
-                </Flex>
-                <Flex align="center" justify="space-between">
-                  <Text>I received a message</Text>
-                  <Switch defaultChecked onChange={notificationsOnChange} />
-                </Flex>
-              </Flex>
-            </AntdCard>
-          </Col>
-          <Col sm={24} lg={12}>
-            <AntdCard title="newsletters">
-              <Flex vertical gap="middle">
-                <Flex align="center" justify="space-between">
-                  <Flex vertical align="flex-start" gap={4}>
-                    <Text>General newsletter</Text>
-                    <Text type="secondary">
-                      News, announcements & product updates
-                    </Text>
+      <Card title="Social links" style={{ marginTop: 24 }}>
+        <Form
+          name="user-profile-social-form"
+          onFinish={onFinish}
+          autoComplete="off"
+        >
+          <Form.List name="socialLinks">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Flex
+                    key={key}
+                    align="baseline"
+                    gap="small"
+                    style={{ marginBottom: 8 }}
+                  >
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'social']}
+                      rules={[{ required: true, message: 'Missing social' }]}
+                      style={{ width: 200 }}
+                    >
+                      <Select
+                        placeholder="social"
+                        options={SOCIALS.map((s) => ({ value: s, label: s }))}
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'username']}
+                      rules={[
+                        { required: true, message: 'Missing username' },
+                      ]}
+                    >
+                      <Input placeholder="username" />
+                    </Form.Item>
+                    <Button
+                      type="text"
+                      icon={<MinusCircleOutlined />}
+                      onClick={() => remove(name)}
+                    ></Button>
                   </Flex>
-                  <Switch
-                    defaultChecked={false}
-                    onChange={notificationsOnChange}
-                  />
-                </Flex>
-                <Flex align="center" justify="space-between">
-                  <Flex vertical align="flex-start" gap={4}>
-                    <Text>Weekly activity report</Text>
-                    <Text type="secondary">
-                      Weekly digest of top content & media
-                    </Text>
-                  </Flex>
-                  <Switch defaultChecked onChange={notificationsOnChange} />
-                </Flex>
-                <Flex align="center" justify="space-between">
-                  <Flex vertical align="flex-start" gap={4}>
-                    <Text>Weekly jobs</Text>
-                    <Text type="secondary">
-                      Weekly board of the newest jobs
-                    </Text>
-                  </Flex>
-                  <Switch onChange={notificationsOnChange} />
-                </Flex>
-                <Flex align="center" justify="space-between">
-                  <Flex vertical align="flex-start" gap={4}>
-                    <Text>Monthly webinars</Text>
-                    <Text type="secondary">
-                      Schedule of upcoming webinars & archive
-                    </Text>
-                  </Flex>
-                  <Switch onChange={notificationsOnChange} />
-                </Flex>
-                <Flex align="center" justify="space-between">
-                  <Flex vertical align="flex-start" gap={4}>
-                    <Text>Weekly blog posts</Text>
-                    <Text type="secondary">
-                      Weekly feed of the most popular blog posts
-                    </Text>
-                  </Flex>
-                  <Switch defaultChecked onChange={notificationsOnChange} />
-                </Flex>
-              </Flex>
-            </AntdCard>
-          </Col>
-        </Row>
+                ))}
+                <Form.Item>
+                  <Button
+                    type="dashed"
+                    onClick={() => add()}
+                    block
+                    icon={<PlusOutlined />}
+                  >
+                    Add link
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
+              Save changes
+            </Button>
+          </Form.Item>
+        </Form>
       </Card>
-    </Flex>
+    </div>
   );
 };
 
-
 src\pages\userAccount\Security.tsx:
+// src\pages\userAccount\Security.tsx
 import {
   Alert,
-  Badge,
   Button,
+  Card,
   Col,
-  Collapse,
-  Descriptions,
   Form,
   Input,
   Row,
-  Typography,
+  message, // Import message
 } from 'antd';
-import { useStylesContext } from '../../context';
-import { Card, Flex, Loader } from '../../components';
-import { Session } from '../../types';
-import {
-  LaptopOutlined,
-  MobileOutlined,
-  SaveOutlined,
-  TabletOutlined,
-} from '@ant-design/icons';
-import { useFetchData } from '../../hooks';
-
-const { Text } = Typography;
-
-const onFinish = (values: any) => {
-  console.log('Success:', values);
-};
-
-const onFinishFailed = (errorInfo: any) => {
-  console.log('Failed:', errorInfo);
-};
+import { SaveOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import axiosInstance from '../../api/axiosInstance';
 
 type FieldType = {
   currentPassword?: string;
   newPassword?: string;
-  reEnterPassword?: string;
+  confirmPassword?: string;
 };
 
 export const UserProfileSecurityPage = () => {
-  const stylesContext = useStylesContext();
-  const {
-    data: sessionActivityData,
-    loading: sessionActivityDataLoading,
-    error: sessionActivityDataError,
-  } = useFetchData('../mocks/SessionActivity.json');
+  const [form] = Form.useForm<FieldType>();
+  const [loading, setLoading] = useState(false);
+
+  const onFinish = async (values: FieldType) => {
+    if (values.newPassword !== values.confirmPassword) {
+      message.error("New password and confirmation password do not match!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await axiosInstance.patch('/auth/change-password', {
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      });
+      message.success("Password changed successfully!");
+      form.resetFields();
+    } catch (error: any) {
+      console.error("Password change error:", error);
+      message.error(error.response?.data?.message || "Failed to change password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onFinishFailed = (errorInfo: any) => {
+    console.log('Failed:', errorInfo);
+  };
 
   return (
-    <Row {...stylesContext?.rowProps}>
-      <Col span={24}>
-        <Row {...stylesContext?.rowProps}>
-          <Col xs={24} sm={12}>
-            <Card
-              title="Additional security"
-              extra={<Button type="default">Learn more</Button>}
-              actions={[<Button>Turn on</Button>]}
-              style={{ height: '100%' }}
-            >
-              <Flex flexDirection="column">
-                <Text>Passwordless account</Text>
-                <Badge status="error" text="OFF" />
-              </Flex>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12}>
-            <Card
-              title="Additional security"
-              extra={<Button type="default">Learn more</Button>}
-              actions={[<Button>Turn off</Button>]}
-              style={{ height: '100%' }}
-            >
-              <Flex flexDirection="column">
-                <Text>Two-step verification</Text>
-                <Badge status="success" text="ON" />
-              </Flex>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12}>
-            <Card
-              title="Sign me out"
-              actions={[<Button>Sign me out</Button>]}
-              style={{ height: '100%' }}
-            >
-              <Flex flexDirection="column">
-                <Text>
-                  We can protect you by signing you out of browsers, apps and
-                  anywhere else your account is used to sign in.
-                </Text>
-              </Flex>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12}>
-            <Card
-              title="Recovery code"
-              actions={[<Button>Generate a new code</Button>]}
-              style={{ height: '100%' }}
-            >
-              <Flex flexDirection="column">
-                <Text>
-                  You can use this code to access your account if you lose
-                  access to your sign-in info. Print this out and keep it in a
-                  safe place or take a picture of it.
-                </Text>
-              </Flex>
-            </Card>
-          </Col>
-        </Row>
-      </Col>
-      <Col span={24}>
-        <Card title="Change your password">
-          <Form
-            name="form-change-password"
-            layout="vertical"
-            labelCol={{ span: 8 }}
-            initialValues={{ remember: true }}
-            onFinish={onFinish}
-            onFinishFailed={onFinishFailed}
-            autoComplete="off"
-            requiredMark={false}
-          >
+    <Card title="Change your password">
+      <Form
+        form={form}
+        name="form-change-password"
+        layout="vertical"
+        onFinish={onFinish}
+        onFinishFailed={onFinishFailed}
+        autoComplete="off"
+        requiredMark={false}
+      >
+        <Row gutter={[16, 0]}>
+          <Col span={24}>
             <Form.Item<FieldType>
               label="Current password"
               name="currentPassword"
@@ -18482,123 +17868,55 @@ export const UserProfileSecurityPage = () => {
             >
               <Input.Password />
             </Form.Item>
+          </Col>
 
+          <Col span={24}>
             <Form.Item<FieldType>
               label="New password"
               name="newPassword"
               rules={[
                 { required: true, message: 'Please input your new password!' },
+                { min: 6, message: 'Password must be at least 6 characters long!' },
               ]}
             >
               <Input.Password />
             </Form.Item>
 
-            <Form.Item<FieldType>
-              label="Reenter password"
-              name="reEnterPassword"
-              rules={[
-                {
-                  required: true,
-                  message: 'Please re-input your new password!!',
-                },
-              ]}
-            >
-              <Input.Password />
-            </Form.Item>
+            <Col span={24}>
+              <Form.Item<FieldType>
+                label="Confirm password"
+                name="confirmPassword"
+                dependencies={['newPassword']}
+                rules={[
+                  {
+                    required: true,
+                    message: 'Please re-input your new password!!',
+                  },
+                  ({ getFieldValue }) => ({
+                    validator(_: any, value: string) {
+                      if (!value || getFieldValue('newPassword') === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject('The two passwords that you entered do not match!');
+                    },
+                  }),
+                ]}
+              >
+                <Input.Password />
+              </Form.Item>
+            </Col>
+          </Col>
+        </Row>
 
-            <Form.Item>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
-                Save changes
-              </Button>
-            </Form.Item>
-          </Form>
-        </Card>
-      </Col>
-      <Col span={24}>
-        <Card
-          title="Recent activity"
-          extra={<Button>View all activity</Button>}
-        >
-          {sessionActivityDataError ? (
-            <Alert
-              message="Error"
-              description={sessionActivityDataError.toString()}
-              type="error"
-              showIcon
-            />
-          ) : sessionActivityDataLoading ? (
-            <Loader />
-          ) : (
-            <Collapse
-              bordered
-              expandIconPosition="start"
-              items={sessionActivityData.slice(0, 5).map((s: Session) => ({
-                key: s.id,
-                label: (
-                  <Flex>
-                    <span>{s.login_time}</span>
-                  </Flex>
-                ),
-                children: (
-                  <Descriptions
-                    bordered
-                    column={{ xs: 1, sm: 2, md: 2, lg: 3, xl: 3, xxl: 4 }}
-                    items={[
-                      {
-                        key: 'session_device',
-                        label: 'Device',
-                        children: s.device_type,
-                      },
-                      {
-                        key: 'session_browser',
-                        label: 'Browser',
-                        children: s.browser,
-                      },
-                      {
-                        key: 'session_ip',
-                        label: 'IP address',
-                        children: s.ip_address,
-                      },
-                      {
-                        key: 'session_status',
-                        label: 'Status',
-                        children: <Badge status="processing" text={s.status} />,
-                      },
-                      {
-                        key: 'session_location',
-                        label: 'Location',
-                        children: s.login_location,
-                      },
-                      {
-                        key: 'session_duration',
-                        label: 'Session duration (mins)',
-                        children: s.login_duration,
-                      },
-                      {
-                        key: 'session_login_attempts',
-                        label: 'Login attempts',
-                        children: s.login_attempts,
-                      },
-                    ]}
-                  />
-                ),
-                extra:
-                  s.device_type === 'desktop' ? (
-                    <LaptopOutlined />
-                  ) : s.device_type === 'tablet' ? (
-                    <TabletOutlined />
-                  ) : (
-                    <MobileOutlined />
-                  ),
-              }))}
-            />
-          )}
-        </Card>
-      </Col>
-    </Row>
+        <Form.Item>
+          <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading}>
+            Save changes
+          </Button>
+        </Form.Item>
+      </Form>
+    </Card>
   );
 };
-
 
 src\redux\eventDetailsSlice.tsx:
 // src\redux\eventDetailsSlice.tsx
@@ -18686,42 +18004,47 @@ export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
 src\redux\userSlice.tsx:
+// src\redux\userSlice.tsx
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { User } from '../types';
 
-interface UserState {
-    id: string | null;
-    email: string | null;
-    name: string | null;
-    avatar: string | null;
-}
-
-const initialState: UserState = {
-    id: null,
-    email: null,
-    name: null,
-    avatar: null,
+const initialState: User = {
+    id: '',
+    email: '',
+    name: '',
+    avatar: '',
+    phoneNumber: '',
 };
 
 const userSlice = createSlice({
     name: 'user',
     initialState,
     reducers: {
-        setUser: (state, action: PayloadAction<UserState>) => {
+        setUser: (state, action: PayloadAction<User>) => {
             state.id = action.payload.id;
             state.email = action.payload.email;
             state.name = action.payload.name;
             state.avatar = action.payload.avatar;
+            state.phoneNumber = action.payload.phoneNumber;
         },
         clearUser: (state) => {
-            state.id = null;
-            state.email = null;
-            state.name = null;
-            state.avatar = null;
+            state.id = '';
+            state.email = '';
+            state.name = '';
+            state.avatar = '';
+            state.phoneNumber = '';
+        },
+        updateUserAvatar: (state, action: PayloadAction<string>) => { // Action mới
+            state.avatar = action.payload;
+        },
+        updateUserProfile: (state, action: PayloadAction<{ name: string, phoneNumber: string }>) => { // Action mới update name và phoneNumber
+            state.name = action.payload.name;
+            state.phoneNumber = action.payload.phoneNumber;
         },
     },
 });
 
-export const { setUser, clearUser } = userSlice.actions;
+export const { setUser, clearUser, updateUserAvatar, updateUserProfile } = userSlice.actions; // Export action mới
 export default userSlice.reducer;
 
 src\redux\theme\themeSlice.ts:
@@ -18751,16 +18074,12 @@ export default themeSlice.reducer;
 
 
 src\routes\routes.tsx:
+// src\routes\routes.tsx
+// src\routes\routes.tsx
 import { createBrowserRouter, useLocation } from 'react-router-dom';
 import {
   AccountDeactivePage,
   BiddingDashboardPage,
-  CorporateAboutPage,
-  CorporateContactPage,
-  CorporateFaqPage,
-  CorporateLicensePage,
-  CorporatePricingPage,
-  CorporateTeamPage,
   DefaultDashboardPage,
   EcommerceDashboardPage,
   Error400Page,
@@ -18781,8 +18100,6 @@ import {
   UserProfileDetailsPage,
   UserProfileFeedbackPage,
   UserProfileHelpPage,
-  UserProfileInformationPage,
-  UserProfilePreferencesPage,
   UserProfileSecurityPage,
   VerifyEmailPage,
   WelcomePage,
@@ -18792,8 +18109,8 @@ import {
   DetailEventPage,
   MyEventDashboardPage,
   UserDashboardPage,
-  DetailMyEventPage
 } from '../pages';
+import DetailMyEventPage from '../pages/details/MyEventPage';
 import {
   CorporateLayout,
   DashboardLayout,
@@ -18808,9 +18125,10 @@ import EventsListPage from '../pages/dashboards/EventsList.tsx';
 import EventDetailsPage from '../pages/details/EventDetailsPage.tsx';
 import EditEventPage from '../pages/edit/EditEventPage.tsx';
 import ParticipatedEventsPage from '../pages/dashboards/ParticipatedEvents.tsx';
-import SpeakerManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
 import SpeakerGuestManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
 import GoogleAppwriteCallbackPage from '../pages/authentication/GoogleAppwriteCallbackPage.tsx';
+import ParticipatedEventDetailsPage from '../pages/details/ParticipatedEventDetailsPage.tsx';
+import { UserProfileInformationPage } from '../pages/userAccount/Information.tsx';
 
 // Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
@@ -18821,10 +18139,10 @@ export const ScrollToTop: React.FC = () => {
       top: 0,
       left: 0,
       behavior: 'smooth',
-    }); // Scroll to the top when the location changes
+    });
   }, [pathname]);
 
-  return null; // This component doesn't render anything
+  return null;
 };
 
 type PageProps = {
@@ -18881,7 +18199,10 @@ const router = createBrowserRouter([
         path: 'my-events/:id',
         element: <DetailMyEventPage />,
       },
-      
+      {
+        path: 'participated-events/:id',
+        element: <ParticipatedEventDetailsPage />,
+      },
     ],
   },
   {
@@ -18890,11 +18211,11 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       {
-        path: 'speakers-guests', // Updated route path
-        element: <SpeakerGuestManagementPage />, // Use combined management page
+        path: 'speakers-guests',
+        element: <SpeakerGuestManagementPage />,
       },
       {
-        path: 'participated-events',  // Add route for participated events page
+        path: 'participated-events',
         element: <ParticipatedEventsPage />,
       },
       {
@@ -18926,7 +18247,7 @@ const router = createBrowserRouter([
         path: 'my-events',
         element: <MyEventDashboardPage />,
       },
-       {
+      {
         path: 'users',
         element: <UserDashboardPage />,
       },
@@ -18934,6 +18255,18 @@ const router = createBrowserRouter([
         path: 'events-list',
         element: <EventsListPage />,
       },
+        {
+            path: 'learning',
+            element: <LearningDashboardPage />,
+        },
+        {
+            path: 'logistics',
+            element: <LogisticsDashboardPage />,
+        },
+        {
+            path: 'bidding',
+            element: <BiddingDashboardPage />,
+        },
     ],
   },
   {
@@ -18949,38 +18282,6 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: '/corporate',
-    element: <PageWrapper children={<CorporateLayout />} />,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        index: true,
-        path: 'about',
-        element: <CorporateAboutPage />,
-      },
-      {
-        path: 'team',
-        element: <CorporateTeamPage />,
-      },
-      {
-        path: 'faqs',
-        element: <CorporateFaqPage />,
-      },
-      {
-        path: 'contact',
-        element: <CorporateContactPage />,
-      },
-      {
-        path: 'pricing',
-        element: <CorporatePricingPage />,
-      },
-      {
-        path: 'license',
-        element: <CorporateLicensePage />,
-      },
-    ],
-  },
-  {
     path: '/user-profile',
     element: <PageWrapper children={<UserAccountLayout />} />,
     errorElement: <ErrorPage />,
@@ -18991,12 +18292,8 @@ const router = createBrowserRouter([
         element: <UserProfileDetailsPage />,
       },
       {
-        path: 'preferences',
-        element: <UserProfilePreferencesPage />,
-      },
-      {
-        path: 'information',
-        element: <UserProfileInformationPage />,
+        path: 'personal-information',
+        element: <UserProfileInformationPage />, // Thêm route cho UserProfileInformationPage
       },
       {
         path: 'security',
@@ -19025,13 +18322,13 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       {
-        path: 'google/callback', // Route cho Google callback Appwrite
+        path: 'google/callback',
         element: <GoogleAppwriteCallbackPage
-          projectId='123456789abc' // **Project ID Appwrite**
-          endpoint='https://cloud.appwrite.io/v1' // **Endpoint Appwrite Cloud**
-          redirectUri="http://localhost:5173/auth/google/callback" // **Callback URI của frontend**
-          onLoginSuccess={() => { /* Xử lý login thành công ở đây nếu cần */ }}
-          onLoginFailure={() => { /* Xử lý login thất bại ở đây nếu cần */ }}
+          projectId='123456789abc'
+          endpoint='https://cloud.appwrite.io/v1'
+          redirectUri="http://localhost:5173/auth/google/callback"
+          onLoginSuccess={() => { /* Optional success handler */ }}
+          onLoginFailure={() => { /* Optional failure handler */ }}
         />,
       },
       {
@@ -19061,72 +18358,72 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: '/edit', // Add route for edit event page
+    path: '/edit',
     element: <PageWrapper children={<DashboardLayout />} />,
     errorElement: <ErrorPage />,
     children: [
       {
         path: 'events/:id',
-        element: <EditEventPage />, // Use EditEventPage component
+        element: <EditEventPage />,
       },
     ],
   },
   {
     path: 'errors',
-        errorElement: <ErrorPage />,
-        children: [
-            {
-                path: '400',
-                element: <Error400Page />,
-            },
-            {
-                path: '403',
-                element: <Error403Page />,
-            },
-            {
-                path: '404',
-                element: <Error404Page />,
-            },
-            {
-                path: '500',
-                element: <Error500Page />,
-            },
-            {
-                path: '503',
-                element: <Error503Page />,
-            },
-        ],
-    },
-    {
-        path: '/about',
-        element: <PageWrapper children={<DashboardLayout />} />,
-        errorElement: <ErrorPage />,
-        children: [
-            {
-                index: true,
-                path: '',
-                element: <AboutPage />,
-            },
-        ],
-    },
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: '400',
+        element: <Error400Page />,
+      },
+      {
+        path: '403',
+        element: <Error403Page />,
+      },
+      {
+        path: '404',
+        element: <Error404Page />,
+      },
+      {
+        path: '500',
+        element: <Error500Page />,
+      },
+      {
+        path: '503',
+        element: <Error503Page />,
+      },
+    ],
+  },
+  {
+    path: '/about',
+    element: <PageWrapper children={<DashboardLayout />} />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        index: true,
+        path: '',
+        element: <AboutPage />,
+      },
+    ],
+  },
 ]);
 
 export default router;
 
 src\services\authService.ts:
 // src\services\authService.ts
-import axios from 'axios';
+import axiosInstance from '../api/axiosInstance';
 
 const API_BASE_URL = 'http://localhost:8080/api/v1/auth';
 const API_EVENT_BASE_URL = 'http://localhost:8080/api/v1/events';
 const API_CATEGORY_BASE_URL = 'http://localhost:8080/api/v1/categories';
-// Định nghĩa API cho participants
+const API_USERS_BASE_URL = 'http://localhost:8080/api/v1/users';
 const API_PARTICIPANTS_BASE_URL = 'http://localhost:8080/api/v1/participants';
 
 const authService = {
   login: async (credentials: any) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/login`, credentials);
+      const response = await axiosInstance.post(`${API_BASE_URL}/login`, credentials);
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -19135,7 +18432,7 @@ const authService = {
 
   register: async (userData: any) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/register`, userData);
+      const response = await axiosInstance.post(`${API_BASE_URL}/register`, userData);
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -19143,7 +18440,7 @@ const authService = {
   },
   createEvent: async (eventData: any, accessToken: string) => {
     try {
-      const response = await axios.post(`${API_EVENT_BASE_URL}`, eventData, {
+      const response = await axiosInstance.post(`${API_EVENT_BASE_URL}`, eventData, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -19156,7 +18453,7 @@ const authService = {
 
   logout: async (accessToken: string) => {
     try {
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `${API_BASE_URL}/logout`,
         {},
         {
@@ -19173,7 +18470,7 @@ const authService = {
 
   getCategories: async (accessToken: string) => {
     try {
-      const response = await axios.get(`${API_CATEGORY_BASE_URL}`, {
+      const response = await axiosInstance.get(`${API_CATEGORY_BASE_URL}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -19186,7 +18483,7 @@ const authService = {
 
   createCategory: async (categoryData: any, accessToken: string) => {
     try {
-      const response = await axios.post(`${API_CATEGORY_BASE_URL}`, categoryData, {
+      const response = await axiosInstance.post(`${API_CATEGORY_BASE_URL}`, categoryData, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -19205,7 +18502,7 @@ const authService = {
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
-      const response = await axios.get(`${API_EVENT_BASE_URL}/${eventId}`, { headers });
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}`, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -19214,7 +18511,7 @@ const authService = {
 
   registerEvent: async (eventId: string, sessionIds: string[], accessToken: string) => {
     try {
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `${API_PARTICIPANTS_BASE_URL}`, // Sử dụng endpoint cho participant registration
         { eventId, sessionIds },
         {
@@ -19231,7 +18528,7 @@ const authService = {
 
   deleteEvent: async (eventId: string, accessToken: string) => {
     try {
-      const response = await axios.delete(`${API_EVENT_BASE_URL}/${eventId}`, {
+      const response = await axiosInstance.delete(`${API_EVENT_BASE_URL}/${eventId}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -19244,7 +18541,7 @@ const authService = {
 
   updateEvent: async (eventId: string, eventData: any, accessToken: string) => {
     try {
-      const response = await axios.patch(`${API_EVENT_BASE_URL}/${eventId}`, eventData, {
+      const response = await axiosInstance.patch(`${API_EVENT_BASE_URL}/${eventId}`, eventData, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -19267,7 +18564,7 @@ const authService = {
       if (status) {
         url += `?status=${status}`;
       }
-      const response = await axios.get(url, { headers });
+      const response = await axiosInstance.get(url, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -19281,7 +18578,7 @@ const authService = {
     accessToken: string
   ) => {
     try {
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `${API_EVENT_BASE_URL}/events/${eventId}/files`,
         formData,
         {
@@ -19306,7 +18603,7 @@ const authService = {
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
-      const response = await axios.get(`${API_EVENT_BASE_URL}/${eventId}/participants`, { headers });
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/participants`, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -19325,21 +18622,7 @@ const authService = {
       if (status && status !== 'all') {
         url += `?status=${status}`;
       }
-      const response = await axios.get(url, { headers });
-      return response.data;
-    } catch (error: any) {
-      throw error.response.data;
-    }
-  },
-
-  // Hàm unregister (delete) participant event
-  unregisterEvent: async (participantId: string, accessToken: string) => {
-    try {
-      const response = await axios.delete(`${API_PARTICIPANTS_BASE_URL}/${participantId}`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const response = await axiosInstance.get(url, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -19353,7 +18636,7 @@ const authService = {
     accessToken: string
   ) => {
     try {
-      const response = await axios.patch(
+      const response = await axiosInstance.patch(
         `${API_PARTICIPANTS_BASE_URL}/${participantId}`,
         sessionsData,
         {
@@ -19369,7 +18652,7 @@ const authService = {
   },
   googleLogin: async () => { // Hàm googleLogin cho Server-Side Flow
     try {
-      const response = await axios.get(`${API_BASE_URL}/google/login`);
+      const response = await axiosInstance.get(`${API_BASE_URL}/google/login`);
       const data = response.data as { url: string }; // Backend có thể trả về URL đăng nhập Google (tùy chọn)
       window.location.href = data.url; // Chuyển hướng trình duyệt đến trang đăng nhập Google (nếu backend trả về url)
       // Hoặc, nếu backend không trả về URL, bạn có thể chỉ cần:
@@ -19386,7 +18669,7 @@ const authService = {
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
-      const response = await axios.get(`${API_PARTICIPANTS_BASE_URL}/${participantId}/tickets`, { headers }); // Use correct endpoint
+      const response = await axiosInstance.get(`${API_PARTICIPANTS_BASE_URL}/${participantId}/tickets`, { headers }); // Use correct endpoint
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -19400,7 +18683,7 @@ const authService = {
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
-      const response = await axios.get(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/participant-id`, { headers }); // Updated API call - Removed userId from URL
+      const response = await axiosInstance.get(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/participant-id`, { headers }); // Updated API call - Removed userId from URL
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -19414,7 +18697,7 @@ const authService = {
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
-      const response = await axios.get(`${API_BASE_URL}/users`, { headers }); // Gọi API /users
+      const response = await axiosInstance.get(`${API_BASE_URL}/users`, { headers }); // Gọi API /users
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -19429,7 +18712,93 @@ const authService = {
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
-      const response = await axios.post(`${API_EVENT_BASE_URL}/${eventId}/invite`, { users }, { headers }); // Gọi API /events/{eventId}/invite
+      const response = await axiosInstance.post(`${API_EVENT_BASE_URL}/${eventId}/invite`, { users }, { headers }); // Gọi API /events/{eventId}/invite
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  forgotPassword: async (email: string) => { // Hàm forgotPassword mới
+    try {
+      const response = await axiosInstance.post(`${API_BASE_URL}/forgot-password`, { email });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getParticipantIdByEventId: async (eventId: string | undefined, accessToken?: string) => {
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/participant-id`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  unregisterEvent: async (participantId: string, accessToken: string) => { // Updated function to take participantId
+    try {
+      const response = await axiosInstance.delete(`${API_PARTICIPANTS_BASE_URL}/${participantId}`, { // Use participantId directly
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  updateUserProfile: async (userData: any, accessToken: string) => {
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      };
+      const response = await axiosInstance.patch(`${API_USERS_BASE_URL}/profile`, userData, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  uploadAvatar: async (formData: FormData, accessToken: string) => {
+    try {
+      const response = await axiosInstance.post(`${API_USERS_BASE_URL}/upload/avatar`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  changePassword: async (passwordData: any) => {
+    try {
+      const response = await axiosInstance.patch(`${API_BASE_URL}/change-password`, passwordData);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  getUserProfile: async (accessToken?: string) => {
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_USERS_BASE_URL}/profile`, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;
