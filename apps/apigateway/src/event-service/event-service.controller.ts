@@ -192,6 +192,7 @@ export class EventServiceController {
     @User() user: DecodeAccessResponse,
     @UploadedFiles() files: Express.Multer.File[],
   ) {
+    console.log('files');
     const isOwner = await this.eventServiceService.checkOwnership(eventId, user.id);
     if (!isOwner.isOwner) {
       throw new BadRequestException('You are not authorized to upload files for this event');

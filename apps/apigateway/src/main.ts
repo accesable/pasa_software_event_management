@@ -27,7 +27,7 @@ async function bootstrap() {
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     preflightContinue: false,
     optionsSuccessStatus: 204,
-    allowedHeaders: "Content-Type, Accept, Authorization",
+    allowedHeaders: "Content-Type, Accept, Authorization, field",
     credentials: false, // Tắt credentials
   });
   await app.listen(PORT);
