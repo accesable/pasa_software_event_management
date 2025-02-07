@@ -58,6 +58,15 @@ export class EventServiceController {
     return this.eventServiceService.getParticipantsEvent(eventId);
   }
 
+  @Get(':eventId/participant')
+  @UseGuards(JwtAuthGuard)
+  async getParticipantByEventAndUser(
+    @Param('eventId') eventId: string,
+    @User() user: DecodeAccessResponse, // lấy thông tin người dùng đã xác thực (userId, email, ...)
+  ) {
+    return this.eventServiceService.getParticipantByEventAndUser(eventId, user.id);
+  }
+
   @Get(':id/accept')
   @UseGuards(CheckEventMaxParticipantsGuard, CheckEventStatusGuard)
   @StatusEvent('Scheduled')

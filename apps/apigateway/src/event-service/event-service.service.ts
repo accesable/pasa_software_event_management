@@ -29,7 +29,7 @@ export class EventServiceService implements OnModuleInit {
 
   async createQuestion(eventId: string, userId: string, text: string) {
     try {
-      return await this.eventService.createQuestion({ eventId, userId, text}).toPromise();
+      return await this.eventService.createQuestion({ eventId, userId, text }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -37,7 +37,7 @@ export class EventServiceService implements OnModuleInit {
 
   async answerQuestion(questionId: string, userId: string, text: string) {
     try {
-      return await this.eventService.answerQuestion({ questionId, userId, text}).toPromise();
+      return await this.eventService.answerQuestion({ questionId, userId, text }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -61,7 +61,7 @@ export class EventServiceService implements OnModuleInit {
 
   async getEventFeedbacks(eventId: string) {
     try {
-      return await this.eventService.getEventFeedbacks({id: eventId }).toPromise();
+      return await this.eventService.getEventFeedbacks({ id: eventId }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -69,7 +69,7 @@ export class EventServiceService implements OnModuleInit {
 
   async getFeedbackAnalysis(eventId: string) {
     try {
-      return await this.eventService.getFeedbackAnalysis({id: eventId }).toPromise();
+      return await this.eventService.getFeedbackAnalysis({ id: eventId }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -278,6 +278,14 @@ export class EventServiceService implements OnModuleInit {
     }
   }
 
+  async getParticipantByEventAndUser(eventId: string, userId: string) {
+    try {
+      return await this.ticketService.getParticipantByEventAndUser({ eventId, userId })
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
   // danh sách check in check out của sự kiện
   async getParticipantsEvent(eventId: string) {
     try {
@@ -368,7 +376,7 @@ export class EventServiceService implements OnModuleInit {
 
   async createCategory(createEventCategoryDto: CreateEventCategoryDto) {
     try {
-      return await this.eventService.createCategory({...createEventCategoryDto}).toPromise();
+      return await this.eventService.createCategory({ ...createEventCategoryDto }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -485,7 +493,7 @@ export class EventServiceService implements OnModuleInit {
 
   async getAllSpeaker(userId: string) {
     try {
-      return await this.eventService.getAllSpeaker({userId}).toPromise();
+      return await this.eventService.getAllSpeaker({ userId }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -493,7 +501,7 @@ export class EventServiceService implements OnModuleInit {
 
   async createSpeaker(createSpeakerDto: CreateSpeakerDto, userId: string) {
     try {
-      return await this.eventService.createSpeaker({...createSpeakerDto, userId}).toPromise();
+      return await this.eventService.createSpeaker({ ...createSpeakerDto, userId }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -501,7 +509,7 @@ export class EventServiceService implements OnModuleInit {
 
   async updateGuest(id: string, createGuestDto: UpdateGuestDto, userId: string) {
     try {
-      return await this.eventService.updateGuest({ id, ...createGuestDto, userId}).toPromise();
+      return await this.eventService.updateGuest({ id, ...createGuestDto, userId }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -515,9 +523,9 @@ export class EventServiceService implements OnModuleInit {
     }
   }
 
-  async getAllGuest(userId: string) { 
+  async getAllGuest(userId: string) {
     try {
-      return await this.eventService.getAllGuest({userId}).toPromise();
+      return await this.eventService.getAllGuest({ userId }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -525,7 +533,7 @@ export class EventServiceService implements OnModuleInit {
 
   async createGuest(createGuestDto: CreateGuestDto, userId: string) {
     try {
-      return await this.eventService.createGuest({...createGuestDto, userId}).toPromise();
+      return await this.eventService.createGuest({ ...createGuestDto, userId }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }

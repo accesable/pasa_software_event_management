@@ -77,6 +77,14 @@ export class TicketServiceService {
         }
     }
 
+    async getParticipantByEventAndUser(request: { eventId: string, userId: string }) {
+        try {
+            return await this.ticketService.getParticipantByEventAndUser(request).toPromise();
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get participant by event and user');
+        }
+    }
+
     async checkEvent(event: any) {
         try {
             if (event.status === 'CANCELED') {

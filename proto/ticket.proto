@@ -15,6 +15,7 @@ service TicketServiceProto{
     rpc GetUserParticipationByEventId(GetParticipantByEventIdRequest) returns (GetUserParticipationByEventIdResponse);
     rpc GetTicketByParticipantId(TicketByParticipantIdRequest) returns (TicketResponse);
     rpc GetParticipantIdByUserIdEventId(GetParticipantIdByUserIdEventIdRequest) returns (GetParticipantIdByUserIdEventIdResponse);
+    rpc GetParticipantByEventAndUser(GetParticipantIdByUserIdEventIdRequest) returns (ParticipationResponse);
 }
 
 message Empty{}

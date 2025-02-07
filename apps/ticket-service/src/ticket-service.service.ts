@@ -275,6 +275,25 @@ export class TicketServiceService implements OnModuleInit {
     }
   }
 
+  async getParticipantByEventAndUser(request: { eventId: string, userId: string }) {
+    try {
+      const participant = await this.participantModel.findOne({ eventId: request.eventId, userId: request.userId });
+      if (!participant) {
+        throw new RpcException({
+          message: 'Participant not found',
+          code: HttpStatus.NOT_FOUND,
+        });
+      }
+      const ticket = await this.ticketModel.findOne({ participantId: participant._id });
+      return { 
+        participation: this.transformParticipant(participant),
+        ticket: this.transformTicket(ticket),
+       };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get participant by event and user');
+    }
+  }
+
   async getParticipantById(id: string): Promise<Participant> {
     try {
       const participant = await this.participantModel.findById(id);

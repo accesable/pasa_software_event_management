@@ -8,6 +8,10 @@ import { TicketServiceProtoControllerMethods, TicketServiceProtoController, GetP
 @TicketServiceProtoControllerMethods()
 export class TicketServiceController implements TicketServiceProtoController {
   constructor(private readonly ticketServiceService: TicketServiceService) {}
+
+  getParticipantByEventAndUser(request: GetParticipantIdByUserIdEventIdRequest) {
+    return this.ticketServiceService.getParticipantByEventAndUser(request);
+  }
   getParticipantIdByUserIdEventId(request: GetParticipantIdByUserIdEventIdRequest) { // New controller function
     return this.ticketServiceService.getParticipantIdByUserIdEventId(request);
   }

@@ -163,6 +163,8 @@ export interface TicketServiceProtoClient {
   getParticipantIdByUserIdEventId(
     request: GetParticipantIdByUserIdEventIdRequest,
   ): Observable<GetParticipantIdByUserIdEventIdResponse>;
+
+  getParticipantByEventAndUser(request: GetParticipantIdByUserIdEventIdRequest): Observable<ParticipationResponse>;
 }
 
 export interface TicketServiceProtoController {
@@ -214,6 +216,10 @@ export interface TicketServiceProtoController {
     | Promise<GetParticipantIdByUserIdEventIdResponse>
     | Observable<GetParticipantIdByUserIdEventIdResponse>
     | GetParticipantIdByUserIdEventIdResponse;
+
+  getParticipantByEventAndUser(
+    request: GetParticipantIdByUserIdEventIdRequest,
+  ): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse;
 }
 
 export function TicketServiceProtoControllerMethods() {
@@ -230,6 +236,7 @@ export function TicketServiceProtoControllerMethods() {
       "getUserParticipationByEventId",
       "getTicketByParticipantId",
       "getParticipantIdByUserIdEventId",
+      "getParticipantByEventAndUser",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
