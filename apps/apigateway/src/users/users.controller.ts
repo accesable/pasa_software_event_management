@@ -11,11 +11,13 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ChangePasswordDto } from '../users/dto/change-password';
 import { FileServiceService } from '../file-service/file-service.service';
 import { DecodeAccessResponse, UpdateAvatarRequest, UserResponse } from '../../../../libs/common/src';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
+    private readonly configService: ConfigService,
   ) { }
 
   @Post('register')
@@ -90,7 +92,9 @@ export class UsersController {
   @ResponseMessage('Login with google success')
   async googleCallback(@Req() req, @Res({ passthrough: true }) response: Response) {
     const user = req.user;
-    return this.usersService.handleGoogleAuth(user, response);
+    const tokenData = this.usersService.handleGoogleAuth(user, response);
+    const frontendUrl = `${this.configService.get<string>('FE_BASE_URL')}/dashboards/default?accessToken=${(await tokenData).accessToken}`;
+    return response.redirect(frontendUrl);
   }
 }
 
@@ -141,7 +145,7 @@ export class GeneralUsersController {
         oldAvatarId: publicId,
         previousAvatarId: user.oldAvatarId,
       };
-      
+
       return this.usersService.updateAvatar(updateAvatarRequest);
     } catch (error) {
       console.error('Failed to upload avatar:', error);
