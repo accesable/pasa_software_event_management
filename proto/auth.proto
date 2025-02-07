@@ -5,7 +5,7 @@ package auth;
 service UsersService{
     rpc GetAllUser(QueryParamsRequest) returns (AllUserResponse);
     rpc FindById(FindByIdRequest) returns (DecodeAccessResponse);
-    rpc findByEmailWithoutPassword(EmailRequest) returns (ProfileRespone);
+    rpc findByEmailWithoutPassword(EmailRequest) returns (Forgot);
     rpc Login(LoginRequest) returns (GeneralResponse);
     rpc Register(RegisterRequest) returns (RegisterResponse);
     rpc AccessToken(AccessTokenRequest) returns (GeneralResponse);
@@ -22,6 +22,11 @@ message Empty{}
 
 message findUsersByIdsRequest{
     repeated string ids = 1;
+}
+
+message Forgot{
+    string newPassword = 1;
+    UserResponse user = 2;
 }
 
 message findUsersByIdsResponse{

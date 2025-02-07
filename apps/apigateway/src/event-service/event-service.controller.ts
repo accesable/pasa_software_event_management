@@ -30,6 +30,7 @@ export class EventServiceController {
     @Body('users') users: { email: string, id: string }[],
     @User() user: DecodeAccessResponse,
   ) {
+    console.log('users', users);
     if (!users || users.length === 0) {
       throw new BadRequestException('No users provided');
     }

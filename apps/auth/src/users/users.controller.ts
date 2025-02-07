@@ -1,7 +1,7 @@
 import { Controller, Body } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Observable } from 'rxjs';
-import { UsersServiceControllerMethods, UsersServiceController, GoogleAuthRequest, GeneralResponse, LogoutRequest, ChangePasswordRequest, EmailRequest, FindByIdRequest, findUsersByIdsRequest, LoginRequest, QueryParamsRequest, RegisterRequest, ResetPassRequest, UpdateAvatarRequest, UpdateProfileRequest } from '../../../../libs/common/src';
+import { UsersServiceControllerMethods, UsersServiceController, GoogleAuthRequest, GeneralResponse, LogoutRequest, ChangePasswordRequest, EmailRequest, FindByIdRequest, findUsersByIdsRequest, LoginRequest, QueryParamsRequest, RegisterRequest, ResetPassRequest, UpdateAvatarRequest, UpdateProfileRequest, Forgot } from '../../../../libs/common/src';
 
 @Controller()
 @UsersServiceControllerMethods()
@@ -16,7 +16,7 @@ export class UsersController implements UsersServiceController {
     return this.usersService.resetPassword(request.id, request.password);
   }
 
-  findByEmailWithoutPassword(request: EmailRequest) {
+  findByEmailWithoutPassword(request: EmailRequest): Promise<Forgot> {
     return this.usersService.findByEmailWithoutPassword(request.email);
   }
 

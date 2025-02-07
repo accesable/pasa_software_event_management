@@ -17,6 +17,11 @@ export interface findUsersByIdsRequest {
   ids: string[];
 }
 
+export interface Forgot {
+  newPassword: string;
+  user: UserResponse | undefined;
+}
+
 export interface findUsersByIdsResponse {
   users: UserForParticipant[];
 }
@@ -161,7 +166,7 @@ export interface UsersServiceClient {
 
   findById(request: FindByIdRequest): Observable<DecodeAccessResponse>;
 
-  findByEmailWithoutPassword(request: EmailRequest): Observable<ProfileRespone>;
+  findByEmailWithoutPassword(request: EmailRequest): Observable<Forgot>;
 
   login(request: LoginRequest): Observable<GeneralResponse>;
 
@@ -191,9 +196,7 @@ export interface UsersServiceController {
     request: FindByIdRequest,
   ): Promise<DecodeAccessResponse> | Observable<DecodeAccessResponse> | DecodeAccessResponse;
 
-  findByEmailWithoutPassword(
-    request: EmailRequest,
-  ): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
+  findByEmailWithoutPassword(request: EmailRequest): Promise<Forgot> | Observable<Forgot> | Forgot;
 
   login(request: LoginRequest): Promise<GeneralResponse> | Observable<GeneralResponse> | GeneralResponse;
 

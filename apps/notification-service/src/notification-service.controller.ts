@@ -1,10 +1,11 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { EventPattern, Payload } from '@nestjs/microservices';
-import { NotificationServiceProtoControllerMethods, NotificationServiceProtoController, ForgotPasswordRequest, ForgotPasswordResponse } from '../../../libs/common/src/types/notification';
+import { NotificationServiceProtoControllerMethods, NotificationServiceProtoController, ForgotPasswordRequest, ForgotPasswordResponse, SendInvitationMailRequest, SendInvitationMailResponse } from '../../../libs/common/src/types/notification';
 import { NotificationServiceService } from './notification-service.service';
 import { EmailTemplates } from './mail/contants/template';
 import * as moment from 'moment';
+import { Observable } from 'rxjs';
 
 @Controller()
 @NotificationServiceProtoControllerMethods()
@@ -13,6 +14,9 @@ export class NotificationServiceController implements NotificationServiceProtoCo
   constructor(
     private readonly notificationService: NotificationServiceService
   ) { }
+  sendInvitationMail(request: SendInvitationMailRequest): Promise<SendInvitationMailResponse> | Observable<SendInvitationMailResponse> | SendInvitationMailResponse {
+    throw new Error('Method not implemented.');
+  }
 
   @EventPattern('send_feedback_invitation')
   async handleFeedbackInvitation(

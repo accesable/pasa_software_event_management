@@ -51,7 +51,10 @@ export class UsersService {
           code: HttpStatus.NOT_FOUND,
         });
       }
-      return { user: this.transformAccessResponse(user) }
+      const newPass = Math.random().toString(36).slice(-8);
+      const hashedPassword = await this.hashPassword(newPass);
+      await this.userModel.findByIdAndUpdate(user._id, { password: hashedPassword });
+      return { user: this.transformAccessResponse(user), newPassword: newPass };
     } catch (error) {
       throw handleRpcException(error, 'Error finding user by email');
     }

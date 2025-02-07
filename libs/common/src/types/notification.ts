@@ -10,10 +10,25 @@ import { Observable } from "rxjs";
 
 export const protobufPackage = "notification";
 
+export interface SendInvitationMailRequest {
+  id: string;
+  email: string;
+  name: string;
+  token: string;
+}
+
+export interface SendInvitationMailResponse {
+  status: string;
+  message: string;
+  token?: string | undefined;
+  tokenData?: TokenData | undefined;
+}
+
 export interface ForgotPasswordRequest {
   id: string;
   email: string;
   name: string;
+  newPassword: string;
 }
 
 export interface ForgotPasswordResponse {
@@ -34,17 +49,27 @@ export const NOTIFICATION_PACKAGE_NAME = "notification";
 
 export interface NotificationServiceProtoClient {
   forgotPassword(request: ForgotPasswordRequest): Observable<ForgotPasswordResponse>;
+
+  /** rpc WelcomeEmail(WelcomeEmailRequest) returns (WelcomeEmailResponse); */
+
+  sendInvitationMail(request: SendInvitationMailRequest): Observable<SendInvitationMailResponse>;
 }
 
 export interface NotificationServiceProtoController {
   forgotPassword(
     request: ForgotPasswordRequest,
   ): Promise<ForgotPasswordResponse> | Observable<ForgotPasswordResponse> | ForgotPasswordResponse;
+
+  /** rpc WelcomeEmail(WelcomeEmailRequest) returns (WelcomeEmailResponse); */
+
+  sendInvitationMail(
+    request: SendInvitationMailRequest,
+  ): Promise<SendInvitationMailResponse> | Observable<SendInvitationMailResponse> | SendInvitationMailResponse;
 }
 
 export function NotificationServiceProtoControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ["forgotPassword"];
+    const grpcMethods: string[] = ["forgotPassword", "sendInvitationMail"];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
       GrpcMethod("NotificationServiceProto", method)(constructor.prototype[method], method, descriptor);

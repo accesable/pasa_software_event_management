@@ -22,16 +22,14 @@ async function bootstrap() {
     transform: true, // Tự động chuyển đổi kiểu dữ liệu
   }));
   app.useGlobalInterceptors(new RpcExceptionInterceptor());
-  app.enableCors(
-    {
-      "origin": "http://localhost:5173",
-      "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-      "preflightContinue": false,
-      "optionsSuccessStatus": 204,
-      allowedHeaders: 'Content-Type, Accept, Authorization',
-      credentials: true,
-    }
-  );
+  app.enableCors({
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    allowedHeaders: "Content-Type, Accept, Authorization",
+    credentials: false, // Tắt credentials
+  });
   await app.listen(PORT);
   console.log(`Application is running on: ${await app.getUrl()}/api/v1`);
 }

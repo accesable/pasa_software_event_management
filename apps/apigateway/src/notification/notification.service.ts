@@ -15,9 +15,9 @@ export class NotificationService implements OnModuleInit {
         this.notificationService = this.client.getService<NotificationServiceProtoClient>(NOTIFICATION_SERVICE_PROTO_SERVICE_NAME);
     }
 
-    async sendMailForForgotPassword(email: string, id: string, name: string) {
+    async sendMailForForgotPassword(email: string, id: string, name: string, newPassword: string) {
         try {
-            return this.notificationService.forgotPassword({email, id, name}).toPromise();
+            return this.notificationService.forgotPassword({email, id, name, newPassword}).toPromise();
         } catch (error) {
             throw new RpcException(error);
         }

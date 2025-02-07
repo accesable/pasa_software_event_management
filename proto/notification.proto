@@ -26,6 +26,7 @@ message ForgotPasswordRequest{
     string id = 1;
     string email = 2;
     string name = 3;
+    string newPassword = 4;
 }
 
 message ForgotPasswordResponse{
