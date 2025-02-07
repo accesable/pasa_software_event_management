@@ -38,9 +38,9 @@ import {
   CreateEventPage,
   DetailEventPage,
   MyEventDashboardPage,
-  DetailMyEventPage,
-  UserDashboardPage
+  UserDashboardPage,
 } from '../pages';
+import DetailMyEventPage from '../pages/details/MyEventPage'; 
 import {
   CorporateLayout,
   DashboardLayout,
@@ -57,7 +57,7 @@ import EditEventPage from '../pages/edit/EditEventPage.tsx';
 import ParticipatedEventsPage from '../pages/dashboards/ParticipatedEvents.tsx';
 import SpeakerManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
 import SpeakerGuestManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
-import GoogleCallbackPage from '../pages/authentication/GoogleCallbackPage.tsx';
+import GoogleAppwriteCallbackPage from '../pages/authentication/GoogleAppwriteCallbackPage.tsx';
 
 // Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
@@ -128,6 +128,7 @@ const router = createBrowserRouter([
         path: 'my-events/:id',
         element: <DetailMyEventPage />,
       },
+      
     ],
   },
   {
@@ -172,7 +173,7 @@ const router = createBrowserRouter([
         path: 'my-events',
         element: <MyEventDashboardPage />,
       },
-      {
+       {
         path: 'users',
         element: <UserDashboardPage />,
       },
@@ -271,12 +272,11 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       {
-        path: 'google/callback', // Route cho Google callback
-        element: <GoogleCallbackPage
-          clientId="YOUR_GOOGLE_CLIENT_ID" // **Thay bằng Client ID của bạn**
+        path: 'google/callback', // Route cho Google callback Appwrite
+        element: <GoogleAppwriteCallbackPage
+          projectId='123456789abc' // **Project ID Appwrite**
+          endpoint='https://cloud.appwrite.io/v1' // **Endpoint Appwrite Cloud**
           redirectUri="http://localhost:5173/auth/google/callback" // **Callback URI của frontend**
-          scope="email profile openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
-          backendTokenEndpoint="/api/v1/auth/google/token" // **Endpoint backend proxy (nếu dùng proxy)**
           onLoginSuccess={() => { /* Xử lý login thành công ở đây nếu cần */ }}
           onLoginFailure={() => { /* Xử lý login thất bại ở đây nếu cần */ }}
         />,
@@ -320,42 +320,42 @@ const router = createBrowserRouter([
   },
   {
     path: 'errors',
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        path: '400',
-        element: <Error400Page />,
-      },
-      {
-        path: '403',
-        element: <Error403Page />,
-      },
-      {
-        path: '404',
-        element: <Error404Page />,
-      },
-      {
-        path: '500',
-        element: <Error500Page />,
-      },
-      {
-        path: '503',
-        element: <Error503Page />,
-      },
-    ],
-  },
-  {
-    path: '/about',
-    element: <PageWrapper children={<DashboardLayout />} />,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        index: true,
-        path: '',
-        element: <AboutPage />,
-      },
-    ],
-  },
+        errorElement: <ErrorPage />,
+        children: [
+            {
+                path: '400',
+                element: <Error400Page />,
+            },
+            {
+                path: '403',
+                element: <Error403Page />,
+            },
+            {
+                path: '404',
+                element: <Error404Page />,
+            },
+            {
+                path: '500',
+                element: <Error500Page />,
+            },
+            {
+                path: '503',
+                element: <Error503Page />,
+            },
+        ],
+    },
+    {
+        path: '/about',
+        element: <PageWrapper children={<DashboardLayout />} />,
+        errorElement: <ErrorPage />,
+        children: [
+            {
+                index: true,
+                path: '',
+                element: <AboutPage />,
+            },
+        ],
+    },
 ]);
 
 export default router;

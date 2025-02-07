@@ -148,4 +148,14 @@ export interface Participation { // Example Participation interface - adjust bas
   // ... other participation properties ...
 }
 
-// ... other types ...
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar: string;
+  phoneNumber?: string;
+  lastLoginAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // ... các trường khác nếu có ...
+}

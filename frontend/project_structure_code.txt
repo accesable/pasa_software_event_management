@@ -474,6 +474,61 @@ axiosInstance.interceptors.response.use(
 
 export default axiosInstance;
 
+src\components\GoogleLoginButton.tsx:
+// src\components\GoogleLoginButton.tsx
+import React from 'react';
+import { Button } from 'antd';
+import { GoogleOutlined } from '@ant-design/icons';
+import { Account, Client, ID, OAuthProvider } from 'appwrite';
+
+interface GoogleLoginButtonProps {
+    redirectUri: string;
+    clientId: string;
+    scope: string;
+    onLoginSuccess: (accessToken: string, user: any) => void;
+    onLoginFailure: (error: string) => void;
+    projectId: string; // **ĐẢM BẢO PROP NÀY CÓ TỒN TẠI**
+    endpoint: string;  // **ĐẢM BẢO PROP NÀY CÓ TỒN TẠI**
+}
+
+const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
+    clientId,
+    redirectUri,
+    scope,
+    onLoginSuccess,
+    onLoginFailure,
+    projectId, // **ĐẢM BẢO PROP NÀY ĐƯỢC SỬ DỤNG**
+    endpoint, // **ĐẢM BẢO PROP NÀY ĐƯỢC SỬ DỤNG**
+}) => {
+    const handleGoogleLogin = async () => {
+        try {
+            const client = new Client()
+                .setEndpoint(endpoint) // Sử dụng prop endpoint
+                .setProject(projectId); // Sử dụng prop projectId
+
+            const account = new Account(client);
+
+            await account.createOAuth2Session(
+                'google' as OAuthProvider,
+                redirectUri,
+                scope
+            );
+
+        } catch (error: any) {
+            console.error("Error during Google login initiation:", error);
+            onLoginFailure(error.message || 'Failed to initiate Google login');
+        }
+    };
+
+    return (
+        <Button icon={<GoogleOutlined />} onClick={handleGoogleLogin}>
+            Sign in with Google (Appwrite)
+        </Button>
+    );
+};
+
+export default GoogleLoginButton;
+
 src\components\index.ts:
 export { BackBtn } from './BackBtn/BackBtn.tsx';
 export { BlogsListCard } from './corporate/BlogsListCard/BlogsListCard';
@@ -498,6 +553,249 @@ export * from './Nprogress';
 export * from './dashboard';
 export * from './Container';
 
+
+src\components\InviteUsersModal.tsx:
+// src\components\InviteUsersModal.tsx
+import React, { useState, useEffect } from 'react';
+import { Modal, Button, List, Checkbox, Avatar, message, Spin, Alert } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
+import axiosInstance from '../api/axiosInstance';
+
+interface User {
+    id: string;
+    email: string;
+    name: string;
+    avatar?: string;
+}
+
+interface InviteUsersModalProps {
+    visible: boolean;
+    onCancel: () => void;
+    eventId: string;
+    onInvitationsSent: () => void; // Callback khi gửi lời mời thành công
+}
+
+const InviteUsersModal: React.FC<InviteUsersModalProps> = ({ visible, onCancel, eventId, onInvitationsSent }) => {
+    const [users, setUsers] = useState<User[]>([]);
+    const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+    const [inviting, setInviting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            setLoadingUsers(true);
+            setError(null);
+            try {
+                const response = await axiosInstance.get('/users');
+                const data = response.data as { statusCode: number; data: { users: User[] } };
+                if (data.statusCode === 200) {
+                    setUsers(data.data.users);
+                } else {
+                    setError('Failed to load users.');
+                    message.error('Failed to load users.');
+                }
+            } catch (error: any) {
+                setError(error.message || 'Failed to load users.');
+                message.error(error.message || 'Failed to load users.');
+            } finally {
+                setLoadingUsers(false);
+            }
+        };
+
+        if (visible) {
+            fetchUsers();
+            setSelectedUserIds([]); // Reset selected users khi modal mở
+        }
+    }, [visible]);
+
+    const handleCheckboxChange = (userId: string, checked: boolean) => {
+        if (checked) {
+            setSelectedUserIds([...selectedUserIds, userId]);
+        } else {
+            setSelectedUserIds(selectedUserIds.filter(id => id !== userId));
+        }
+    };
+
+    const handleInviteUsers = async () => {
+        if (selectedUserIds.length === 0) {
+            message.warning('Please select users to invite.');
+            return;
+        }
+
+        setInviting(true);
+        setError(null);
+        try {
+            const usersToInvite = selectedUserIds.map(id => {
+                const user = users.find(u => u.id === id);
+                return { id: user?.id, email: user?.email };
+            });
+
+            const response = await axiosInstance.post(`/events/${eventId}/invite`, { users: usersToInvite });
+            const responseData = response.data as { statusCode: number; message: string };
+            if (responseData.statusCode === 201) {
+                message.success((response.data as { message: string }).message);
+                onInvitationsSent(); // Gọi callback thông báo gửi lời mời thành công
+                onCancel(); // Đóng modal sau khi gửi lời mời thành công
+            } else {
+                const responseData = response.data as { message: string };
+                setError(responseData.message || 'Failed to send invitations.');
+            }
+        } catch (error: any) {
+            setError(error.message || 'Failed to send invitations.');
+            message.error(error.message || 'Failed to send invitations.');
+        } finally {
+            setInviting(false);
+        }
+    };
+
+    return (
+        <Modal
+            title="Invite Users"
+            visible={visible}
+            onCancel={onCancel}
+            footer={[
+                <Button key="cancel" onClick={onCancel}>
+                    Cancel
+                </Button>,
+                <Button key="invite" type="primary" onClick={handleInviteUsers} loading={inviting}>
+                    Invite
+                </Button>,
+            ]}
+        >
+            {error && <Alert message="Error" description={error} type="error" showIcon style={{ marginBottom: 16 }} />}
+            {loadingUsers ? (
+                <div style={{ textAlign: 'center' }}>
+                    <Spin tip="Loading Users..." />
+                </div>
+            ) : (
+                <List
+                    dataSource={users}
+                    renderItem={(user) => (
+                        <List.Item>
+                            <List.Item.Meta
+                                avatar={<Avatar icon={<UserOutlined />} src={user.avatar} />}
+                                title={user.name}
+                                description={user.email}
+                            />
+                            <Checkbox
+                                value={user.id}
+                                onChange={(e) => handleCheckboxChange(user.id, e.target.checked)}
+                            />
+                        </List.Item>
+                    )}
+                />
+            )}
+        </Modal>
+    );
+};
+
+export default InviteUsersModal;
+
+src\components\oauth2-pkce.ts:
+// src\components\oauth2-pkce.ts
+import * as CryptoJS from 'crypto-js';
+
+export function generateCodeVerifier(): string {
+  const randomBytes = CryptoJS.lib.WordArray.random(32);
+  return CryptoJS.enc.Base64url.stringify(randomBytes);
+}
+
+export async function generateCodeChallenge(codeVerifier: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier));
+  return base64urlencode(digest);
+}
+
+function base64urlencode(arrayBuffer: ArrayBuffer): string {
+  let base64String = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+  return base64String.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+src\components\TicketDetailsModal.tsx:
+// src\components\TicketDetailsModal.tsx
+import React from 'react';
+import { Modal, Typography, Flex, Checkbox, List, Button, Space } from 'antd';
+import QRCode from 'qrcode.react';
+import { TicketType } from '../types'; // Assuming you have this interface defined
+import dayjs from 'dayjs';
+import { CheckboxValueType } from 'antd/es/checkbox/Group';
+
+interface TicketDetailsModalProps {
+    ticket: TicketType | null;
+    visible: boolean;
+    onCancel: () => void;
+    onSessionsChange: (sessionIds: string[]) => void;
+    eventSchedule: any[];
+}
+
+const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({ ticket, visible, onCancel, onSessionsChange, eventSchedule }) => {
+    const [selectedSessionIds, setSelectedSessionIds] = React.useState<string[]>([]);
+
+    React.useEffect(() => {
+        if (ticket?.participantId) {
+            // Initialize selectedSessionIds based on the ticket or participant's current sessions if available
+            // For this example, we'll start with an empty selection
+            setSelectedSessionIds([]);
+        }
+    }, [ticket]);
+
+
+    const handleSessionCheckboxChange = (checkedValues: CheckboxValueType[]) => {
+        // Convert CheckboxValueType[] to string[] before setting state
+        setSelectedSessionIds(checkedValues.map(value => String(value)));
+    };
+
+    const handleUpdateSessions = () => {
+        onSessionsChange(selectedSessionIds);
+        onCancel();
+    };
+
+    if (!ticket) return null;
+
+    return (
+        <Modal
+            title="Your Event Ticket"
+            visible={visible}
+            onCancel={onCancel}
+            footer={[
+                <Button key="back" onClick={onCancel}>
+                    Close
+                </Button>,
+                <Button key="submit" type="primary" onClick={handleUpdateSessions}>
+                    Update Sessions
+                </Button>,
+            ]}
+        >
+            <Flex vertical gap="middle">
+                <Typography.Title level={4}>{ticket.id ? `Ticket ID: ${ticket.id}` : 'Ticket Information'}</Typography.Title>
+                <Typography.Text>Participant ID: {ticket.participantId}</Typography.Text>
+                <Typography.Text>Status: {ticket.status}</Typography.Text>
+                {ticket.usedAt && <Typography.Text>Used At: {dayjs(ticket.usedAt).format('YYYY-MM-DD HH:mm:ss')}</Typography.Text>}
+
+                <Typography.Title level={5}>QR Code</Typography.Title>
+                <Flex justify="center"> {/* Center the QR code */}
+                    {ticket.qrCodeUrl && (
+                        <QRCode value={ticket.qrCodeUrl} size={200} level="H" />
+                    )}
+                </Flex>
+
+
+                <Typography.Title level={5} style={{ marginTop: 20 }}>Update Sessions</Typography.Title>
+                {eventSchedule && eventSchedule.length > 0 ? (
+                    <Checkbox.Group
+                        options={eventSchedule.map(session => ({ label: session.title, value: session.id }))}
+                        onChange={handleSessionCheckboxChange}
+                        value={selectedSessionIds}
+                    />
+                ) : (
+                    <Typography.Text>No sessions available for this event.</Typography.Text>
+                )}
+            </Flex>
+        </Modal>
+    );
+};
+
+export default TicketDetailsModal;
 
 src\components\BackBtn\BackBtn.tsx:
 import { useNavigate } from 'react-router-dom';
@@ -2770,7 +3068,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       render: (eventId: string, record: Events) => {
         return (
           <Space size="small">
-            <Button type="primary" onClick={() => navigate(`/details/events/${record.id}`)}> {/* Đã sửa URL navigate */}
+            <Button type="primary" onClick={() => navigate(`/details/my-events/${record.id}`)}> {/* Đã sửa URL navigate */}
               Details
             </Button>
             {activeTabKey !== 'CANCELED' && activeTabKey !== 'FINISHED' && (
@@ -9918,6 +10216,184 @@ src\pages\authentication\ChangePassword.tsx:
 src\pages\authentication\ForgotPassword.tsx:
 
 
+src\pages\authentication\GoogleAppwriteCallbackPage.tsx:
+// src\pages\authentication\GoogleAppwriteCallbackPage.tsx
+import React, { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { message, Spin } from 'antd';
+import { Account, Client, OAuthProvider } from 'appwrite';
+import { setUser } from '../../redux/userSlice';
+import { useDispatch } from 'react-redux';
+
+interface GoogleAppwriteCallbackPageProps {
+    redirectUri: string;
+    onLoginSuccess: (user: any) => void;
+    onLoginFailure: (error: string) => void;
+    projectId: string;
+    endpoint: string;
+}
+
+const GoogleAppwriteCallbackPage: React.FC<GoogleAppwriteCallbackPageProps> = ({
+    redirectUri,
+    onLoginSuccess,
+    onLoginFailure,
+}) => {
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        const code = searchParams.get('code');
+        if (code) {
+            createAppwriteSession(code);
+        } else {
+            const error = searchParams.get('error');
+            if (error) {
+                console.error("Google OAuth error:", error);
+                message.error(`Google login error: ${error}`);
+                onLoginFailure?.(error);
+                navigate('/auth/signin');
+            }
+        }
+    }, [searchParams, navigate, onLoginFailure, onLoginSuccess, redirectUri]);
+
+    const createAppwriteSession = async (code: string) => {
+        try {
+            const client = new Client()
+                .setEndpoint('https://cloud.appwrite.io/v1')
+                .setProject('123456789abc');
+
+            const account = new Account(client);
+
+            await account.createOAuth2Session(
+                'google' as OAuthProvider,
+                redirectUri,
+                undefined,
+                [code]
+            );
+
+            const user = await account.get();
+
+            dispatch(setUser({
+                id: user.$id,
+                email: user.email,
+                name: user.name,
+                avatar: `https://gravatar.com/avatar/${user.prefs.avatar}?d=robohash&r=g&s=100`,
+            }));
+
+            localStorage.setItem('user', JSON.stringify({
+                id: user.$id,
+                email: user.email,
+                name: user.name,
+                avatar: `https://gravatar.com/avatar/${user.prefs.avatar}?d=robohash&r=g&s=100`,
+            }));
+
+            message.success('Google login successful!');
+            onLoginSuccess?.(user);
+            navigate('/dashboards/default');
+        } catch (error: any) {
+            console.error("Error creating Appwrite session from Google code:", error);
+            message.error('Google login failed. Please try again.');
+            onLoginFailure?.(error.message || 'Failed to create Appwrite session');
+            navigate('/auth/signin');
+        }
+    };
+
+    return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <Spin size="large" tip="Đang xử lý đăng nhập Google..." />
+        </div>
+    );
+};
+
+export default GoogleAppwriteCallbackPage;
+
+src\pages\authentication\GoogleCallbackPage.tsx:
+// src\pages\authentication\GoogleCallbackPage.tsx
+import React, { useEffect, useCallback } from 'react'; // Import useCallback
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { message, Spin } from 'antd';
+import axios from 'axios';
+import { setUser } from '../../redux/userSlice';
+import { useDispatch } from 'react-redux';
+
+interface GoogleCallbackPageProps {
+    clientId: string;
+    redirectUri: string;
+    scope: string;
+    backendTokenEndpoint: string;
+    onLoginSuccess: (accessToken: string, user: any) => void;
+    onLoginFailure: (error: string) => void;
+}
+
+const GoogleCallbackPage: React.FC<GoogleCallbackPageProps> = ({
+    clientId,
+    redirectUri,
+    scope,
+    backendTokenEndpoint,
+    onLoginSuccess,
+    onLoginFailure,
+}) => {
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+
+    // **Định nghĩa exchangeCodeForToken trước useEffect**
+    const exchangeCodeForToken = useCallback(async (code: string) => { // Thêm useCallback
+        try {
+            const codeVerifier = localStorage.getItem('google_code_verifier');
+            if (!codeVerifier) {
+                throw new Error("Code verifier not found in localStorage");
+            }
+            localStorage.removeItem('google_code_verifier');
+
+            const tokenResponse = await axios.post(backendTokenEndpoint, {
+                code,
+                clientId,
+                redirectUri,
+                codeVerifier,
+                grantType: 'authorization_code',
+            });
+
+            const { accessToken, user } = tokenResponse.data as { accessToken: string, user: any };
+
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('user', JSON.stringify(user));
+            dispatch(setUser(user));
+            onLoginSuccess(accessToken, user);
+            message.success('Google login successful!');
+            navigate('/dashboards/default');
+        } catch (error: any) {
+            console.error("Error exchanging code for token:", error);
+            onLoginFailure(error.message || 'Failed to exchange code for token');
+            message.error('Google login failed. Please try again.');
+            navigate('/auth/signin');
+        }
+    }, [backendTokenEndpoint, clientId, dispatch, navigate, onLoginFailure, onLoginSuccess, redirectUri]); // Thêm dependencies cho useCallback
+
+    useEffect(() => {
+        const code = searchParams.get('code');
+        if (code) {
+            exchangeCodeForToken(code);
+        } else {
+            const error = searchParams.get('error');
+            if (error) {
+                onLoginFailure(`Google login error: ${error}`);
+                message.error(`Google login error: ${error}`);
+                navigate('/auth/signin');
+            }
+        }
+    }, [searchParams, navigate, exchangeCodeForToken, onLoginFailure]); // Giữ exchangeCodeForToken trong dependencies
+
+    return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <Spin size="large" tip="Đang xử lý đăng nhập Google..." />
+        </div>
+    );
+};
+
+export default GoogleCallbackPage;
+
 src\pages\authentication\index.ts:
 // src/pages/authentication/index.ts
 export { SignUpPage } from './SignUp';
@@ -10057,7 +10533,7 @@ src\pages\authentication\ResetPassword.tsx:
 
 
 src\pages\authentication\SignIn.tsx:
-// src\pages\authentication\SignIn.tsx
+// src\pages\authentication\SignInPage.tsx
 import React, { useState } from 'react';
 import {
   Button,
@@ -10072,18 +10548,17 @@ import {
   Typography,
 } from 'antd';
 import {
-  FacebookFilled,
-  GoogleOutlined,
-  TwitterOutlined,
-} from '@ant-design/icons';
-import { useMediaQuery } from 'react-responsive';
-import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
-import { useNavigate } from 'react-router-dom';
+  Link,
+  useNavigate,
+} from 'react-router-dom';
 import authService from '../../services/authService';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../../redux/userSlice';
+import GoogleLoginButton from '../../components/GoogleLoginButton';
+import { PATH_AUTH } from '../../constants';
+import { useMediaQuery } from 'react-responsive';
 
-const { Title, Text, Link } = Typography;
+const { Title, Text } = Typography;
 
 type FieldType = {
   email?: string;
@@ -10119,7 +10594,7 @@ export const SignInPage = () => {
         useDispatchHook(setUser(response.data.user));
 
         setTimeout(() => {
-          navigate(PATH_DASHBOARD.default);
+          navigate('/dashboards/default');
         }, 1000);
       } else {
         message.error(response.message || 'Login failed');
@@ -10136,14 +10611,6 @@ export const SignInPage = () => {
     console.log('Failed:', errorInfo);
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      await authService.googleLogin(); // Gọi hàm googleLogin đã được sửa đổi
-      // **Không cần navigate hoặc xử lý token ở đây.** Backend sẽ lo chuyển hướng frontend sau khi đăng nhập Google thành công.
-    } catch (error: any) {
-      message.error(error.message || 'Google login failed');
-    }
-  };
 
   return (
     <Row style={{ minHeight: isMobile ? 'auto' : '100vh', overflow: 'hidden' }}>
@@ -10174,7 +10641,7 @@ export const SignInPage = () => {
           <Title className="m-0">Login</Title>
           <Flex gap={4}>
             <Text>Don't have an account?</Text>
-            <Link href={PATH_AUTH.signup}>Create an account here</Link>
+            <Link to={PATH_AUTH.signup}>Create an account here</Link>
           </Flex>
           <Form
             name="sign-in-form"
@@ -10221,7 +10688,7 @@ export const SignInPage = () => {
                 >
                   Continue
                 </Button>
-                <Link href={PATH_AUTH.passwordReset}>Forgot password?</Link>
+                <Link to={PATH_AUTH.passwordReset}>Forgot password?</Link>
               </Flex>
             </Form.Item>
           </Form>
@@ -10232,13 +10699,15 @@ export const SignInPage = () => {
             wrap="wrap"
             style={{ width: '100%' }}
           >
-            <Button
-              icon={<GoogleOutlined />}
-              loading={loading}
-              onClick={() => handleGoogleLogin} // Gọi hàm login từ useGoogleLogin
-            >
-              Sign in with Google
-            </Button>
+            <GoogleLoginButton
+              projectId='123456789abc'
+              endpoint='https://cloud.appwrite.io/v1'
+              clientId="752824572639-0nbbmbqgqj28oue1bsi2ouee2923oloj.apps.googleusercontent.com"
+              redirectUri="http://localhost:5173/auth/google/callback"
+              scope="email profile openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
+              onLoginSuccess={() => { /* Optional success handler */ }}
+              onLoginFailure={() => { /* Optional failure handler */ }}
+            />
           </Flex>
         </Flex>
       </Col>
@@ -15179,16 +15648,16 @@ export const EventDetailsPage: React.FC = () => {
                 return;
             }
 
-            const response = await authService.registerEvent(eventDetails.id, selectedSessionIds, accessToken) as { statusCode: number; message: string; error?: string };
+            const response = await authService.registerEvent(eventDetails.id, selectedSessionIds, accessToken) as { statusCode: number; message: string };
             if (response && response.statusCode === 201) {
                 message.success(response.message);
                 // Optionally redirect or update UI after successful registration
             } else {
-                message.error(response?.error || 'Failed to register for event');
+                message.error(response?.message || 'Failed to register for event');
             }
         } catch (error: any) {
             console.error('Error registering for event:', error);
-            message.error(error?.error || 'Failed to register for event');
+            message.error(error.message || 'Failed to register for event');
         } finally {
             setLoading(false);
         }
@@ -15458,35 +15927,39 @@ export {DetailEventPage} from './Events'
 export {DetailMyEventPage} from './MyEvent.tsx';
 
 src\pages\details\MyEvent.tsx:
-// src\pages\details\MyEventPage.tsx
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
+    Alert,
+    Button,
+    Card,
     Col,
+    Descriptions,
     Flex,
     Image,
-    Row,
-    Typography,
-    Button,
+    List,
     message,
-    Alert
+    Row,
+    Space,
+    Table,
+    Tag,
+    Typography,
+    Checkbox,
 } from 'antd';
-import { Card, Loader } from '../../components';
-import { useStylesContext } from '../../context';
-import {
-    EventTimelineCard,
-    MyEventTimelineCard
-} from '../../components/dashboard';
+import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
+import { DASHBOARD_ITEMS } from '../../constants';
+import { PageHeader, Loader } from '../../components';
 import { useFetchData } from '../../hooks';
-import { ActivityTable } from '../../components/dashboard/events';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../redux/store';
-import { DownloadOutlined } from '@ant-design/icons';
-import authService from '../../services/authService';
-import { fetchEventDetailsStart, setEventDetails, fetchEventDetailsFailure, clearEventDetails } from '../../redux/eventDetailsSlice';
-import jsPDF from 'jspdf';
-import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import dayjs from 'dayjs';
+import authService from '../../services/authService';
+import { Events, TicketType } from '../../types';
+
+import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
+import jsPDF from 'jspdf';
+import { Helmet } from 'react-helmet-async';
+import { EventScheduleItem } from '../../types/schedule';
+import TicketDetailsModal from '../../components/TicketDetailsModal';
+import InviteUsersModal from '../../components/InviteUsersModal';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -15502,162 +15975,665 @@ export interface ParticipantData {
 
 export const DetailMyEventPage = () => {
     const { id } = useParams<{ id: string }>();
-    const stylesContext = useStylesContext();
-    const dispatch = useDispatch<any>();
-    const eventDetails = useSelector((state: RootState) => state.eventDetails.eventDetails);
-    const eventDetailsLoading = useSelector((state: RootState) => state.eventDetails.loading);
-    const eventDetailsError = useSelector((state: RootState) => state.eventDetails.error);
-
-
-    const {
-        data: timelineData,
-        loading: timelineDataLoading,
-        error: timelineDataError,
-    } = useFetchData('../../mocks/scheduleTimeline.json');
-    const {
-        data: activitiesTableData,
-        loading: activitiesTableLoading,
-        error: activitiesTableError,
-    } = useFetchData('../../mocks/PaticipatedActivities.json');
-
+    const [eventDetails, setEventDetails] = useState<Events | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
+    const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
+    const [isParticipatedEvent, setIsParticipatedEvent] = useState(true);
+    const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
+    const [ticketData, setTicketData] = useState<any | null>(null);
+    const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
 
     useEffect(() => {
-        const loadEventDetails = async () => {
-            if (!id) return;
-
-            dispatch(fetchEventDetailsStart());
+        const fetchEventDetails = async () => {
+            setLoading(true);
+            setError(null);
             try {
                 const accessToken = localStorage.getItem('accessToken');
-                const response = await authService.getEventDetails(id, accessToken || undefined) as { data: { event: any } };
-                dispatch(setEventDetails(response.data.event));
-
+                const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+                if (response && response.statusCode === 200) {
+                    setEventDetails(response.data.event);
+                    setIsParticipatedEvent(true);
+                } else {
+                    setError(response?.message || 'Failed to load event details');
+                    message.error(response?.message || 'Failed to load event details');
+                }
             } catch (error: any) {
-                dispatch(fetchEventDetailsFailure(error.message || 'Failed to load event details'));
+                console.error('Error fetching event details:', error);
+                setError(error.message || 'Failed to load event details');
                 message.error(error.message || 'Failed to load event details');
+            } finally {
+                setLoading(false);
             }
         };
 
-        loadEventDetails();
+        fetchEventDetails();
+    }, [id, navigate]);
 
-        return () => {
-            dispatch(clearEventDetails());
-        };
-
-
-    }, [id, dispatch]);
-
-
-    const [loading, setLoading] = useState(false);
-
-    const handleDownloadPdf = async () => {
-        if (!id) {
-            message.error("Event ID is missing for PDF download.");
-            return;
-        }
-
+    const handleRegisterEvent = async () => {
         setLoading(true);
         try {
             const accessToken = localStorage.getItem('accessToken');
             if (!accessToken) {
                 message.error("No access token found. Please login again.");
+                navigate('/auth/signin');
                 return;
             }
 
-            const response = await authService.getEventParticipants(id, accessToken) as { statusCode: number, data: ParticipantData[], message?: string };
-            if (response.statusCode === 200 && response.data) {
-                const participants: ParticipantData[] = response.data; // Type response data
+            if (!eventDetails?.id) {
+                message.error("Event ID is missing.");
+                return;
+            }
 
-                // Generate PDF using jsPDF
-                const pdfDoc = new jsPDF();
-                pdfDoc.text(`Participants List - Event: ${eventDetails?.name}`, 10, 10);
-
-                let yPosition = 20;
-                participants.forEach((participant, index) => {
-                    pdfDoc.text(`${index + 1}. Name: ${participant.name}, Email: ${participant.email}, Check-in: ${participant.checkInAt ? dayjs(participant.checkInAt).format('YYYY-MM-DD HH:mm:ss') : 'N/A'}, Check-out: ${participant.checkOutAt ? dayjs(participant.checkOutAt).format('YYYY-MM-DD HH:mm:ss') : 'N/A'}`, 10, yPosition);
-                    yPosition += 10; // Increase yPosition for next line
-                });
-
-                pdfDoc.save(`participants-list-event-${eventDetails?.name}.pdf`); // Trigger download
-
-                message.success("PDF Download started.");
+            const response = await authService.registerEvent(eventDetails.id, selectedSessionIds, accessToken) as { statusCode: number; message: string; error?: string };
+            if (response && response.statusCode === 201) {
+                message.success(response.message);
+                setIsParticipatedEvent(true);
             } else {
-                message.error(response.message || 'Failed to fetch participants for PDF');
+                message.error(response?.error || 'Failed to register for event');
             }
         } catch (error: any) {
-            console.error('Error fetching participants for PDF:', error);
-            message.error(error.message || 'Failed to fetch participants for PDF');
+            console.error('Error registering for event:', error);
+            message.error(error?.error || 'Failed to register for event');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDownloadPdf = async () => {
+        message.info("Download PDF function is not implemented yet for general events.");
+    };
+
+    const onSessionSelectChange = (selectedKeys: React.Key[]) => {
+        setSelectedSessionIds(selectedKeys as string[]);
+    };
+
+    const scheduleColumns = [
+        {
+            title: 'Title',
+            dataIndex: 'name',
+            key: 'name'
+        },
+        {
+            title: 'Start Time',
+            dataIndex: 'startTime',
+            key: 'startTime',
+            render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+        },
+        {
+            title: 'End Time',
+            dataIndex: 'endTime',
+            key: 'endTime',
+            render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+        },
+        {
+            title: 'Description',
+            dataIndex: 'description',
+            key: 'description'
+        },
+        {
+            title: 'Select Session',
+            key: 'select',
+            render: (_: any, record: EventScheduleItem) => (
+                <Checkbox value={record.id} />
+            ),
+        }
+    ];
+
+    const showTicketModal = async () => {
+        setIsTicketModalVisible(true);
+        setLoading(true);
+        setError(null);
+        try {
+            if (!eventDetails?.id) {
+                message.error("Missing user or event information.");
+                return;
+            }
+
+            const participantIdResponse = await authService.getParticipantIdByUserIdEventId(eventDetails.id, localStorage.getItem('accessToken') || undefined) as any;
+            const participantId = participantIdResponse.data.participantId;
+
+
+            const response = await authService.getTicketByParticipantId(participantId, localStorage.getItem('accessToken') || undefined) as { statusCode: number; data: { ticket: TicketType }; message: string };
+            if (response && response.statusCode === 200 && response.data.ticket) {
+                setTicketData(response.data.ticket);
+            } else {
+                setError(response?.message || 'Failed to load ticket details');
+                message.error(response?.message || 'Failed to load ticket details');
+                setTicketData(null);
+            }
+        } catch (error: any) {
+            console.error('Error fetching ticket details:', error);
+            setError(error.message || 'Failed to load ticket details');
+            message.error(error.message || 'Failed to load ticket details');
+            setTicketData(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const hideTicketModal = () => {
+        setIsTicketModalVisible(false);
+    };
+    const showInviteModal = () => {
+        setIsInviteModalVisible(true);
+    };
+
+    const hideInviteModal = () => {
+        setIsInviteModalVisible(false);
+    };
+
+
+    const handleUpdateSessionsForTicket = async (sessionIds: string[]) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                message.error("No access token found. Please login again.");
+                navigate('/auth/signin');
+                return;
+            }
+
+            const response = await authService.updateParticipantSessions(ticketData?.participantId, { sessionIds }, accessToken) as any;
+            if (response && response.statusCode === 200) {
+                message.success(response.message || 'Sessions updated successfully');
+                setIsTicketModalVisible(false);
+            } else {
+                message.error(response.message || 'Failed to update sessions');
+            }
+        } catch (error: any) {
+            console.error('Error updating sessions:', error);
+            message.error(error.message || 'Failed to update sessions');
         } finally {
             setLoading(false);
         }
     };
 
 
-    if (eventDetailsLoading) { // Use Redux loading state
-        return <Loader />;
-    }
+    return (
+        <div>
+            <Helmet>
+                <title>{eventDetails?.name} Details | Antd Dashboard</title>
+            </Helmet>
+            <PageHeader
+                title="event details"
+                breadcrumbs={[
+                    {
+                        title: (
+                            <>
+                                <HomeOutlined />
+                                <span>home</span>
+                            </>
+                        ),
+                        path: '/',
+                    },
+                    {
+                        title: (
+                            <>
+                                <PieChartOutlined />
+                                <span>dashboards</span>
+                            </>
+                        ),
+                    },
+                    {
+                        title: 'events',
+                    },
+                    {
+                        title: 'details',
+                    },
+                ]}
+            />
 
-    if (eventDetailsError) { // Use Redux error state
-        return <Alert message="Error" description={eventDetailsError} type="error" showIcon />;
-    }
+            <Card title={<Title level={3}>{eventDetails?.name}</Title>}
+                extra={
+                    <Space>
+                        <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>Download Participants PDF</Button>
+                        <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal} >Invite Participants</Button>
+                        <Button type="primary" onClick={showTicketModal} >
+                            View Ticket / Update Sessions
+                        </Button>
+                    </Space>
+                }
+            >
+                <Row gutter={[16, 16]}>
+                    <Col span={24}>
+                        <Image src={eventDetails?.banner || "https://placehold.co/1920x1080"} alt="Event Banner" style={{ width: '100%', borderRadius: '10px' }} fallback="https://placehold.co/1920x1080" />
+                    </Col>
+                    <Col span={24}>
+                        <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
+                            <Descriptions.Item label="Name">{eventDetails?.name}</Descriptions.Item>
+                            <Descriptions.Item label="Category">{eventDetails?.categoryId}</Descriptions.Item>
+                            <Descriptions.Item label="Location">{eventDetails?.location}</Descriptions.Item>
+                            <Descriptions.Item label="Start Date">
+                                {dayjs(eventDetails?.startDate).format('YYYY-MM-DD HH:mm:ss')}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="End Date">
+                                {dayjs(eventDetails?.endDate).format('YYYY-MM-DD HH:mm:ss')}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Status"><Tag color={eventDetails?.status === 'SCHEDULED' ? 'blue' : eventDetails?.status === 'CANCELED' ? 'red' : 'green'}>{eventDetails?.status}</Tag></Descriptions.Item>
+                            <Descriptions.Item label="Max Participants">{eventDetails?.maxParticipants || 'Unlimited'}</Descriptions.Item>
+                            <Descriptions.Item span={3} label="Description">
+                                {eventDetails?.description || "No description provided."}
+                            </Descriptions.Item>
+                        </Descriptions>
+                    </Col>
+                    <Col span={24}>
+                        <Card title="Schedule">
+                            {eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
+                                <Table
+                                    rowKey="id"
+                                    dataSource={eventDetails?.schedule}
+                                    columns={scheduleColumns}
+                                    pagination={false}
+                                    rowSelection={{
+                                        columnWidth: 80,
+                                        onChange: onSessionSelectChange,
+                                    }}
+                                />
+                            ) : (
+                                <Alert message="No schedule available for this event." type="info" showIcon />
+                            )}
+                        </Card>
+                    </Col>
+                    {eventDetails?.videoIntro && (
+                        <Col span={24}>
+                            <Card title="Video Introduction">
+                                <iframe
+                                    width="100%"
+                                    height="480"
+                                    src={eventDetails?.videoIntro}
+                                    title="Event Introduction Video"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                />
+                            </Card>
+                        </Col>
+                    )}
+                    {eventDetails?.documents && eventDetails.documents.length > 0 && (
+                        <Col span={24}>
+                            <Card title="Event Documents">
+                                <List
+                                    dataSource={eventDetails?.documents}
+                                    renderItem={item => (
+                                        <List.Item>
+                                            <Typography.Link href={item} target="_blank">
+                                                {item}
+                                            </Typography.Link>
+                                        </List.Item>
+                                    )}
+                                />
+                            </Card>
+                        </Col>
+                    )}
+                    {eventDetails?.status === 'FINISHED' && (
+                        <Col span={24}>
+                            <Card title="Participants Check-in/Check-out List"
+                                extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
+                                    Download PDF
+                                </Button>}
+                            >
+                                <EventParticipantsTable eventId={id || ''} />
+                            </Card>
+                        </Col>
+                    )}
+                </Row>
+            </Card>
+            <TicketDetailsModal
+                visible={isTicketModalVisible}
+                onCancel={hideTicketModal}
+                ticket={ticketData}
+                onSessionsChange={handleUpdateSessionsForTicket}
+                eventSchedule={eventDetails?.schedule || []}
+            />
+            +           <InviteUsersModal
+                visible={isInviteModalVisible}
+                onCancel={hideInviteModal}
+                eventId={id || ''}
+                onInvitationsSent={() => message.success("Invitations sent successfully!")} // Example callback
+            />
+        </div>
+    );
+};
 
-    if (!eventDetails) { // Check if eventDetails is null (not loaded)
-        return <Alert message="Event not found" description="Could not load event details" type="warning" showIcon />;
-    }
+export default DetailMyEventPage;
+
+src\pages\details\MyEventPage.tsx:
+// src\pages\details\MyEventPage.tsx
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import {
+    Alert,
+    Button,
+    Card,
+    Col,
+    Descriptions,
+    Flex,
+    Image,
+    List,
+    message,
+    Row,
+    Space,
+    Table,
+    Tag,
+    Typography,
+    Checkbox,
+} from 'antd';
+import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
+import { DASHBOARD_ITEMS } from '../../constants';
+import { PageHeader, Loader, UserAvatar } from '../../components';
+import { useFetchData } from '../../hooks';
+import dayjs from 'dayjs';
+import authService from '../../services/authService';
+import { Events, TicketType, User } from '../../types';
+import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
+import jsPDF from 'jspdf';
+import { Helmet } from 'react-helmet-async';
+import { EventScheduleItem } from '../../types/schedule';
+import TicketDetailsModal from '../../components/TicketDetailsModal';
+import InviteUsersModal from '../../components/InviteUsersModal';
+import { useDispatch } from 'react-redux';
+
+const { Title, Text, Paragraph } = Typography;
+
+export interface ParticipantData {
+    id: string;
+    name: string;
+    email: string;
+    phoneNumber: string;
+    checkInAt: string | null;
+    checkOutAt: string | null;
+}
+
+
+const DetailMyEventPage: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
+    const [eventDetails, setEventDetails] = useState<Events | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
+    const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
+    const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
+    const [ticketData, setTicketData] = useState<any | null>(null);
+    const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
+    const dispatch = useDispatch(); // Thêm dispatch để gọi action Redux (nếu bạn dùng Redux)
+
+    useEffect(() => {
+        const fetchEventDetails = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const accessToken = localStorage.getItem('accessToken');
+                const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+                if (response && response.statusCode === 200) {
+                    setEventDetails(response.data.event);
+                } else {
+                    setError(response?.message || 'Failed to load event details');
+                    message.error(response?.message || 'Failed to load event details');
+                }
+            } catch (error: any) {
+                console.error('Error fetching event details:', error);
+                setError(error.message || 'Failed to load event details');
+                message.error(error.message || 'Failed to load event details');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEventDetails();
+    }, [id, navigate]);
+
+    const handleDownloadPdf = async () => {
+        message.info("Download PDF function is not implemented yet for general events.");
+    };
+
+    const onSessionSelectChange = (selectedKeys: React.Key[]) => {
+        setSelectedSessionIds(selectedKeys as string[]);
+    };
+
+    const scheduleColumns = [
+        {
+            title: 'Title',
+            dataIndex: 'name',
+            key: 'name'
+        },
+        {
+            title: 'Start Time',
+            dataIndex: 'startTime',
+            key: 'startTime',
+            render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+        },
+        {
+            title: 'End Time',
+            dataIndex: 'endTime',
+            key: 'endTime',
+            render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+        },
+        {
+            title: 'Description',
+            dataIndex: 'description',
+            key: 'description'
+        },
+        // **Không có cột "Select Session" ở đây**
+    ];
+
+    const showTicketModal = async () => {
+        setIsTicketModalVisible(true);
+        setLoading(true);
+        setError(null);
+        try {
+            if (!eventDetails?.id) {
+                message.error("Missing user or event information.");
+                return;
+            }
+
+            const participantIdResponse = await authService.getParticipantIdByUserIdEventId(eventDetails.id, localStorage.getItem('accessToken') || undefined) as any;
+            const participantId = participantIdResponse.data.participantId;
+
+
+            const response = await authService.getTicketByParticipantId(participantId, localStorage.getItem('accessToken') || undefined) as { statusCode: number; data: { ticket: TicketType }; message: string };
+            if (response && response.statusCode === 200 && response.data.ticket) {
+                setTicketData(response.data.ticket);
+            } else {
+                setError(response?.message || 'Failed to load ticket details');
+                message.error(response?.message || 'Failed to load ticket details');
+                setTicketData(null);
+            }
+        } catch (error: any) {
+            console.error('Error fetching ticket details:', error);
+            setError(error.message || 'Failed to load ticket details');
+            message.error(error.message || 'Failed to load ticket details');
+            setTicketData(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const hideTicketModal = () => {
+        setIsTicketModalVisible(false);
+    };
+    const showInviteModal = () => {
+        setIsInviteModalVisible(true);
+    };
+
+    const hideInviteModal = () => {
+        setIsInviteModalVisible(false);
+    };
+
+
+    const handleUpdateSessionsForTicket = async (sessionIds: string[]) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                message.error("No access token found. Please login again.");
+                navigate('/auth/signin');
+                return;
+            }
+
+            const response = await authService.updateParticipantSessions(ticketData?.participantId, { sessionIds }, accessToken) as any;
+            if (response && response.statusCode === 200) {
+                message.success(response.message || 'Sessions updated successfully');
+                setIsTicketModalVisible(false);
+            } else {
+                message.error(response.message || 'Failed to update sessions');
+            }
+        } catch (error: any) {
+            console.error('Error updating sessions:', error);
+            message.error(error.message || 'Failed to update sessions');
+        } finally {
+            setLoading(false);
+        }
+    };
 
 
     return (
         <div>
-            <Row {...stylesContext?.rowProps}>
-                <Col span={24}>
-                    <Card title={<Title level={3}>About This Event (Event ID : {id})</Title>}>
-                        <Flex gap="small" vertical>
-                            <Text>Job Fair 101.</Text>
-                            <Image
-                                src={eventDetails.banner || 'https://placehold.co/1920x1080'} // Use eventDetails.banner
-                                alt="event banner"
-                                width="100%"
-                            />
-                            <Paragraph>
-                                {eventDetails.description}
-                            </Paragraph>
-                            <Paragraph>
-                                Sit amet purus gravida quis blandit turpis cursus. Vulputate eu
-                                scelerisque felis imperdiet proin fermentum leo vel orci. Fusce
-                                id velit ut tortor pretium viverra suspendisse potenti.
-                            </Paragraph>
-                        </Flex>
-                    </Card>
-                </Col>
-                <Col span={24}>
-                    <MyEventTimelineCard
-                        title="Event's Activities"
-                        data={timelineData}
-                        loading={timelineDataLoading}
-                        error={timelineDataError}
-                    />
-                </Col>
-                <Col span={24}>
-                    <ActivityTable
-                        data={activitiesTableData}
-                        loading={activitiesTableLoading}
-                        error={activitiesTableError}
-                    />
-                </Col>
-                {eventDetails?.status === 'FINISHED' && (
+            <Helmet>
+                <title>{eventDetails?.name} Details | Antd Dashboard</title>
+            </Helmet>
+            <PageHeader
+                title="Event Details"
+                breadcrumbs={[
+                    {
+                        title: (
+                            <>
+                                <HomeOutlined />
+                                <span>Home</span>
+                            </>
+                        ),
+                        path: '/',
+                    },
+                    {
+                        title: (
+                            <>
+                                <PieChartOutlined />
+                                <span>Dashboards</span>
+                            </>
+                        ),
+                        menu: {
+                            items: DASHBOARD_ITEMS.map((d) => ({
+                                key: d.title,
+                                title: <Link to={d.path}>{d.title}</Link>,
+                            })),
+                        },
+                    },
+                    {
+                        title: 'My Event Details', // Đổi breadcrumb title
+                    },
+                ]}
+            />
+
+            <Card title={<Title level={3}>{eventDetails?.name}</Title>}
+                extra={
+                    <Space>
+                        <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>Download Participants PDF</Button>
+                        <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal} >Invite Users</Button>
+                        <Button type="primary" onClick={showTicketModal} >
+                            View Ticket / Update Sessions
+                        </Button>
+                    </Space>
+                }
+            >
+                <Row gutter={[16, 16]}>
                     <Col span={24}>
-                        <Card title="Participants Check-in/Check-out List"
-                            extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
-                                Download PDF
-                            </Button>}
-                        >
-                            <EventParticipantsTable eventId={id || ''} />
+                        <Image src={eventDetails?.banner || "https://placehold.co/1920x1080"} alt="Event Banner" style={{ width: '100%', borderRadius: '10px' }} fallback="https://placehold.co/1920x1080" />
+                    </Col>
+                    <Col span={24}>
+                        <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
+                            <Descriptions.Item label="Name">{eventDetails?.name}</Descriptions.Item>
+                            <Descriptions.Item label="Category">{eventDetails?.categoryId}</Descriptions.Item>
+                            <Descriptions.Item label="Location">{eventDetails?.location}</Descriptions.Item>
+                            <Descriptions.Item label="Start Date">
+                                {dayjs(eventDetails?.startDate).format('YYYY-MM-DD HH:mm:ss')}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="End Date">
+                                {dayjs(eventDetails?.endDate).format('YYYY-MM-DD HH:mm:ss')}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Status"><Tag color={eventDetails?.status === 'SCHEDULED' ? 'blue' : eventDetails?.status === 'CANCELED' ? 'red' : 'green'}>{eventDetails?.status}</Tag></Descriptions.Item>
+                            <Descriptions.Item label="Max Participants">{eventDetails?.maxParticipants || 'Unlimited'}</Descriptions.Item>
+                            <Descriptions.Item span={3} label="Description">
+                                {eventDetails?.description || "No description provided."}
+                            </Descriptions.Item>
+                        </Descriptions>
+                    </Col>
+                    <Col span={24}>
+                        <Card title="Schedule">
+                            {eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
+                                <Table
+                                    rowKey="id"
+                                    dataSource={eventDetails?.schedule}
+                                    columns={scheduleColumns}
+                                    pagination={false}
+                                />
+                            ) : (
+                                <Alert message="No schedule available for this event." type="info" showIcon />
+                            )}
                         </Card>
                     </Col>
-                )}
-            </Row>
+                    {eventDetails?.videoIntro && (
+                        <Col span={24}>
+                            <Card title="Video Introduction">
+                                <iframe
+                                    width="100%"
+                                    height="480"
+                                    src={eventDetails?.videoIntro}
+                                    title="Event Introduction Video"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                />
+                            </Card>
+                        </Col>
+                    )}
+                    {eventDetails?.documents && eventDetails.documents.length > 0 && (
+                        <Col span={24}>
+                            <Card title="Event Documents">
+                                <List
+                                    dataSource={eventDetails?.documents}
+                                    renderItem={item => (
+                                        <List.Item>
+                                            <Typography.Link href={item} target="_blank">
+                                                {item}
+                                            </Typography.Link>
+                                        </List.Item>
+                                    )}
+                                />
+                            </Card>
+                        </Col>
+                    )}
+                    {eventDetails?.status === 'FINISHED' && (
+                        <Col span={24}>
+                            <Card title="Participants Check-in/Check-out List"
+                                extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
+                                    Download PDF
+                                </Button>}
+                            >
+                                <EventParticipantsTable eventId={id || ''} />
+                            </Card>
+                        </Col>
+                    )}
+                </Row>
+            </Card>
+            <TicketDetailsModal
+                visible={isTicketModalVisible}
+                onCancel={hideTicketModal}
+                ticket={ticketData}
+                onSessionsChange={handleUpdateSessionsForTicket}
+                eventSchedule={eventDetails?.schedule || []}
+            />
+            <InviteUsersModal
+                visible={isInviteModalVisible}
+                onCancel={hideInviteModal}
+                eventId={id || ''}
+                onInvitationsSent={() => message.success("Invitations sent successfully!")} // Example callback
+            />
         </div>
-    )
-}
+    );
+};
 
 export default DetailMyEventPage;
 
@@ -17815,8 +18791,8 @@ import {
   CreateEventPage,
   DetailEventPage,
   MyEventDashboardPage,
-  DetailMyEventPage,
-  UserDashboardPage
+  UserDashboardPage,
+  DetailMyEventPage
 } from '../pages';
 import {
   CorporateLayout,
@@ -17834,6 +18810,7 @@ import EditEventPage from '../pages/edit/EditEventPage.tsx';
 import ParticipatedEventsPage from '../pages/dashboards/ParticipatedEvents.tsx';
 import SpeakerManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
 import SpeakerGuestManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
+import GoogleAppwriteCallbackPage from '../pages/authentication/GoogleAppwriteCallbackPage.tsx';
 
 // Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
@@ -17904,6 +18881,7 @@ const router = createBrowserRouter([
         path: 'my-events/:id',
         element: <DetailMyEventPage />,
       },
+      
     ],
   },
   {
@@ -17948,7 +18926,7 @@ const router = createBrowserRouter([
         path: 'my-events',
         element: <MyEventDashboardPage />,
       },
-      {
+       {
         path: 'users',
         element: <UserDashboardPage />,
       },
@@ -18047,6 +19025,16 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       {
+        path: 'google/callback', // Route cho Google callback Appwrite
+        element: <GoogleAppwriteCallbackPage
+          projectId='123456789abc' // **Project ID Appwrite**
+          endpoint='https://cloud.appwrite.io/v1' // **Endpoint Appwrite Cloud**
+          redirectUri="http://localhost:5173/auth/google/callback" // **Callback URI của frontend**
+          onLoginSuccess={() => { /* Xử lý login thành công ở đây nếu cần */ }}
+          onLoginFailure={() => { /* Xử lý login thất bại ở đây nếu cần */ }}
+        />,
+      },
+      {
         path: 'signup',
         element: <SignUpPage />,
       },
@@ -18085,42 +19073,42 @@ const router = createBrowserRouter([
   },
   {
     path: 'errors',
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        path: '400',
-        element: <Error400Page />,
-      },
-      {
-        path: '403',
-        element: <Error403Page />,
-      },
-      {
-        path: '404',
-        element: <Error404Page />,
-      },
-      {
-        path: '500',
-        element: <Error500Page />,
-      },
-      {
-        path: '503',
-        element: <Error503Page />,
-      },
-    ],
-  },
-  {
-    path: '/about',
-    element: <PageWrapper children={<DashboardLayout />} />,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        index: true,
-        path: '',
-        element: <AboutPage />,
-      },
-    ],
-  },
+        errorElement: <ErrorPage />,
+        children: [
+            {
+                path: '400',
+                element: <Error400Page />,
+            },
+            {
+                path: '403',
+                element: <Error403Page />,
+            },
+            {
+                path: '404',
+                element: <Error404Page />,
+            },
+            {
+                path: '500',
+                element: <Error500Page />,
+            },
+            {
+                path: '503',
+                element: <Error503Page />,
+            },
+        ],
+    },
+    {
+        path: '/about',
+        element: <PageWrapper children={<DashboardLayout />} />,
+        errorElement: <ErrorPage />,
+        children: [
+            {
+                index: true,
+                path: '',
+                element: <AboutPage />,
+            },
+        ],
+    },
 ]);
 
 export default router;
@@ -18386,6 +19374,63 @@ const authService = {
       window.location.href = data.url; // Chuyển hướng trình duyệt đến trang đăng nhập Google (nếu backend trả về url)
       // Hoặc, nếu backend không trả về URL, bạn có thể chỉ cần:
       // window.location.href = `${API_BASE_URL}/google/login`; // Chuyển hướng trực tiếp đến endpoint login của backend
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getTicketByParticipantId: async (participantId: string, accessToken?: string) => { // Add getTicketByParticipantId function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axios.get(`${API_PARTICIPANTS_BASE_URL}/${participantId}/tickets`, { headers }); // Use correct endpoint
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getParticipantIdByUserIdEventId: async (eventId: string, accessToken?: string) => { // Updated function - Removed userId parameter
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axios.get(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/participant-id`, { headers }); // Updated API call - Removed userId from URL
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getUsers: async (accessToken?: string) => { // Hàm mới: Lấy danh sách users
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axios.get(`${API_BASE_URL}/users`, { headers }); // Gọi API /users
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  inviteUsersToEvent: async (eventId: string, users: { id: string, email: string }[], accessToken?: string) => { // Hàm mới: Mời users vào event
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axios.post(`${API_EVENT_BASE_URL}/${eventId}/invite`, { users }, { headers }); // Gọi API /events/{eventId}/invite
+      return response.data;
     } catch (error: any) {
       throw error.response.data;
     }

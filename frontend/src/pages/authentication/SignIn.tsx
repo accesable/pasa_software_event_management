@@ -1,4 +1,4 @@
-// src\pages\authentication\SignIn.tsx
+// src\pages\authentication\SignInPage.tsx
 import React, { useState } from 'react';
 import {
   Button,
@@ -13,19 +13,17 @@ import {
   Typography,
 } from 'antd';
 import {
-  FacebookFilled,
-  GoogleOutlined,
-  TwitterOutlined,
-} from '@ant-design/icons';
-import { useMediaQuery } from 'react-responsive';
-import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
-import { useNavigate } from 'react-router-dom';
+  Link,
+  useNavigate,
+} from 'react-router-dom';
 import authService from '../../services/authService';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../../redux/userSlice';
-import GoogleLoginButton from '../../components/GoogleLoginButton'; // Import GoogleLoginButton
+import GoogleLoginButton from '../../components/GoogleLoginButton';
+import { PATH_AUTH } from '../../constants';
+import { useMediaQuery } from 'react-responsive';
 
-const { Title, Text, Link } = Typography;
+const { Title, Text } = Typography;
 
 type FieldType = {
   email?: string;
@@ -61,7 +59,7 @@ export const SignInPage = () => {
         useDispatchHook(setUser(response.data.user));
 
         setTimeout(() => {
-          navigate(PATH_DASHBOARD.default);
+          navigate('/dashboards/default');
         }, 1000);
       } else {
         message.error(response.message || 'Login failed');
@@ -76,20 +74,6 @@ export const SignInPage = () => {
 
   const onFinishFailed = (errorInfo: any) => {
     console.log('Failed:', errorInfo);
-  };
-
-  const handleGoogleLoginSuccess = (accessToken: string, user: any) => {
-    console.log('Google Login Success!', accessToken, user);
-    // Lưu accessToken và user info vào local storage, Redux, ...
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('user', JSON.stringify(user));
-    useDispatchHook(setUser(user));
-    navigate(PATH_DASHBOARD.default); // Redirect to dashboard
-  };
-
-  const handleGoogleLoginFailure = (error: string) => {
-    console.error('Google Login Failed:', error);
-    message.error('Google login failed: ' + error);
   };
 
 
@@ -122,7 +106,7 @@ export const SignInPage = () => {
           <Title className="m-0">Login</Title>
           <Flex gap={4}>
             <Text>Don't have an account?</Text>
-            <Link href={PATH_AUTH.signup}>Create an account here</Link>
+            <Link to={PATH_AUTH.signup}>Create an account here</Link>
           </Flex>
           <Form
             name="sign-in-form"
@@ -169,7 +153,7 @@ export const SignInPage = () => {
                 >
                   Continue
                 </Button>
-                <Link href={PATH_AUTH.passwordReset}>Forgot password?</Link>
+                <Link to={PATH_AUTH.passwordReset}>Forgot password?</Link>
               </Flex>
             </Form.Item>
           </Form>
@@ -181,11 +165,13 @@ export const SignInPage = () => {
             style={{ width: '100%' }}
           >
             <GoogleLoginButton
-              clientId="752824572639-0nbbmbqgqj28oue1bsi2ouee2923oloj.apps.googleusercontent.com" // **Thay bằng Client ID của bạn**
-              redirectUri="http://localhost:5173/auth/google/callback" // **Callback URI của frontend**
+              projectId='123456789abc'
+              endpoint='https://cloud.appwrite.io/v1'
+              clientId="752824572639-0nbbmbqgqj28oue1bsi2ouee2923oloj.apps.googleusercontent.com"
+              redirectUri="http://localhost:5173/auth/google/callback"
               scope="email profile openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
-              onLoginSuccess={handleGoogleLoginSuccess}
-              onLoginFailure={handleGoogleLoginFailure}
+              onLoginSuccess={() => { /* Optional success handler */ }}
+              onLoginFailure={() => { /* Optional failure handler */ }}
             />
           </Flex>
         </Flex>

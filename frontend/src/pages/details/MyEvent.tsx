@@ -1,202 +1,372 @@
-// src\pages\details\MyEventPage.tsx
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import {
-    Col,
-    Flex,
-    Image,
-    Row,
-    Typography,
-    Button,
-    message,
-    Alert
-} from 'antd';
-import { Card, Loader } from '../../components';
-import { useStylesContext } from '../../context';
-import {
-    EventTimelineCard,
-    MyEventTimelineCard
-} from '../../components/dashboard';
-import { useFetchData } from '../../hooks';
-import { ActivityTable } from '../../components/dashboard/events';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../redux/store';
-import { DownloadOutlined } from '@ant-design/icons';
-import authService from '../../services/authService';
-import { fetchEventDetailsStart, setEventDetails, fetchEventDetailsFailure, clearEventDetails } from '../../redux/eventDetailsSlice';
-import jsPDF from 'jspdf';
-import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
-import dayjs from 'dayjs';
+// import React, { useEffect, useState, useCallback } from 'react';
+// import { useParams, useNavigate, Link } from 'react-router-dom';
+// import {
+//     Alert,
+//     Button,
+//     Card,
+//     Col,
+//     Descriptions,
+//     Flex,
+//     Image,
+//     List,
+//     message,
+//     Row,
+//     Space,
+//     Table,
+//     Tag,
+//     Typography,
+//     Checkbox,
+// } from 'antd';
+// import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
+// import { DASHBOARD_ITEMS } from '../../constants';
+// import { PageHeader, Loader } from '../../components';
+// import { useFetchData } from '../../hooks';
+// import dayjs from 'dayjs';
+// import authService from '../../services/authService';
+// import { Events, TicketType } from '../../types';
 
-const { Title, Text, Paragraph } = Typography;
+// import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
+// import jsPDF from 'jspdf';
+// import { Helmet } from 'react-helmet-async';
+// import { EventScheduleItem } from '../../types/schedule';
+// import TicketDetailsModal from '../../components/TicketDetailsModal';
+// import InviteUsersModal from '../../components/InviteUsersModal';
 
-export interface ParticipantData {
-    id: string;
-    name: string;
-    email: string;
-    phoneNumber: string;
-    checkInAt: string | null;
-    checkOutAt: string | null;
-}
+// const { Title, Text, Paragraph } = Typography;
 
-
-export const DetailMyEventPage = () => {
-    const { id } = useParams<{ id: string }>();
-    const stylesContext = useStylesContext();
-    const dispatch = useDispatch<any>();
-    const eventDetails = useSelector((state: RootState) => state.eventDetails.eventDetails);
-    const eventDetailsLoading = useSelector((state: RootState) => state.eventDetails.loading);
-    const eventDetailsError = useSelector((state: RootState) => state.eventDetails.error);
+// export interface ParticipantData {
+//     id: string;
+//     name: string;
+//     email: string;
+//     phoneNumber: string;
+//     checkInAt: string | null;
+//     checkOutAt: string | null;
+// }
 
 
-    const {
-        data: timelineData,
-        loading: timelineDataLoading,
-        error: timelineDataError,
-    } = useFetchData('../../mocks/scheduleTimeline.json');
-    const {
-        data: activitiesTableData,
-        loading: activitiesTableLoading,
-        error: activitiesTableError,
-    } = useFetchData('../../mocks/PaticipatedActivities.json');
+// export const DetailMyEventPage = () => {
+//     const { id } = useParams<{ id: string }>();
+//     const [eventDetails, setEventDetails] = useState<Events | null>(null);
+//     const [loading, setLoading] = useState(false);
+//     const [error, setError] = useState<string | null>(null);
+//     const navigate = useNavigate();
+//     const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
+//     const [isParticipatedEvent, setIsParticipatedEvent] = useState(true);
+//     const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
+//     const [ticketData, setTicketData] = useState<any | null>(null);
+//     const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
+
+//     useEffect(() => {
+//         const fetchEventDetails = async () => {
+//             setLoading(true);
+//             setError(null);
+//             try {
+//                 const accessToken = localStorage.getItem('accessToken');
+//                 const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+//                 if (response && response.statusCode === 200) {
+//                     setEventDetails(response.data.event);
+//                     setIsParticipatedEvent(true);
+//                 } else {
+//                     setError(response?.message || 'Failed to load event details');
+//                     message.error(response?.message || 'Failed to load event details');
+//                 }
+//             } catch (error: any) {
+//                 console.error('Error fetching event details:', error);
+//                 setError(error.message || 'Failed to load event details');
+//                 message.error(error.message || 'Failed to load event details');
+//             } finally {
+//                 setLoading(false);
+//             }
+//         };
+
+//         fetchEventDetails();
+//     }, [id, navigate]);
+
+//     const handleRegisterEvent = async () => {
+//         setLoading(true);
+//         try {
+//             const accessToken = localStorage.getItem('accessToken');
+//             if (!accessToken) {
+//                 message.error("No access token found. Please login again.");
+//                 navigate('/auth/signin');
+//                 return;
+//             }
+
+//             if (!eventDetails?.id) {
+//                 message.error("Event ID is missing.");
+//                 return;
+//             }
+
+//             const response = await authService.registerEvent(eventDetails.id, selectedSessionIds, accessToken) as { statusCode: number; message: string; error?: string };
+//             if (response && response.statusCode === 201) {
+//                 message.success(response.message);
+//                 setIsParticipatedEvent(true);
+//             } else {
+//                 message.error(response?.error || 'Failed to register for event');
+//             }
+//         } catch (error: any) {
+//             console.error('Error registering for event:', error);
+//             message.error(error?.error || 'Failed to register for event');
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+//     const handleDownloadPdf = async () => {
+//         message.info("Download PDF function is not implemented yet for general events.");
+//     };
+
+//     const onSessionSelectChange = (selectedKeys: React.Key[]) => {
+//         setSelectedSessionIds(selectedKeys as string[]);
+//     };
+
+//     const scheduleColumns = [
+//         {
+//             title: 'Title',
+//             dataIndex: 'name',
+//             key: 'name'
+//         },
+//         {
+//             title: 'Start Time',
+//             dataIndex: 'startTime',
+//             key: 'startTime',
+//             render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+//         },
+//         {
+//             title: 'End Time',
+//             dataIndex: 'endTime',
+//             key: 'endTime',
+//             render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+//         },
+//         {
+//             title: 'Description',
+//             dataIndex: 'description',
+//             key: 'description'
+//         },
+//         {
+//             title: 'Select Session',
+//             key: 'select',
+//             render: (_: any, record: EventScheduleItem) => (
+//                 <Checkbox value={record.id} />
+//             ),
+//         }
+//     ];
+
+//     const showTicketModal = async () => {
+//         setIsTicketModalVisible(true);
+//         setLoading(true);
+//         setError(null);
+//         try {
+//             if (!eventDetails?.id) {
+//                 message.error("Missing user or event information.");
+//                 return;
+//             }
+
+//             const participantIdResponse = await authService.getParticipantIdByUserIdEventId(eventDetails.id, localStorage.getItem('accessToken') || undefined) as any;
+//             const participantId = participantIdResponse.data.participantId;
 
 
-    useEffect(() => {
-        const loadEventDetails = async () => {
-            if (!id) return;
+//             const response = await authService.getTicketByParticipantId(participantId, localStorage.getItem('accessToken') || undefined) as { statusCode: number; data: { ticket: TicketType }; message: string };
+//             if (response && response.statusCode === 200 && response.data.ticket) {
+//                 setTicketData(response.data.ticket);
+//             } else {
+//                 setError(response?.message || 'Failed to load ticket details');
+//                 message.error(response?.message || 'Failed to load ticket details');
+//                 setTicketData(null);
+//             }
+//         } catch (error: any) {
+//             console.error('Error fetching ticket details:', error);
+//             setError(error.message || 'Failed to load ticket details');
+//             message.error(error.message || 'Failed to load ticket details');
+//             setTicketData(null);
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
 
-            dispatch(fetchEventDetailsStart());
-            try {
-                const accessToken = localStorage.getItem('accessToken');
-                const response = await authService.getEventDetails(id, accessToken || undefined) as { data: { event: any } };
-                dispatch(setEventDetails(response.data.event));
+//     const hideTicketModal = () => {
+//         setIsTicketModalVisible(false);
+//     };
+//     const showInviteModal = () => {
+//         setIsInviteModalVisible(true);
+//     };
 
-            } catch (error: any) {
-                dispatch(fetchEventDetailsFailure(error.message || 'Failed to load event details'));
-                message.error(error.message || 'Failed to load event details');
-            }
-        };
-
-        loadEventDetails();
-
-        return () => {
-            dispatch(clearEventDetails());
-        };
-
-
-    }, [id, dispatch]);
-
-
-    const [loading, setLoading] = useState(false);
-
-    const handleDownloadPdf = async () => {
-        if (!id) {
-            message.error("Event ID is missing for PDF download.");
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const accessToken = localStorage.getItem('accessToken');
-            if (!accessToken) {
-                message.error("No access token found. Please login again.");
-                return;
-            }
-
-            const response = await authService.getEventParticipants(id, accessToken) as { statusCode: number, data: ParticipantData[], message?: string };
-            if (response.statusCode === 200 && response.data) {
-                const participants: ParticipantData[] = response.data; // Type response data
-
-                // Generate PDF using jsPDF
-                const pdfDoc = new jsPDF();
-                pdfDoc.text(`Participants List - Event: ${eventDetails?.name}`, 10, 10);
-
-                let yPosition = 20;
-                participants.forEach((participant, index) => {
-                    pdfDoc.text(`${index + 1}. Name: ${participant.name}, Email: ${participant.email}, Check-in: ${participant.checkInAt ? dayjs(participant.checkInAt).format('YYYY-MM-DD HH:mm:ss') : 'N/A'}, Check-out: ${participant.checkOutAt ? dayjs(participant.checkOutAt).format('YYYY-MM-DD HH:mm:ss') : 'N/A'}`, 10, yPosition);
-                    yPosition += 10; // Increase yPosition for next line
-                });
-
-                pdfDoc.save(`participants-list-event-${eventDetails?.name}.pdf`); // Trigger download
-
-                message.success("PDF Download started.");
-            } else {
-                message.error(response.message || 'Failed to fetch participants for PDF');
-            }
-        } catch (error: any) {
-            console.error('Error fetching participants for PDF:', error);
-            message.error(error.message || 'Failed to fetch participants for PDF');
-        } finally {
-            setLoading(false);
-        }
-    };
+//     const hideInviteModal = () => {
+//         setIsInviteModalVisible(false);
+//     };
 
 
-    if (eventDetailsLoading) { // Use Redux loading state
-        return <Loader />;
-    }
+//     const handleUpdateSessionsForTicket = async (sessionIds: string[]) => {
+//         setLoading(true);
+//         setError(null);
+//         try {
+//             const accessToken = localStorage.getItem('accessToken');
+//             if (!accessToken) {
+//                 message.error("No access token found. Please login again.");
+//                 navigate('/auth/signin');
+//                 return;
+//             }
 
-    if (eventDetailsError) { // Use Redux error state
-        return <Alert message="Error" description={eventDetailsError} type="error" showIcon />;
-    }
+//             const response = await authService.updateParticipantSessions(ticketData?.participantId, { sessionIds }, accessToken) as any;
+//             if (response && response.statusCode === 200) {
+//                 message.success(response.message || 'Sessions updated successfully');
+//                 setIsTicketModalVisible(false);
+//             } else {
+//                 message.error(response.message || 'Failed to update sessions');
+//             }
+//         } catch (error: any) {
+//             console.error('Error updating sessions:', error);
+//             message.error(error.message || 'Failed to update sessions');
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
 
-    if (!eventDetails) { // Check if eventDetails is null (not loaded)
-        return <Alert message="Event not found" description="Could not load event details" type="warning" showIcon />;
-    }
 
+//     return (
+//         <div>
+//             <Helmet>
+//                 <title>{eventDetails?.name} Details | Antd Dashboard</title>
+//             </Helmet>
+//             <PageHeader
+//                 title="event details"
+//                 breadcrumbs={[
+//                     {
+//                         title: (
+//                             <>
+//                                 <HomeOutlined />
+//                                 <span>home</span>
+//                             </>
+//                         ),
+//                         path: '/',
+//                     },
+//                     {
+//                         title: (
+//                             <>
+//                                 <PieChartOutlined />
+//                                 <span>dashboards</span>
+//                             </>
+//                         ),
+//                     },
+//                     {
+//                         title: 'events',
+//                     },
+//                     {
+//                         title: 'details',
+//                     },
+//                 ]}
+//             />
 
-    return (
-        <div>
-            <Row {...stylesContext?.rowProps}>
-                <Col span={24}>
-                    <Card title={<Title level={3}>About This Event (Event ID : {id})</Title>}>
-                        <Flex gap="small" vertical>
-                            <Text>Job Fair 101.</Text>
-                            <Image
-                                src={eventDetails.banner || 'https://placehold.co/1920x1080'} // Use eventDetails.banner
-                                alt="event banner"
-                                width="100%"
-                            />
-                            <Paragraph>
-                                {eventDetails.description}
-                            </Paragraph>
-                            <Paragraph>
-                                Sit amet purus gravida quis blandit turpis cursus. Vulputate eu
-                                scelerisque felis imperdiet proin fermentum leo vel orci. Fusce
-                                id velit ut tortor pretium viverra suspendisse potenti.
-                            </Paragraph>
-                        </Flex>
-                    </Card>
-                </Col>
-                <Col span={24}>
-                    <MyEventTimelineCard
-                        title="Event's Activities"
-                        data={timelineData}
-                        loading={timelineDataLoading}
-                        error={timelineDataError}
-                    />
-                </Col>
-                <Col span={24}>
-                    <ActivityTable
-                        data={activitiesTableData}
-                        loading={activitiesTableLoading}
-                        error={activitiesTableError}
-                    />
-                </Col>
-                {eventDetails?.status === 'FINISHED' && (
-                    <Col span={24}>
-                        <Card title="Participants Check-in/Check-out List"
-                            extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
-                                Download PDF
-                            </Button>}
-                        >
-                            <EventParticipantsTable eventId={id || ''} />
-                        </Card>
-                    </Col>
-                )}
-            </Row>
-        </div>
-    )
-}
+//             <Card title={<Title level={3}>{eventDetails?.name}</Title>}
+//                 extra={
+//                     <Space>
+//                         <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>Download Participants PDF</Button>
+//                         <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal} >Invite Participants</Button>
+//                         <Button type="primary" onClick={showTicketModal} >
+//                             View Ticket / Update Sessions
+//                         </Button>
+//                     </Space>
+//                 }
+//             >
+//                 <Row gutter={[16, 16]}>
+//                     <Col span={24}>
+//                         <Image src={eventDetails?.banner || "https://placehold.co/1920x1080"} alt="Event Banner" style={{ width: '100%', borderRadius: '10px' }} fallback="https://placehold.co/1920x1080" />
+//                     </Col>
+//                     <Col span={24}>
+//                         <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
+//                             <Descriptions.Item label="Name">{eventDetails?.name}</Descriptions.Item>
+//                             <Descriptions.Item label="Category">{eventDetails?.categoryId}</Descriptions.Item>
+//                             <Descriptions.Item label="Location">{eventDetails?.location}</Descriptions.Item>
+//                             <Descriptions.Item label="Start Date">
+//                                 {dayjs(eventDetails?.startDate).format('YYYY-MM-DD HH:mm:ss')}
+//                             </Descriptions.Item>
+//                             <Descriptions.Item label="End Date">
+//                                 {dayjs(eventDetails?.endDate).format('YYYY-MM-DD HH:mm:ss')}
+//                             </Descriptions.Item>
+//                             <Descriptions.Item label="Status"><Tag color={eventDetails?.status === 'SCHEDULED' ? 'blue' : eventDetails?.status === 'CANCELED' ? 'red' : 'green'}>{eventDetails?.status}</Tag></Descriptions.Item>
+//                             <Descriptions.Item label="Max Participants">{eventDetails?.maxParticipants || 'Unlimited'}</Descriptions.Item>
+//                             <Descriptions.Item span={3} label="Description">
+//                                 {eventDetails?.description || "No description provided."}
+//                             </Descriptions.Item>
+//                         </Descriptions>
+//                     </Col>
+//                     <Col span={24}>
+//                         <Card title="Schedule">
+//                             {eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
+//                                 <Table
+//                                     rowKey="id"
+//                                     dataSource={eventDetails?.schedule}
+//                                     columns={scheduleColumns}
+//                                     pagination={false}
+//                                     rowSelection={{
+//                                         columnWidth: 80,
+//                                         onChange: onSessionSelectChange,
+//                                     }}
+//                                 />
+//                             ) : (
+//                                 <Alert message="No schedule available for this event." type="info" showIcon />
+//                             )}
+//                         </Card>
+//                     </Col>
+//                     {eventDetails?.videoIntro && (
+//                         <Col span={24}>
+//                             <Card title="Video Introduction">
+//                                 <iframe
+//                                     width="100%"
+//                                     height="480"
+//                                     src={eventDetails?.videoIntro}
+//                                     title="Event Introduction Video"
+//                                     frameBorder="0"
+//                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+//                                     allowFullScreen
+//                                 />
+//                             </Card>
+//                         </Col>
+//                     )}
+//                     {eventDetails?.documents && eventDetails.documents.length > 0 && (
+//                         <Col span={24}>
+//                             <Card title="Event Documents">
+//                                 <List
+//                                     dataSource={eventDetails?.documents}
+//                                     renderItem={item => (
+//                                         <List.Item>
+//                                             <Typography.Link href={item} target="_blank">
+//                                                 {item}
+//                                             </Typography.Link>
+//                                         </List.Item>
+//                                     )}
+//                                 />
+//                             </Card>
+//                         </Col>
+//                     )}
+//                     {eventDetails?.status === 'FINISHED' && (
+//                         <Col span={24}>
+//                             <Card title="Participants Check-in/Check-out List"
+//                                 extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
+//                                     Download PDF
+//                                 </Button>}
+//                             >
+//                                 <EventParticipantsTable eventId={id || ''} />
+//                             </Card>
+//                         </Col>
+//                     )}
+//                 </Row>
+//             </Card>
+//             <TicketDetailsModal
+//                 visible={isTicketModalVisible}
+//                 onCancel={hideTicketModal}
+//                 ticket={ticketData}
+//                 onSessionsChange={handleUpdateSessionsForTicket}
+//                 eventSchedule={eventDetails?.schedule || []}
+//             />
+//             +           <InviteUsersModal
+//                 visible={isInviteModalVisible}
+//                 onCancel={hideInviteModal}
+//                 eventId={id || ''}
+//                 onInvitationsSent={() => message.success("Invitations sent successfully!")} // Example callback
+//             />
+//         </div>
+//     );
+// };
 
-export default DetailMyEventPage;
+// export default DetailMyEventPage;

@@ -2,49 +2,52 @@
 import React from 'react';
 import { Button } from 'antd';
 import { GoogleOutlined } from '@ant-design/icons';
-import { generateCodeChallenge, generateCodeVerifier } from './oauth2-pkce';
+import { Account, Client, ID, OAuthProvider } from 'appwrite';
 
 interface GoogleLoginButtonProps {
-  clientId: string;
-  redirectUri: string;
-  scope: string;
-  onLoginSuccess: (accessToken: string, user: any) => void;
-  onLoginFailure: (error: string) => void;
+    redirectUri: string;
+    clientId: string;
+    scope: string;
+    onLoginSuccess: (accessToken: string, user: any) => void;
+    onLoginFailure: (error: string) => void;
+    projectId: string; // **ĐẢM BẢO PROP NÀY CÓ TỒN TẠI**
+    endpoint: string;  // **ĐẢM BẢO PROP NÀY CÓ TỒN TẠI**
 }
 
 const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
-  clientId,
-  redirectUri,
-  scope,
-  onLoginSuccess,
-  onLoginFailure,
+    clientId,
+    redirectUri,
+    scope,
+    onLoginSuccess,
+    onLoginFailure,
+    projectId, // **ĐẢM BẢO PROP NÀY ĐƯỢC SỬ DỤNG**
+    endpoint, // **ĐẢM BẢO PROP NÀY ĐƯỢC SỬ DỤNG**
 }) => {
-  const handleGoogleLogin = async () => {
-    try {
-      const codeVerifier = generateCodeVerifier();
-      const codeChallenge = await generateCodeChallenge(codeVerifier);
-      localStorage.setItem('google_code_verifier', codeVerifier); // Lưu codeVerifier vào localStorage
+    const handleGoogleLogin = async () => {
+        try {
+            const client = new Client()
+                .setEndpoint(endpoint) // Sử dụng prop endpoint
+                .setProject(projectId); // Sử dụng prop projectId
 
-      const authorizationUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${clientId}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `response_type=code&` +
-        `scope=${encodeURIComponent(scope)}&` +
-        `code_challenge=${codeChallenge}&` +
-        `code_challenge_method=S256`;
+            const account = new Account(client);
 
-      window.location.href = authorizationUrl; // Redirect đến trang đăng nhập Google
-    } catch (error: any) {
-      console.error("Error during Google login initiation:", error);
-      onLoginFailure(error.message || 'Failed to initiate Google login');
-    }
-  };
+            await account.createOAuth2Session(
+                'google' as OAuthProvider,
+                redirectUri,
+                scope
+            );
 
-  return (
-    <Button icon={<GoogleOutlined />} onClick={handleGoogleLogin}>
-      Sign in with Google (Frontend)
-    </Button>
-  );
+        } catch (error: any) {
+            console.error("Error during Google login initiation:", error);
+            onLoginFailure(error.message || 'Failed to initiate Google login');
+        }
+    };
+
+    return (
+        <Button icon={<GoogleOutlined />} onClick={handleGoogleLogin}>
+            Sign in with Google (Appwrite)
+        </Button>
+    );
 };
 
 export default GoogleLoginButton;

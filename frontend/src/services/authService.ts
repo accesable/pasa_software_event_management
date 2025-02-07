@@ -290,6 +290,35 @@ const authService = {
       throw error.response.data;
     }
   },
+  getUsers: async (accessToken?: string) => { // Hàm mới: Lấy danh sách users
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axios.get(`${API_BASE_URL}/users`, { headers }); // Gọi API /users
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  inviteUsersToEvent: async (eventId: string, users: { id: string, email: string }[], accessToken?: string) => { // Hàm mới: Mời users vào event
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axios.post(`${API_EVENT_BASE_URL}/${eventId}/invite`, { users }, { headers }); // Gọi API /events/{eventId}/invite
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default authService;
