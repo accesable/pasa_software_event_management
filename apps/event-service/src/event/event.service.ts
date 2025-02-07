@@ -331,7 +331,7 @@ export class EventService {
     }
 
     async getEventQuestions(eventId: string): Promise<{ questions: any[] }> {
-        const questions = await this.questionModel.find({ eventId }).sort({ createdAt: 1 }).exec();
+        const questions = await this.questionModel.find({ eventId: new Types.ObjectId(eventId) }).sort({ createdAt: 1 }).exec();
         const transformed = questions.map(q => {
             q.answers.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
             return this.transformQuestion(q);

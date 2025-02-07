@@ -31,7 +31,7 @@ export class UsersController {
     return this.usersService.login(loginDto, response);
   }
 
-  @Get('refresh')
+  @Post('refresh')
   @ResponseMessage('Get access token success')
   async accessToken(@Req() req: ExpressRequest, @Res({ passthrough: true }) response: Response) {
     const refreshToken = req.cookies['refreshToken'];

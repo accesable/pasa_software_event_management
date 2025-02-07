@@ -102,28 +102,32 @@ export class EventServiceController {
   }
 
   @Post(':id/questions')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Question submitted successfully')
   async createQuestion(
     @Param('id') eventId: string,
-    @Body() body: { userId: string; text: string },
+    @Body() body: { text: string },
+    @User() user: DecodeAccessResponse,
   ) {
     if (!body.text) {
       throw new BadRequestException('Question text is required');
     }
-    return this.eventServiceService.createQuestion(eventId, body.userId, body.text);
+    return this.eventServiceService.createQuestion(eventId, user.id, body.text);
   }
 
   // Trả lời một câu hỏi
   @Post('questions/:questionId/answers')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Answer submitted successfully')
   async answerQuestion(
     @Param('questionId') questionId: string,
-    @Body() body: { userId: string; text: string },
+    @Body() body: { text: string },
+    @User() user: DecodeAccessResponse,
   ) {
     if (!body.text) {
       throw new BadRequestException('Answer text is required');
     }
-    return this.eventServiceService.answerQuestion(questionId, body.userId, body.text);
+    return this.eventServiceService.answerQuestion(questionId, user.id, body.text);
   }
 
   // Lấy danh sách câu hỏi của một sự kiện
