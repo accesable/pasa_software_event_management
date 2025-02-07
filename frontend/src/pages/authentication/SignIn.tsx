@@ -164,15 +164,7 @@ export const SignInPage = () => {
             wrap="wrap"
             style={{ width: '100%' }}
           >
-            <GoogleLoginButton
-              projectId='123456789abc'
-              endpoint='https://cloud.appwrite.io/v1'
-              clientId="752824572639-0nbbmbqgqj28oue1bsi2ouee2923oloj.apps.googleusercontent.com"
-              redirectUri="http://localhost:5173/auth/google/callback"
-              scope="email profile openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
-              onLoginSuccess={() => { /* Optional success handler */ }}
-              onLoginFailure={() => { /* Optional failure handler */ }}
-            />
+            <GoogleLoginButton /> {/* Thêm GoogleLoginButton vào đây */}
           </Flex>
         </Flex>
       </Col>

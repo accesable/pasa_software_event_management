@@ -1,4 +1,4 @@
-// src\App.tsx:
+// src\App.tsx
 // src/App.tsx
 import { RouterProvider } from 'react-router-dom';
 import { ConfigProvider, theme as antdTheme } from 'antd';
@@ -36,42 +36,30 @@ function App() {
   const { mytheme } = useSelector((state: RootState) => state.theme);
   const dispatch = useDispatch();
   useEffect(() => {
-    const accessToken = localStorage.getItem('accessToken');
+    const accessTokenFromUrl = new URLSearchParams(window.location.search).get('accessToken');
+    let accessToken = localStorage.getItem('accessToken');
+
+    if (accessTokenFromUrl) {
+      accessToken = accessTokenFromUrl;
+      localStorage.setItem('accessToken', accessToken);
+      window.history.replaceState({}, document.title, '/dashboard/default');
+    }
 
     if (accessToken) {
-    // Lấy thông tin người dùng từ local storage hoặc API
-    try {
-      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        dispatch(setUser(storedUser))
-      // Lấy thông tin người dùng từ API
-     // TODO, you have to call an api to fill out and assign to state if u wanna load user info right here
+      const fetchUserInfo = async () => {
+        try {
+          const response = await axiosInstance.get('/users/profile'); // Call /users/profile API
+          const userProfile = (response.data as { data: { user: any } }).data.user; // Assuming the API returns user data in response.data.data.user
+          dispatch(setUser(userProfile)); // Dispatch user info to Redux store
+          localStorage.setItem('user', JSON.stringify(userProfile)); // Update local storage
+        } catch (error) {
+          console.error('Failed to fetch user profile:', error);
+          localStorage.removeItem('user'); // Optionally remove user from local storage if fetch fails
+        }
+      };
 
-     // Example API call to get user info (you might need to adjust the endpoint)
-    //  const fetchUserInfo = async () => {
-    //     try {
-    //         const response = await axiosInstance.get('/auth/me'); // Replace '/auth/me' with your actual endpoint
-    //         dispatch(setUser(response.data.data.user)); // Assuming the API returns user data in response.data.user
-    //     } catch (error) {
-    //         console.error('Failed to fetch user info on init', error);
-    //         localStorage.removeItem('user'); // Optionally remove user from local storage if fetch fails
-    //     }
-    // };
-    // fetchUserInfo();
-
-
-    } catch (error) {
-        localStorage.removeItem('user');
-      console.error('fail load user when init from localstorage')
-    }
-
-    //  dispatch(setUser({ //hard assign
-    //     avatar: "https://lh3.googleusercontent.com/a/ACg8ocIj_YgS0xOp0b681eI7Gz9GfMMPQW-_jQ7s-zP888l=s96-c",
-    //     name : "Name example",
-    //     email : 'sampleEmail@domain',
-    //     id : '123'
-    //   }))
-    }
-    else {
+      fetchUserInfo(); // Call fetchUserInfo after getting accessToken
+    } else {
       localStorage.removeItem('user');
     }
   }, []);

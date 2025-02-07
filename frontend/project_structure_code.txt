@@ -482,54 +482,21 @@ axiosInstance.interceptors.response.use(
 export default axiosInstance;
 
 src\components\GoogleLoginButton.tsx:
-// src\components\GoogleLoginButton.tsx
+// src/components/GoogleLoginButton.tsx
 import React from 'react';
 import { Button } from 'antd';
 import { GoogleOutlined } from '@ant-design/icons';
-import { Account, Client, ID, OAuthProvider } from 'appwrite';
 
-interface GoogleLoginButtonProps {
-    redirectUri: string;
-    clientId: string;
-    scope: string;
-    onLoginSuccess: (accessToken: string, user: any) => void;
-    onLoginFailure: (error: string) => void;
-    projectId: string; // **ĐẢM BẢO PROP NÀY CÓ TỒN TẠI**
-    endpoint: string;  // **ĐẢM BẢO PROP NÀY CÓ TỒN TẠI**
-}
 
-const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
-    clientId,
-    redirectUri,
-    scope,
-    onLoginSuccess,
-    onLoginFailure,
-    projectId, // **ĐẢM BẢO PROP NÀY ĐƯỢC SỬ DỤNG**
-    endpoint, // **ĐẢM BẢO PROP NÀY ĐƯỢC SỬ DỤNG**
+
+const GoogleLoginButton: React.FC<any> = ({
 }) => {
     const handleGoogleLogin = async () => {
-        try {
-            const client = new Client()
-                .setEndpoint(endpoint) // Sử dụng prop endpoint
-                .setProject(projectId); // Sử dụng prop projectId
-
-            const account = new Account(client);
-
-            await account.createOAuth2Session(
-                'google' as OAuthProvider,
-                redirectUri,
-                scope
-            );
-
-        } catch (error: any) {
-            console.error("Error during Google login initiation:", error);
-            onLoginFailure(error.message || 'Failed to initiate Google login');
-        }
     };
 
     return (
         <Button icon={<GoogleOutlined />} onClick={handleGoogleLogin}>
-            Sign in with Google (Appwrite)
+            Sign in with Google
         </Button>
     );
 };
@@ -703,25 +670,6 @@ const InviteUsersModal: React.FC<InviteUsersModalProps> = ({ visible, onCancel, 
 };
 
 export default InviteUsersModal;
-
-src\components\oauth2-pkce.ts:
-// src\components\oauth2-pkce.ts
-import * as CryptoJS from 'crypto-js';
-
-export function generateCodeVerifier(): string {
-  const randomBytes = CryptoJS.lib.WordArray.random(32);
-  return CryptoJS.enc.Base64url.stringify(randomBytes);
-}
-
-export async function generateCodeChallenge(codeVerifier: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier));
-  return base64urlencode(digest);
-}
-
-function base64urlencode(arrayBuffer: ArrayBuffer): string {
-  let base64String = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-  return base64String.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
 
 src\components\TicketDetailsModal.tsx:
 // src\components\TicketDetailsModal.tsx
@@ -8114,7 +8062,6 @@ const DASHBOARD_ITEMS = [
 ];
 
 const USER_PROFILE_ITEMS = [
-  { title: 'details', path: PATH_USER_PROFILE.details },
   { title: 'information', path: PATH_USER_PROFILE.personalInformation },
   { title: 'security', path: PATH_USER_PROFILE.security },
   { title: 'feedback', path: PATH_USER_PROFILE.feedback },
@@ -8243,7 +8190,6 @@ export const PATH_LAYOUT = {
 
 export const PATH_USER_PROFILE = {
   root: ROOTS_PROFILE,
-  details: path(ROOTS_PROFILE, '/details'),
   personalInformation: path(ROOTS_PROFILE, '/personal-information'),
   security: path(ROOTS_PROFILE, '/security'),
   feedback: path(ROOTS_PROFILE, '/feedback'),
@@ -9050,11 +8996,6 @@ const items: MenuProps['items'] = [
 
   getItem('User profile', 'user-profile', <UserOutlined />, [
     getItem(
-      <Link to={PATH_USER_PROFILE.details}>Details</Link>,
-      'details',
-      null
-    ),
-    getItem(
       <Link to={PATH_USER_PROFILE.personalInformation}>Information</Link>,
       'personal-information',
       null
@@ -9407,9 +9348,9 @@ import {
   TabsProps,
   theme,
   Typography,
-  Button, // Import Button
-  message, // Import message
-  Spin, // Import Spin
+  Button,
+  message,
+  Spin,
 } from 'antd';
 import { Card } from '../../components';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -9419,11 +9360,11 @@ import { useStylesContext } from '../../context';
 const { Link } = Typography;
 
 import './styles.css';
-import { useEffect, useRef, useState } from 'react'; // Import useRef, useState
-import { useSelector, useDispatch } from 'react-redux'; // Import useDispatch
+import { useEffect, useRef, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
-import authService from '../../services/authService'; // Import authService
-import { updateUserProfile } from '../../redux/userSlice'; // Import updateUserProfile
+import authService from '../../services/authService';
+import { updateUserProfile } from '../../redux/userSlice';
 
 export const UserAccountLayout = () => {
   const {
@@ -9437,10 +9378,10 @@ export const UserAccountLayout = () => {
     label: u.title,
   }));
   const [activeKey, setActiveKey] = useState(TAB_ITEMS[0].key);
-  const user = useSelector((state: RootState) => state.user); // Get user from Redux
-  const dispatch = useDispatch(); // Get dispatch from useDispatch
-  const [uploadLoading, setUploadLoading] = useState(false); // Thêm state loading cho upload
-  const fileInputRef = useRef<HTMLInputElement>(null); // Tạo ref cho input file
+  const user = useSelector((state: RootState) => state.user);
+  const dispatch = useDispatch();
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onChange = (key: string) => {
     navigate(key);
@@ -9456,21 +9397,21 @@ export const UserAccountLayout = () => {
     {
       key: 'full-name',
       label: 'Name',
-      children: <span>{user.name || 'N/A'}</span>, // Display name from user state
+      children: <span>{user.name || 'N/A'}</span>,
     },
     {
       key: 'email',
       label: 'Email',
       children: (
         <Link href={`mailto:${user.email}`}>
-          {user.email || 'N/A'} {/* Display email from user state */}
+          {user.email || 'N/A'}
         </Link>
       ),
     },
     {
       key: 'phone',
       label: 'Phone',
-      children: user.phoneNumber || 'N/A', // Display phone from user state
+      children: user.phoneNumber || 'N/A',
     },
   ];
 
@@ -9488,8 +9429,9 @@ export const UserAccountLayout = () => {
       const res = response as { statusCode: number; message: string; data: { user: { avatar: string } } };
       if (res.statusCode === 201) {
         message.success(res.message);
-        dispatch(updateUserProfile({ avatar: res.data.user.avatar } as any)); // Cập nhật avatar trong Redux store
-        localStorage.setItem('user', JSON.stringify(res.data.user)); // Cập nhật user trong localStorage
+        dispatch(updateUserProfile({ avatar: res.data.user.avatar } as any));
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        window.location.reload(); // Tự động reload trang sau khi upload thành công
       } else {
         message.error(res.message || 'Upload avatar không thành công.');
       }
@@ -9508,7 +9450,7 @@ export const UserAccountLayout = () => {
   };
 
   const triggerFileInput = () => {
-    fileInputRef.current?.click(); // Kích hoạt input file ẩn khi button được click
+    fileInputRef.current?.click();
   };
 
 
@@ -9538,25 +9480,25 @@ export const UserAccountLayout = () => {
           ]}
         >
           <Row {...stylesContext?.rowProps}>
-            <Col xs={24} sm={8} lg={4} style={{ textAlign: 'center' }}> {/* Thêm textAlign: 'center' */}
+            <Col xs={24} sm={8} lg={4} style={{ textAlign: 'center' }}>
               <Image
                 src={user.avatar || "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dXNlcnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60"}
                 alt="user profile image"
-                height="100%"
-                width="100%"
+                height={120} // Set cố định chiều cao
+                width={120}  // Set cố định chiều rộng
                 style={{ borderRadius, objectFit: 'cover' }}
                 fallback="https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dXNlcnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60"
               />
               <div style={{ marginTop: '10px' }}>
-                <Button onClick={triggerFileInput} loading={uploadLoading}> {/* Thêm nút Upload Avatar */}
-                  {uploadLoading ? <Spin size="small" /> : 'Change Avatar'}
+                <Button onClick={triggerFileInput} loading={uploadLoading}>
+                  {uploadLoading ? <Spin size="small" /> : 'Đổi Avatar'}
                 </Button>
                 <input
                   type="file"
                   ref={fileInputRef}
                   style={{ display: 'none' }}
                   onChange={handleFileChange}
-                  accept="image/*" // Chỉ cho phép chọn file ảnh
+                  accept="image/*"
                 />
               </div>
             </Col>
@@ -9780,8 +9722,8 @@ const DASHBOARDS = [
 const APPS = [
   {
     title: 'user profile',
-    link: PATH_USER_PROFILE.details,
-    image: '/showcase/profile/details.png',
+    link: PATH_USER_PROFILE.personalInformation,
+    image: '/showcase/profile/personalInformation.png',
   },
   {
     title: 'auth',
@@ -10181,98 +10123,6 @@ src\pages\authentication\ChangePassword.tsx:
 src\pages\authentication\ForgotPassword.tsx:
 
 
-src\pages\authentication\GoogleAppwriteCallbackPage.tsx:
-// src\pages\authentication\GoogleAppwriteCallbackPage.tsx
-import React, { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { message, Spin } from 'antd';
-import { Account, Client, OAuthProvider } from 'appwrite';
-import { setUser } from '../../redux/userSlice';
-import { useDispatch } from 'react-redux';
-
-interface GoogleAppwriteCallbackPageProps {
-    redirectUri: string;
-    onLoginSuccess: (user: any) => void;
-    onLoginFailure: (error: string) => void;
-    projectId: string;
-    endpoint: string;
-}
-
-const GoogleAppwriteCallbackPage: React.FC<GoogleAppwriteCallbackPageProps> = ({
-    redirectUri,
-    onLoginSuccess,
-    onLoginFailure,
-}) => {
-    const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
-
-    useEffect(() => {
-        const code = searchParams.get('code');
-        if (code) {
-            createAppwriteSession(code);
-        } else {
-            const error = searchParams.get('error');
-            if (error) {
-                console.error("Google OAuth error:", error);
-                message.error(`Google login error: ${error}`);
-                onLoginFailure?.(error);
-                navigate('/auth/signin');
-            }
-        }
-    }, [searchParams, navigate, onLoginFailure, onLoginSuccess, redirectUri]);
-
-    const createAppwriteSession = async (code: string) => {
-        try {
-            const client = new Client()
-                .setEndpoint('https://cloud.appwrite.io/v1')
-                .setProject('123456789abc');
-
-            const account = new Account(client);
-
-            await account.createOAuth2Session(
-                'google' as OAuthProvider,
-                redirectUri,
-                undefined,
-                [code]
-            );
-
-            const user = await account.get();
-
-            dispatch(setUser({
-                id: user.$id,
-                email: user.email,
-                name: user.name,
-                avatar: `https://gravatar.com/avatar/${user.prefs.avatar}?d=robohash&r=g&s=100`,
-            }));
-
-            localStorage.setItem('user', JSON.stringify({
-                id: user.$id,
-                email: user.email,
-                name: user.name,
-                avatar: `https://gravatar.com/avatar/${user.prefs.avatar}?d=robohash&r=g&s=100`,
-            }));
-
-            message.success('Google login successful!');
-            onLoginSuccess?.(user);
-            navigate('/dashboards/default');
-        } catch (error: any) {
-            console.error("Error creating Appwrite session from Google code:", error);
-            message.error('Google login failed. Please try again.');
-            onLoginFailure?.(error.message || 'Failed to create Appwrite session');
-            navigate('/auth/signin');
-        }
-    };
-
-    return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <Spin size="large" tip="Đang xử lý đăng nhập Google..." />
-        </div>
-    );
-};
-
-export default GoogleAppwriteCallbackPage;
-
 src\pages\authentication\GoogleCallbackPage.tsx:
 // src\pages\authentication\GoogleCallbackPage.tsx
 import React, { useEffect, useCallback } from 'react'; // Import useCallback
@@ -10339,7 +10189,7 @@ const GoogleCallbackPage: React.FC<GoogleCallbackPageProps> = ({
     useEffect(() => {
         const code = searchParams.get('code');
         if (code) {
-            exchangeCodeForToken(code);
+          exchangeCodeForToken(code);
         } else {
             const error = searchParams.get('error');
             if (error) {
@@ -10661,15 +10511,7 @@ export const SignInPage = () => {
             wrap="wrap"
             style={{ width: '100%' }}
           >
-            <GoogleLoginButton
-              projectId='123456789abc'
-              endpoint='https://cloud.appwrite.io/v1'
-              clientId="752824572639-0nbbmbqgqj28oue1bsi2ouee2923oloj.apps.googleusercontent.com"
-              redirectUri="http://localhost:5173/auth/google/callback"
-              scope="email profile openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
-              onLoginSuccess={() => { /* Optional success handler */ }}
-              onLoginFailure={() => { /* Optional failure handler */ }}
-            />
+            <GoogleLoginButton />
           </Flex>
         </Flex>
       </Col>
@@ -16860,333 +16702,6 @@ export { Error500Page } from './Error500.tsx';
 export { Error503Page } from './Error503.tsx';
 
 
-src\pages\userAccount\Actions.tsx:
-import { Card, Flex } from '../../components';
-import { Button, Col, Divider, Row, Switch, Typography } from 'antd';
-import { CSSProperties, ReactNode } from 'react';
-import { QuestionCircleOutlined, SyncOutlined } from '@ant-design/icons';
-import { useStylesContext } from '../../context';
-
-const { Text } = Typography;
-
-const dividerStyles: CSSProperties = {
-  margin: `8px 0`,
-};
-
-type ActionItemProps = {
-  title: ReactNode;
-  extra?: ReactNode;
-  children?: ReactNode;
-};
-
-const ActionItem = ({ children, extra, title }: ActionItemProps) => {
-  return (
-    <Flex flexDirection="column" gap="middle" alignItems="flex-start">
-      <Text strong>{title}</Text>
-      {children}
-      {extra}
-      <Divider style={dividerStyles} />
-    </Flex>
-  );
-};
-
-export const UserProfileActionsPage = () => {
-  const context = useStylesContext();
-
-  const onChange = (checked: boolean) => {
-    console.log(`switch to ${checked}`);
-  };
-
-  return (
-    <Row {...context?.rowProps}>
-      <Col xs={24} lg={12} xl={8}>
-        <Card title="Advanced" style={{ height: '100%' }}>
-          <Flex flexDirection="column">
-            <ActionItem
-              title="Auto accept project invites"
-              extra={
-                <Text>
-                  Automatically accept project invites from known collaborators.
-                </Text>
-              }
-              children={<Switch defaultChecked onChange={onChange} />}
-            />
-            <ActionItem
-              title="Experimental features"
-              extra={
-                <Button
-                  icon={<QuestionCircleOutlined />}
-                  type="link"
-                  size="small"
-                >
-                  Learn more about experimental features
-                </Button>
-              }
-              children={<Switch onChange={onChange} />}
-            />
-            <ActionItem
-              title="Clear local data"
-              children={
-                <Button type="default" icon={<SyncOutlined />}>
-                  Reload
-                </Button>
-              }
-            />
-          </Flex>
-        </Card>
-      </Col>
-      <Col xs={24} lg={12} xl={8}>
-        <Card title="Export content" style={{ height: '100%' }}>
-          <Flex flexDirection="column">
-            <ActionItem
-              title="Export workspace content"
-              extra={
-                <Button
-                  icon={<QuestionCircleOutlined />}
-                  type="link"
-                  size="small"
-                >
-                  Learn about exporting workspaces
-                </Button>
-              }
-              children={<Button>Export all workspace content</Button>}
-            />
-            <ActionItem
-              title="Export members"
-              extra={
-                <Button
-                  icon={<QuestionCircleOutlined />}
-                  type="link"
-                  size="small"
-                >
-                  Learn about exporting members
-                </Button>
-              }
-              children={<Button>Export members as CSV</Button>}
-            />
-          </Flex>
-        </Card>
-      </Col>
-      <Col xs={24} lg={12} xl={8}>
-        <Card title="Danger zone" style={{ height: '100%' }}>
-          <ActionItem
-            title="Delete account"
-            extra={
-              <Button
-                icon={<QuestionCircleOutlined />}
-                type="link"
-                size="small"
-              >
-                Learn about deleting account
-              </Button>
-            }
-            children={<Button danger>Delete account</Button>}
-          />
-        </Card>
-      </Col>
-    </Row>
-  );
-};
-
-
-src\pages\userAccount\Activity.tsx:
-import { TimelineCard } from '../../components';
-import { useFetchData } from '../../hooks';
-
-export const UserProfileActivityPage = () => {
-  const {
-    data: timelineData,
-    loading: timelineDataLoading,
-    error: timelineDataError,
-  } = useFetchData('../mocks/TimelineActivity.json');
-
-  return (
-    <TimelineCard
-      title="Recent activity"
-      data={timelineData}
-      loading={timelineDataLoading}
-      error={timelineDataError}
-    />
-  );
-};
-
-
-src\pages\userAccount\Details.tsx:
-import { Button, Col, Form, Input, Radio, Row, Select, Typography } from 'antd';
-import { Card } from '../../components';
-import { SaveOutlined } from '@ant-design/icons';
-
-type FieldType = {
-  username?: string;
-  password?: string;
-  remember?: string;
-  firstName?: string;
-  middleName?: string;
-  lastName?: string;
-  company?: string;
-  email?: string;
-  subscription?: 'free' | 'pro' | 'enterprise' | 'custom';
-  id?: string;
-  status?: 'active' | 'inactive';
-};
-
-export const UserProfileDetailsPage = () => {
-  const onFinish = (values: any) => {
-    console.log('Success:', values);
-  };
-
-  const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
-  };
-
-  return (
-    <Card>
-      <Form
-        name="user-profile-details-form"
-        layout="vertical"
-        initialValues={{
-          id: '474e2cd2-fc79-49b8-98fe-dab443facede',
-          username: 'kelvink96',
-          firstName: 'Kelvin',
-          middleName: 'Kiptum',
-          lastName: 'Kiprop',
-          company: 'Design Sparx',
-          email: 'kelvin.kiprop96@gmail.com',
-          subscription: 'pro',
-          status: 'active',
-        }}
-        onFinish={onFinish}
-        onFinishFailed={onFinishFailed}
-        autoComplete="on"
-        requiredMark={false}
-      >
-        <Row gutter={[16, 0]}>
-          <Col sm={24} lg={24}>
-            <Form.Item<FieldType>
-              label="User ID"
-              name="id"
-              rules={[{ required: true, message: 'Please input your id!' }]}
-            >
-              <Input
-                readOnly={true}
-                suffix={
-                  <Typography.Paragraph
-                    copyable={{ text: '474e2cd2-fc79-49b8-98fe-dab443facede' }}
-                    style={{ margin: 0 }}
-                  ></Typography.Paragraph>
-                }
-              />
-            </Form.Item>
-          </Col>
-          <Col sm={24} lg={8}>
-            <Form.Item<FieldType>
-              label="First name"
-              name="firstName"
-              rules={[
-                { required: true, message: 'Please input your first name!' },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-          </Col>
-          <Col sm={24} lg={8}>
-            <Form.Item<FieldType>
-              label="Middle name"
-              name="middleName"
-              rules={[
-                { required: true, message: 'Please input your middle name!' },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-          </Col>
-          <Col sm={24} lg={8}>
-            <Form.Item<FieldType>
-              label="Last name"
-              name="lastName"
-              rules={[
-                { required: true, message: 'Please input your last name!' },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-          </Col>
-          <Col sm={24} lg={12}>
-            <Form.Item<FieldType>
-              label="Email"
-              name="email"
-              rules={[{ required: true, message: 'Please input your email!' }]}
-            >
-              <Input />
-            </Form.Item>
-          </Col>
-          <Col sm={24} lg={12}>
-            <Form.Item<FieldType>
-              label="Username"
-              name="username"
-              rules={[
-                { required: true, message: 'Please input your username!' },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-          </Col>
-          <Col sm={24} lg={12}>
-            <Form.Item<FieldType>
-              label="Company"
-              name="company"
-              rules={[
-                { required: true, message: 'Please input your company!' },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-          </Col>
-          <Col sm={24} lg={12}>
-            <Form.Item<FieldType>
-              label="Subscription"
-              name="subscription"
-              rules={[
-                { required: true, message: 'Please select your subscription!' },
-              ]}
-            >
-              <Select
-                options={[
-                  { value: 'free', label: 'Free' },
-                  { value: 'pro', label: 'Pro' },
-                  { value: 'enterprise', label: 'Enterprise' },
-                  { value: 'custom', label: 'Custom', disabled: true },
-                ]}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={24}>
-            <Form.Item<FieldType>
-              label="Status"
-              name="status"
-              rules={[
-                { required: true, message: 'Please select your status!' },
-              ]}
-            >
-              <Radio.Group>
-                <Radio value="active">Active</Radio>
-                <Radio value="inactive">Inactive</Radio>
-              </Radio.Group>
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Form.Item>
-          <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
-            Save changes
-          </Button>
-        </Form.Item>
-      </Form>
-    </Card>
-  );
-};
-
-
 src\pages\userAccount\Feedback.tsx:
 import { Button, Col, Flex, Form, Input, Rate, Row, Typography } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
@@ -17286,191 +16801,8 @@ export const UserProfileFeedbackPage = () => {
 };
 
 
-src\pages\userAccount\Help.tsx:
-import { Alert, Button, Flex, Input, TabsProps, Typography } from 'antd';
-import { Card, FaqCollapse, Loader } from '../../components';
-import {
-  DollarOutlined,
-  PullRequestOutlined,
-  RocketOutlined,
-  SettingOutlined,
-  UnorderedListOutlined,
-} from '@ant-design/icons';
-import { createElement, useEffect, useState } from 'react';
-import * as _ from 'lodash';
-import FaqsData from '../../../public/mocks/Faqs.json';
-import { TitleProps } from 'antd/es/typography/Title';
-import { useMediaQuery } from 'react-responsive';
-import { useFetchData } from '../../hooks';
-
-const { Text, Title } = Typography;
-
-const TOPICS = [
-  {
-    title: 'get started',
-    image: RocketOutlined,
-  },
-  {
-    title: 'features',
-    image: UnorderedListOutlined,
-  },
-  {
-    title: 'billing',
-    image: DollarOutlined,
-  },
-  {
-    title: 'troubleshooting',
-    image: SettingOutlined,
-  },
-  {
-    title: 'integrations',
-    image: PullRequestOutlined,
-  },
-];
-
-const OTHER_TOPICS = [
-  {
-    title: 'Getting started guide',
-    description:
-      "Not sure where to start? Get going with our easy-to-follow beginner's guide to Antd Dashboard.",
-    action: 'Get started',
-  },
-  {
-    title: "What's new",
-    description:
-      'All the upgrades and improvements that‘ll better help you organize it all.',
-    action: "See what's new",
-  },
-  {
-    title: 'Known issues',
-    description:
-      'The bugs with fixes in the works. Check here before shooting us a message.',
-    action: 'Consult the list',
-  },
-];
-
-const TITLE_PROPS: TitleProps = {
-  style: {
-    marginBottom: 0,
-    textAlign: 'center',
-  },
-  level: 3,
-};
-
-export const UserProfileHelpPage = () => {
-  const [activeTabKey, setActiveTabKey] = useState<string>('Account');
-  const [tabList, setTabList] = useState<TabsProps['items']>([]);
-  const isMobile = useMediaQuery({ maxWidth: 600 });
-  const {
-    data: faqsData,
-    loading: faqsDataLoading,
-    error: faqsDataError,
-  } = useFetchData('../mocks/Faqs.json');
-
-  const onTabChange = (key: string) => {
-    setActiveTabKey(key);
-  };
-
-  useEffect(() => {
-    const tabs = _.chain(FaqsData)
-      .orderBy('category')
-      .uniqBy('category')
-      .map((d) => ({
-        key: d.category,
-        label: d.category,
-      }))
-      .value();
-
-    console.log(tabs);
-    setTabList(tabs);
-  }, []);
-
-  return (
-    <div>
-      <Flex vertical gap="large">
-        <Flex vertical gap="middle">
-          <Title {...TITLE_PROPS}>How can we help?</Title>
-          <Input.Search placeholder="search articles..." />
-        </Flex>
-        <Flex gap="middle" wrap={isMobile ? 'wrap' : 'nowrap'}>
-          {TOPICS.map((t) => (
-            <Card
-              hoverable
-              style={{
-                width: isMobile ? '100%' : '25%',
-                textAlign: 'center',
-              }}
-            >
-              <Flex vertical gap="middle">
-                {createElement(t.image, {
-                  style: { fontSize: '1.5rem', margin: 'auto' },
-                })}
-                <Text style={{ textTransform: 'capitalize' }}>{t.title}</Text>
-              </Flex>
-            </Card>
-          ))}
-        </Flex>
-        <Flex gap="middle" wrap={isMobile ? 'wrap' : 'nowrap'}>
-          {OTHER_TOPICS.map((t) => (
-            <Card
-              key={t.title}
-              title={t.title}
-              actions={[<Button>{t.action}</Button>]}
-            >
-              <Text>{t.description}</Text>
-            </Card>
-          ))}
-        </Flex>
-        <Title {...TITLE_PROPS}>Frequently asked questions</Title>
-        <Text>
-          Our website has a list of questions and answers that aim to provide
-          clarity on a particular subject. If you need assistance, feel free to
-          check out our FAQs.
-        </Text>
-        <Card
-          tabList={tabList}
-          activeTabKey={activeTabKey}
-          tabBarExtraContent={<Button type="link">Go to FAQs</Button>}
-          onTabChange={onTabChange}
-          tabProps={{
-            size: 'middle',
-          }}
-        >
-          {faqsDataError ? (
-            <Alert
-              message="Error"
-              description={faqsDataError.toString()}
-              type="error"
-              showIcon
-            />
-          ) : faqsDataLoading ? (
-            <Loader />
-          ) : (
-            <FaqCollapse
-              bordered
-              items={_.chain(faqsData)
-                .filter((d) => d.category === activeTabKey)
-                .slice(0, 5)
-                .map((i) => ({
-                  label: `${i.question.slice(0, 50)}`,
-                  children: i.answer,
-                }))
-                .value()}
-            />
-          )}
-        </Card>
-      </Flex>
-    </div>
-  );
-};
-
-
 src\pages\userAccount\index.ts:
-export { UserProfileDetailsPage } from './Details.tsx';
 export { UserProfileSecurityPage } from './Security.tsx';
-export { UserProfileActivityPage } from './Activity.tsx';
-export { UserProfileActionsPage } from './Actions.tsx';
-export { UserProfileHelpPage } from './Help.tsx';
 export { UserProfileFeedbackPage } from './Feedback.tsx';
 
 
@@ -17493,11 +16825,10 @@ import {
   message,
 } from 'antd';
 import { SaveOutlined, UploadOutlined, MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../redux/store';
-import authService from '../../services/authService';
-import dayjs from 'dayjs';
+import { useDispatch } from 'react-redux';
 import { updateUserProfile } from '../../redux/userSlice';
+import dayjs from 'dayjs';
+import authService from '../../services/authService';
 
 const SOCIALS = [
   'Facebook',
@@ -17554,7 +16885,7 @@ export const UserProfileInformationPage = () => {
             postalCode: '00100', // Giá trị mặc định
             preferred: true, // Giá trị mặc định
             dob: dayjs('1996/04/27'), // Giá trị mặc định
-            socialLinks: [], // Giá trị mặc định, có thể cần fetch từ API nếu có
+            socialLinks: [], // Giá trị mặc định
           });
         } else {
           setError(response?.message || 'Failed to load user profile');
@@ -17571,16 +16902,20 @@ export const UserProfileInformationPage = () => {
     fetchUserProfile();
   }, [form, dispatch]);
 
-
   const onFinish = async (values: FieldType) => {
     setLoading(true);
     setError(null);
     try {
       const accessToken = localStorage.getItem('accessToken') || '';
-      const response = await authService.updateUserProfile(values, accessToken) as any;
+      // Chỉ gửi 2 field: name và phoneNumber
+      const payload = {
+        name: values.name,
+        phoneNumber: values.phoneNumber,
+      };
+      const response = await authService.updateUserProfile(payload, accessToken) as any;
       if (response.statusCode === 200 && response.data.user) {
         message.success(response.message);
-        dispatch(updateUserProfile({ name: response.data.user.name, phoneNumber: response.data.user.phoneNumber })); // Dispatch action to update user info in Redux
+        dispatch(updateUserProfile({ name: response.data.user.name, phoneNumber: response.data.user.phoneNumber })); // Update Redux
         localStorage.setItem('user', JSON.stringify(response.data.user)); // Update localStorage
       } else {
         setError(response?.message || 'Failed to update user profile');
@@ -17598,7 +16933,6 @@ export const UserProfileInformationPage = () => {
     console.log('Failed:', errorInfo);
   };
 
-
   return (
     <div>
       {error && (
@@ -17615,8 +16949,6 @@ export const UserProfileInformationPage = () => {
 
       <Card title="Personal Information">
         <Flex gap="large" vertical>
-
-
           <Form
             form={form}
             name="user-profile-info-form"
@@ -17650,12 +16982,7 @@ export const UserProfileInformationPage = () => {
                 <Form.Item<FieldType>
                   label="Country"
                   name="country"
-                  rules={[
-                    {
-                      required: false,
-                      message: 'Please select your country or region!',
-                    },
-                  ]}
+                  rules={[{ required: false, message: 'Please select your country or region!' }]}
                 >
                   <Select options={[]} placeholder="Country" />
                 </Form.Item>
@@ -17664,9 +16991,7 @@ export const UserProfileInformationPage = () => {
                 <Form.Item<FieldType>
                   label="City"
                   name="city"
-                  rules={[
-                    { required: false, message: 'Please enter your city!' },
-                  ]}
+                  rules={[{ required: false, message: 'Please enter your city!' }]}
                 >
                   <Input placeholder="City" />
                 </Form.Item>
@@ -17675,12 +17000,7 @@ export const UserProfileInformationPage = () => {
                 <Form.Item<FieldType>
                   label="Address line 1"
                   name="addressLine1"
-                  rules={[
-                    {
-                      required: false,
-                      message: 'Please enter your address line!',
-                    },
-                  ]}
+                  rules={[{ required: false, message: 'Please enter your address line!' }]}
                 >
                   <Input.TextArea placeholder="Address line 1" />
                 </Form.Item>
@@ -17689,31 +17009,20 @@ export const UserProfileInformationPage = () => {
                 <Form.Item<FieldType>
                   label="Address line 2"
                   name="addressLine2"
-                  rules={[
-                    {
-                      required: false,
-                      message: 'Please enter your address line!',
-                    },
-                  ]}
+                  rules={[{ required: false, message: 'Please enter your address line!' }]}
                 >
                   <Input.TextArea placeholder="Address line 2" />
                 </Form.Item>
               </Col>
-
-
               <Col sm={24} lg={8}>
                 <Form.Item<BirthdayFieldType>
                   label="Birth date"
                   name="dob"
-                  rules={[
-                    { required: false, message: 'Please select your birthday!' },
-                  ]}
+                  rules={[{ required: false, message: 'Please select your birthday!' }]}
                 >
                   <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
-
-
             </Row>
 
             <Form.Item>
@@ -17724,7 +17033,9 @@ export const UserProfileInformationPage = () => {
           </Form>
         </Flex>
       </Card>
+
       <Card title="Social links" style={{ marginTop: 24 }}>
+        {/* Phần Social links vẫn hiển thị nhưng không ảnh hưởng đến patch update */}
         <Form
           name="user-profile-social-form"
           onFinish={onFinish}
@@ -17754,9 +17065,7 @@ export const UserProfileInformationPage = () => {
                     <Form.Item
                       {...restField}
                       name={[name, 'username']}
-                      rules={[
-                        { required: true, message: 'Missing username' },
-                      ]}
+                      rules={[{ required: true, message: 'Missing username' }]}
                     >
                       <Input placeholder="username" />
                     </Form.Item>
@@ -17791,8 +17100,9 @@ export const UserProfileInformationPage = () => {
   );
 };
 
+
 src\pages\userAccount\Security.tsx:
-// src\pages\userAccount\Security.tsx
+// src/pages/userAccount/Security.tsx
 import {
   Alert,
   Button,
@@ -17801,11 +17111,11 @@ import {
   Form,
   Input,
   Row,
-  message, // Import message
+  message,
 } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import React, { useState } from 'react';
-import axiosInstance from '../../api/axiosInstance';
+import authService from '../../services/authService';
 
 type FieldType = {
   currentPassword?: string;
@@ -17816,6 +17126,7 @@ type FieldType = {
 export const UserProfileSecurityPage = () => {
   const [form] = Form.useForm<FieldType>();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const onFinish = async (values: FieldType) => {
     if (values.newPassword !== values.confirmPassword) {
@@ -17824,16 +17135,39 @@ export const UserProfileSecurityPage = () => {
     }
 
     setLoading(true);
+    setError(null);
     try {
-      await axiosInstance.patch('/auth/change-password', {
+      // Nếu backend yêu cầu trường "id", bạn có thể lấy từ localStorage (nếu lưu dưới key "user")
+      // const user = JSON.parse(localStorage.getItem("user") || "{}");
+      // const passwordData = {
+      //   id: user.id,
+      //   currentPassword: values.currentPassword,
+      //   newPassword: values.newPassword,
+      // };
+
+      // Nếu backend lấy userId từ accessToken thì chỉ cần 2 field:
+      const passwordData = {
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
-      });
-      message.success("Password changed successfully!");
-      form.resetFields();
+      };
+
+      const accessToken = localStorage.getItem("accessToken");
+      if (!accessToken) {
+        message.error("Access token is missing.");
+        setLoading(false);
+        return;
+      }
+      const response = await authService.changePassword(passwordData, accessToken) as any;
+      if (response.statusCode === 200) {
+        message.success(response.message);
+        form.resetFields();
+      } else {
+        setError(response?.error || "Failed to change password.");
+        message.error(response?.error  || "Failed to change password.");
+      }
     } catch (error: any) {
-      console.error("Password change error:", error);
-      message.error(error.response?.data?.message || "Failed to change password.");
+      setError(error.error || "Failed to change password.");
+      message.error(error.error || "Failed to change password.");
     } finally {
       setLoading(false);
     }
@@ -17845,6 +17179,17 @@ export const UserProfileSecurityPage = () => {
 
   return (
     <Card title="Change your password">
+      {error && (
+        <Alert
+          message="Error"
+          description={error}
+          type="error"
+          showIcon
+          closable
+          onClose={() => setError(null)}
+          style={{ marginBottom: 16 }}
+        />
+      )}
       <Form
         form={form}
         name="form-change-password"
@@ -17859,17 +17204,11 @@ export const UserProfileSecurityPage = () => {
             <Form.Item<FieldType>
               label="Current password"
               name="currentPassword"
-              rules={[
-                {
-                  required: true,
-                  message: 'Please input your current password!',
-                },
-              ]}
+              rules={[{ required: true, message: 'Please input your current password!' }]}
             >
               <Input.Password />
             </Form.Item>
           </Col>
-
           <Col span={24}>
             <Form.Item<FieldType>
               label="New password"
@@ -17881,33 +17220,28 @@ export const UserProfileSecurityPage = () => {
             >
               <Input.Password />
             </Form.Item>
-
-            <Col span={24}>
-              <Form.Item<FieldType>
-                label="Confirm password"
-                name="confirmPassword"
-                dependencies={['newPassword']}
-                rules={[
-                  {
-                    required: true,
-                    message: 'Please re-input your new password!!',
+          </Col>
+          <Col span={24}>
+            <Form.Item<FieldType>
+              label="Confirm password"
+              name="confirmPassword"
+              dependencies={['newPassword']}
+              rules={[
+                { required: true, message: 'Please re-input your new password!' },
+                ({ getFieldValue }) => ({
+                  validator(_: any, value: string) {
+                    if (!value || getFieldValue('newPassword') === value) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject('The two passwords that you entered do not match!');
                   },
-                  ({ getFieldValue }) => ({
-                    validator(_: any, value: string) {
-                      if (!value || getFieldValue('newPassword') === value) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject('The two passwords that you entered do not match!');
-                    },
-                  }),
-                ]}
-              >
-                <Input.Password />
-              </Form.Item>
-            </Col>
+                }),
+              ]}
+            >
+              <Input.Password />
+            </Form.Item>
           </Col>
         </Row>
-
         <Form.Item>
           <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading}>
             Save changes
@@ -18095,11 +17429,7 @@ import {
   SignUpPage,
   SitemapPage,
   SocialDashboardPage,
-  UserProfileActionsPage,
-  UserProfileActivityPage,
-  UserProfileDetailsPage,
   UserProfileFeedbackPage,
-  UserProfileHelpPage,
   UserProfileSecurityPage,
   VerifyEmailPage,
   WelcomePage,
@@ -18126,7 +17456,6 @@ import EventDetailsPage from '../pages/details/EventDetailsPage.tsx';
 import EditEventPage from '../pages/edit/EditEventPage.tsx';
 import ParticipatedEventsPage from '../pages/dashboards/ParticipatedEvents.tsx';
 import SpeakerGuestManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
-import GoogleAppwriteCallbackPage from '../pages/authentication/GoogleAppwriteCallbackPage.tsx';
 import ParticipatedEventDetailsPage from '../pages/details/ParticipatedEventDetailsPage.tsx';
 import { UserProfileInformationPage } from '../pages/userAccount/Information.tsx';
 
@@ -18287,29 +17616,12 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       {
-        index: true,
-        path: 'details',
-        element: <UserProfileDetailsPage />,
-      },
-      {
         path: 'personal-information',
         element: <UserProfileInformationPage />, // Thêm route cho UserProfileInformationPage
       },
       {
         path: 'security',
         element: <UserProfileSecurityPage />,
-      },
-      {
-        path: 'activity',
-        element: <UserProfileActivityPage />,
-      },
-      {
-        path: 'actions',
-        element: <UserProfileActionsPage />,
-      },
-      {
-        path: 'help',
-        element: <UserProfileHelpPage />,
       },
       {
         path: 'feedback',
@@ -18321,16 +17633,6 @@ const router = createBrowserRouter([
     path: '/auth',
     errorElement: <ErrorPage />,
     children: [
-      {
-        path: 'google/callback',
-        element: <GoogleAppwriteCallbackPage
-          projectId='123456789abc'
-          endpoint='https://cloud.appwrite.io/v1'
-          redirectUri="http://localhost:5173/auth/google/callback"
-          onLoginSuccess={() => { /* Optional success handler */ }}
-          onLoginFailure={() => { /* Optional failure handler */ }}
-        />,
-      },
       {
         path: 'signup',
         element: <SignUpPage />,
@@ -18781,9 +18083,13 @@ const authService = {
     }
   },
 
-  changePassword: async (passwordData: any) => {
+  changePassword: async (passwordData: any, accessToken: string) => {
     try {
-      const response = await axiosInstance.patch(`${API_BASE_URL}/change-password`, passwordData);
+      const headers: any = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      };
+      const response = await axiosInstance.post(`${API_BASE_URL}/change-password`, passwordData, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;
