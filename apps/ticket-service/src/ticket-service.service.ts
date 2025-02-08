@@ -4,7 +4,7 @@ import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
 import mongoose, { Model } from 'mongoose';
-import * as QRCode from 'qrcode';
+// import * as QRCode from 'qrcode';
 import { UsersServiceClient, USERS_SERVICE_NAME, QueryParamsRequest } from '../../../libs/common/src';
 import { handleRpcException } from '../../../libs/common/src/filters/handleException';
 import { EVENT_SERVICE_NAME, EventServiceClient } from '../../../libs/common/src/types/event';
@@ -256,14 +256,11 @@ export class TicketServiceService implements OnModuleInit {
         sectionIds: sessionIds,
         status: 'REGISTERED'
       });
-      const baseUrl = this.configService.get<string>('BASE_URL');
+      // const baseUrl = this.configService.get<string>('BASE_URL');
       const code = `${participant._id}`;
-      const url = `${baseUrl}/tickets/scan?code=${code}`;
-      // const qrCodeUrl = await QRCode.toDataURL(url, {
-      //   errorCorrectionLevel: 'H', // Mức sửa lỗi cao
-      //   type: 'image/png',
-      //   width: 300,
-      // });
+      // const url = `${baseUrl}/tickets/scan?code=${code}`;
+      const url = `${code}`;
+  
       const ticket = await this.ticketModel.create({ participantId: participant._id.toString(), qrCodeUrl: url, code });
       this.clientEvent.emit('ticket_created', { eventId: request.eventId });
       return {
