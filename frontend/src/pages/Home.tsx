@@ -30,44 +30,12 @@ const { Title, Text } = Typography;
 
 const DASHBOARDS = [
   {
-    title: 'bidding',
-    link: PATH_DASHBOARD.bidding,
-    image: '/showcase/dashboard/bidding.png',
-  },
-  {
     title: 'default',
-    link: PATH_DASHBOARD.default,
-    image: '/showcase/dashboard/default.png',
-  },
-  {
-    title: 'ecommerce',
-    link: PATH_DASHBOARD.ecommerce,
-    image: '/showcase/dashboard/ecommerce.png',
-  },
-  {
-    title: 'learning',
-    link: PATH_DASHBOARD.learning,
-    image: '/showcase/dashboard/learning.png',
-  },
-  {
-    title: 'logistics',
-    link: PATH_DASHBOARD.logistics,
-    image: '/showcase/dashboard/logistics.png',
-  },
-  {
-    title: 'marketing',
-    link: PATH_DASHBOARD.marketing,
-    image: '/showcase/dashboard/marketing.png',
+    link: PATH_DASHBOARD.general,
   },
   {
     title: 'projects',
     link: PATH_DASHBOARD.projects,
-    image: '/showcase/dashboard/projects.png',
-  },
-  {
-    title: 'social',
-    link: PATH_DASHBOARD.social,
-    image: '/showcase/dashboard/social.png',
   },
 ];
 
@@ -75,73 +43,14 @@ const APPS = [
   {
     title: 'user profile',
     link: PATH_USER_PROFILE.personalInformation,
-    image: '/showcase/profile/personalInformation.png',
   },
   {
     title: 'auth',
     link: PATH_AUTH.signin,
-    image: '/showcase/auth/login.png',
   },
   {
     title: 'errors',
     link: PATH_ERROR.error400,
-    image: '/showcase/errors/400.png',
-  },
-];
-
-const FEATURES = [
-  {
-    title: 'customizable theme',
-    description:
-      'We have included a configurable theme provider to customize your elegant admin.',
-    icon: FormatPainterOutlined,
-  },
-  {
-    title: '50+ Page Templates',
-    description: 'We have 50+ pages to make your development easier.',
-    icon: FileOutlined,
-  },
-  {
-    title: '60+ UI components',
-    description: 'Almost 60+ UI Components being given with Antd Admin Pack.',
-    icon: AppstoreOutlined,
-  },
-  {
-    title: 'Ant Design',
-    description: 'Its been made with Ant Design and full responsive layout.',
-    icon: AntDesignOutlined,
-  },
-  {
-    title: '500+ font icons',
-    description:
-      'Lots of Icon Fonts are included here in the package of Antd Admin.',
-    icon: BorderOutlined,
-  },
-  {
-    title: 'Slick Carousel',
-    description: 'The Last React Carousel You will Ever Need!.',
-    icon: MergeCellsOutlined,
-  },
-  {
-    title: 'Easy to Customize',
-    description: 'Customization will be easy as we understand your pain.',
-    icon: EditOutlined,
-  },
-  {
-    title: 'Lots of Chart Options',
-    description:
-      'You name it and we have it, Yes lots of variations for Charts.',
-    icon: PieChartOutlined,
-  },
-  {
-    title: 'Lots of Table Examples',
-    description: 'Data Tables are initial requirement and we added them.',
-    icon: TableOutlined,
-  },
-  {
-    title: 'Calendar Design',
-    description: 'Calendar is available with our package & in nice design.',
-    icon: CalendarOutlined,
   },
 ];
 
@@ -263,7 +172,7 @@ export const HomePage = () => {
               <Link to={dashboard.link}>
                 <Card
                   hoverable
-                  cover={<img src={dashboard.image} alt={dashboard.title} />}
+                  cover={<img alt={dashboard.title} />}
                 >
                   <Text className="m-0 text-capitalize">{dashboard.title}</Text>
                 </Card>
@@ -289,7 +198,7 @@ export const HomePage = () => {
           {APPS.map((app) => (
             <Col key={app.title} xs={24} sm={12} lg={8} xl={6}>
               <Link to={app.link}>
-                <Card hoverable cover={<img src={app.image} alt={app.title} />}>
+                <Card hoverable cover={<img alt={app.title} />}>
                   <Text className="m-0 text-capitalize">{app.title}</Text>
                 </Card>
               </Link>
@@ -311,21 +220,6 @@ export const HomePage = () => {
             { xs: 8, sm: 16, md: 24, lg: 32 },
           ]}
         >
-          {FEATURES.map((feature) => (
-            <Col key={feature.title} xs={24} md={12} lg={8}>
-              <Card style={{ height: '100%' }}>
-                <Flex vertical>
-                  {createElement(feature.icon, {
-                    style: { fontSize: 32, color: colorPrimary },
-                  })}
-                  <Title level={5} className="text-capitalize">
-                    {feature.title}
-                  </Title>
-                  <Text>{feature.description}</Text>
-                </Flex>
-              </Card>
-            </Col>
-          ))}
         </Row>
       </Container>
       <Card

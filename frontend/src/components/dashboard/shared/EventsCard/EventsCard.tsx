@@ -1,4 +1,5 @@
 // src\components\dashboard\shared\EventsCard\EventsCard.tsx
+import React from 'react';
 import {
   Card as AntdCard,
   CardProps,
@@ -7,6 +8,9 @@ import {
   Flex,
   Tooltip,
   Typography,
+  Spin, // Import Spin
+  Tag, // Import Tag
+  message, // Import message
 } from 'antd';
 import {
   CalendarOutlined,
@@ -15,6 +19,9 @@ import {
 
 import './styles.css';
 import { Events } from '../../../../types';
+import { useState, useEffect } from 'react'; // Import useState and useEffect
+import authService from '../../../../services/authService';
+import dayjs from 'dayjs';
 
 const { Text, Title } = Typography;
 
@@ -30,13 +37,39 @@ export const EventsCard = (props: Props) => {
     ...others
   } = props;
 
-  // Check if event is defined before accessing its properties
+  const [categoryName, setCategoryName] = useState<string | null>(null); // State for category name
+  const [categoryLoading, setCategoryLoading] = useState(false); // Loading state
+
+  useEffect(() => {
+    const fetchCategoryName = async () => {
+      if (!event?.categoryId) return; // Exit if categoryId is missing
+      setCategoryLoading(true);
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await authService.getCategoryById(event.categoryId, accessToken || '');
+        const categoryResponse = response as { data: { category: { name: string } } };
+        setCategoryName(categoryResponse.data.category.name);
+      } catch (error: any) {
+        console.error('Error fetching category name:', error);
+        message.error('Failed to load category name');
+        setCategoryName('N/A'); // Set to N/A in case of error
+      } finally {
+        setCategoryLoading(false);
+      }
+    };
+
+    if (event) {
+      fetchCategoryName();
+    }
+  }, [event]);
+
+
   const items: DescriptionsProps['items'] = event ? [
     {
       key: 'event_name',
       label: 'Title',
       children: (
-        <span className="text-capitalize">{event.name?.slice(0, 36)}...</span> // Use optional chaining
+        <span className="text-capitalize">{event.name?.slice(0, 36)}...</span>
       ),
       span: 24,
     },
@@ -48,8 +81,8 @@ export const EventsCard = (props: Props) => {
     },
     {
       key: 'event_type',
-      label: 'Category', // Changed label to "Category"
-      children: <span className="text-capitalize">{event.categoryId}</span>, // Changed to categoryId
+      label: 'Category',
+      children: categoryLoading ? <Spin size="small" /> : <Tag color="blue">{categoryName || 'Loading...'}</Tag>, // Display category name or loader
       span: 24,
     },
     {
@@ -77,11 +110,11 @@ export const EventsCard = (props: Props) => {
       label: <CalendarOutlined />,
       children: (
         <Tooltip title="Project date">
-          <Typography.Text>{event.startDate} - {event.endDate}</Typography.Text>
+          <Typography.Text>{event.startDate ? dayjs(event.startDate).format('DD/MM/YYYY HH:mm') : 'N/A'} - {event.endDate ? dayjs(event.endDate).format('DD/MM/YYYY HH:mm') : 'N/A'}</Typography.Text>
         </Tooltip>
       ),
     },
-  ] : []; // Render empty descriptions if event is undefined
+  ] : [];
 
 
   return size === 'small' ? (
@@ -92,12 +125,12 @@ export const EventsCard = (props: Props) => {
       {...others}
     >
       <Title level={5} className="text-capitalize m-0">
-        {event?.name?.slice(0, 15)} {/* Use optional chaining here too */}
+        {event?.name?.slice(0, 15)}
       </Title>
       <br />
       <Flex wrap="wrap" gap="small" className="text-capitalize">
         <Text>
-          Category: <b>{event?.categoryId},</b> {/* Changed to categoryId */}
+          Category: <b>{categoryLoading ? <Spin size="small" /> : <Tag color="blue">{categoryName || 'Loading...'}</Tag>}</b>,
         </Text>
         <Text>
           Location: <b>{event?.location}</b>

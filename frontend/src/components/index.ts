@@ -1,5 +1,4 @@
 export { BackBtn } from './BackBtn/BackBtn.tsx';
-export { BlogsListCard } from './corporate/BlogsListCard/BlogsListCard';
 export { Card } from './Card/Card';
 export { ContactForm } from './ContactForm/ContactForm';
 export { EmployeeCard } from './EmployeeCard/EmployeeCard';

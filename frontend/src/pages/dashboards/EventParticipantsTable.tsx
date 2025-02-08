@@ -1,4 +1,4 @@
-// src\components\dashboard\events\EventParticipantsTable.tsx
+// src\pages\dashboards\EventParticipantsTable.tsx
 import React from 'react';
 import { Table, TableProps, Alert } from 'antd';
 
@@ -8,7 +8,7 @@ import { useFetchData } from '../../hooks';
 import { Participants } from '../../types';
 
 interface EventParticipantsTableProps extends TableProps<Participants> {
-    eventId: string;
+    eventId: string | undefined; // EventId can be undefined
 }
 
 const PARTICIPANTS_COLUMNS = [
@@ -43,9 +43,10 @@ const PARTICIPANTS_COLUMNS = [
 
 const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId }) => {
     const { data: participantsData, error: participantsError, loading: participantsLoading } = useFetchData(
-        eventId ? `/events/${eventId}/participants` : "",
+        eventId ? `http://localhost:8080/api/v1/events/${eventId}/participants` : "", // Correct API URL
         localStorage.getItem('accessToken') || undefined
     );
+
     if (!eventId) {
         return <Alert message="Event ID is missing." type="warning" showIcon />;
     }
@@ -54,22 +55,22 @@ const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId
         return <Loader />;
     }
 
-    // Kiểm tra nếu không có dữ liệu người tham gia
-    if (!participantsData?.data || participantsData.data.length === 0) {
-        return <Alert message="No participants found for this event." type="info" showIcon />;
-    }
-
-    // Kiểm tra cụ thể nếu participantsData.data là undefined hoặc mảng rỗng
     if (participantsError) {
         return <Alert message="Error loading participants" description={participantsError.toString()} type="error" showIcon />;
     }
 
+    // Check if data.data exists and is an array before accessing its length
+    if (!participantsData?.data || !Array.isArray(participantsData.data) || participantsData.data.length === 0) {
+        return <Alert message="No participants found for this event." type="info" showIcon />;
+    }
+
+
     return (
         <div>
             <Table
-                dataSource={participantsData.data} // Dùng participantsData.data thay vì participantsData?.data || []
+                dataSource={participantsData.data}
                 columns={PARTICIPANTS_COLUMNS}
-                loading={participantsLoading}
+                loading={participantsLoading} // Use hook's loading state
                 pagination={{ pageSize: 5 }}
                 rowKey="id"
             />

@@ -51,7 +51,7 @@ const GoogleCallbackPage: React.FC<GoogleCallbackPageProps> = ({
             dispatch(setUser(user));
             onLoginSuccess(accessToken, user);
             message.success('Google login successful!');
-            navigate('/dashboards/default');
+            navigate('/dashboards/general');
         } catch (error: any) {
             console.error("Error exchanging code for token:", error);
             onLoginFailure(error.message || 'Failed to exchange code for token');

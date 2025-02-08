@@ -60,7 +60,7 @@ export const SignInPage = () => {
         useDispatchHook(setUser(response.data.user));
 
         setTimeout(() => {
-          navigate('/dashboards/default');
+          navigate('/dashboards/general');
         }, 1000);
       } else {
         message.error(response.error || 'Login failed');

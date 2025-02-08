@@ -268,7 +268,7 @@ export const ProjectsDashboardPage = () => {
             title="Project stats"
             extra={
               <Segmented
-                options={['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly']}
+                options={['Daily', 'Monthly', 'Yearly']}
               />
             }
           >

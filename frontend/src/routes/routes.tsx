@@ -3,28 +3,22 @@
 import { createBrowserRouter, useLocation } from 'react-router-dom';
 import {
   AccountDeactivePage,
-  BiddingDashboardPage,
-  DefaultDashboardPage,
-  EcommerceDashboardPage,
+  GeneralDashboardPage,
   Error400Page,
   Error403Page,
   Error404Page,
   Error500Page,
   Error503Page,
   ErrorPage,
-  MarketingDashboardPage,
   PasswordResetPage,
   ProjectsDashboardPage,
   SignInPage,
   SignUpPage,
   SitemapPage,
-  SocialDashboardPage,
   UserProfileFeedbackPage,
   UserProfileSecurityPage,
   VerifyEmailPage,
   WelcomePage,
-  LearningDashboardPage,
-  LogisticsDashboardPage,
   CreateEventPage,
   DetailEventPage,
   MyEventDashboardPage,
@@ -32,7 +26,6 @@ import {
 } from '../pages';
 import DetailMyEventPage from '../pages/details/MyEventPage';
 import {
-  CorporateLayout,
   DashboardLayout,
   EventDetailLayout,
   // GuestLayout,
@@ -46,9 +39,9 @@ import EventDetailsPage from '../pages/details/EventDetailsPage.tsx';
 import EditEventPage from '../pages/edit/EditEventPage.tsx';
 import ParticipatedEventsPage from '../pages/dashboards/ParticipatedEvents.tsx';
 import SpeakerGuestManagementPage from '../pages/dashboards/SpeakerManagementPage.tsx';
-import GoogleAppwriteCallbackPage from '../pages/authentication/GoogleAppwriteCallbackPage.tsx';
 import ParticipatedEventDetailsPage from '../pages/details/ParticipatedEventDetailsPage.tsx';
 import { UserProfileInformationPage } from '../pages/userAccount/Information.tsx';
+import QRScannerPage from '../pages/QRScannerPage.tsx';
 
 // Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
@@ -131,17 +124,21 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       {
+        index: true,
+        path: 'general',
+        element: <GeneralDashboardPage />,
+      },
+      {
+        path: 'check-in-out/:id', // New route for QR scanner
+        element: <QRScannerPage />,
+      },
+      {
         path: 'speakers-guests',
         element: <SpeakerGuestManagementPage />,
       },
       {
         path: 'participated-events',
         element: <ParticipatedEventsPage />,
-      },
-      {
-        index: true,
-        path: 'default',
-        element: <DefaultDashboardPage />,
       },
       {
         path: 'projects',
@@ -151,18 +148,7 @@ const router = createBrowserRouter([
         path: 'events',
         element: <EventsDashboardPage />,
       },
-      {
-        path: 'ecommerce',
-        element: <EcommerceDashboardPage />,
-      },
-      {
-        path: 'marketing',
-        element: <MarketingDashboardPage />,
-      },
-      {
-        path: 'social',
-        element: <SocialDashboardPage />,
-      },
+
       {
         path: 'my-events',
         element: <MyEventDashboardPage />,
@@ -175,18 +161,6 @@ const router = createBrowserRouter([
         path: 'events-list',
         element: <EventsListPage />,
       },
-        {
-            path: 'learning',
-            element: <LearningDashboardPage />,
-        },
-        {
-            path: 'logistics',
-            element: <LogisticsDashboardPage />,
-        },
-        {
-            path: 'bidding',
-            element: <BiddingDashboardPage />,
-        },
     ],
   },
   {
@@ -224,16 +198,6 @@ const router = createBrowserRouter([
     path: '/auth',
     errorElement: <ErrorPage />,
     children: [
-      {
-        path: 'google/callback',
-        element: <GoogleAppwriteCallbackPage
-          projectId='123456789abc'
-          endpoint='https://cloud.appwrite.io/v1'
-          redirectUri="http://localhost:5173/auth/google/callback"
-          onLoginSuccess={() => { /* Optional success handler */ }}
-          onLoginFailure={() => { /* Optional failure handler */ }}
-        />,
-      },
       {
         path: 'signup',
         element: <SignUpPage />,

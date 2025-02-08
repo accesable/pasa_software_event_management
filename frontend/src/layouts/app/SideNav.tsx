@@ -50,15 +50,14 @@ const getItem = (
 
 const items: MenuProps['items'] = [
   getItem('Dashboards', 'dashboards', <PieChartOutlined />, [
-    getItem(<Link to={PATH_DASHBOARD.default}>Default</Link>, 'default', null),
     getItem(
-      <Link to={PATH_DASHBOARD.projects}>Projects</Link>,
-      'projects',
+      <Link to={PATH_DASHBOARD.general}>General</Link>,
+      'general',
       null
     ),
     getItem(
-      <Link to={PATH_DASHBOARD.ecommerce}>eCommerce</Link>,
-      'ecommerce',
+      <Link to={PATH_DASHBOARD.projects}>Projects</Link>,
+      'projects',
       null
     ),
     getItem(
@@ -88,11 +87,6 @@ const items: MenuProps['items'] = [
     // ),
     // getItem(<Link to={PATH_DASHBOARD.social}>Social</Link>, 'social', null),
     // getItem(<Link to={PATH_DASHBOARD.bidding}>Bidding</Link>, 'bidding', null),
-    getItem(
-      <Link to={PATH_DASHBOARD.learning}>Learning</Link>,
-      'learning',
-      null
-    ),
     getItem(
       <Link to={PATH_DASHBOARD.speaker_guest}>Speaker & Guest</Link>,
       'speakers-guests',

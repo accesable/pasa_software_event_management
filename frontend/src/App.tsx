@@ -42,7 +42,7 @@ function App() {
     if (accessTokenFromUrl) {
       accessToken = accessTokenFromUrl;
       localStorage.setItem('accessToken', accessToken);
-      window.history.replaceState({}, document.title, '/dashboard/default');
+      window.history.replaceState({}, document.title, '/dashboards/general');
     }
 
     if (accessToken) {

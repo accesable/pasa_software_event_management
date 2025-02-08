@@ -80,7 +80,7 @@ const EditEventPage: React.FC = () => {
             const accessToken = localStorage.getItem('accessToken');
             if (!accessToken) {
                 message.error("No access token found. Please login again.");
-                navigate(PATH_DASHBOARD.default);
+                navigate(PATH_DASHBOARD.my_events);
                 return;
             }
             const response = await axiosInstance.get('/speakers', {

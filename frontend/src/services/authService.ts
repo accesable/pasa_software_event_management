@@ -6,6 +6,7 @@ const API_EVENT_BASE_URL = 'http://localhost:8080/api/v1/events';
 const API_CATEGORY_BASE_URL = 'http://localhost:8080/api/v1/categories';
 const API_USERS_BASE_URL = 'http://localhost:8080/api/v1/users';
 const API_PARTICIPANTS_BASE_URL = 'http://localhost:8080/api/v1/participants';
+const API_TICKETS_BASE_URL = 'http://localhost:8080/api/v1/tickets';
 
 const authService = {
   login: async (credentials: any) => {
@@ -390,6 +391,39 @@ const authService = {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
       const response = await axiosInstance.get(`${API_USERS_BASE_URL}/profile`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  scanTicket: async (code: string) => {
+    try {
+      const response = await axiosInstance.get(`${API_TICKETS_BASE_URL}/scan?code=${code}`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getCategoryById: async (categoryId: string | undefined, accessToken?: string) => {
+    try {
+      if (!categoryId) {
+        throw new Error("Category ID is required to fetch category details.");
+      }
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_CATEGORY_BASE_URL}/${categoryId}`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getEventCategoryDistribution: async () => {
+    try {
+      const response = await axiosInstance.get('/reports/event-category-distribution');
       return response.data;
     } catch (error: any) {
       throw error.response.data;

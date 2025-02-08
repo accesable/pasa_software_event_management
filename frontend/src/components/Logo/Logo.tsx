@@ -46,14 +46,14 @@ export const Logo = ({
             borderRadius,
           }}
         >
-          TDTTALK
+          TDTTEVENT
         </Typography.Title>
       </Flex>
     </Link>
   ) : (
     <Flex gap={others.gap || 'small'} align="center" {...others}>
       <img
-        src="/logo-no-background.png"
+        src="/tdtu_logo.jpg"
         alt="design sparx logo"
         height={imgSize?.h || 48}
       />
@@ -68,7 +68,7 @@ export const Logo = ({
           borderRadius,
         }}
       >
-        TDTTALK
+        TDTTEVENT
       </Typography.Title>
     </Flex>
   );

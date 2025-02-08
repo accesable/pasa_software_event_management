@@ -6,7 +6,6 @@ const ROOTS_LANDING = '/';
 const ROOTS_DASHBOARD = '/dashboards';
 const ROOTS_SITEMAP = '/sitemap';
 const ROOTS_LAYOUT = '/layouts';
-const ROOTS_CORPORATE = '/corporate';
 const ROOTS_PROFILE = '/user-profile';
 const ROOTS_SOCIAL = '/social';
 const ROOTS_BLOG = '/blog';
@@ -34,14 +33,8 @@ export const PATH_LANDING = {
 
 export const PATH_DASHBOARD = {
   root: ROOTS_DASHBOARD,
-  default: path(ROOTS_DASHBOARD, '/default'),
   projects: path(ROOTS_DASHBOARD, '/projects'),
-  ecommerce: path(ROOTS_DASHBOARD, '/ecommerce'),
-  marketing: path(ROOTS_DASHBOARD, '/marketing'),
-  social: path(ROOTS_DASHBOARD, '/social'),
-  bidding: path(ROOTS_DASHBOARD, '/bidding'),
-  learning: path(ROOTS_DASHBOARD, '/learning'),
-  logistics: path(ROOTS_DASHBOARD, '/logistics'),
+  general: path(ROOTS_DASHBOARD, '/general'),
   events : path(ROOTS_DASHBOARD, '/events-list'),
   my_events : path(ROOTS_DASHBOARD, '/my-events'),
   users : path(ROOTS_DASHBOARD, '/users'),

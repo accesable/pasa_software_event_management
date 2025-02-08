@@ -5,6 +5,7 @@ import {
   Button,
   Popconfirm,
   Space,
+  Spin,
   Table,
   TableProps,
   Tag,
@@ -13,10 +14,11 @@ import {
   message,
 } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import authService from '../../../services/authService';
 import { Events } from '../../../types';
 import { ColumnsType } from 'antd/es/table';
+import dayjs from 'dayjs';
 
 type Props = {
   data: Events[];
@@ -26,8 +28,33 @@ type Props = {
 } & TableProps<Events>;
 
 export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...others }: Props) => {
+  const [categoryName, setCategoryName] = useState<string | null>(null); // State for category name
+  const [categoryLoading, setCategoryLoading] = useState(false); // Loading state
   const navigate = useNavigate();
   const [tableLoading, setTableLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchCategoryName = async (event: Events) => {
+      if (!event?.categoryId) return; // Exit if categoryId is missing
+      setCategoryLoading(true);
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await authService.getCategoryById(event.categoryId, accessToken || '');
+        const categoryResponse = response as { data: { category: { name: string } } };
+        setCategoryName(categoryResponse.data.category.name);
+      } catch (error: any) {
+        console.error('Error fetching category name:', error);
+        message.error('Failed to load category name');
+        setCategoryName('N/A'); // Set to N/A in case of error
+      } finally {
+        setCategoryLoading(false);
+      }
+    };
+
+    data.forEach(event => {
+      fetchCategoryName(event);
+    });
+  }, [data]);
 
   const COLUMNS = (navigate: ReturnType<typeof useNavigate>, setLoading: (loading: boolean) => void, fetchData: () => void, activeTabKey: string): ColumnsType<Events> => [
     {
@@ -48,7 +75,17 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       title: 'Category',
       dataIndex: 'categoryId',
       key: 'event_category',
-      render: (_: any) => <span className="text-capitalize">{_}</span>,
+      render: (_: any) => {
+        return (
+          <Space>
+            {categoryLoading ? (
+              <Spin />
+            ) : (
+              <Tag color="blue">{categoryName || 'N/A'}</Tag>
+            )}
+          </Space>
+        );
+      },
     },
     {
       title: 'Status',
@@ -79,11 +116,13 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       title: 'Start Date',
       dataIndex: 'startDate',
       key: 'event_start_date',
+      render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm:ss') : 'N/A', // Thêm định dạng DD/MM/YYYY HH:mm:ss
     },
     {
       title: 'End Date',
       dataIndex: 'endDate',
       key: 'event_end_date',
+      render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm:ss') : 'N/A', // Thêm định dạng DD/MM/YYYY HH:mm:ss
     },
     {
       title: 'Actions',
