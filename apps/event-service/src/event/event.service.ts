@@ -146,7 +146,7 @@ export class EventService {
         }
     }
 
-    async getParticipantByEventAndUser(eventId: string, userId: string){
+    async getParticipantByEventAndUser(eventId: string, userId: string) {
         try {
             const participant = await this.ticketService.getParticipantIdByUserIdEventId({ userId, eventId }).toPromise();
             return participant;
@@ -497,25 +497,39 @@ export class EventService {
 
             const page = parseInt(filter.page || '1', 10);
             delete filter.page;
+            const parsedLimit = parseInt(limit as any, 10) || 10;
 
-            if (filter.category) {
-                const foundCategory = await this.categoryModel.findOne({
-                    name: filter.category.toLowerCase(),
-                });
-                if (foundCategory) {
-                    filter.categoryId = foundCategory._id;
-                }
-                delete filter.category;
+            const mongoFilter: any = {};
+
+            if (filter.status) {
+                mongoFilter.status = filter.status;
             }
 
-            const parsedLimit = parseInt(limit as any, 10) || 10;
+            if (filter.categoryId) {
+                const foundCategory = await this.categoryModel.findById(filter.categoryId).exec();
+                if (foundCategory) {
+                    mongoFilter.categoryId = filter.categoryId;
+                } else {
+                    return { // Nếu không tìm thấy category, trả về empty result
+                        meta: { page, limit: parsedLimit, totalPages: 1, totalItems: 0, count: 0 },
+                        events: []
+                    };
+                }
+                delete filter.categoryId;
+            }
+            delete filter.category;
+
+            if (filter.search) {
+                mongoFilter.name = { $regex: filter.search, $options: 'i' };
+                delete filter.search;
+            }
             const skip = (page - 1) * parsedLimit;
 
-            const totalItems = await this.eventModel.countDocuments(filter);
+            const totalItems = await this.eventModel.countDocuments(mongoFilter);
             const totalPages = Math.ceil(totalItems / parsedLimit);
 
             const events = await this.eventModel
-                .find(filter)
+                .find(mongoFilter)
                 .skip(skip)
                 .limit(parsedLimit)
                 .sort(sort as any)
