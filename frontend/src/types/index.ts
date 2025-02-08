@@ -159,3 +159,19 @@ export interface User {
   updatedAt?: string;
   // ... các trường khác nếu có ...
 }
+
+export interface Answer {
+  userId: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface Question {
+  id: string;
+  eventId: string;
+  userId: string;
+  text: string;
+  answers: Answer[];
+  createdAt: string;
+  updatedAt: string;
+}

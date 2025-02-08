@@ -429,6 +429,57 @@ const authService = {
       throw error.response.data;
     }
   },
+  getEventQuestions: async (eventId: string) => { // Hàm lấy danh sách câu hỏi
+    try {
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/questions`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  postQuestion: async (eventId: string, text: string, accessToken: string) => { // Hàm đăng câu hỏi
+    try {
+      const response = await axiosInstance.post(
+        `${API_EVENT_BASE_URL}/${eventId}/questions`,
+        { text },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  postAnswer: async (questionId: string, text: string, accessToken: string) => { // Hàm đăng câu trả lời
+    try {
+      const response = await axiosInstance.post(
+        `${API_EVENT_BASE_URL}/questions/${questionId}/answers`,
+        { text },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getUserById: async (userId: string) => { // Hàm mới: Lấy thông tin user theo ID
+    try {
+      const response = await axiosInstance.get(`${API_USERS_BASE_URL}/${userId}`);
+      console.log(response.data);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default authService;

@@ -30,6 +30,7 @@ import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import jsPDF from 'jspdf';
 import { Helmet } from 'react-helmet-async';
 import { EventScheduleItem } from '../../types/schedule';
+import EventDiscussion from '../../components/EventDiscussion';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -40,6 +41,7 @@ export const EventDetailsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -182,7 +184,7 @@ export const EventDetailsPage: React.FC = () => {
         ]}
       />
 
-      <Card title={<Title level={3}>{eventDetails.name}</Title>}
+      <Card title={<Title level={3}>{eventDetails?.name}</Title>}
         extra={<Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>Register Event</Button>}
       >
         <Row gutter={[16, 16]}>
@@ -291,6 +293,13 @@ export const EventDetailsPage: React.FC = () => {
               </Card>
             </Col>
           )} */}
+          <Col span={24}>
+            <EventDiscussion
+              eventId={id || ''}
+              questions={questions}
+              setQuestions={setQuestions}
+            />
+          </Col>
         </Row>
       </Card>
     </div>
