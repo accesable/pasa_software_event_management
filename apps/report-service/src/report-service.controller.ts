@@ -10,15 +10,26 @@ import {
   MonthlyParticipationStatsResponse,
   CheckInOutTimeAnalysisResponse,
   ParticipationRateResponse,
+  Empty,
+  EventCategoryDistributionResponse,
+  UserEventsByDateRequest,
+  UserEventsByDateResponse,
 } from '../../../libs/common/src/types/report'; 
 // => tuỳ path bạn generate
 
 import { ReportServiceService } from './report-service.service';
+import { Observable } from 'rxjs';
 
 @Controller()
 @ReportServiceProtoControllerMethods() 
 export class ReportServiceController implements ReportServiceProtoController {
   constructor(private readonly reportServiceService: ReportServiceService) {}
+  getUserEventsByDate(request: UserEventsByDateRequest){
+    return this.reportServiceService.getUserEventsByDate(request.userId, request.year, request?.month);
+  }
+  getEventCategoryDistribution(request: Empty){
+    return this.reportServiceService.getEventCategoryDistribution();
+  }
 
   // 1) GetEventParticipationStats
   getEventParticipationStats(request: EventRequest): Promise<EventParticipationStatsResponse> {

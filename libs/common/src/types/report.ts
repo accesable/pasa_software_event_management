@@ -10,7 +10,43 @@ import { Observable } from "rxjs";
 
 export const protobufPackage = "report";
 
-/** Dùng chung cho những hàm cần eventId */
+export interface UserEventsByDateRequest {
+  userId: string;
+  year: number;
+  month?: number | undefined;
+}
+
+export interface UserEventsByDateResponse {
+  organizedEvents: EventInfo[];
+  participatedEvents: EventInfo[];
+}
+
+/** Message tái sử dụng, hoặc tạo mới nếu cần thiết */
+export interface EventInfo {
+  id: string;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  status: string;
+  /** ... các trường thông tin sự kiện cần thiết khác ... */
+  categoryId: string;
+}
+
+export interface Empty {
+}
+
+export interface EventCategoryDistributionResponse {
+  categoryDistribution: CategoryDistribution[];
+  totalEvents: number;
+}
+
+export interface CategoryDistribution {
+  type: string;
+  value: number;
+}
+
 export interface EventRequest {
   eventId: string;
 }
@@ -85,6 +121,10 @@ export interface ReportServiceProtoClient {
   /** 5) Tỷ lệ checkin/checkout (theo %) so với tổng */
 
   getParticipationRate(request: EventRequest): Observable<ParticipationRateResponse>;
+
+  getEventCategoryDistribution(request: Empty): Observable<EventCategoryDistributionResponse>;
+
+  getUserEventsByDate(request: UserEventsByDateRequest): Observable<UserEventsByDateResponse>;
 }
 
 /** Service report đơn giản, chỉ 5 hàm */
@@ -128,6 +168,17 @@ export interface ReportServiceProtoController {
   getParticipationRate(
     request: EventRequest,
   ): Promise<ParticipationRateResponse> | Observable<ParticipationRateResponse> | ParticipationRateResponse;
+
+  getEventCategoryDistribution(
+    request: Empty,
+  ):
+    | Promise<EventCategoryDistributionResponse>
+    | Observable<EventCategoryDistributionResponse>
+    | EventCategoryDistributionResponse;
+
+  getUserEventsByDate(
+    request: UserEventsByDateRequest,
+  ): Promise<UserEventsByDateResponse> | Observable<UserEventsByDateResponse> | UserEventsByDateResponse;
 }
 
 export function ReportServiceProtoControllerMethods() {
@@ -138,6 +189,8 @@ export function ReportServiceProtoControllerMethods() {
       "getMonthlyParticipationStats",
       "getCheckInOutTimeAnalysis",
       "getParticipationRate",
+      "getEventCategoryDistribution",
+      "getUserEventsByDate",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

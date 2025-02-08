@@ -17,7 +17,7 @@ import { GetParticipantByEventIdRequest, TICKET_SERVICE_PROTO_SERVICE_NAME, Tick
 import { JwtService } from '@nestjs/jwt';
 import { FeedbackService } from '../feedback/feedback.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import moment from 'moment';
+import * as moment from 'moment';
 
 @Injectable()
 export class EventService {

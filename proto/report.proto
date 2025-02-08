@@ -18,11 +18,47 @@ service ReportServiceProto {
 
   // 5) Tỷ lệ checkin/checkout (theo %) so với tổng
   rpc GetParticipationRate (EventRequest) returns (ParticipationRateResponse) {}
+
+  rpc GetEventCategoryDistribution (Empty) returns (EventCategoryDistributionResponse) {}
+  rpc GetUserEventsByDate(UserEventsByDateRequest) returns (UserEventsByDateResponse) {}
 }
 
-// ------ Request / Response định nghĩa ------
+message UserEventsByDateRequest {
+  string userId = 1;
+  int32 year = 2;
+  optional int32 month = 3;
+}
 
-// Dùng chung cho những hàm cần eventId
+message UserEventsByDateResponse {
+  repeated EventInfo organizedEvents = 1;
+  repeated EventInfo participatedEvents = 2;
+}
+
+message EventInfo { // Message tái sử dụng, hoặc tạo mới nếu cần thiết
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string startDate = 4;
+  string endDate = 5;
+  string location = 6;
+  string status = 7;
+  string categoryId = 8;
+  // ... các trường thông tin sự kiện cần thiết khác ...
+}
+
+message Empty {
+}
+
+message EventCategoryDistributionResponse {
+  repeated CategoryDistribution categoryDistribution = 1;
+  int32 totalEvents = 2;
+}
+
+message CategoryDistribution {
+  string type = 1;
+  double value = 2;
+}
+
 message EventRequest {
   string eventId = 1;
 }

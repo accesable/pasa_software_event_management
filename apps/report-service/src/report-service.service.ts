@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
-import moment from 'moment';
+import * as moment from 'moment';
 
 import {
   // Proto messages
@@ -12,6 +12,8 @@ import {
   TimelinePoint,
   CheckInOutTimeAnalysisResponse,
   ParticipationRateResponse,
+  CategoryDistribution,
+  EventCategoryDistributionResponse,
 } from '../../../libs/common/src/types/report';
 
 import {
@@ -23,19 +25,89 @@ import {
 
 import { EVENT_SERVICE, TICKET_SERVICE } from '../../apigateway/src/constants/service.constant';
 import { handleRpcException } from '../../../libs/common/src/filters/handleException';
+import { EVENT_SERVICE_NAME, EventServiceClient } from '../../../libs/common/src/types/event';
 
 @Injectable()
 export class ReportServiceService implements OnModuleInit {
   private ticketService: TicketServiceProtoClient;
-
+  private eventService: EventServiceClient;
   constructor(
     @Inject(TICKET_SERVICE) private readonly ticketServiceClient: ClientGrpc,
-  ) {}
+    @Inject(EVENT_SERVICE) private readonly eventServiceClient: ClientGrpc,
+  ) { }
 
   onModuleInit() {
     this.ticketService = this.ticketServiceClient.getService<TicketServiceProtoClient>(
       TICKET_SERVICE_PROTO_SERVICE_NAME,
     );
+    this.eventService = this.eventServiceClient.getService<EventServiceClient>(
+      EVENT_SERVICE_NAME,
+    );
+  }
+
+  async getUserEventsByDate(
+    userId: string,
+    year: number,
+    month?: number,
+  ){
+    try {
+      // Gọi event service để lấy organized events
+      const organizedEventsResponse = await lastValueFrom(
+        this.eventService.getOrganizedEvents({ userId, status: undefined }) // Không filter status để lấy tất cả
+      );
+
+      // Gọi event service để lấy participated events
+      const participatedEventsResponse = await lastValueFrom(
+        this.eventService.getParticipatedEvents({ userId, status: undefined }) // Không filter status để lấy tất cả
+      );
+
+      let organizedEvents = organizedEventsResponse.events || [];
+      let participatedEvents = participatedEventsResponse.events || [];
+
+      const filteredOrganizedEvents = organizedEvents.filter(event => {
+        const eventDate = new Date(event.startDate);
+        if (month) {
+          return eventDate.getFullYear() === year && eventDate.getMonth() + 1 === month;
+        }
+        return eventDate.getFullYear() === year;
+      });
+
+      const filteredParticipatedEvents = participatedEvents.filter(event => {
+        const eventDate = new Date(event.startDate);
+        if (month) {
+          return eventDate.getFullYear() === year && eventDate.getMonth() + 1 === month;
+        }
+        return eventDate.getFullYear() === year;
+      });
+
+
+      return {
+        organizedEvents: filteredOrganizedEvents.map(event => ({ // Map to EventInfo
+          id: event.id,
+          name: event.name,
+          description: event.description,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          location: event.location,
+          status: event.status,
+          categoryId: event.categoryId,
+          // ... map các trường cần thiết khác ...
+        })),
+        participatedEvents: filteredParticipatedEvents.map(event => ({ // Map to EventInfo
+          id: event.id,
+          name: event.name,
+          description: event.description,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          location: event.location,
+          status: event.status,
+          categoryId: event.categoryId,
+          // ... map các trường cần thiết khác ...
+        })),
+      };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get user events by date');
+    }
   }
 
   // 1) Thống kê số participant
@@ -142,7 +214,7 @@ export class ReportServiceService implements OnModuleInit {
         );
         // allTickets?.tickets => mảng ticket
         const tickets = allTickets?.tickets || [];
-        const participantCount = tickets.length; 
+        const participantCount = tickets.length;
         // (hoặc) => sum checkIn ?
 
         monthlyStats.push({
@@ -210,6 +282,37 @@ export class ReportServiceService implements OnModuleInit {
       };
     } catch (error) {
       throw handleRpcException(error, 'Fail getParticipationRate');
+    }
+  }
+
+  async getEventCategoryDistribution(): Promise<EventCategoryDistributionResponse> {
+    try {
+      const allCategoriesResponse = await lastValueFrom(
+        this.eventService.getAllCategory({ query: {} })
+      ) as { categories: any[] };
+      const allCategories = allCategoriesResponse.categories;
+      const allEvents = await lastValueFrom(
+        this.eventService.getAllEvent({ query: {} })
+      ).then((res: { events: any[] }) => res.events);
+
+      const categoryCounts: { [categoryName: string]: number } = {};
+      allCategories.forEach(cat => categoryCounts[cat.name] = 0);
+
+      allEvents.forEach(event => {
+        const categoryName = allCategories.find(cat => cat.id === event.categoryId)?.name || 'Unknown Category';
+        categoryCounts[categoryName] = (categoryCounts[categoryName] || 0) + 1;
+      });
+
+      const totalEvents = allEvents.length; // Calculate totalEvents
+
+      const categoryDistribution: CategoryDistribution[] = Object.entries(categoryCounts).map(([type, count]) => ({
+        type,
+        value: (totalEvents > 0) ? (count / totalEvents) * 100 : 0,
+      }));
+
+      return { categoryDistribution, totalEvents };
+    } catch (error) {
+      throw handleRpcException(error, 'Fail getEventCategoryDistribution');
     }
   }
 }

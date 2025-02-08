@@ -1,211 +1,268 @@
+// apps/apigateway/src/event-service/event-service.controller.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import { getModelToken } from '@nestjs/mongoose';
-import { CategoryServiceController, EventServiceController } from './event-service.controller';
+import { EventServiceController } from './event-service.controller';
 import { EventServiceService } from './event-service.service';
-import { CreateEventDto } from './dto/create-event-service.dto';
-import { of } from 'rxjs';
 import { FileServiceService } from '../file-service/file-service.service';
-import { DecodeAccessResponse } from '../../../../libs/common/src';
+import { CheckEventMaxParticipantsGuard } from '../guards/check-event-max-participants.guard';
+import { CheckEventStatusGuard } from '../guards/check-event-status.guard';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { Reflector } from '@nestjs/core';
+import { BadRequestException } from '@nestjs/common';
+import { EVENT_SERVICE } from '../constants/service.constant';
 
+// ----- Dummy mocks cho các dependency -----
+const eventServiceServiceMock = {
+  getEventById: jest.fn(),
+  sendEventInvites: jest.fn(),
+  getParticipantsEvent: jest.fn(),
+  getParticipantByEventAndUser: jest.fn(),
+  acceptInvitation: jest.fn(),
+  declineInvitation: jest.fn(),
+  getParticipatedEvents: jest.fn(),
+  createQuestion: jest.fn(),
+  answerQuestion: jest.fn(),
+  getEventQuestions: jest.fn(),
+  submitFeedback: jest.fn(),
+};
 
-describe('EventController', () => {
+const fileServiceServiceMock = {
+  // Các hàm giả nếu cần dùng trong controller
+};
+
+const dummyEventClient = {
+  getService: jest.fn().mockReturnValue({}),
+};
+// ----- End dummy mocks -----
+
+describe('EventServiceController', () => {
   let controller: EventServiceController;
-  let service: EventServiceService;
-  let app: INestApplication;
-  let fileService: FileServiceService;
-
-  const mockEvent = {
-    id: '1',
-    name: 'test',
-    description: 'test',
-    startDate: '2025-05-20T09:00:00Z',
-    endDate: '2025-05-25T17:00:00Z',
-    location: 'test',
-    categoryId: '64c6d61ab9c76a46dd2db424',
-    createdBy: {
-      id: '64c6cf77b9c76a46dd2db41e',
-      email: 'test@gmail.com'
-    },
-    maxParticipants: 10,
-    banner: 'test',
-    videoIntro: 'test',
-    documents: [
-      'test'
-    ],
-    guestIds: [],
-    schedule: [],
-    sponsors: [],
-    status: 'SCHEDULED',
-  };
-
-  const mockCategory = {
-    name: 'test',
-    description: 'test',
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [EventServiceController],
       providers: [
-        {
-          provide: EventServiceService,
-          useValue: {
-            getAllEvent: jest.fn().mockResolvedValue([mockEvent]),
-            getEventById: jest.fn().mockResolvedValue(mockEvent),
-            createEvent: jest.fn().mockResolvedValue(mockEvent),
-            updateEvent: jest.fn().mockResolvedValue(mockEvent),
-            getCategoryById: jest.fn().mockResolvedValue(mockCategory),
-            getAllCategory: jest.fn().mockResolvedValue([mockCategory]),
-            createCategory: jest.fn().mockResolvedValue(mockCategory),
-            updateCategory: jest.fn().mockResolvedValue(mockCategory),
-            checkOwnership: jest.fn().mockResolvedValue({ isOwner: true }),
-            cancelEvent: jest.fn().mockResolvedValue({ message: 'Event canceled successfully' }),
-            acceptInvitation: jest.fn().mockResolvedValue({ message: 'Invitation accepted successfully' }),
-            declineInvitation: jest.fn().mockResolvedValue({ message: 'Invitation declined successfully' }),
-            sendEventInvites: jest.fn().mockResolvedValue({ message: 'Invitation sent successfully' }),
-            decreaseMaxParticipant: jest.fn().mockResolvedValue({ message: 'Max participant decreased successfully' }),
-            isExistEvent: jest.fn().mockResolvedValue({ isExist: true })
-          }
-        },
-        {
-          provide: getModelToken(Event.name),
-          useValue: {
-            find: jest.fn().mockResolvedValue([mockEvent]),
-            findById: jest.fn().mockResolvedValue(mockEvent),
-            create: jest.fn().mockResolvedValue(mockEvent),
-            findByIdAndUpdate: jest.fn().mockResolvedValue(mockEvent),
-            findOne: jest.fn().mockResolvedValue(mockEvent),
-            findByIdAndDelete: jest.fn().mockResolvedValue(mockEvent)
-          },
-        },
-        {
-          provide: getModelToken(CategoryServiceController.name),
-          useValue: {
-            find: jest.fn().mockResolvedValue([mockCategory]),
-            findById: jest.fn().mockResolvedValue(mockCategory),
-            create: jest.fn().mockResolvedValue(mockCategory),
-            findByIdAndUpdate: jest.fn().mockResolvedValue(mockCategory),
-            findOne: jest.fn().mockResolvedValue(mockCategory)
-          },
-        },
-        {
-          provide: 'TICKET_SERVICE',
-          useValue: {
-            emit: jest.fn()
-          }
-        },
-        {
-          provide: 'NOTIFICATION_SERVICE',
-          useValue: {
-            emit: jest.fn()
-          }
-        },
-        {
-          provide: FileServiceService,
-          useValue: {
-            uploadFiles: jest.fn().mockResolvedValue([{ path: 'newAvatarUrl' }]),
-          },
-        },
+        { provide: EventServiceService, useValue: eventServiceServiceMock },
+        { provide: FileServiceService, useValue: fileServiceServiceMock },
+        // Cung cấp provider cho token EVENT_SERVICE (dùng cho các guard)
+        { provide: EVENT_SERVICE, useValue: dummyEventClient },
+        // Cung cấp Reflector (NestJS thường tự cung cấp, nhưng ta thêm vào để đảm bảo)
+        Reflector,
+        CheckEventMaxParticipantsGuard,
+        CheckEventStatusGuard,
+        JwtAuthGuard,
       ],
     }).compile();
 
     controller = module.get<EventServiceController>(EventServiceController);
-    service = module.get<EventServiceService>(EventServiceService);
-
-    app = module.createNestApplication();
-    await app.init();
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('getAllEvent', () => {
-    it('should return an array of events', async () => {
-      const result = await controller.getAllEvents({ query: {} });
-      expect(result).toEqual([mockEvent]);
-      expect(service.getAllEvent).toHaveBeenCalledWith({}, undefined, undefined);
+  describe('sendInvites', () => {
+    it('should send invites successfully when event exists and user is owner', async () => {
+      // Arrange
+      const eventId = 'event123';
+      // Giả lập một event mà createdBy.id là 'user1'
+      const fakeEvent = { event: { id: eventId, createdBy: { id: 'user1' } } };
+      const users = [{ email: 'invitee@example.com', id: 'user2' }];
+
+      // Setup mock cho service
+      eventServiceServiceMock.getEventById.mockResolvedValue(fakeEvent);
+      eventServiceServiceMock.sendEventInvites.mockResolvedValue({
+        message: 'Invitations sent successfully',
+        success: true,
+      });
+
+      // Act
+      const result = await controller.sendInvites(eventId, users, { id: 'user1' } as any);
+
+      // Assert
+      expect(eventServiceServiceMock.getEventById).toHaveBeenCalledWith(eventId);
+      expect(eventServiceServiceMock.sendEventInvites).toHaveBeenCalled();
+      expect(result).toEqual({ message: 'Invitations sent successfully', success: true });
     });
 
-    it('should call service with limit and offset', async () => {
-      await controller.getAllEvents({ query: { status: 'SCHEDULED' } });
-      expect(service.getAllEvent).toHaveBeenCalledWith(
-        { status: 'SCHEDULED' },
-        undefined,
-        undefined
-      );
-    });
-  });
-
-  describe('getEventById', () => {
-    it('should return an event by id', async () => {
-      const result = await controller.getEventById('64c6d692b9c76a46dd2db428');
-      expect(result).toEqual(mockEvent);
-      expect(service.getEventById).toHaveBeenCalledWith('64c6d692b9c76a46dd2db428');
-    });
-  });
-
-  describe('createEvent', () => {
-    it('should create an event', async () => {
-      const mockEvent: CreateEventDto = {
-        name: 'test',
-        description: 'test',
-        startDate: new Date("2025-05-20T09:00:00Z"),
-        endDate: new Date("2025-05-25T17:00:00Z"),
-        location: "test",
-        categoryId: "676b9128c0ea46752f9a5c89",
-        schedule: [
-          {
-            title: "Bài giảng mở đầu",
-            startTime: new Date("2024-03-20T08:30:00.000Z"),
-            endTime: new Date("2024-03-20T09:30:00.000Z"),
-            description: "Giới thiệu tổng quan",
-            speakerIds: [
-              "676bd233af6d565ec41efb57",
-              "676bd25aaf6d565ec41efb5f"
-            ]
-          },
-          {
-            title: "Phần thảo luận",
-            startTime: new Date("2024-03-20T10:00:00.000Z"),
-            endTime: new Date("2024-03-20T11:00:00.000Z"),
-            description: "Hỏi đáp về chủ đề AI",
-            speakerIds: [
-              "6765624258a5ed4b6cb5fad8"
-            ]
-          }
-        ],
-        guestIds: [
-          "6765b1ee4abd0a01e2da4736",
-          "676bce0daf6d565ec41efb50"
-        ]
-      };
-      const user: DecodeAccessResponse = { id: '1', email: 'test@example.com', name: 'Test User', role: 'user' } as DecodeAccessResponse;
-      const expectedResult = {
-        event: {
-          id: '1',
-          ...mockEvent,
-          createdBy: {
-            id: user.id,
-            email: user.email,
-          },
-        },
-      };
-
-      (service.createEvent as jest.Mock).mockReturnValue(of(expectedResult));
-
-      const result = await controller.createEvent(mockEvent, user);
-      expect(result).toEqual(expectedResult);
-      expect(service.createEvent).toHaveBeenCalledWith(mockEvent, user);
+    it('should throw BadRequestException if no users provided', async () => {
+      // Arrange
+      const eventId = 'event123';
+      // Act & Assert
+      await expect(
+        controller.sendInvites(eventId, [], { id: 'user1' } as any),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
-  // describe('updateEvent', () => {
-  //   it('should update an event', async () => {
-  //     const result = await controller.updateEvent({ id: '64c6d692b9c76a46dd2db428' }, mockEvent);
-  //     expect(result).toEqual(mockEvent);
-  //     expect(service.updateEvent).toHaveBeenCalledWith('64c6d692b9c76a46dd2db428', mockEvent);
-  //   });
-  // });
+  describe('getParticipantsEvent', () => {
+    it('should return participants for an event', async () => {
+      // Arrange
+      const eventId = 'event123';
+      const fakeParticipants = { participants: [{ email: 'a@example.com' }, { email: 'b@example.com' }] };
+      eventServiceServiceMock.getParticipantsEvent.mockResolvedValue(fakeParticipants);
+
+      // Act
+      const result = await controller.getParticipantsEvent(eventId);
+
+      // Assert
+      expect(eventServiceServiceMock.getParticipantsEvent).toHaveBeenCalledWith(eventId);
+      expect(result).toEqual(fakeParticipants);
+    });
+  });
+
+  describe('getParticipantByEventAndUser', () => {
+    it('should return participant info for given event and user', async () => {
+      // Arrange
+      const eventId = 'event123';
+      const userId = 'user2';
+      const fakeParticipant = { participation: { id: 'p1' } };
+      eventServiceServiceMock.getParticipantByEventAndUser.mockResolvedValue(fakeParticipant);
+
+      // Act
+      const result = await controller.getParticipantByEventAndUser(eventId, { id: userId } as any);
+
+      // Assert
+      expect(eventServiceServiceMock.getParticipantByEventAndUser).toHaveBeenCalledWith(eventId, userId);
+      expect(result).toEqual(fakeParticipant);
+    });
+  });
+
+  describe('acceptInvitation', () => {
+    it('should accept invitation successfully', async () => {
+      // Arrange
+      const eventId = 'event123';
+      const token = 'validToken';
+      const fakeResponse = { message: 'Invitation accepted successfully' };
+      // Khi gọi, controller sẽ truyền query object: { token: 'validToken' }
+      eventServiceServiceMock.acceptInvitation.mockResolvedValue(fakeResponse);
+
+      // Act
+      const result = await controller.acceptInvitation(eventId, { token });
+
+      // Assert
+      expect(eventServiceServiceMock.acceptInvitation).toHaveBeenCalledWith(eventId, { token });
+      expect(result).toEqual(fakeResponse);
+    });
+  });
+
+  describe('declineInvitation', () => {
+    it('should decline invitation successfully', async () => {
+      // Arrange
+      const eventId = 'event123';
+      const token = 'validToken';
+      const fakeResponse = { message: 'Invitation declined successfully' };
+      // Khi gọi, controller sẽ truyền query object: { token: 'validToken' }
+      eventServiceServiceMock.declineInvitation.mockResolvedValue(fakeResponse);
+
+      // Act
+      const result = await controller.declineInvitation(eventId, { token });
+
+      // Assert
+      expect(eventServiceServiceMock.declineInvitation).toHaveBeenCalledWith(eventId, { token });
+      expect(result).toEqual(fakeResponse);
+    });
+  });
+
+  describe('getParticipatedEvents', () => {
+    it('should return participated events for a user', async () => {
+      // Arrange
+      const status = 'FINISHED';
+      const fakeResponse = { events: [{ id: 'event1' }, { id: 'event2' }] };
+      eventServiceServiceMock.getParticipatedEvents.mockResolvedValue(fakeResponse);
+
+      // Act
+      const result = await controller.getParticipatedEvents(status, { id: 'user2' } as any);
+
+      // Assert
+      expect(eventServiceServiceMock.getParticipatedEvents).toHaveBeenCalledWith('user2', status);
+      expect(result).toEqual(fakeResponse);
+    });
+  });
+
+  describe('createQuestion', () => {
+    it('should create a question successfully when text is provided', async () => {
+      // Arrange
+      const eventId = 'event123';
+      const questionBody = { text: 'What is the agenda?' };
+      const fakeResponse = { question: { id: 'q1', text: questionBody.text } };
+      eventServiceServiceMock.createQuestion.mockResolvedValue(fakeResponse);
+
+      // Act
+      const result = await controller.createQuestion(eventId, questionBody, { id: 'user2' } as any);
+
+      // Assert
+      expect(eventServiceServiceMock.createQuestion).toHaveBeenCalledWith(eventId, 'user2', questionBody.text);
+      expect(result).toEqual(fakeResponse);
+    });
+
+    it('should throw BadRequestException when question text is missing', async () => {
+      // Arrange
+      const eventId = 'event123';
+      const questionBody = { text: '' };
+      // Act & Assert
+      await expect(
+        controller.createQuestion(eventId, questionBody, { id: 'user2' } as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('answerQuestion', () => {
+    it('should answer a question successfully when text is provided', async () => {
+      // Arrange
+      const questionId = 'q1';
+      const answerBody = { text: 'The agenda is…' };
+      const fakeResponse = { question: { id: questionId, text: answerBody.text } };
+      eventServiceServiceMock.answerQuestion.mockResolvedValue(fakeResponse);
+
+      // Act
+      const result = await controller.answerQuestion(questionId, answerBody, { id: 'user2' } as any);
+
+      // Assert
+      expect(eventServiceServiceMock.answerQuestion).toHaveBeenCalledWith(questionId, 'user2', answerBody.text);
+      expect(result).toEqual(fakeResponse);
+    });
+
+    it('should throw BadRequestException when answer text is missing', async () => {
+      // Arrange
+      const questionId = 'q1';
+      const answerBody = { text: '' };
+      // Act & Assert
+      await expect(
+        controller.answerQuestion(questionId, answerBody, { id: 'user2' } as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getQuestions', () => {
+    it('should return questions for the given event', async () => {
+      // Arrange
+      const eventId = 'event123';
+      const fakeResponse = { questions: [{ id: 'q1', text: 'Question 1' }] };
+      eventServiceServiceMock.getEventQuestions.mockResolvedValue(fakeResponse);
+
+      // Act
+      const result = await controller.getQuestions(eventId);
+
+      // Assert
+      expect(eventServiceServiceMock.getEventQuestions).toHaveBeenCalledWith(eventId);
+      expect(result).toEqual(fakeResponse);
+    });
+  });
+
+  describe('submitFeedback', () => {
+    it('should submit feedback successfully', async () => {
+      // Arrange
+      const eventId = 'event123';
+      const feedbackBody = { rating: 5, comment: 'Great event!' };
+      const fakeResponse = { message: 'Feedback submitted successfully' };
+      eventServiceServiceMock.submitFeedback.mockResolvedValue(fakeResponse);
+
+      // Act
+      const result = await controller.submitFeedback(eventId, feedbackBody, { id: 'user2' } as any);
+
+      // Assert
+      expect(eventServiceServiceMock.submitFeedback).toHaveBeenCalledWith(eventId, 'user2', feedbackBody.rating, feedbackBody.comment);
+      expect(result).toEqual(fakeResponse);
+    });
+  });
 });

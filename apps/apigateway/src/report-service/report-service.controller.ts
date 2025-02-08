@@ -1,9 +1,27 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { ReportServiceService } from './report-service.service';
+import { DecodeAccessResponse } from '../../../../libs/common/src';
+import { ResponseMessage, User } from '../decorators/public.decorator';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @Controller('reports')
 export class ReportServiceController {
-  constructor(private readonly reportService: ReportServiceService) {}
+  constructor(private readonly reportService: ReportServiceService) { }
+
+  @Get('/events-by-date')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Get user events by date success')
+  async getUserEventsByDate(
+    @Query() query: any,
+    @User() user: DecodeAccessResponse,
+  ) {
+    return this.reportService.getUserEventsByDate(user.id, query.year, query.month);
+  }
+
+  @Get('event-category-distribution')
+  async getEventCategoryDistribution() {
+    return this.reportService.getEventCategoryDistribution();
+  }
 
   // 1) /reports/:eventId/participation-stats
   @Get(':eventId/participation-stats')
