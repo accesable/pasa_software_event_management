@@ -169,6 +169,14 @@ export class UsersService implements OnModuleInit {
     }
   }
 
+  async getUserById(id: string) {
+    try {
+      return await this.usersService.findById({ id }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
   async updateProfile(accessToken: string, profileDto: ProfileDto) {
     try {
       const transformData: UpdateProfileRequest = {

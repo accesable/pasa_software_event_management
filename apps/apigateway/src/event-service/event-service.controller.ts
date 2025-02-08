@@ -431,7 +431,7 @@ export class SpeakerServiceController {
 @Controller('guests')
 export class GuestServiceController {
   constructor(private readonly eventServiceService: EventServiceService) { }
-
+  
   @Get(':id')
   @ResponseMessage('Get guest by id success')
   getGuestById(@Param('id') id: string) {

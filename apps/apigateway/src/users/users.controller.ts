@@ -177,4 +177,10 @@ export class GeneralUsersController {
     const accessToken = authHeader.split(' ')[1];
     return this.usersService.updateProfile(accessToken, profileDto);
   }
+
+  @Get(':id')
+  @ResponseMessage('User fetched successfully')
+  async getUserById(@Param('id') id: string) {
+    return this.usersService.getUserById(id);
+  }
 }
