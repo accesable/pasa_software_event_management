@@ -1,5 +1,5 @@
 // src/pages/QRScannerPage.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { QrReader } from 'react-qr-reader';
 import { Input, Button, message, Typography, Card } from 'antd';
 import { BackBtn, PageHeader } from '../components';
@@ -19,25 +19,20 @@ const QRScannerPage: React.FC = () => {
   const { id: eventId } = useParams<{ id: string }>();
 
   // Hàm xử lý khi mã QR được quét
-  const handleScan = async (result: any) => {
-    if (result && isCameraActive) {
+  const handleScan = (result: any) => {
+    // Nếu ô input đang trống và camera đang hoạt động, xử lý kết quả quét
+    if (result && isCameraActive && manualCode.trim() === '') {
       const code = result.getText();
+      // Chỉ hiển thị thông báo nếu mã mới và khác với lần quét trước
       if (code && code !== lastScannedCode) {
         setLastScannedCode(code);
+        setManualCode(code); // Tự động điền vào ô input
+        message.success(`Scanned: ${code}`);
+        // Vô hiệu hóa scan tạm thời để tránh hiển thị liên tục (ví dụ 3 giây)
         setIsCameraActive(false);
-        try {
-          const response = await authService.scanTicket(code) as { status: number; data: any[]; error?: string };
-          if (response.status === 200) {
-            message.success(`Ticket scanned: ${response.data[0]?.name || ''}. Ready for next scan.`);
-          } else {
-            message.error(response.error || 'Scan failed. Please try again.');
-          }
-        } catch (error: any) {
-          console.error('Error scanning ticket:', error);
-          message.error(error.message || 'Scan failed. Please try again.');
-        } finally {
+        setTimeout(() => {
           setIsCameraActive(true);
-        }
+        }, 3000);
       }
     }
   };
@@ -47,7 +42,7 @@ const QRScannerPage: React.FC = () => {
     setIsCameraActive(false);
   };
 
-  // Hàm xử lý quét thủ công
+  // Hàm xử lý khi người dùng nhấn "Submit Code"
   const handleManualSubmit = async () => {
     if (manualCode.trim() === '') {
       message.warning('Please enter a code manually.');
@@ -56,14 +51,16 @@ const QRScannerPage: React.FC = () => {
     setIsCameraActive(false);
     try {
       const response = await authService.scanTicket(manualCode.trim()) as { statusCode: number; data: any[]; error?: string };
+      console.log('Scan response:', response);
       if (response.statusCode === 200) {
         message.success(`Ticket scanned: ${response.data[0]?.name || ''}. Ready for next scan.`);
       } else {
-        message.error(response.error || 'Scan failed. Please try again.');
+        message.error(response.error);
       }
     } catch (error: any) {
-      message.error(error.message || 'Scan failed. Please try again.');
+      message.error(error.error);
     } finally {
+      setManualCode('');
       setIsCameraActive(true);
     }
   };

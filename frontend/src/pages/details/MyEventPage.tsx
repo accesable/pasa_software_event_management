@@ -316,17 +316,17 @@ const DetailMyEventPage: React.FC = () => {
               </Card>
             </Col>
           )}
-          {eventDetails?.status === 'FINISHED' && (
-            <Col span={24}>
-              <Card title="Participants Check-in/Check-out List"
-                extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
-                  Download PDF
-                </Button>}
-              >
-                <EventParticipantsTable eventId={id || ''} />
-              </Card>
-            </Col>
-          )}
+
+          <Col span={24}>
+            <Card title="Participants Check-in/Check-out List"
+              extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
+                Download PDF
+              </Button>}
+            >
+              <EventParticipantsTable eventId={id || ''} />
+            </Card>
+          </Col>
+
           <Col span={24}>
             <EventDiscussion
               eventId={id || ''}
