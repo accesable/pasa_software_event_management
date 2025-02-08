@@ -28,32 +28,48 @@ type Props = {
 } & TableProps<Events>;
 
 export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...others }: Props) => {
-  const [categoryName, setCategoryName] = useState<string | null>(null); // State for category name
+  const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({}); // State to store category names by categoryId
   const [categoryLoading, setCategoryLoading] = useState(false); // Loading state
   const navigate = useNavigate();
   const [tableLoading, setTableLoading] = useState(false);
 
   useEffect(() => {
-    const fetchCategoryName = async (event: Events) => {
-      if (!event?.categoryId) return; // Exit if categoryId is missing
+    const fetchCategoryNames = async () => {
+      if (!data || data.length === 0) return; // Exit if no events data
+
       setCategoryLoading(true);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getCategoryById(event.categoryId, accessToken || '');
-        const categoryResponse = response as { data: { category: { name: string } } };
-        setCategoryName(categoryResponse.data.category.name);
+        if (!accessToken) {
+          message.error("No access token found. Please login again.");
+          return;
+        }
+
+        const newCategoryNamesMap: Record<string, string> = {};
+        // Fetch category name for each event
+        for (const event of data) {
+          if (event.categoryId) {
+            try {
+              const response = await authService.getCategoryById(event.categoryId, accessToken);
+              const categoryResponse = response as { data: { category: { name: string } } };
+              newCategoryNamesMap[event.categoryId] = categoryResponse.data.category.name;
+            } catch (categoryError) {
+              console.error(`Error fetching category name for categoryId ${event.categoryId}:`, categoryError);
+              newCategoryNamesMap[event.categoryId] = 'N/A'; // Set to N/A in case of error for a specific category
+            }
+          }
+        }
+        setCategoryNamesMap(newCategoryNamesMap);
       } catch (error: any) {
-        console.error('Error fetching category name:', error);
-        message.error('Failed to load category name');
-        setCategoryName('N/A'); // Set to N/A in case of error
+        console.error('Error fetching category names:', error);
+        message.error('Failed to load category names');
+        setCategoryNamesMap({}); // Clear the map in case of a general error
       } finally {
         setCategoryLoading(false);
       }
     };
 
-    data.forEach(event => {
-      fetchCategoryName(event);
-    });
+    fetchCategoryNames();
   }, [data]);
 
   const COLUMNS = (navigate: ReturnType<typeof useNavigate>, setLoading: (loading: boolean) => void, fetchData: () => void, activeTabKey: string): ColumnsType<Events> => [
@@ -75,13 +91,13 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       title: 'Category',
       dataIndex: 'categoryId',
       key: 'event_category',
-      render: (_: any) => {
+      render: (categoryId: string) => { // Changed render to receive categoryId
         return (
           <Space>
             {categoryLoading ? (
               <Spin />
             ) : (
-              <Tag color="blue">{categoryName || 'N/A'}</Tag>
+              <Tag color="blue">{categoryNamesMap[categoryId] || 'N/A'}</Tag> // Use categoryNamesMap to get the name
             )}
           </Space>
         );
@@ -191,7 +207,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       dataSource={data}
       columns={COLUMNS(navigate, setTableLoading, fetchData, activeTabKey)}
       className="overflow-scroll"
-      loading={loading || tableLoading}
+      loading={loading || tableLoading || categoryLoading} // Include categoryLoading in table loading
       {...others}
     />
   );

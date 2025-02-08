@@ -25,11 +25,9 @@ export const EventDetailLayout = () => {
     const fetchEventDetail = async () => {
       try {
         const response = await authService.getEventDetails(eventId) as { statusCode: number; data: any; message?: string };
-        console.log('response', response);
         if (response.statusCode === 200 && response.data) {
           // Lấy dữ liệu theo cấu trúc: response.data.event
           setEventDetail(response.data.event);
-          console.log('eventDetail', response.data.event);
         } else {
           message.error(response.message || 'Failed to load event details');
         }

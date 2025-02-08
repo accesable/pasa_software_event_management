@@ -42,7 +42,6 @@ const EventFileUploadForm: React.FC<EventFileUploadFormProps> = ({ eventId }) =>
                 //     'Content-Type': 'multipart/form-data',
                 // },
             });
-            console.log('Upload response:', response);
             message.success(`Uploaded ${selectedField} successfully`);
         } catch (error: any) {
             message.error(`${error.response?.data?.message || error.message}`);

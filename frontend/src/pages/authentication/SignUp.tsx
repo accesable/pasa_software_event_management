@@ -43,7 +43,6 @@ export const SignUpPage = () => {
     setLoading(true);
     try {
       const response = await authService.register(values);
-      console.log('Registration successful:', response);
 
       message.success('Registration successful, please login.');
       setTimeout(() => {

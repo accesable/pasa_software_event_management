@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
+// src\pages\dashboards\EventsList.tsx
+import React, { useEffect, useState, useCallback } from 'react';
 import { Alert, Button, Card, Space, Table, Tag, Select, message, Spin } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
@@ -11,52 +12,70 @@ import { Events } from '../../types';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
 
+interface EventsListResponse {
+    data: {
+        events: Events[];
+        meta: {
+            totalItems: number;
+            // ... other meta properties if any ...
+        };
+    };
+    statusCode: number;
+    message: string;
+}
+
 const EVENT_STATUS_OPTIONS = [
-  { value: 'all', label: 'All Statuses' },
+  { value: undefined, label: 'All Statuses' }, // **[CHANGED]** value: undefined for "All Statuses"
   { value: 'SCHEDULED', label: 'Scheduled' },
   { value: 'CANCELED', label: 'Canceled' },
   { value: 'FINISHED', label: 'Finished' },
 ];
 
 const EventsListPage = () => {
-  const [categoryName, setCategoryName] = useState<string | null>(null); // State for category name
-  const [categoryLoading, setCategoryLoading] = useState(false); // Loading state for category
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({}); // **[ADDED]** State for category names mapping
+  const [categoryLoading, setCategoryLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined); // **[CHANGED]** statusFilter type to string | undefined
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const { data: eventsData, error: eventsError, loading: eventsLoading } = useFetchData(
-    `http://localhost:8080/api/v1/events?page=${currentPage}&limit=${pageSize}${statusFilter !== 'all' ? `&status=${statusFilter}` : ''}`,
+  const {
+    data: eventsListResponse, // **[CHANGED]** Renamed data to eventsListResponse
+    error: eventsError,
+    loading: eventsLoading,
+  } = useFetchData( // **[CHANGED]** Removed generic type argument from useFetchData hook
+    `http://localhost:8080/api/v1/events?page=${currentPage}&limit=${pageSize}${statusFilter ? `&status=${statusFilter}` : ''}`, // **[CHANGED]** Use statusFilter directly in URL
     localStorage.getItem('accessToken') || undefined
   );
 
-  // Khi eventsData thay đổi, fetch category name cho từng event (ví dụ, nếu bạn chỉ muốn lấy category cho các event đầu tiên)
+  // **[ADDED]** useEffect fetch all categories
   useEffect(() => {
-    const fetchCategoryName = async (event: Events) => {
-      if (!event?.categoryId) return;
+    const fetchAllCategoryNames = async () => {
       setCategoryLoading(true);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getCategoryById(event.categoryId, accessToken || '');
-        const categoryResponse = response as { data: { category: { name: string } } };
-        setCategoryName(categoryResponse.data.category.name);
+        const response = await authService.getCategories(accessToken || '') as { statusCode: number; data: { categories?: any[] } };
+        if (response.statusCode === 200 && response.data.categories) {
+          const categoryMap: Record<string, string> = {};
+          response.data.categories.forEach((category: any) => {
+            categoryMap[category.id] = category.name;
+          });
+          setCategoryNamesMap(categoryMap);
+        } else {
+          message.error("Failed to load event categories.");
+        }
       } catch (error: any) {
-        console.error('Error fetching category name:', error);
-        message.error('Failed to load category name');
-        setCategoryName('N/A');
+        message.error("Failed to load event categories.");
       } finally {
         setCategoryLoading(false);
       }
     };
+    fetchAllCategoryNames();
+  }, []);
 
-    eventsData?.data?.events.forEach((event: Events) => {
-      fetchCategoryName(event);
-    });
-  }, [eventsData]);
 
-  const onStatusFilterChange = (value: string) => {
+  const onStatusFilterChange = (value: string | undefined) => { // **[CHANGED]** Parameter type to string | undefined
     setStatusFilter(value);
-    setCurrentPage(1); // Reset page to 1 when filter changes
+    setCurrentPage(1);
   };
 
   const handlePaginationChange = (page: number, pageSize: number) => {
@@ -64,7 +83,6 @@ const EventsListPage = () => {
     setPageSize(pageSize);
   };
 
-  // Định nghĩa các cột bảng bên trong component, để có thể sử dụng các biến state
   const columns: ColumnsType<Events> = [
     {
       title: 'Name',
@@ -93,12 +111,12 @@ const EventsListPage = () => {
       title: 'Category',
       dataIndex: 'categoryId',
       key: 'event_category',
-      render: () => (
+      render: (categoryId: string) => ( // **[CHANGED]** Render category name from mapping
         <Space>
           {categoryLoading ? (
             <Spin />
           ) : (
-            <Tag color="blue">{categoryName || 'N/A'}</Tag>
+            <Tag color="blue">{categoryNamesMap[categoryId] || 'N/A'}</Tag> // **[CHANGED]** Use categoryNamesMap
           )}
         </Space>
       ),
@@ -167,7 +185,8 @@ const EventsListPage = () => {
         title="Events"
         extra={
           <Select
-            defaultValue="all"
+            placeholder="Filter by Status"
+            defaultValue={undefined} // **[CHANGED]** Default value to undefined
             style={{ width: 200 }}
             onChange={onStatusFilterChange}
             options={EVENT_STATUS_OPTIONS}
@@ -186,12 +205,12 @@ const EventsListPage = () => {
 
         <Table
           columns={columns}
-          dataSource={eventsData?.data?.events || []}
+          dataSource={eventsListResponse?.data?.events || []}
           loading={eventsLoading}
           pagination={{
             current: currentPage,
             pageSize: pageSize,
-            total: eventsData?.data?.meta?.totalItems,
+            total: eventsListResponse?.data?.meta?.totalItems,
             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
             pageSizeOptions: ['10', '20', '50', '100'],
             showSizeChanger: true,
