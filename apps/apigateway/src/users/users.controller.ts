@@ -90,10 +90,10 @@ export class UsersController {
   @UseGuards(GoogleAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Login with google success')
-  async googleCallback(@Req() req, @Res({ passthrough: true }) response: Response) {
+  async googleCallback(@Req() req, @Res() response: Response) {
     const user = req.user;
     const tokenData = this.usersService.handleGoogleAuth(user, response);
-    const frontendUrl = `${this.configService.get<string>('FE_BASE_URL')}/dashboards/default?accessToken=${(await tokenData).accessToken}`;
+    const frontendUrl = `${this.configService.get<string>('FE_BASE_URL')}/dashboards/general?accessToken=${(await tokenData).accessToken}`;
     return response.redirect(frontendUrl);
   }
 }
