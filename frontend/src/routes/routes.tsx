@@ -1,6 +1,6 @@
 // src\routes\routes.tsx
 // src\routes\routes.tsx
-import { createBrowserRouter, Navigate, useLocation } from 'react-router-dom';
+import { createBrowserRouter, useLocation, Navigate, RouteObject } from 'react-router-dom';
 import {
   AccountDeactivePage,
   GeneralDashboardPage,
@@ -45,11 +45,6 @@ import QRScannerPage from '../pages/QRScannerPage.tsx';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store.ts';
 
-const PrivateRoute = ({ children }: { children: React.ReactNode }): React.ReactNode => {
-  const user = useSelector((state: RootState) => state.user);
-  return user.id ? children : <Navigate to="/auth/signin" replace />;
-};
-
 // Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -79,18 +74,31 @@ const PageWrapper = ({ children }: PageProps) => {
   );
 };
 
+// **PrivateRoute Component**
+const PrivateRoute = ({ children }: { children: React.ReactNode }): React.ReactNode => {
+  const user = useSelector((state: RootState) => state.user);
+  return user && user.id ? children : <Navigate to="/auth/signin" replace />; // Redirect nếu chưa đăng nhập
+};
+
+const RootRoute = () => { // Component for root path '/'
+  const user = useSelector((state: RootState) => state.user);
+
+  if (user && user.id) {
+    return <Navigate to="/dashboards/general" replace />; // Redirect to dashboard if logged in
+  } else {
+    return <SignInPage />; // Render SignInPage if not logged in
+  }
+};
+
+
 // Create the router
 const router = createBrowserRouter([
   {
     path: '/',
-    // element: <PageWrapper children={<GuestLayout />} />,
+    element: <PageWrapper children={<RootRoute />} />, // Use RootRoute for '/' path
     errorElement: <ErrorPage />,
     children: [
-      {
-        index: true,
-        path: '',
-        element: <SignInPage />,
-      },
+      // No index route needed here as RootRoute handles '/'
     ],
   },
   {
@@ -101,7 +109,9 @@ const router = createBrowserRouter([
       {
         index: true,
         path: 'events',
-        element: <CreateEventPage />,
+        element: <PrivateRoute>
+          <CreateEventPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -113,15 +123,21 @@ const router = createBrowserRouter([
       {
         index: true,
         path: 'events/:id',
-        element: <EventDetailsPage />,
+        element: <PrivateRoute>
+          <EventDetailsPage />
+        </PrivateRoute>,
       },
       {
         path: 'my-events/:id',
-        element: <DetailMyEventPage />,
+        element: <PrivateRoute>
+          <DetailMyEventPage />
+        </PrivateRoute>,
       },
       {
         path: 'participated-events/:id',
-        element: <ParticipatedEventDetailsPage />,
+        element: <PrivateRoute>
+          <ParticipatedEventDetailsPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -133,66 +149,72 @@ const router = createBrowserRouter([
       {
         index: true,
         path: 'general',
-        element: (
+        element: <PrivateRoute>
           <GeneralDashboardPage />
-        ),
+        </PrivateRoute>,
       },
       {
         path: 'check-in-out/:id', // New route for QR scanner
-        element: (
-          <PrivateRoute>
-            <QRScannerPage />
-          </PrivateRoute>
-        )
+        element: <PrivateRoute>
+          <QRScannerPage />
+        </PrivateRoute>,
       },
       {
         path: 'speakers-guests',
-        element: (
-          <PrivateRoute>
-            <SpeakerGuestManagementPage />
-          </PrivateRoute>
-        )
+        element: <PrivateRoute>
+          <SpeakerGuestManagementPage />
+        </PrivateRoute>,
       },
       {
         path: 'participated-events',
-        element: (
-          <PrivateRoute>
-            <ParticipatedEventsPage />
-          </PrivateRoute>
-        )
+        element: <PrivateRoute>
+          <ParticipatedEventsPage />
+        </PrivateRoute>,
       },
       {
         path: 'projects',
-        element: (
-          <PrivateRoute>
-            <ProjectsDashboardPage />
-          </PrivateRoute>
-        )
+        element: <PrivateRoute>
+          <ProjectsDashboardPage />
+        </PrivateRoute>,
       },
       {
         path: 'events',
-        element: (
-          <PrivateRoute>
-            <EventsDashboardPage />
-          </PrivateRoute>
-        )
-      },
+        element: <PrivateRoute>
+          <EventsDashboardPage />
+        </PrivateRoute>,
 
+      },
       {
         path: 'my-events',
-        element: (
-          <PrivateRoute>
-            <MyEventDashboardPage />
-          </PrivateRoute>
-        )
+        element: <PrivateRoute>
+          <MyEventDashboardPage />
+        </PrivateRoute>,
+      },
+      {
+        path: 'users',
+        element: <PrivateRoute>
+          <UserDashboardPage />
+        </PrivateRoute>,
       },
       {
         path: 'events-list',
-        element: (
-          <PrivateRoute>
-            <EventsListPage />
-          </PrivateRoute>
-        )
+        element: <PrivateRoute>
+          <EventsListPage />
+        </PrivateRoute>,
+      },
+    ],
+  },
+  {
+    path: '/sitemap',
+    element: <PageWrapper children={<DashboardLayout />} />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        index: true,
+        path: '',
+        element: <PrivateRoute>
+          <SitemapPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -203,15 +225,21 @@ const router = createBrowserRouter([
     children: [
       {
         path: 'personal-information',
-        element: <UserProfileInformationPage />, // Thêm route cho UserProfileInformationPage
+        element: <PrivateRoute>
+          <UserProfileInformationPage />
+        </PrivateRoute>,
       },
       {
         path: 'security',
-        element: <UserProfileSecurityPage />,
+        element: <PrivateRoute>
+          <UserProfileSecurityPage />
+        </PrivateRoute>,
       },
       {
         path: 'feedback',
-        element: <UserProfileFeedbackPage />,
+        element: <PrivateRoute>
+          <UserProfileFeedbackPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -252,7 +280,9 @@ const router = createBrowserRouter([
     children: [
       {
         path: 'events/:id',
-        element: <EditEventPage />,
+        element: <PrivateRoute>
+          <EditEventPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -279,6 +309,20 @@ const router = createBrowserRouter([
       {
         path: '503',
         element: <Error503Page />,
+      },
+    ],
+  },
+  {
+    path: '/about',
+    element: <PageWrapper children={<DashboardLayout />} />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        index: true,
+        path: '',
+        element: <PrivateRoute>
+          <AboutPage />
+        </PrivateRoute>,
       },
     ],
   },

@@ -1,16 +1,15 @@
 // src\App.tsx
 // src/App.tsx
 import { RouterProvider } from 'react-router-dom';
-import { ConfigProvider, theme as antdTheme } from 'antd';
+import { ConfigProvider, theme as antdTheme, Spin } from 'antd';
 
 import { HelmetProvider } from 'react-helmet-async';
 import { StylesContext } from './context';
 import routes from './routes/routes.tsx';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from './redux/store.ts';
 import './App.css';
-import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useEffect, useState } from 'react'; // Import useState
 import { setUser } from './redux/userSlice.tsx';
 import axiosInstance from './api/axiosInstance'; // Import axiosInstance
 
@@ -35,6 +34,8 @@ const COLOR = {
 function App() {
   const { mytheme } = useSelector((state: RootState) => state.theme);
   const dispatch = useDispatch();
+  const [isAuthLoading, setIsAuthLoading] = useState(true); // **[ADDED]** State to track authentication loading
+
   useEffect(() => {
     const accessTokenFromUrl = new URLSearchParams(window.location.search).get('accessToken');
     let accessToken = localStorage.getItem('accessToken');
@@ -55,14 +56,17 @@ function App() {
         } catch (error) {
           console.error('Failed to fetch user profile:', error);
           localStorage.removeItem('user'); // Optionally remove user from local storage if fetch fails
+        } finally {
+          setIsAuthLoading(false); // **[ADDED]** Set loading to false after fetch (success or fail)
         }
       };
 
       fetchUserInfo(); // Call fetchUserInfo after getting accessToken
     } else {
       localStorage.removeItem('user');
+      setIsAuthLoading(false); // **[ADDED]** Set loading to false if no accessToken
     }
-  }, []);
+  }, [dispatch]);
 
   return (
     <HelmetProvider>
@@ -74,10 +78,7 @@ function App() {
             fontFamily: 'Lato, sans-serif',
           },
           components: {
-            Breadcrumb: {
-              // linkColor: 'rgba(0,0,0,.8)',
-              // itemColor: 'rgba(0,0,0,.8)',
-            },
+            Breadcrumb: {},
             Button: {
               colorLink: COLOR['500'],
               colorLinkActive: COLOR['700'],
@@ -145,7 +146,13 @@ function App() {
             },
           }}
         >
-          <RouterProvider router={routes} />
+          {isAuthLoading ? ( // **[ADDED]** Conditional rendering based on isAuthLoading
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+              <Spin size="large" tip="Loading..." />
+            </div>
+          ) : (
+            <RouterProvider router={routes} /> // Render RouterProvider when not loading
+          )}
         </StylesContext.Provider>
       </ConfigProvider>
     </HelmetProvider>

@@ -1,5 +1,6 @@
+// src\pages\authentication\SignIn.tsx
 // src\pages\authentication\SignInPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Button,
   Col,
@@ -17,12 +18,13 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import authService from '../../services/authService';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setUser } from '../../redux/userSlice';
 import GoogleLoginButton from '../../components/GoogleLoginButton';
 import { PATH_AUTH } from '../../constants';
 import { useMediaQuery } from 'react-responsive';
 import { Logo } from '../../components';
+import { RootState } from '../../redux/store';
 
 const { Title, Text } = Typography;
 
@@ -39,6 +41,15 @@ export const SignInPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const useDispatchHook = useDispatch();
+  const user = useSelector((state: RootState) => state.user);
+
+  // useEffect hook to redirect if already logged in
+  useEffect(() => {
+    if (user && user.id) {
+      navigate('/dashboards/general', { replace: true });
+    }
+  }, [user, navigate]);
+
 
   const onFinish = async (values: FieldType) => {
     setLoading(true);
@@ -166,7 +177,7 @@ export const SignInPage = () => {
             wrap="wrap"
             style={{ width: '100%' }}
           >
-            <GoogleLoginButton /> {/* Thêm GoogleLoginButton vào đây */}
+            <GoogleLoginButton />
           </Flex>
         </Flex>
       </Col>
