@@ -2574,32 +2574,48 @@ type Props = {
 } & TableProps<Events>;
 
 export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...others }: Props) => {
-  const [categoryName, setCategoryName] = useState<string | null>(null); // State for category name
+  const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({}); // State to store category names by categoryId
   const [categoryLoading, setCategoryLoading] = useState(false); // Loading state
   const navigate = useNavigate();
   const [tableLoading, setTableLoading] = useState(false);
 
   useEffect(() => {
-    const fetchCategoryName = async (event: Events) => {
-      if (!event?.categoryId) return; // Exit if categoryId is missing
+    const fetchCategoryNames = async () => {
+      if (!data || data.length === 0) return; // Exit if no events data
+
       setCategoryLoading(true);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getCategoryById(event.categoryId, accessToken || '');
-        const categoryResponse = response as { data: { category: { name: string } } };
-        setCategoryName(categoryResponse.data.category.name);
+        if (!accessToken) {
+          message.error("No access token found. Please login again.");
+          return;
+        }
+
+        const newCategoryNamesMap: Record<string, string> = {};
+        // Fetch category name for each event
+        for (const event of data) {
+          if (event.categoryId) {
+            try {
+              const response = await authService.getCategoryById(event.categoryId, accessToken);
+              const categoryResponse = response as { data: { category: { name: string } } };
+              newCategoryNamesMap[event.categoryId] = categoryResponse.data.category.name;
+            } catch (categoryError) {
+              console.error(`Error fetching category name for categoryId ${event.categoryId}:`, categoryError);
+              newCategoryNamesMap[event.categoryId] = 'N/A'; // Set to N/A in case of error for a specific category
+            }
+          }
+        }
+        setCategoryNamesMap(newCategoryNamesMap);
       } catch (error: any) {
-        console.error('Error fetching category name:', error);
-        message.error('Failed to load category name');
-        setCategoryName('N/A'); // Set to N/A in case of error
+        console.error('Error fetching category names:', error);
+        message.error('Failed to load category names');
+        setCategoryNamesMap({}); // Clear the map in case of a general error
       } finally {
         setCategoryLoading(false);
       }
     };
 
-    data.forEach(event => {
-      fetchCategoryName(event);
-    });
+    fetchCategoryNames();
   }, [data]);
 
   const COLUMNS = (navigate: ReturnType<typeof useNavigate>, setLoading: (loading: boolean) => void, fetchData: () => void, activeTabKey: string): ColumnsType<Events> => [
@@ -2621,13 +2637,13 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       title: 'Category',
       dataIndex: 'categoryId',
       key: 'event_category',
-      render: (_: any) => {
+      render: (categoryId: string) => { // Changed render to receive categoryId
         return (
           <Space>
             {categoryLoading ? (
               <Spin />
             ) : (
-              <Tag color="blue">{categoryName || 'N/A'}</Tag>
+              <Tag color="blue">{categoryNamesMap[categoryId] || 'N/A'}</Tag> // Use categoryNamesMap to get the name
             )}
           </Space>
         );
@@ -2737,7 +2753,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       dataSource={data}
       columns={COLUMNS(navigate, setTableLoading, fetchData, activeTabKey)}
       className="overflow-scroll"
-      loading={loading || tableLoading}
+      loading={loading || tableLoading || categoryLoading} // Include categoryLoading in table loading
       {...others}
     />
   );
@@ -6885,20 +6901,23 @@ export const DashboardLayout = () => {
 
 
 src\layouts\eventDetails\index.tsx:
-// src\layouts\eventDetails\index.tsx
+// src/layouts/eventDetails/index.tsx
 import { AppLayout } from '../index.ts';
-import { Col, Row, Typography, message, Spin } from 'antd';
-import { Link, Outlet, useLocation, useParams, useOutletContext } from 'react-router-dom'; // Import useOutletContext
-import { CiLocationOn, CiUser } from "react-icons/ci";
-import { Card, PageHeader } from '../../components';
+import { Col, Row, message, Spin, Typography, Card, Tag } from 'antd';
+import { useLocation, useParams, Outlet } from 'react-router-dom';
+import { CiLocationOn, CiUser, CiCalendar } from "react-icons/ci"; // Import thêm icons
+import { PageHeader } from '../../components';
 import { HomeOutlined, IdcardOutlined } from '@ant-design/icons';
 import { useStylesContext } from '../../context';
 import { useEffect, useState } from 'react';
 import authService from '../../services/authService.ts';
+import dayjs from 'dayjs';
+
+const { Text } = Typography;
 
 export const EventDetailLayout = () => {
   const { pathname } = useLocation();
-  const { id: eventId } = useParams<{ id: string }>(); // Đổi tên biến thành eventId
+  const { id: eventId } = useParams<{ id: string }>(); // Lấy eventId từ URL
   const stylesContext = useStylesContext();
 
   // State lưu trữ thông tin sự kiện
@@ -6910,7 +6929,8 @@ export const EventDetailLayout = () => {
       try {
         const response = await authService.getEventDetails(eventId) as { statusCode: number; data: any; message?: string };
         if (response.statusCode === 200 && response.data) {
-          setEventDetail(response.data);
+          // Lấy dữ liệu theo cấu trúc: response.data.event
+          setEventDetail(response.data.event);
         } else {
           message.error(response.message || 'Failed to load event details');
         }
@@ -6957,27 +6977,53 @@ export const EventDetailLayout = () => {
         />
         <Row {...stylesContext?.rowProps}>
           <Col xs={24} md={16} xl={18}>
-            <Outlet context={{ eventId }} /> {/* Truyền eventId qua context */}
+            <Outlet context={{ eventId, eventDetail }} /> {/* Truyền eventId và eventDetail qua context */}
           </Col>
           <Col xs={24} md={8} xl={6}>
             <Row {...stylesContext?.rowProps}>
               <Col span={24}>
-                <Card title="Event info">
+                <Card title="Event Info">
                   {loadingEvent ? (
-                    <Spin tip="Loading event info..." />
+                    <div style={{ textAlign: 'center' }}>
+                      <Spin tip="Loading event info..." />
+                    </div>
                   ) : (
-                    <ul style={{ listStyle: 'none', padding: 0 }}>
-                      <li style={{ marginBottom: '8px' }}>
-                        <CiLocationOn style={{ marginRight: '8px' }} />
-                        {eventDetail?.location || 'No location provided'}
-                      </li>
-                      <li>
-                        <CiUser style={{ marginRight: '8px' }} />
-                        {typeof eventDetail?.maxParticipants === 'number'
-                          ? `${eventDetail.maxParticipants} attendes`
-                          : 'No attendee info'}
-                      </li>
-                    </ul>
+                    // Sử dụng div với display flex để bố trí các mục thông tin
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Text strong>Name:</Text>
+                        <Text>{eventDetail?.name || 'N/A'}</Text>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Text strong>Status:</Text>
+                        <Tag color={eventDetail?.status === 'SCHEDULED' ? 'blue' : eventDetail?.status === 'CANCELED' ? 'red' : 'green'}>{eventDetail?.status}</Tag>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <CiLocationOn />
+                        <Text strong>Location:</Text>
+                        <Text>{eventDetail?.location || 'N/A'}</Text>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <CiUser />
+                        <Text strong>Capacity:</Text>
+                        <Text>{eventDetail?.maxParticipants || 'Unlimited'}</Text>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <CiCalendar />
+                        <Text strong>Start Date:</Text>
+                        <Text>
+                          {eventDetail?.startDate ? dayjs(eventDetail.startDate).format('DD/MM/YYYY HH:mm') : 'N/A'}
+                        </Text>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <CiCalendar />
+                        <Text strong>End Date:</Text>
+                        <Text>
+                          {eventDetail?.endDate ? dayjs(eventDetail.endDate).format('DD/MM/YYYY HH:mm') : 'N/A'}
+                        </Text>
+                      </div>
+                      {/* Bạn có thể thêm các thông tin khác nếu cần */}
+                    </div>
                   )}
                 </Card>
               </Col>
@@ -6988,6 +7034,8 @@ export const EventDetailLayout = () => {
     </>
   );
 };
+
+export default EventDetailLayout;
 
 
 src\layouts\guest\Guest.tsx:
@@ -7567,179 +7615,187 @@ export * from './create';
 export * from './details';
 
 src\pages\QRScannerPage.tsx:
-// src\pages\QRScannerPage.tsx
+// src/pages/QRScannerPage.tsx
 import React, { useState, useRef } from 'react';
 import { QrReader } from 'react-qr-reader';
-import { Input, Button, message, Typography, Card, Flex } from 'antd';
-import authService from '../services/authService';
-import { useNavigate, useParams } from 'react-router-dom';
-import { BackBtn } from '../components';
+import { Input, Button, message, Typography, Card } from 'antd';
+import { BackBtn, PageHeader } from '../components';
 import { Helmet } from 'react-helmet-async';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../constants';
-import { Link } from 'react-router-dom';
-import { PageHeader } from '../components';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import authService from '../services/authService';
 
+const { Title, Text } = Typography;
 
 const QRScannerPage: React.FC = () => {
-    const [lastScannedCode, setLastScannedCode] = useState<string>('');
-    const [manualCode, setManualCode] = useState<string>('');
-    const navigate = useNavigate();
-    const { id: eventId } = useParams<{ id: string }>();
-    const qrReaderRef = useRef<typeof QrReader>(null); // Create a ref for QrReader
-    const [isCameraActive, setIsCameraActive] = useState(true); // State to control camera activity
+  const [lastScannedCode, setLastScannedCode] = useState<string>('');
+  const [manualCode, setManualCode] = useState<string>('');
+  const [isCameraActive, setIsCameraActive] = useState(true);
+  const navigate = useNavigate();
+  const { id: eventId } = useParams<{ id: string }>();
 
-    // Hàm xử lý khi mã QR được quét
-    const handleScan = async (result: any) => {
-        if (result && isCameraActive) { // Only process if camera is active
-            const code = result.getText();
-            if (code && code !== lastScannedCode) {
-                setLastScannedCode(code);
-                setIsCameraActive(false); // Deactivate camera temporarily after scan
-                try {
-                    const response = await authService.scanTicket(code) as { status: number; data: any[]; error?: string };
-                    if (response.status === 200) {
-                        message.success(`Ticket scanned: ${response.data[0]?.name || ''}. Ready for next scan.`);
-                    } else {
-                        message.error(response.error || 'Scan failed. Please try again.');
-                    }
-                } catch (error: any) {
-                    console.error('Error scanning ticket:', error);
-                    message.error(error.message || 'Scan failed. Please try again.');
-                } finally {
-                    setIsCameraActive(true); // Reactivate camera after API call
+  // Hàm xử lý khi mã QR được quét
+  const handleScan = async (result: any) => {
+    if (result && isCameraActive) {
+      const code = result.getText();
+      if (code && code !== lastScannedCode) {
+        setLastScannedCode(code);
+        setIsCameraActive(false);
+        try {
+          const response = await authService.scanTicket(code) as { status: number; data: any[]; error?: string };
+          if (response.status === 200) {
+            message.success(`Ticket scanned: ${response.data[0]?.name || ''}. Ready for next scan.`);
+          } else {
+            message.error(response.error || 'Scan failed. Please try again.');
+          }
+        } catch (error: any) {
+          console.error('Error scanning ticket:', error);
+          message.error(error.message || 'Scan failed. Please try again.');
+        } finally {
+          setIsCameraActive(true);
+        }
+      }
+    }
+  };
+
+  // Hàm xử lý lỗi camera
+  const handleError = (error: any) => {
+    setIsCameraActive(false);
+  };
+
+  // Hàm xử lý quét thủ công
+  const handleManualSubmit = async () => {
+    if (manualCode.trim() === '') {
+      message.warning('Please enter a code manually.');
+      return;
+    }
+    setIsCameraActive(false);
+    try {
+      const response = await authService.scanTicket(manualCode.trim()) as { statusCode: number; data: any[]; error?: string };
+      if (response.statusCode === 200) {
+        message.success(`Ticket scanned: ${response.data[0]?.name || ''}. Ready for next scan.`);
+      } else {
+        message.error(response.error || 'Scan failed. Please try again.');
+      }
+    } catch (error: any) {
+      message.error(error.message || 'Scan failed. Please try again.');
+    } finally {
+      setIsCameraActive(true);
+    }
+  };
+
+  // Hàm xử lý hoàn thành sự kiện
+  const handleFinish = async () => {
+    setIsCameraActive(false);
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken || !eventId) {
+        message.error('Missing access token or event id.');
+        return;
+      }
+      const response = await authService.updateEvent(eventId, { status: 'FINISHED' }, accessToken) as { statusCode: number; message?: string };
+      if (response.statusCode === 200) {
+        message.success('Event finished successfully.');
+        navigate('/dashboards/my-events');
+      } else {
+        message.error(response.message || 'Failed to finish event.');
+      }
+    } catch (error: any) {
+      message.error(error.message || 'Failed to finish event.');
+    } finally {
+      setIsCameraActive(true);
+    }
+  };
+
+  return (
+    <div>
+      <Helmet>
+        <title>QR Scanner | Event Check-in/Check-out</title>
+      </Helmet>
+      <PageHeader
+        title="QR Code Scanner"
+        breadcrumbs={[
+          {
+            title: (
+              <>
+                <HomeOutlined />
+                <span>Home</span>
+              </>
+            ),
+            path: '/',
+          },
+          {
+            title: (
+              <>
+                <PieChartOutlined />
+                <span>Dashboards</span>
+              </>
+            ),
+            menu: {
+              items: DASHBOARD_ITEMS.map((d) => ({
+                key: d.title,
+                title: <Link to={d.path}>{d.title}</Link>,
+              })),
+            },
+          },
+          { title: 'QR Scanner' },
+        ]}
+        btnBack={<BackBtn />}
+      />
+
+      <Card>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+          <Title level={4}>Event Check-in/Check-out Scanner</Title>
+          <div
+            style={{
+              border: '1px solid #ccc',
+              padding: '10px',
+              width: '100%',
+              maxWidth: '500px',
+              height: '400px',
+              borderRadius: '8px',
+              overflow: 'hidden',
+            }}
+          >
+            <QrReader
+              constraints={{ facingMode: 'environment' }}
+              scanDelay={300}
+              onResult={(result, error) => {
+                if (!!result) {
+                  handleScan(result);
                 }
-            }
-        }
-    };
-
-    // Hàm xử lý lỗi camera
-    const handleError = (error: any) => {
-        console.error('QR Reader error:', error);
-        message.error('Error accessing camera. Please check camera permissions.');
-        setIsCameraActive(false); // Deactivate camera on error
-    };
-
-    // Hàm xử lý quét thủ công
-    const handleManualSubmit = async () => {
-        if (manualCode.trim() === '') {
-            message.warning('Please enter a code manually.');
-            return;
-        }
-        setIsCameraActive(false); // Deactivate camera temporarily for manual submit
-        try {
-            const response = await authService.scanTicket(manualCode.trim()) as { statusCode: number; data: any[]; error?: string };
-            if (response.statusCode === 200) {
-                message.success(`Ticket scanned: ${response.data[0]?.name || ''}. Ready for next scan.`);
-            } else {
-                message.error(response.error || 'Scan failed. Please try again.');
-            }
-        } catch (error: any) {
-            message.error(error.message || 'Scan failed. Please try again.');
-        } finally {
-            setIsCameraActive(true); // Reactivate camera after manual submit
-        }
-    };
-
-    // Hàm xử lý hoàn thành sự kiện
-    const handleFinish = async () => {
-        setIsCameraActive(false); // Deactivate camera before finishing event
-        try {
-            const accessToken = localStorage.getItem('accessToken');
-            if (!accessToken || !eventId) {
-                message.error('Missing access token or event id.');
-                return;
-            }
-            const response = await authService.updateEvent(eventId, { status: 'FINISHED' }, accessToken) as { statusCode: number; message?: string };
-            if (response.statusCode === 200) {
-                message.success('Event finished successfully.');
-                navigate('/dashboards/my-events');
-            } else {
-                message.error(response.message || 'Failed to finish event.');
-            }
-        } catch (error: any) {
-            message.error(error.message || 'Failed to finish event.');
-        } finally {
-            setIsCameraActive(true); // Reactivate camera after finish event attempt, in case of error
-        }
-    };
-
-    return (
-        <div>
-            <Helmet>
-                <title>QR Scanner | Event Check-in/Check-out</title>
-            </Helmet>
-            <PageHeader
-                title="QR Code Scanner"
-                breadcrumbs={[
-                    {
-                        title: (
-                            <>
-                                <HomeOutlined />
-                                <span>Home</span>
-                            </>
-                        ),
-                        path: '/',
-                    },
-                    {
-                        title: (
-                            <>
-                                <PieChartOutlined />
-                                <span>Dashboards</span>
-                            </>
-                        ),
-                        menu: {
-                            items: DASHBOARD_ITEMS.map((d) => ({
-                                key: d.title,
-                                title: <Link to={d.path}>{d.title}</Link>,
-                            })),
-                        },
-                    },
-                    {
-                        title: 'QR Scanner',
-                    },
-                ]}
-                btnBack={<BackBtn />}
+                if (!!error) {
+                  handleError(error);
+                }
+              }}
+              videoStyle={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
             />
+          </div>
+          <Text>Scanning for QR codes...</Text>
 
-            <Card>
-                <Flex vertical align="center" gap="large">
-                    <Typography.Title level={4}>Event Check-in/Check-out Scanner</Typography.Title>
-                    <div style={{ border: '1px solid #ccc', padding: '10px' }}>
-                        <QrReader
-                            constraints={{ facingMode: 'environment' }}
-                            scanDelay={300} // Adjust scan delay as needed
-                            onResult={(result, error) => {
-                                if (!!result) {
-                                    handleScan(result);
-                                }
-                                if (!!error) {
-                                    handleError(error);
-                                }
-                            }}
-                            videoStyle={{ width: '300px' }} // Adjust video size as needed
-                        />
-                    </div>
-                    <Typography.Text>Scanning for QR codes...</Typography.Text>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+            <Text>Manual Code Entry:</Text>
+            <Input
+              placeholder="Enter code manually"
+              value={manualCode}
+              onChange={(e) => setManualCode(e.target.value)}
+              style={{ width: 300 }}
+            />
+            <Button onClick={handleManualSubmit}>Submit Code</Button>
+          </div>
 
-                    <Flex vertical align="center" gap="middle">
-                        <Typography.Text>Manual Code Entry:</Typography.Text>
-                        <Input
-                            placeholder="Enter code manually"
-                            value={manualCode}
-                            onChange={(e) => setManualCode(e.target.value)}
-                            style={{ width: 300 }}
-                        />
-                        <Button onClick={handleManualSubmit}>Submit Code</Button>
-                    </Flex>
-
-                    <Button type="primary" onClick={handleFinish} style={{ marginTop: 20 }}>
-                        Finish Event
-                    </Button>
-                </Flex>
-            </Card>
+          <Button type="primary" onClick={handleFinish} style={{ marginTop: 20 }}>
+            Finish Event
+          </Button>
         </div>
-    );
+      </Card>
+    </div>
+  );
 };
 
 export default QRScannerPage;
@@ -8312,7 +8368,6 @@ export const SignUpPage = () => {
     setLoading(true);
     try {
       const response = await authService.register(values);
-      console.log('Registration successful:', response);
 
       message.success('Registration successful, please login.');
       setTimeout(() => {
@@ -9042,7 +9097,8 @@ const EventsDashboardPage = () => {
 export default EventsDashboardPage
 
 src\pages\dashboards\EventsList.tsx:
-import React, { useEffect, useState, useMemo } from 'react';
+// src\pages\dashboards\EventsList.tsx
+import React, { useEffect, useState, useCallback } from 'react';
 import { Alert, Button, Card, Space, Table, Tag, Select, message, Spin } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
@@ -9055,52 +9111,70 @@ import { Events } from '../../types';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
 
+interface EventsListResponse {
+    data: {
+        events: Events[];
+        meta: {
+            totalItems: number;
+            // ... other meta properties if any ...
+        };
+    };
+    statusCode: number;
+    message: string;
+}
+
 const EVENT_STATUS_OPTIONS = [
-  { value: 'all', label: 'All Statuses' },
+  { value: undefined, label: 'All Statuses' }, // **[CHANGED]** value: undefined for "All Statuses"
   { value: 'SCHEDULED', label: 'Scheduled' },
   { value: 'CANCELED', label: 'Canceled' },
   { value: 'FINISHED', label: 'Finished' },
 ];
 
 const EventsListPage = () => {
-  const [categoryName, setCategoryName] = useState<string | null>(null); // State for category name
-  const [categoryLoading, setCategoryLoading] = useState(false); // Loading state for category
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({}); // **[ADDED]** State for category names mapping
+  const [categoryLoading, setCategoryLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined); // **[CHANGED]** statusFilter type to string | undefined
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const { data: eventsData, error: eventsError, loading: eventsLoading } = useFetchData(
-    `http://localhost:8080/api/v1/events?page=${currentPage}&limit=${pageSize}${statusFilter !== 'all' ? `&status=${statusFilter}` : ''}`,
+  const {
+    data: eventsListResponse, // **[CHANGED]** Renamed data to eventsListResponse
+    error: eventsError,
+    loading: eventsLoading,
+  } = useFetchData( // **[CHANGED]** Removed generic type argument from useFetchData hook
+    `http://localhost:8080/api/v1/events?page=${currentPage}&limit=${pageSize}${statusFilter ? `&status=${statusFilter}` : ''}`, // **[CHANGED]** Use statusFilter directly in URL
     localStorage.getItem('accessToken') || undefined
   );
 
-  // Khi eventsData thay đổi, fetch category name cho từng event (ví dụ, nếu bạn chỉ muốn lấy category cho các event đầu tiên)
+  // **[ADDED]** useEffect fetch all categories
   useEffect(() => {
-    const fetchCategoryName = async (event: Events) => {
-      if (!event?.categoryId) return;
+    const fetchAllCategoryNames = async () => {
       setCategoryLoading(true);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getCategoryById(event.categoryId, accessToken || '');
-        const categoryResponse = response as { data: { category: { name: string } } };
-        setCategoryName(categoryResponse.data.category.name);
+        const response = await authService.getCategories(accessToken || '') as { statusCode: number; data: { categories?: any[] } };
+        if (response.statusCode === 200 && response.data.categories) {
+          const categoryMap: Record<string, string> = {};
+          response.data.categories.forEach((category: any) => {
+            categoryMap[category.id] = category.name;
+          });
+          setCategoryNamesMap(categoryMap);
+        } else {
+          message.error("Failed to load event categories.");
+        }
       } catch (error: any) {
-        console.error('Error fetching category name:', error);
-        message.error('Failed to load category name');
-        setCategoryName('N/A');
+        message.error("Failed to load event categories.");
       } finally {
         setCategoryLoading(false);
       }
     };
+    fetchAllCategoryNames();
+  }, []);
 
-    eventsData?.data?.events.forEach((event: Events) => {
-      fetchCategoryName(event);
-    });
-  }, [eventsData]);
 
-  const onStatusFilterChange = (value: string) => {
+  const onStatusFilterChange = (value: string | undefined) => { // **[CHANGED]** Parameter type to string | undefined
     setStatusFilter(value);
-    setCurrentPage(1); // Reset page to 1 when filter changes
+    setCurrentPage(1);
   };
 
   const handlePaginationChange = (page: number, pageSize: number) => {
@@ -9108,7 +9182,6 @@ const EventsListPage = () => {
     setPageSize(pageSize);
   };
 
-  // Định nghĩa các cột bảng bên trong component, để có thể sử dụng các biến state
   const columns: ColumnsType<Events> = [
     {
       title: 'Name',
@@ -9137,12 +9210,12 @@ const EventsListPage = () => {
       title: 'Category',
       dataIndex: 'categoryId',
       key: 'event_category',
-      render: () => (
+      render: (categoryId: string) => ( // **[CHANGED]** Render category name from mapping
         <Space>
           {categoryLoading ? (
             <Spin />
           ) : (
-            <Tag color="blue">{categoryName || 'N/A'}</Tag>
+            <Tag color="blue">{categoryNamesMap[categoryId] || 'N/A'}</Tag> // **[CHANGED]** Use categoryNamesMap
           )}
         </Space>
       ),
@@ -9211,7 +9284,8 @@ const EventsListPage = () => {
         title="Events"
         extra={
           <Select
-            defaultValue="all"
+            placeholder="Filter by Status"
+            defaultValue={undefined} // **[CHANGED]** Default value to undefined
             style={{ width: 200 }}
             onChange={onStatusFilterChange}
             options={EVENT_STATUS_OPTIONS}
@@ -9230,12 +9304,12 @@ const EventsListPage = () => {
 
         <Table
           columns={columns}
-          dataSource={eventsData?.data?.events || []}
+          dataSource={eventsListResponse?.data?.events || []}
           loading={eventsLoading}
           pagination={{
             current: currentPage,
             pageSize: pageSize,
-            total: eventsData?.data?.meta?.totalItems,
+            total: eventsListResponse?.data?.meta?.totalItems,
             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
             pageSizeOptions: ['10', '20', '50', '100'],
             showSizeChanger: true,
@@ -9829,6 +9903,7 @@ export const MyEventDashboardPage = () => {
 };
 
 export default MyEventDashboardPage
+
 
 src\pages\dashboards\ParticipatedEvents.tsx:
 // src/pages/dashboards/ParticipatedEventsPage.tsx
@@ -11044,7 +11119,7 @@ export const EventDetailsPage: React.FC = () => {
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
   const { eventId } = useOutletContext<{ eventId: string }>();
-  
+
   useEffect(() => {
     const fetchEventDetails = async () => {
       setLoading(true);
@@ -11218,24 +11293,6 @@ export const EventDetailsPage: React.FC = () => {
             )}
           </Col>
           <Col span={24}>
-            <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
-              <Descriptions.Item label="Name">{eventDetails.name}</Descriptions.Item>
-              <Descriptions.Item label="Category">{eventDetails.categoryId}</Descriptions.Item>
-              <Descriptions.Item label="Location">{eventDetails.location}</Descriptions.Item>
-              <Descriptions.Item label="Start Date">
-                {dayjs(eventDetails.startDate).format('YYYY-MM-DD HH:mm:ss')}
-              </Descriptions.Item>
-              <Descriptions.Item label="End Date">
-                {dayjs(eventDetails.endDate).format('YYYY-MM-DD HH:mm:ss')}
-              </Descriptions.Item>
-              <Descriptions.Item label="Status"><Tag color={eventDetails.status === 'SCHEDULED' ? 'blue' : eventDetails.status === 'CANCELED' ? 'red' : 'green'}>{eventDetails.status}</Tag></Descriptions.Item>
-              <Descriptions.Item label="Max Participants">{eventDetails.maxParticipants || 'Unlimited'}</Descriptions.Item>
-              <Descriptions.Item span={3} label="Description">
-                {eventDetails.description || "No description provided."}
-              </Descriptions.Item>
-            </Descriptions>
-          </Col>
-          <Col span={24}>
             <Card title="Schedule">
               {eventDetails.schedule && eventDetails.schedule.length > 0 ? (
                 <Table
@@ -11282,7 +11339,7 @@ export const EventDetailsPage: React.FC = () => {
           )} */}
           <Col span={24}>
             <EventDiscussion
-              eventId={id || ''}
+              eventId={eventId}
               questions={questions}
               setQuestions={setQuestions}
             />
@@ -11585,7 +11642,7 @@ const DetailMyEventPage: React.FC = () => {
   return (
     <div>
       <Helmet>
-        <title>Details | Antd Dashboard</title>
+        <title>Details | Dashboard</title>
       </Helmet>
       <PageHeader
         title="Event Details"
@@ -11663,25 +11720,6 @@ const DetailMyEventPage: React.FC = () => {
                 />
               </Card>
             )}
-          </Col>
-
-          <Col span={24}>
-            <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
-              <Descriptions.Item label="Name">{eventDetails?.name}</Descriptions.Item>
-              <Descriptions.Item label="Category">{eventDetails?.categoryId}</Descriptions.Item>
-              <Descriptions.Item label="Location">{eventDetails?.location}</Descriptions.Item>
-              <Descriptions.Item label="Start Date">
-                {dayjs(eventDetails?.startDate).format('YYYY-MM-DD HH:mm:ss')}
-              </Descriptions.Item>
-              <Descriptions.Item label="End Date">
-                {dayjs(eventDetails?.endDate).format('YYYY-MM-DD HH:mm:ss')}
-              </Descriptions.Item>
-              <Descriptions.Item label="Status"><Tag color={eventDetails?.status === 'SCHEDULED' ? 'blue' : eventDetails?.status === 'CANCELED' ? 'red' : 'green'}>{eventDetails?.status}</Tag></Descriptions.Item>
-              <Descriptions.Item label="Max Participants">{eventDetails?.maxParticipants || 'Unlimited'}</Descriptions.Item>
-              <Descriptions.Item span={3} label="Description">
-                {eventDetails?.description || "No description provided."}
-              </Descriptions.Item>
-            </Descriptions>
           </Col>
           <Col span={24}>
             <Card title="Schedule">
@@ -12038,24 +12076,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
             )}
           </Col>
 
-          <Col span={24}>
-            <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
-              <Descriptions.Item label="Name">{eventDetails?.name}</Descriptions.Item>
-              <Descriptions.Item label="Category">{eventDetails?.categoryId}</Descriptions.Item>
-              <Descriptions.Item label="Location">{eventDetails?.location}</Descriptions.Item>
-              <Descriptions.Item label="Start Date">
-                {dayjs(eventDetails?.startDate).format('YYYY-MM-DD HH:mm:ss')}
-              </Descriptions.Item>
-              <Descriptions.Item label="End Date">
-                {dayjs(eventDetails?.endDate).format('YYYY-MM-DD HH:mm:ss')}
-              </Descriptions.Item>
-              <Descriptions.Item label="Status"><Tag color={eventDetails?.status === 'SCHEDULED' ? 'blue' : eventDetails?.status === 'CANCELED' ? 'red' : 'green'}>{eventDetails?.status}</Tag></Descriptions.Item>
-              <Descriptions.Item label="Max Participants">{eventDetails?.maxParticipants || 'Unlimited'}</Descriptions.Item>
-              <Descriptions.Item span={3} label="Description">
-                {eventDetails?.description || "No description provided."}
-              </Descriptions.Item>
-            </Descriptions>
-          </Col>
           <Col span={24}>
             <Card title="Schedule">
               {eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
@@ -12559,7 +12579,6 @@ const EventFileUploadForm: React.FC<EventFileUploadFormProps> = ({ eventId }) =>
                 //     'Content-Type': 'multipart/form-data',
                 // },
             });
-            console.log('Upload response:', response);
             message.success(`Uploaded ${selectedField} successfully`);
         } catch (error: any) {
             message.error(`${error.response?.data?.message || error.message}`);
@@ -12630,6 +12649,7 @@ const EventFileUploadForm: React.FC<EventFileUploadFormProps> = ({ eventId }) =>
 };
 
 export default EventFileUploadForm;
+
 
 src\pages\errors\Error.tsx:
 // src\pages\errors\Error.tsx

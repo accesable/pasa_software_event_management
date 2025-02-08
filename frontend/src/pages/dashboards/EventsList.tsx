@@ -1,11 +1,11 @@
-// src\pages\dashboards\EventsList.tsx
-import React, { useEffect, useState, useCallback } from 'react';
-import { Alert, Button, Card, Space, Table, Tag, Select, message, Spin } from 'antd';
+// src/pages/dashboards/EventsList.tsx
+import React, { useEffect, useState } from 'react';
+import { Alert, Button, Card, Space, Table, Tag, Select, message, Spin, Input } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { PageHeader, Loader } from '../../components';
+import { PageHeader } from '../../components';
 import useFetchData from '../../hooks/useFetchData';
 import { ColumnsType } from 'antd/es/table';
 import { Events } from '../../types';
@@ -13,41 +13,46 @@ import dayjs from 'dayjs';
 import authService from '../../services/authService';
 
 interface EventsListResponse {
-    data: {
-        events: Events[];
-        meta: {
-            totalItems: number;
-            // ... other meta properties if any ...
-        };
+  data: {
+    events: Events[];
+    meta: {
+      totalItems: number;
+      // ... other meta properties if any ...
     };
-    statusCode: number;
-    message: string;
+  };
+  statusCode: number;
+  message: string;
 }
 
 const EVENT_STATUS_OPTIONS = [
-  { value: undefined, label: 'All Statuses' }, // **[CHANGED]** value: undefined for "All Statuses"
+  { value: '', label: 'All Statuses' },
   { value: 'SCHEDULED', label: 'Scheduled' },
   { value: 'CANCELED', label: 'Canceled' },
   { value: 'FINISHED', label: 'Finished' },
 ];
 
 const EventsListPage = () => {
-  const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({}); // **[ADDED]** State for category names mapping
+  const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({});
   const [categoryLoading, setCategoryLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined); // **[CHANGED]** statusFilter type to string | undefined
+  // Use '' (empty string) to represent "All" filters.
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [categoryFilter, setCategoryFilter] = useState<string>(''); // '' means All Categories
+  const [searchQuery, setSearchQuery] = useState<string>(''); // State for search query
 
   const {
-    data: eventsListResponse, // **[CHANGED]** Renamed data to eventsListResponse
+    data: eventsListResponse,
     error: eventsError,
     loading: eventsLoading,
-  } = useFetchData( // **[CHANGED]** Removed generic type argument from useFetchData hook
-    `http://localhost:8080/api/v1/events?page=${currentPage}&limit=${pageSize}${statusFilter ? `&status=${statusFilter}` : ''}`, // **[CHANGED]** Use statusFilter directly in URL
+  } = useFetchData( 
+    `http://localhost:8080/api/v1/events?page=${currentPage}&limit=${pageSize}` +
+    `${statusFilter ? `&status=${statusFilter}` : ''}` +
+    `${categoryFilter ? `&categoryId=${categoryFilter}` : ''}` +
+    `${searchQuery ? `&search=${searchQuery}` : ''}`,
     localStorage.getItem('accessToken') || undefined
   );
 
-  // **[ADDED]** useEffect fetch all categories
   useEffect(() => {
     const fetchAllCategoryNames = async () => {
       setCategoryLoading(true);
@@ -56,6 +61,7 @@ const EventsListPage = () => {
         const response = await authService.getCategories(accessToken || '') as { statusCode: number; data: { categories?: any[] } };
         if (response.statusCode === 200 && response.data.categories) {
           const categoryMap: Record<string, string> = {};
+          categoryMap[''] = 'All Categories'; // Add "All Categories" option with empty string key
           response.data.categories.forEach((category: any) => {
             categoryMap[category.id] = category.name;
           });
@@ -72,9 +78,18 @@ const EventsListPage = () => {
     fetchAllCategoryNames();
   }, []);
 
-
-  const onStatusFilterChange = (value: string | undefined) => { // **[CHANGED]** Parameter type to string | undefined
+  const onStatusFilterChange = (value: string) => {
     setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const onCategoryFilterChange = (value: string) => {
+    setCategoryFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
     setCurrentPage(1);
   };
 
@@ -111,12 +126,12 @@ const EventsListPage = () => {
       title: 'Category',
       dataIndex: 'categoryId',
       key: 'event_category',
-      render: (categoryId: string) => ( // **[CHANGED]** Render category name from mapping
+      render: (categoryId: string) => (
         <Space>
           {categoryLoading ? (
             <Spin />
           ) : (
-            <Tag color="blue">{categoryNamesMap[categoryId] || 'N/A'}</Tag> // **[CHANGED]** Use categoryNamesMap
+            <Tag color="blue">{categoryNamesMap[categoryId] || 'N/A'}</Tag>
           )}
         </Space>
       ),
@@ -143,6 +158,11 @@ const EventsListPage = () => {
       ),
     },
   ];
+
+  const categoryOptions = Object.entries(categoryNamesMap).map(([key, label]) => ({
+    value: key, // key is '' for "All Categories"
+    label: label,
+  }));
 
   return (
     <div>
@@ -184,13 +204,32 @@ const EventsListPage = () => {
       <Card
         title="Events"
         extra={
-          <Select
-            placeholder="Filter by Status"
-            defaultValue={undefined} // **[CHANGED]** Default value to undefined
-            style={{ width: 200 }}
-            onChange={onStatusFilterChange}
-            options={EVENT_STATUS_OPTIONS}
-          />
+          <Space>
+            <Select
+              placeholder="Filter by Category"
+              allowClear
+              style={{ width: 200 }}
+              onChange={onCategoryFilterChange}
+              options={categoryOptions}
+              value={categoryFilter}
+            />
+            <Select
+              placeholder="Filter by Status"
+              allowClear
+              style={{ width: 200 }}
+              onChange={onStatusFilterChange}
+              options={EVENT_STATUS_OPTIONS}
+              value={statusFilter}
+            />
+            <Input.Search
+              placeholder="Search by event name"
+              onSearch={handleSearch}
+              style={{ width: 300 }}
+              allowClear
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </Space>
         }
       >
         {eventsError && (
