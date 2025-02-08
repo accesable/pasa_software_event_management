@@ -73,11 +73,10 @@ export const SignUpPage = () => {
         >
           <Logo color="white" />
           <Title level={2} className="text-white">
-            Welcome to Antd Admin
+            Welcome back to Event Management
           </Title>
           <Text className="text-white" style={{ fontSize: 18 }}>
-            A dynamic and versatile multipurpose dashboard utilizing Ant Design,
-            React, TypeScript, and Vite.
+            Sign up page
           </Text>
         </Flex>
       </Col>

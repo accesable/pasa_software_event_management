@@ -30,7 +30,7 @@ const { Title, Text } = Typography;
 
 const DASHBOARDS = [
   {
-    title: 'default',
+    title: 'general',
     link: PATH_DASHBOARD.general,
   },
   {

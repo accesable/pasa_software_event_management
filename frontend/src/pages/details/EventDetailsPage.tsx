@@ -187,7 +187,31 @@ export const EventDetailsPage: React.FC = () => {
       >
         <Row gutter={[16, 16]}>
           <Col span={24}>
-            <Image src={eventDetails.banner || "https://placehold.co/1920x1080"} alt="Event Banner" style={{ width: '100%', borderRadius: '10px' }} fallback="https://placehold.co/1920x1080" />
+            {eventDetails?.videoIntro ? (
+              <Card title="Video Introduction">
+                <iframe
+                  width="100%"
+                  height="480"
+                  src={eventDetails.videoIntro}
+                  title="Event Introduction Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </Card>
+            ) : (
+              <Card title="Video Introduction">
+                <iframe
+                  width="100%"
+                  height="480"
+                  src="https://www.youtube.com/embed/iTJJC2Hlmu0"
+                  title="Event Introduction Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </Card>
+            )}
           </Col>
           <Col span={24}>
             <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>

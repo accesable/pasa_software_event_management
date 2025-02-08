@@ -4584,7 +4584,7 @@ export const Logo = ({
   } = theme.useToken();
 
   return asLink ? (
-    <Link to={href || '#'} className="logo-link">
+    <Link to={'/dashboards'} className="logo-link">
       <Flex gap={others.gap || 'small'} align="center" {...others}>
         <img
           src="/tdtu_logo.jpg"
@@ -4602,7 +4602,7 @@ export const Logo = ({
             borderRadius,
           }}
         >
-          TDTTEVENT
+          TDTUEVENT
         </Typography.Title>
       </Flex>
     </Link>
@@ -4624,7 +4624,7 @@ export const Logo = ({
           borderRadius,
         }}
       >
-        TDTTEVENT
+        TDTUEVENT
       </Typography.Title>
     </Flex>
   );
@@ -5429,19 +5429,13 @@ import {
 } from './routes.ts';
 
 const DASHBOARD_ITEMS = [
-  { title: 'default', path: PATH_DASHBOARD.default },
-  // { title: 'projects', path: PATH_DASHBOARD.projects },
-  // { title: 'ecommerce', path: PATH_DASHBOARD.ecommerce },
-  // { title: 'marketing', path: PATH_DASHBOARD.marketing },
-  // { title: 'social', path: PATH_DASHBOARD.social },
-  // { title: 'bidding', path: PATH_DASHBOARD.bidding },
-  // { title: 'learning', path: PATH_DASHBOARD.learning },
-  // { title: 'logistics', path: PATH_DASHBOARD.logistics },
-  {title: 'participated events', path: PATH_DASHBOARD.participated_events},
-  { title: 'guests & speakers', path: PATH_DASHBOARD.speaker_guest },
+  { title: 'general', path: PATH_DASHBOARD.general },
+  { title: 'projects', path: PATH_DASHBOARD.projects },
   { title: 'events', path: PATH_DASHBOARD.events },
   { title: 'my events', path: PATH_DASHBOARD.my_events },
-  { title: 'users', path: PATH_DASHBOARD.users },
+
+  {title: 'participated events', path: PATH_DASHBOARD.participated_events},
+  { title: 'speakers & guests', path: PATH_DASHBOARD.speaker_guest },
 ];
 
 const USER_PROFILE_ITEMS = [
@@ -6357,137 +6351,55 @@ const items: MenuProps['items'] = [
   getItem('Dashboards', 'dashboards', <PieChartOutlined />, [
     getItem(
       <Link to={PATH_DASHBOARD.general}>General</Link>,
-      'general',
+      PATH_DASHBOARD.general, // key = pathname
       null
     ),
     getItem(
       <Link to={PATH_DASHBOARD.projects}>Projects</Link>,
-      'projects',
+      PATH_DASHBOARD.projects, // key = pathname
       null
     ),
     getItem(
       <Link to={PATH_DASHBOARD.events}>Events</Link>,
-      'events',
+      PATH_DASHBOARD.events, // key = pathname
       null
     ),
     getItem(
       <Link to={PATH_DASHBOARD.my_events}>My Events</Link>,
-      'my events',
+      PATH_DASHBOARD.my_events, // key = pathname
       null
     ),
     getItem(
-      <Link to={PATH_DASHBOARD.participated_events}>Participated Events</Link>, // Add participated events item
-      'participated-events',
+      <Link to={PATH_DASHBOARD.participated_events}>Participated Events</Link>,
+      PATH_DASHBOARD.participated_events, // key = pathname
       null
     ),
-    // getItem(
-    //   <Link to={PATH_DASHBOARD.users}>Users</Link>,
-    //   'users',
-    //   null
-    // ),
-    // getItem(
-    //   <Link to={PATH_DASHBOARD.marketing}>Marketing</Link>,
-    //   'marketing',
-    //   null
-    // ),
-    // getItem(<Link to={PATH_DASHBOARD.social}>Social</Link>, 'social', null),
-    // getItem(<Link to={PATH_DASHBOARD.bidding}>Bidding</Link>, 'bidding', null),
     getItem(
       <Link to={PATH_DASHBOARD.speaker_guest}>Speaker & Guest</Link>,
-      'speakers-guests',
+      PATH_DASHBOARD.speaker_guest, // key = pathname
       null
     ),
   ]),
-  // getItem(
-  //   <Link to={PATH_ABOUT.root}>About</Link>,
-  //   'about',
-  //   <InfoCircleOutlined />
-  // ),
-  // getItem(
-  //   <Link to={PATH_SITEMAP.root}>Sitemap</Link>,
-  //   'sitemap',
-  //   <BranchesOutlined />
-  // ),
 
   getItem('Pages', 'pages', null, [], 'group'),
 
   getItem('User profile', 'user-profile', <UserOutlined />, [
     getItem(
       <Link to={PATH_USER_PROFILE.personalInformation}>Information</Link>,
-      'personal-information',
+      PATH_USER_PROFILE.personalInformation, // key = pathname
       null
     ),
     getItem(
       <Link to={PATH_USER_PROFILE.security}>Security</Link>,
-      'security',
+      PATH_USER_PROFILE.security, // key = pathname
       null
     ),
     getItem(
       <Link to={PATH_USER_PROFILE.feedback}>Feedback</Link>,
-      'feedback',
+      PATH_USER_PROFILE.feedback, // key = pathname
       null
     ),
   ]),
-
-  // getItem('Authentication', 'authentication', <SecurityScanOutlined />, [
-  //   getItem(<Link to={PATH_AUTH.signin}>Sign In</Link>, 'auth-signin', null),
-  //   getItem(<Link to={PATH_AUTH.signup}>Sign Up</Link>, 'auth-signup', null),
-  //   getItem(<Link to={PATH_AUTH.welcome}>Welcome</Link>, 'auth-welcome', null),
-  //   getItem(
-  //     <Link to={PATH_AUTH.verifyEmail}>Verify email</Link>,
-  //     'auth-verify',
-  //     null
-  //   ),
-  //   getItem(
-  //     <Link to={PATH_AUTH.passwordReset}>Password reset</Link>,
-  //     'auth-password-reset',
-  //     null
-  //   ),
-  //   // getItem(<Link to={PATH_AUTH.passwordConfirm}>Passsword confirmation</Link>, 'auth-password-confirmation', null),
-  //   getItem(
-  //     <Link to={PATH_AUTH.accountDelete}>Account deleted</Link>,
-  //     'auth-account-deactivation',
-  //     null
-  //   ),
-  // ]),
-
-  // getItem('Errors', 'errors', <BugOutlined />, [
-  //   getItem(<Link to={PATH_ERROR.error400}>400</Link>, '400', null),
-  //   getItem(<Link to={PATH_ERROR.error403}>403</Link>, '403', null),
-  //   getItem(<Link to={PATH_ERROR.error404}>404</Link>, '404', null),
-  //   getItem(<Link to={PATH_ERROR.error500}>500</Link>, '500', null),
-  //   getItem(<Link to={PATH_ERROR.error503}>503</Link>, '503', null),
-  // ]),
-
-  // getItem('Help', 'help', null, [], 'group'),
-  // getItem(
-  //   <Link to={PATH_DOCS.productRoadmap} target="_blank">
-  //     Roadmap
-  //   </Link>,
-  //   'product-roadmap',
-  //   <ProductOutlined />
-  // ),
-  // getItem(
-  //   <Link to={PATH_DOCS.components} target="_blank">
-  //     Components
-  //   </Link>,
-  //   'components',
-  //   <AppstoreAddOutlined />
-  // ),
-  // getItem(
-  //   <Link to={PATH_DOCS.help} target="_blank">
-  //     Documentation
-  //   </Link>,
-  //   'documentation',
-  //   <SnippetsOutlined />
-  // ),
-  // getItem(
-  //   <Link to={PATH_GITHUB.repo} target="_blank">
-  //     Give us a star
-  //   </Link>,
-  //   'give-us-a-star',
-  //   <GithubOutlined />
-  // ),
 ];
 
 const rootSubmenuKeys = ['dashboards', 'corporate', 'user-profile'];
@@ -6514,9 +6426,7 @@ const SideNav = ({ ...others }: SideNavProps) => {
   };
 
   useEffect(() => {
-    const paths = pathname.split('/');
-    setOpenKeys(paths);
-    setCurrent(paths[paths.length - 1]);
+    setCurrent(pathname); // Sử dụng pathname trực tiếp
   }, [pathname]);
 
   return (
@@ -7095,7 +7005,7 @@ const { Title, Text } = Typography;
 
 const DASHBOARDS = [
   {
-    title: 'default',
+    title: 'general',
     link: PATH_DASHBOARD.general,
   },
   {
@@ -7860,6 +7770,7 @@ import { setUser } from '../../redux/userSlice';
 import GoogleLoginButton from '../../components/GoogleLoginButton';
 import { PATH_AUTH } from '../../constants';
 import { useMediaQuery } from 'react-responsive';
+import { Logo } from '../../components';
 
 const { Title, Text } = Typography;
 
@@ -7925,11 +7836,12 @@ export const SignInPage = () => {
           className="text-center"
           style={{ background: colorPrimary, height: '100%', padding: '1rem' }}
         >
+          <Logo color="white" />
           <Title level={2} className="text-white">
             Welcome back to Event Management
           </Title>
           <Text className="text-white" style={{ fontSize: 18 }}>
-            A Solution For Managing Your Event
+            Sign in page
           </Text>
         </Flex>
       </Col>
@@ -8087,11 +7999,10 @@ export const SignUpPage = () => {
         >
           <Logo color="white" />
           <Title level={2} className="text-white">
-            Welcome to Antd Admin
+            Welcome back to Event Management
           </Title>
           <Text className="text-white" style={{ fontSize: 18 }}>
-            A dynamic and versatile multipurpose dashboard utilizing Ant Design,
-            React, TypeScript, and Vite.
+            Sign up page
           </Text>
         </Flex>
       </Col>
@@ -10169,7 +10080,7 @@ export const ProjectsDashboardPage = () => {
   return (
     <div>
       <Helmet>
-        <title>Projects | Antd Dashboard</title>
+        <title>Projects | Dashboard</title>
       </Helmet>
       <PageHeader
         title="projects dashboard"
@@ -10277,22 +10188,6 @@ export const ProjectsDashboardPage = () => {
             ) : (
               <ClientsTable data={clientsData.slice(0, 5)} />
             )}
-          </Card>
-        </Col>
-        <Col span={24}>
-          <Card
-            title="Projects"
-            extra={
-              <Space>
-                <Button icon={<CloudUploadOutlined />}>Import</Button>
-                <Button icon={<PlusOutlined />}>New project</Button>
-              </Space>
-            }
-            tabList={PROJECT_TABS}
-            activeTabKey={projectTabsKey}
-            onTabChange={onProjectsTabChange}
-          >
-            {PROJECT_TABS_CONTENT[projectTabsKey]}
           </Card>
         </Col>
       </Row>
@@ -10950,7 +10845,31 @@ export const EventDetailsPage: React.FC = () => {
       >
         <Row gutter={[16, 16]}>
           <Col span={24}>
-            <Image src={eventDetails.banner || "https://placehold.co/1920x1080"} alt="Event Banner" style={{ width: '100%', borderRadius: '10px' }} fallback="https://placehold.co/1920x1080" />
+            {eventDetails?.videoIntro ? (
+              <Card title="Video Introduction">
+                <iframe
+                  width="100%"
+                  height="480"
+                  src={eventDetails.videoIntro}
+                  title="Event Introduction Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </Card>
+            ) : (
+              <Card title="Video Introduction">
+                <iframe
+                  width="100%"
+                  height="480"
+                  src="https://www.youtube.com/embed/iTJJC2Hlmu0"
+                  title="Event Introduction Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </Card>
+            )}
           </Col>
           <Col span={24}>
             <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
@@ -11392,17 +11311,17 @@ const DetailMyEventPage: React.FC = () => {
                 />
               </Card>
             ) : (
-              <Image
-                src={eventDetails?.banner || "https://placehold.co/1920x1080"}
-                alt="Event Banner"
-                style={{
-                  width: '100%',
-                  height: '480px',            // Đặt chiều cao cố định
-                  objectFit: 'cover',         // Đảm bảo hình ảnh được cắt xén vừa vặn
-                  borderRadius: '10px',
-                }}
-                fallback="https://placehold.co/1920x1080"
-              />
+              <Card title="Video Introduction">
+                <iframe
+                  width="100%"
+                  height="480"
+                  src="https://www.youtube.com/embed/iTJJC2Hlmu0"
+                  title="Event Introduction Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </Card>
             )}
           </Col>
 
@@ -11771,7 +11690,17 @@ const ParticipatedEventDetailsPage: React.FC = () => {
                 />
               </Card>
             ) : (
-              <Image src={eventDetails?.banner || "https://placehold.co/1920x1080"} alt="Event Banner" style={{ width: '100%', borderRadius: '10px' }} fallback="https://placehold.co/1920x1080" />
+              <Card title="Video Introduction">
+                <iframe
+                  width="100%"
+                  height="480"
+                  src="https://www.youtube.com/embed/iTJJC2Hlmu0"
+                  title="Event Introduction Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </Card>
             )}
           </Col>
 
@@ -11908,7 +11837,7 @@ const EditEventPage: React.FC = () => {
         setError(null);
         try {
             const accessToken = localStorage.getItem('accessToken');
-            const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+            const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string, error?: string };
             if (response.statusCode === 200 && response.data.event) {
                 setEventDetails(response.data.event);
                 form.setFieldsValue({
@@ -11929,13 +11858,13 @@ const EditEventPage: React.FC = () => {
                     })) || [], // Treat schedule as empty array if null or undefined
                 });
             } else {
-                setError(response?.message || 'Failed to load event details');
-                message.error(response?.message || 'Failed to load event details');
+                setError(response?.error || 'Failed to load event details');
+                message.error(response?.error || 'Failed to load event details');
             }
         } catch (error: any) {
             console.error('Error fetching event details:', error);
-            setError(error.message || 'Failed to load event details');
-            message.error(error.message || 'Failed to load event details');
+            setError(error.error || 'Failed to load event details');
+            message.error(error.error || 'Failed to load event details');
         } finally {
             setLoading(false);
         }

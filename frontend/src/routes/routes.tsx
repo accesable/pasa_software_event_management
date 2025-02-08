@@ -1,6 +1,6 @@
 // src\routes\routes.tsx
 // src\routes\routes.tsx
-import { createBrowserRouter, useLocation } from 'react-router-dom';
+import { createBrowserRouter, Navigate, useLocation } from 'react-router-dom';
 import {
   AccountDeactivePage,
   GeneralDashboardPage,
@@ -42,6 +42,13 @@ import SpeakerGuestManagementPage from '../pages/dashboards/SpeakerManagementPag
 import ParticipatedEventDetailsPage from '../pages/details/ParticipatedEventDetailsPage.tsx';
 import { UserProfileInformationPage } from '../pages/userAccount/Information.tsx';
 import QRScannerPage from '../pages/QRScannerPage.tsx';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store.ts';
+
+const PrivateRoute = ({ children }: { children: React.ReactNode }): React.ReactNode => {
+  const user = useSelector((state: RootState) => state.user);
+  return user.id ? children : <Navigate to="/auth/signin" replace />;
+};
 
 // Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
@@ -126,52 +133,66 @@ const router = createBrowserRouter([
       {
         index: true,
         path: 'general',
-        element: <GeneralDashboardPage />,
+        element: (
+          <GeneralDashboardPage />
+        ),
       },
       {
         path: 'check-in-out/:id', // New route for QR scanner
-        element: <QRScannerPage />,
+        element: (
+          <PrivateRoute>
+            <QRScannerPage />
+          </PrivateRoute>
+        )
       },
       {
         path: 'speakers-guests',
-        element: <SpeakerGuestManagementPage />,
+        element: (
+          <PrivateRoute>
+            <SpeakerGuestManagementPage />
+          </PrivateRoute>
+        )
       },
       {
         path: 'participated-events',
-        element: <ParticipatedEventsPage />,
+        element: (
+          <PrivateRoute>
+            <ParticipatedEventsPage />
+          </PrivateRoute>
+        )
       },
       {
         path: 'projects',
-        element: <ProjectsDashboardPage />,
+        element: (
+          <PrivateRoute>
+            <ProjectsDashboardPage />
+          </PrivateRoute>
+        )
       },
       {
         path: 'events',
-        element: <EventsDashboardPage />,
+        element: (
+          <PrivateRoute>
+            <EventsDashboardPage />
+          </PrivateRoute>
+        )
       },
 
       {
         path: 'my-events',
-        element: <MyEventDashboardPage />,
-      },
-      {
-        path: 'users',
-        element: <UserDashboardPage />,
+        element: (
+          <PrivateRoute>
+            <MyEventDashboardPage />
+          </PrivateRoute>
+        )
       },
       {
         path: 'events-list',
-        element: <EventsListPage />,
-      },
-    ],
-  },
-  {
-    path: '/sitemap',
-    element: <PageWrapper children={<DashboardLayout />} />,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        index: true,
-        path: '',
-        element: <SitemapPage />,
+        element: (
+          <PrivateRoute>
+            <EventsListPage />
+          </PrivateRoute>
+        )
       },
     ],
   },
@@ -258,18 +279,6 @@ const router = createBrowserRouter([
       {
         path: '503',
         element: <Error503Page />,
-      },
-    ],
-  },
-  {
-    path: '/about',
-    element: <PageWrapper children={<DashboardLayout />} />,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        index: true,
-        path: '',
-        element: <AboutPage />,
       },
     ],
   },

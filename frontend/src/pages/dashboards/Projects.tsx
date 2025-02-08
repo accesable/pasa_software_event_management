@@ -181,7 +181,7 @@ export const ProjectsDashboardPage = () => {
   return (
     <div>
       <Helmet>
-        <title>Projects | Antd Dashboard</title>
+        <title>Projects | Dashboard</title>
       </Helmet>
       <PageHeader
         title="projects dashboard"
@@ -289,22 +289,6 @@ export const ProjectsDashboardPage = () => {
             ) : (
               <ClientsTable data={clientsData.slice(0, 5)} />
             )}
-          </Card>
-        </Col>
-        <Col span={24}>
-          <Card
-            title="Projects"
-            extra={
-              <Space>
-                <Button icon={<CloudUploadOutlined />}>Import</Button>
-                <Button icon={<PlusOutlined />}>New project</Button>
-              </Space>
-            }
-            tabList={PROJECT_TABS}
-            activeTabKey={projectTabsKey}
-            onTabChange={onProjectsTabChange}
-          >
-            {PROJECT_TABS_CONTENT[projectTabsKey]}
           </Card>
         </Col>
       </Row>

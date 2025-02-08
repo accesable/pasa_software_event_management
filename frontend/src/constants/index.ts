@@ -27,19 +27,13 @@ import {
 } from './routes.ts';
 
 const DASHBOARD_ITEMS = [
-  { title: 'default', path: PATH_DASHBOARD.default },
-  // { title: 'projects', path: PATH_DASHBOARD.projects },
-  // { title: 'ecommerce', path: PATH_DASHBOARD.ecommerce },
-  // { title: 'marketing', path: PATH_DASHBOARD.marketing },
-  // { title: 'social', path: PATH_DASHBOARD.social },
-  // { title: 'bidding', path: PATH_DASHBOARD.bidding },
-  // { title: 'learning', path: PATH_DASHBOARD.learning },
-  // { title: 'logistics', path: PATH_DASHBOARD.logistics },
-  {title: 'participated events', path: PATH_DASHBOARD.participated_events},
-  { title: 'guests & speakers', path: PATH_DASHBOARD.speaker_guest },
+  { title: 'general', path: PATH_DASHBOARD.general },
+  { title: 'projects', path: PATH_DASHBOARD.projects },
   { title: 'events', path: PATH_DASHBOARD.events },
   { title: 'my events', path: PATH_DASHBOARD.my_events },
-  { title: 'users', path: PATH_DASHBOARD.users },
+
+  {title: 'participated events', path: PATH_DASHBOARD.participated_events},
+  { title: 'speakers & guests', path: PATH_DASHBOARD.speaker_guest },
 ];
 
 const USER_PROFILE_ITEMS = [

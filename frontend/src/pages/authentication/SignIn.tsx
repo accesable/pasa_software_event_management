@@ -22,6 +22,7 @@ import { setUser } from '../../redux/userSlice';
 import GoogleLoginButton from '../../components/GoogleLoginButton';
 import { PATH_AUTH } from '../../constants';
 import { useMediaQuery } from 'react-responsive';
+import { Logo } from '../../components';
 
 const { Title, Text } = Typography;
 
@@ -87,11 +88,12 @@ export const SignInPage = () => {
           className="text-center"
           style={{ background: colorPrimary, height: '100%', padding: '1rem' }}
         >
+          <Logo color="white" />
           <Title level={2} className="text-white">
             Welcome back to Event Management
           </Title>
           <Text className="text-white" style={{ fontSize: 18 }}>
-            A Solution For Managing Your Event
+            Sign in page
           </Text>
         </Flex>
       </Col>

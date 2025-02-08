@@ -28,7 +28,7 @@ export const Logo = ({
   } = theme.useToken();
 
   return asLink ? (
-    <Link to={href || '#'} className="logo-link">
+    <Link to={'/dashboards/general'} className="logo-link">
       <Flex gap={others.gap || 'small'} align="center" {...others}>
         <img
           src="/tdtu_logo.jpg"
@@ -46,7 +46,7 @@ export const Logo = ({
             borderRadius,
           }}
         >
-          TDTTEVENT
+          TDTUEVENT
         </Typography.Title>
       </Flex>
     </Link>
@@ -68,7 +68,7 @@ export const Logo = ({
           borderRadius,
         }}
       >
-        TDTTEVENT
+        TDTUEVENT
       </Typography.Title>
     </Flex>
   );

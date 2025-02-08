@@ -271,17 +271,17 @@ const DetailMyEventPage: React.FC = () => {
                 />
               </Card>
             ) : (
-              <Image
-                src={eventDetails?.banner || "https://placehold.co/1920x1080"}
-                alt="Event Banner"
-                style={{
-                  width: '100%',
-                  height: '480px',            // Đặt chiều cao cố định
-                  objectFit: 'cover',         // Đảm bảo hình ảnh được cắt xén vừa vặn
-                  borderRadius: '10px',
-                }}
-                fallback="https://placehold.co/1920x1080"
-              />
+              <Card title="Video Introduction">
+                <iframe
+                  width="100%"
+                  height="480"
+                  src="https://www.youtube.com/embed/iTJJC2Hlmu0"
+                  title="Event Introduction Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </Card>
             )}
           </Col>
 
