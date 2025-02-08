@@ -33,6 +33,7 @@ import { EventScheduleItem } from '../../types/schedule';
 import TicketDetailsModal from '../../components/TicketDetailsModal';
 import InviteUsersModal from '../../components/InviteUsersModal';
 import { useDispatch } from 'react-redux';
+import EventDiscussion from '../../components/EventDiscussion';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -57,6 +58,7 @@ const DetailMyEventPage: React.FC = () => {
   const [ticketData, setTicketData] = useState<any | null>(null);
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const dispatch = useDispatch(); // Thêm dispatch để gọi action Redux (nếu bạn dùng Redux)
+  const [questions, setQuestions] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -127,7 +129,7 @@ const DetailMyEventPage: React.FC = () => {
       doc.save("participants.pdf");
     } catch (error: any) {
       console.error("Error generating PDF:", error);
-      message.error("Failed to generate PDF");
+      message.error("List check-in/check-out is empty.");
     } finally {
       setLoading(false);
     }
@@ -205,7 +207,7 @@ const DetailMyEventPage: React.FC = () => {
   return (
     <div>
       <Helmet>
-        <title>Details | Antd Dashboard</title>
+        <title>Details | Dashboard</title>
       </Helmet>
       <PageHeader
         title="Event Details"
@@ -284,25 +286,6 @@ const DetailMyEventPage: React.FC = () => {
               </Card>
             )}
           </Col>
-
-          <Col span={24}>
-            <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
-              <Descriptions.Item label="Name">{eventDetails?.name}</Descriptions.Item>
-              <Descriptions.Item label="Category">{eventDetails?.categoryId}</Descriptions.Item>
-              <Descriptions.Item label="Location">{eventDetails?.location}</Descriptions.Item>
-              <Descriptions.Item label="Start Date">
-                {dayjs(eventDetails?.startDate).format('YYYY-MM-DD HH:mm:ss')}
-              </Descriptions.Item>
-              <Descriptions.Item label="End Date">
-                {dayjs(eventDetails?.endDate).format('YYYY-MM-DD HH:mm:ss')}
-              </Descriptions.Item>
-              <Descriptions.Item label="Status"><Tag color={eventDetails?.status === 'SCHEDULED' ? 'blue' : eventDetails?.status === 'CANCELED' ? 'red' : 'green'}>{eventDetails?.status}</Tag></Descriptions.Item>
-              <Descriptions.Item label="Max Participants">{eventDetails?.maxParticipants || 'Unlimited'}</Descriptions.Item>
-              <Descriptions.Item span={3} label="Description">
-                {eventDetails?.description || "No description provided."}
-              </Descriptions.Item>
-            </Descriptions>
-          </Col>
           <Col span={24}>
             <Card title="Schedule">
               {eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
@@ -317,19 +300,6 @@ const DetailMyEventPage: React.FC = () => {
               )}
             </Card>
           </Col>
-          {eventDetails?.banner && (
-            <Image
-              src={eventDetails?.banner || "https://placehold.co/1920x1080"}
-              alt="Event Banner"
-              style={{
-                width: '100%',
-                height: '480px',            // Đặt chiều cao cố định
-                objectFit: 'cover',         // Đảm bảo hình ảnh được cắt xén vừa vặn
-                borderRadius: '10px',
-              }}
-              fallback="https://placehold.co/1920x1080"
-            />
-          )}
           {eventDetails?.documents && eventDetails.documents.length > 0 && (
             <Col span={24}>
               <Card title="Event Documents">
@@ -353,10 +323,17 @@ const DetailMyEventPage: React.FC = () => {
                   Download PDF
                 </Button>}
               >
-                <EventParticipantsTable eventId={id || ''} /> {/* Pass eventId prop */}
+                <EventParticipantsTable eventId={id || ''} />
               </Card>
             </Col>
           )}
+          <Col span={24}>
+            <EventDiscussion
+              eventId={id || ''}
+              questions={questions}
+              setQuestions={setQuestions}
+            />
+          </Col>
         </Row>
       </Card>
       <TicketDetailsModal

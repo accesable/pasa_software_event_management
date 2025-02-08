@@ -192,16 +192,15 @@ src\App.tsx:
 // src\App.tsx
 // src/App.tsx
 import { RouterProvider } from 'react-router-dom';
-import { ConfigProvider, theme as antdTheme } from 'antd';
+import { ConfigProvider, theme as antdTheme, Spin } from 'antd';
 
 import { HelmetProvider } from 'react-helmet-async';
 import { StylesContext } from './context';
 import routes from './routes/routes.tsx';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from './redux/store.ts';
 import './App.css';
-import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useEffect, useState } from 'react'; // Import useState
 import { setUser } from './redux/userSlice.tsx';
 import axiosInstance from './api/axiosInstance'; // Import axiosInstance
 
@@ -226,6 +225,8 @@ const COLOR = {
 function App() {
   const { mytheme } = useSelector((state: RootState) => state.theme);
   const dispatch = useDispatch();
+  const [isAuthLoading, setIsAuthLoading] = useState(true); // **[ADDED]** State to track authentication loading
+
   useEffect(() => {
     const accessTokenFromUrl = new URLSearchParams(window.location.search).get('accessToken');
     let accessToken = localStorage.getItem('accessToken');
@@ -246,14 +247,17 @@ function App() {
         } catch (error) {
           console.error('Failed to fetch user profile:', error);
           localStorage.removeItem('user'); // Optionally remove user from local storage if fetch fails
+        } finally {
+          setIsAuthLoading(false); // **[ADDED]** Set loading to false after fetch (success or fail)
         }
       };
 
       fetchUserInfo(); // Call fetchUserInfo after getting accessToken
     } else {
       localStorage.removeItem('user');
+      setIsAuthLoading(false); // **[ADDED]** Set loading to false if no accessToken
     }
-  }, []);
+  }, [dispatch]);
 
   return (
     <HelmetProvider>
@@ -265,10 +269,7 @@ function App() {
             fontFamily: 'Lato, sans-serif',
           },
           components: {
-            Breadcrumb: {
-              // linkColor: 'rgba(0,0,0,.8)',
-              // itemColor: 'rgba(0,0,0,.8)',
-            },
+            Breadcrumb: {},
             Button: {
               colorLink: COLOR['500'],
               colorLinkActive: COLOR['700'],
@@ -336,7 +337,13 @@ function App() {
             },
           }}
         >
-          <RouterProvider router={routes} />
+          {isAuthLoading ? ( // **[ADDED]** Conditional rendering based on isAuthLoading
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+              <Spin size="large" tip="Loading..." />
+            </div>
+          ) : (
+            <RouterProvider router={routes} /> // Render RouterProvider when not loading
+          )}
         </StylesContext.Provider>
       </ConfigProvider>
     </HelmetProvider>
@@ -469,6 +476,296 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
+
+src\components\EventDiscussion.tsx:
+// src/components/EventDiscussion.tsx
+import React, { useState, useEffect } from 'react';
+import { List, Card, Input, Button, message, Avatar, Typography, Form, Spin, Collapse, Flex } from 'antd';
+import authService from '../services/authService';
+import { UserOutlined } from '@ant-design/icons';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
+import { Answer, Question } from '../types';
+
+interface EventDiscussionProps {
+  eventId: string;
+  questions: Question[];
+  setQuestions: React.Dispatch<React.SetStateAction<Question[]>>;
+}
+
+const { Text, Paragraph } = Typography;
+const { Panel } = Collapse;
+
+interface UserInfo {
+  name: string;
+  avatar: string;
+}
+
+const EventDiscussion: React.FC<EventDiscussionProps> = ({ eventId, questions, setQuestions }) => {
+  const [questionInput, setQuestionInput] = useState('');
+  const [answerInput, setAnswerInput] = useState('');
+  const [activeAnswerQuestionId, setActiveAnswerQuestionId] = useState<string | null>(null);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [submittingQuestion, setSubmittingQuestion] = useState(false);
+  const [submittingAnswer, setSubmittingAnswer] = useState(false);
+  // State lưu thông tin của người dùng theo dạng: userId -> { name, avatar }
+  const [userInfos, setUserInfos] = useState<Record<string, UserInfo>>({});
+  const user = useSelector((state: RootState) => state.user);
+
+  useEffect(() => {
+    const fetchQuestionsAndUserInfos = async () => {
+      setLoadingQuestions(true);
+      try {
+        const response = await authService.getEventQuestions(eventId) as {
+          statusCode: number,
+          data: { questions: Question[] },
+          message?: string
+        };
+        if (response.statusCode === 200 && response.data.questions) {
+          setQuestions(response.data.questions || []);
+          // Lấy danh sách userId từ các câu hỏi và câu trả lời
+          const allUserIds = new Set<string>();
+          if (Array.isArray(response.data.questions)) {
+            response.data.questions.forEach((q: Question) => {
+              allUserIds.add(q.userId);
+              if (Array.isArray(q.answers)) {
+                q.answers.forEach((a: Answer) => allUserIds.add(a.userId));
+              }
+            });
+          }
+          fetchUserInfos(Array.from(allUserIds));
+        } else {
+          setQuestions([]);
+        }
+      } catch (error: any) {
+        setQuestions([]);
+      } finally {
+        setLoadingQuestions(false);
+      }
+    };
+
+    fetchQuestionsAndUserInfos();
+  }, [eventId, setQuestions]);
+
+  const fetchUserInfos = async (userIds: string[]) => {
+    const infosMap: Record<string, UserInfo> = {};
+    for (const userId of userIds) {
+      try {
+        const response = await authService.getUserById(userId) as {
+          statusCode: number,
+          data: {
+            id: string,
+            email: string,
+            name: string,
+            avatar: string,
+            lastLoginAt: string,
+            createdAt: string,
+            updatedAt: string
+          }
+        };
+        if (response.statusCode === 200 && response.data) {
+          infosMap[userId] = { name: response.data.name, avatar: response.data.avatar };
+        } else {
+          infosMap[userId] = { name: 'Unknown User', avatar: '' };
+        }
+      } catch (error) {
+        infosMap[userId] = { name: 'Unknown User', avatar: '' };
+        console.error(`Failed to fetch user info for ${userId}`, error);
+      }
+    }
+    setUserInfos(prevInfos => ({ ...prevInfos, ...infosMap }));
+  };
+
+  const handleQuestionSubmit = async () => {
+    if (!questionInput.trim()) return;
+    setSubmittingQuestion(true);
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('You need to login to ask a question.');
+        return;
+      }
+      const response = await authService.postQuestion(eventId, questionInput, accessToken) as {
+        statusCode: number,
+        data: { question: Question },
+        message?: string
+      };
+      if (response.statusCode === 201) {
+        message.success('Question submitted successfully!');
+        setQuestionInput('');
+        setQuestions([response.data.question, ...questions]);
+        // Fetch thêm thông tin của người hỏi nếu cần
+        fetchUserInfos([response.data.question.userId]);
+      } else {
+        message.error(response.message || 'Failed to submit question');
+      }
+    } catch (error: any) {
+      message.error(error.message || 'Failed to submit question');
+    } finally {
+      setSubmittingQuestion(false);
+    }
+  };
+
+  const handleAnswerSubmit = async (questionId: string) => {
+    if (!answerInput.trim() || !questionId) return;
+    setSubmittingAnswer(true);
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('You need to login to submit an answer.');
+        return;
+      }
+      const response = await authService.postAnswer(questionId, answerInput, accessToken) as {
+        statusCode: number,
+        data: { question: Question },
+        message?: string
+      };
+      if (response.statusCode === 201) {
+        message.success('Answer submitted successfully!');
+        setAnswerInput('');
+        setActiveAnswerQuestionId(null);
+        const updatedQuestions = questions.map(q =>
+          q.id === questionId ? response.data.question : q
+        );
+        setQuestions(updatedQuestions);
+        // Fetch thông tin của người vừa trả lời
+        const lastAnswer = response.data.question.answers[response.data.question.answers.length - 1];
+        fetchUserInfos([lastAnswer.userId]);
+      } else {
+        message.error(response.message || 'Failed to submit answer');
+      }
+    } catch (error: any) {
+      message.error(error.message || 'Failed to submit answer');
+    } finally {
+      setSubmittingAnswer(false);
+    }
+  };
+
+  return (
+    <Card title="Event Discussion" style={{ marginBottom: '20px' }}>
+      {loadingQuestions ? (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <Spin tip="Loading..." />
+        </div>
+      ) : (
+        <List
+          dataSource={questions}
+          itemLayout="vertical"
+          renderItem={(question) => (
+            <List.Item
+              key={question.id}
+              style={{
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                marginBottom: '20px',
+                borderBottom: '1px dashed #e8e8e8',
+                paddingBottom: '20px'
+              }}
+            >
+              <List.Item.Meta
+                avatar={
+                  <Avatar
+                    src={userInfos[question.userId]?.avatar}
+                    icon={!userInfos[question.userId]?.avatar ? <UserOutlined /> : undefined}
+                  />
+                }
+                title={
+                  <Text strong>
+                    {userInfos[question.userId]?.name || 'Loading Name...'}
+                  </Text>
+                }
+                description={<Paragraph style={{ margin: 0 }}>{question.text}</Paragraph>}
+              />
+
+              <Collapse bordered={false} defaultActiveKey={['1']} style={{ width: '100%', marginTop: '10px' }}>
+                <Panel header={`Answers (${question.answers ? question.answers.length : 0})`} key="1" style={{ borderBottom: 'none' }}>
+                  <List
+                    className="answer-list"
+                    dataSource={question.answers || []}
+                    renderItem={(answer: Answer) => (
+                      <List.Item
+                        style={{
+                          border: '1px solid #f0f0f0',
+                          borderRadius: '5px',
+                          padding: '10px',
+                          marginBottom: '8px',
+                          backgroundColor: '#fafafa'
+                        }}
+                      >
+                        <List.Item.Meta
+                          avatar={
+                            <Avatar
+                              src={userInfos[answer.userId]?.avatar}
+                              icon={!userInfos[answer.userId]?.avatar ? <UserOutlined /> : undefined}
+                            />
+                          }
+                          title={<Text strong>{userInfos[answer.userId]?.name || 'Loading Name...'}</Text>}
+                          description={<Paragraph style={{ margin: 0 }}>{answer.text}</Paragraph>}
+                        />
+                      </List.Item>
+                    )}
+                  />
+                </Panel>
+              </Collapse>
+
+              <Button
+                type="dashed"
+                onClick={() => setActiveAnswerQuestionId(question.id)}
+                style={{ marginTop: 16, marginBottom: 8, textAlign: 'left' }}
+              >
+                Answer
+              </Button>
+              {activeAnswerQuestionId === question.id && (
+                <Form.Item style={{ width: '100%' }}>
+                  <Input.TextArea
+                    rows={2}
+                    placeholder="Your answer..."
+                    value={answerInput}
+                    onChange={(e) => setAnswerInput(e.target.value)}
+                    onPressEnter={() => handleAnswerSubmit(question.id)}
+                  />
+                  <Flex justify="end" gap="small" style={{ marginTop: '10px' }}>
+                    <Button
+                      type="primary"
+                      onClick={() => handleAnswerSubmit(question.id)}
+                      loading={submittingAnswer}
+                    >
+                      Submit
+                    </Button>
+                    <Button onClick={() => setActiveAnswerQuestionId(null)}>
+                      Cancel
+                    </Button>
+                  </Flex>
+                </Form.Item>
+              )}
+            </List.Item>
+          )}
+          footer={
+            <Form.Item>
+              <Input
+                placeholder="Your question..."
+                value={questionInput}
+                onChange={(e) => setQuestionInput(e.target.value)}
+                onPressEnter={handleQuestionSubmit}
+              />
+              <Button
+                type="primary"
+                onClick={handleQuestionSubmit}
+                loading={submittingQuestion}
+                style={{ marginTop: '10px' }}
+              >
+                Submit Question
+              </Button>
+            </Form.Item>
+          }
+        />
+      )}
+    </Card>
+  );
+};
+
+export default EventDiscussion;
+
 
 src\components\GoogleLoginButton.tsx:
 // src/components/GoogleLoginButton.tsx
@@ -4584,7 +4881,7 @@ export const Logo = ({
   } = theme.useToken();
 
   return asLink ? (
-    <Link to={'/dashboards'} className="logo-link">
+    <Link to={'/dashboards/general'} className="logo-link">
       <Flex gap={others.gap || 'small'} align="center" {...others}>
         <img
           src="/tdtu_logo.jpg"
@@ -6588,20 +6885,46 @@ export const DashboardLayout = () => {
 
 
 src\layouts\eventDetails\index.tsx:
+// src\layouts\eventDetails\index.tsx
 import { AppLayout } from '../index.ts';
-import { Col, Row, Typography } from 'antd';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Col, Row, Typography, message, Spin } from 'antd';
+import { Link, Outlet, useLocation, useParams, useOutletContext } from 'react-router-dom'; // Import useOutletContext
 import { CiLocationOn, CiUser } from "react-icons/ci";
-import {
-  Card,
-  PageHeader,
-} from '../../components';
+import { Card, PageHeader } from '../../components';
 import { HomeOutlined, IdcardOutlined } from '@ant-design/icons';
 import { useStylesContext } from '../../context';
+import { useEffect, useState } from 'react';
+import authService from '../../services/authService.ts';
 
 export const EventDetailLayout = () => {
   const { pathname } = useLocation();
+  const { id: eventId } = useParams<{ id: string }>(); // Đổi tên biến thành eventId
   const stylesContext = useStylesContext();
+
+  // State lưu trữ thông tin sự kiện
+  const [eventDetail, setEventDetail] = useState<any>(null);
+  const [loadingEvent, setLoadingEvent] = useState(true);
+
+  useEffect(() => {
+    const fetchEventDetail = async () => {
+      try {
+        const response = await authService.getEventDetails(eventId) as { statusCode: number; data: any; message?: string };
+        if (response.statusCode === 200 && response.data) {
+          setEventDetail(response.data);
+        } else {
+          message.error(response.message || 'Failed to load event details');
+        }
+      } catch (error: any) {
+        message.error(error.message || 'Error fetching event details');
+      } finally {
+        setLoadingEvent(false);
+      }
+    };
+
+    if (eventId) {
+      fetchEventDetail();
+    }
+  }, [eventId]);
 
   return (
     <>
@@ -6634,19 +6957,28 @@ export const EventDetailLayout = () => {
         />
         <Row {...stylesContext?.rowProps}>
           <Col xs={24} md={16} xl={18}>
-            <Outlet />
+            <Outlet context={{ eventId }} /> {/* Truyền eventId qua context */}
           </Col>
           <Col xs={24} md={8} xl={6}>
             <Row {...stylesContext?.rowProps}>
               <Col span={24}>
                 <Card title="Event info">
-                  {/* <Title level={5}>status</Title> */}
-                  <ul style={{listStyle : 'none'}} >
-                    <li><CiLocationOn /> District 7, Ho Chi Minh City</li>
-                    <li><CiUser /> 500 attendes</li>
-                    {/* <li>Experience with React & Nextjs</li>
-                    <li>Experience with HTML / CSS</li> */}
-                  </ul>
+                  {loadingEvent ? (
+                    <Spin tip="Loading event info..." />
+                  ) : (
+                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                      <li style={{ marginBottom: '8px' }}>
+                        <CiLocationOn style={{ marginRight: '8px' }} />
+                        {eventDetail?.location || 'No location provided'}
+                      </li>
+                      <li>
+                        <CiUser style={{ marginRight: '8px' }} />
+                        {typeof eventDetail?.maxParticipants === 'number'
+                          ? `${eventDetail.maxParticipants} attendes`
+                          : 'No attendee info'}
+                      </li>
+                    </ul>
+                  )}
                 </Card>
               </Col>
             </Row>
@@ -7746,8 +8078,9 @@ export const PasswordResetPage = () => {
 };
 
 src\pages\authentication\SignIn.tsx:
+// src\pages\authentication\SignIn.tsx
 // src\pages\authentication\SignInPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Button,
   Col,
@@ -7765,12 +8098,13 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import authService from '../../services/authService';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setUser } from '../../redux/userSlice';
 import GoogleLoginButton from '../../components/GoogleLoginButton';
 import { PATH_AUTH } from '../../constants';
 import { useMediaQuery } from 'react-responsive';
 import { Logo } from '../../components';
+import { RootState } from '../../redux/store';
 
 const { Title, Text } = Typography;
 
@@ -7787,6 +8121,15 @@ export const SignInPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const useDispatchHook = useDispatch();
+  const user = useSelector((state: RootState) => state.user);
+
+  // useEffect hook to redirect if already logged in
+  useEffect(() => {
+    if (user && user.id) {
+      navigate('/dashboards/general', { replace: true });
+    }
+  }, [user, navigate]);
+
 
   const onFinish = async (values: FieldType) => {
     setLoading(true);
@@ -7914,7 +8257,7 @@ export const SignInPage = () => {
             wrap="wrap"
             style={{ width: '100%' }}
           >
-            <GoogleLoginButton /> {/* Thêm GoogleLoginButton vào đây */}
+            <GoogleLoginButton />
           </Flex>
         </Flex>
       </Col>
@@ -10658,7 +11001,7 @@ export const UserDashboardPage = () => {
 src\pages\details\EventDetailsPage.tsx:
 // src\pages\details\EventDetailsPage.tsx
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useOutletContext } from 'react-router-dom';
 import {
   Alert,
   Button,
@@ -10688,6 +11031,7 @@ import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import jsPDF from 'jspdf';
 import { Helmet } from 'react-helmet-async';
 import { EventScheduleItem } from '../../types/schedule';
+import EventDiscussion from '../../components/EventDiscussion';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -10698,14 +11042,16 @@ export const EventDetailsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
-
+  const [questions, setQuestions] = useState<any[]>([]);
+  const { eventId } = useOutletContext<{ eventId: string }>();
+  
   useEffect(() => {
     const fetchEventDetails = async () => {
       setLoading(true);
       setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+        const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string }; // Sử dụng eventId lấy từ context
         if (response && response.statusCode === 200) {
           setEventDetails(response.data.event);
         } else {
@@ -10722,7 +11068,7 @@ export const EventDetailsPage: React.FC = () => {
     };
 
     fetchEventDetails();
-  }, [id, navigate]);
+  }, [eventId, navigate]);
 
   const handleRegisterEvent = async () => {
     setLoading(true);
@@ -10840,7 +11186,7 @@ export const EventDetailsPage: React.FC = () => {
         ]}
       />
 
-      <Card title={<Title level={3}>{eventDetails.name}</Title>}
+      <Card title={<Title level={3}>{eventDetails?.name}</Title>}
         extra={<Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>Register Event</Button>}
       >
         <Row gutter={[16, 16]}>
@@ -10907,21 +11253,6 @@ export const EventDetailsPage: React.FC = () => {
               )}
             </Card>
           </Col>
-          {eventDetails.banner && (
-            <Col span={24}>
-              <Card title="Banner">
-                <iframe
-                  width="100%"
-                  height="480"
-                  src={eventDetails.banner}
-                  title="Event Introduction Video"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </Card>
-            </Col>
-          )}
           {eventDetails.documents && eventDetails.documents.length > 0 && (
             <Col span={24}>
               <Card title="Event Documents">
@@ -10949,6 +11280,13 @@ export const EventDetailsPage: React.FC = () => {
               </Card>
             </Col>
           )} */}
+          <Col span={24}>
+            <EventDiscussion
+              eventId={id || ''}
+              questions={questions}
+              setQuestions={setQuestions}
+            />
+          </Col>
         </Row>
       </Card>
     </div>
@@ -11073,6 +11411,7 @@ import { EventScheduleItem } from '../../types/schedule';
 import TicketDetailsModal from '../../components/TicketDetailsModal';
 import InviteUsersModal from '../../components/InviteUsersModal';
 import { useDispatch } from 'react-redux';
+import EventDiscussion from '../../components/EventDiscussion';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -11097,6 +11436,7 @@ const DetailMyEventPage: React.FC = () => {
   const [ticketData, setTicketData] = useState<any | null>(null);
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const dispatch = useDispatch(); // Thêm dispatch để gọi action Redux (nếu bạn dùng Redux)
+  const [questions, setQuestions] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -11167,7 +11507,7 @@ const DetailMyEventPage: React.FC = () => {
       doc.save("participants.pdf");
     } catch (error: any) {
       console.error("Error generating PDF:", error);
-      message.error("Failed to generate PDF");
+      message.error("List check-in/check-out is empty.");
     } finally {
       setLoading(false);
     }
@@ -11357,19 +11697,6 @@ const DetailMyEventPage: React.FC = () => {
               )}
             </Card>
           </Col>
-          {eventDetails?.banner && (
-            <Image
-              src={eventDetails?.banner || "https://placehold.co/1920x1080"}
-              alt="Event Banner"
-              style={{
-                width: '100%',
-                height: '480px',            // Đặt chiều cao cố định
-                objectFit: 'cover',         // Đảm bảo hình ảnh được cắt xén vừa vặn
-                borderRadius: '10px',
-              }}
-              fallback="https://placehold.co/1920x1080"
-            />
-          )}
           {eventDetails?.documents && eventDetails.documents.length > 0 && (
             <Col span={24}>
               <Card title="Event Documents">
@@ -11393,10 +11720,17 @@ const DetailMyEventPage: React.FC = () => {
                   Download PDF
                 </Button>}
               >
-                <EventParticipantsTable eventId={id || ''} /> {/* Pass eventId prop */}
+                <EventParticipantsTable eventId={id || ''} />
               </Card>
             </Col>
           )}
+          <Col span={24}>
+            <EventDiscussion
+              eventId={id || ''}
+              questions={questions}
+              setQuestions={setQuestions}
+            />
+          </Col>
         </Row>
       </Card>
       <TicketDetailsModal
@@ -11462,7 +11796,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
   const [ticketData, setTicketData] = useState<TicketType | null>(null);
-
+  const [questions, setQuestions] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -11533,7 +11867,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
       doc.save("participants.pdf");
     } catch (error: any) {
       console.error("Error generating PDF:", error);
-      message.error("Failed to generate PDF");
+      message.error("List check-in/check-out is empty.");
     } finally {
       setLoading(false);
     }
@@ -11736,20 +12070,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
               )}
             </Card>
           </Col>
-          {eventDetails?.banner && (
-            <Image
-              src={eventDetails?.banner || "https://placehold.co/1920x1080"}
-              alt="Event Banner"
-              style={{
-                width: '100%',
-                height: 'auto',
-                borderRadius: '10px',
-              }}
-              fallback="https://placehold.co/1920x1080"
-              preview={false}
-            />
-
-          )}
           {eventDetails?.documents && eventDetails.documents.length > 0 && (
             <Col span={24}>
               <Card title="Event Documents">
@@ -13172,7 +13492,7 @@ export default themeSlice.reducer;
 src\routes\routes.tsx:
 // src\routes\routes.tsx
 // src\routes\routes.tsx
-import { createBrowserRouter, useLocation } from 'react-router-dom';
+import { createBrowserRouter, useLocation, Navigate, RouteObject } from 'react-router-dom';
 import {
   AccountDeactivePage,
   GeneralDashboardPage,
@@ -13214,6 +13534,8 @@ import SpeakerGuestManagementPage from '../pages/dashboards/SpeakerManagementPag
 import ParticipatedEventDetailsPage from '../pages/details/ParticipatedEventDetailsPage.tsx';
 import { UserProfileInformationPage } from '../pages/userAccount/Information.tsx';
 import QRScannerPage from '../pages/QRScannerPage.tsx';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store.ts';
 
 // Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
@@ -13244,18 +13566,31 @@ const PageWrapper = ({ children }: PageProps) => {
   );
 };
 
+// **PrivateRoute Component**
+const PrivateRoute = ({ children }: { children: React.ReactNode }): React.ReactNode => {
+  const user = useSelector((state: RootState) => state.user);
+  return user && user.id ? children : <Navigate to="/auth/signin" replace />; // Redirect nếu chưa đăng nhập
+};
+
+const RootRoute = () => { // Component for root path '/'
+  const user = useSelector((state: RootState) => state.user);
+
+  if (user && user.id) {
+    return <Navigate to="/dashboards/general" replace />; // Redirect to dashboard if logged in
+  } else {
+    return <SignInPage />; // Render SignInPage if not logged in
+  }
+};
+
+
 // Create the router
 const router = createBrowserRouter([
   {
     path: '/',
-    // element: <PageWrapper children={<GuestLayout />} />,
+    element: <PageWrapper children={<RootRoute />} />, // Use RootRoute for '/' path
     errorElement: <ErrorPage />,
     children: [
-      {
-        index: true,
-        path: '',
-        element: <SignInPage />,
-      },
+      // No index route needed here as RootRoute handles '/'
     ],
   },
   {
@@ -13266,7 +13601,9 @@ const router = createBrowserRouter([
       {
         index: true,
         path: 'events',
-        element: <CreateEventPage />,
+        element: <PrivateRoute>
+          <CreateEventPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -13278,15 +13615,21 @@ const router = createBrowserRouter([
       {
         index: true,
         path: 'events/:id',
-        element: <EventDetailsPage />,
+        element: <PrivateRoute>
+          <EventDetailsPage />
+        </PrivateRoute>,
       },
       {
         path: 'my-events/:id',
-        element: <DetailMyEventPage />,
+        element: <PrivateRoute>
+          <DetailMyEventPage />
+        </PrivateRoute>,
       },
       {
         path: 'participated-events/:id',
-        element: <ParticipatedEventDetailsPage />,
+        element: <PrivateRoute>
+          <ParticipatedEventDetailsPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -13298,40 +13641,58 @@ const router = createBrowserRouter([
       {
         index: true,
         path: 'general',
-        element: <GeneralDashboardPage />,
+        element: <PrivateRoute>
+          <GeneralDashboardPage />
+        </PrivateRoute>,
       },
       {
         path: 'check-in-out/:id', // New route for QR scanner
-        element: <QRScannerPage />,
+        element: <PrivateRoute>
+          <QRScannerPage />
+        </PrivateRoute>,
       },
       {
         path: 'speakers-guests',
-        element: <SpeakerGuestManagementPage />,
+        element: <PrivateRoute>
+          <SpeakerGuestManagementPage />
+        </PrivateRoute>,
       },
       {
         path: 'participated-events',
-        element: <ParticipatedEventsPage />,
+        element: <PrivateRoute>
+          <ParticipatedEventsPage />
+        </PrivateRoute>,
       },
       {
         path: 'projects',
-        element: <ProjectsDashboardPage />,
+        element: <PrivateRoute>
+          <ProjectsDashboardPage />
+        </PrivateRoute>,
       },
       {
         path: 'events',
-        element: <EventsDashboardPage />,
-      },
+        element: <PrivateRoute>
+          <EventsDashboardPage />
+        </PrivateRoute>,
 
+      },
       {
         path: 'my-events',
-        element: <MyEventDashboardPage />,
+        element: <PrivateRoute>
+          <MyEventDashboardPage />
+        </PrivateRoute>,
       },
       {
         path: 'users',
-        element: <UserDashboardPage />,
+        element: <PrivateRoute>
+          <UserDashboardPage />
+        </PrivateRoute>,
       },
       {
         path: 'events-list',
-        element: <EventsListPage />,
+        element: <PrivateRoute>
+          <EventsListPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -13343,7 +13704,9 @@ const router = createBrowserRouter([
       {
         index: true,
         path: '',
-        element: <SitemapPage />,
+        element: <PrivateRoute>
+          <SitemapPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -13354,15 +13717,21 @@ const router = createBrowserRouter([
     children: [
       {
         path: 'personal-information',
-        element: <UserProfileInformationPage />, // Thêm route cho UserProfileInformationPage
+        element: <PrivateRoute>
+          <UserProfileInformationPage />
+        </PrivateRoute>,
       },
       {
         path: 'security',
-        element: <UserProfileSecurityPage />,
+        element: <PrivateRoute>
+          <UserProfileSecurityPage />
+        </PrivateRoute>,
       },
       {
         path: 'feedback',
-        element: <UserProfileFeedbackPage />,
+        element: <PrivateRoute>
+          <UserProfileFeedbackPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -13403,7 +13772,9 @@ const router = createBrowserRouter([
     children: [
       {
         path: 'events/:id',
-        element: <EditEventPage />,
+        element: <PrivateRoute>
+          <EditEventPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -13441,7 +13812,9 @@ const router = createBrowserRouter([
       {
         index: true,
         path: '',
-        element: <AboutPage />,
+        element: <PrivateRoute>
+          <AboutPage />
+        </PrivateRoute>,
       },
     ],
   },
@@ -13877,6 +14250,56 @@ const authService = {
   getEventCategoryDistribution: async () => {
     try {
       const response = await axiosInstance.get('/reports/event-category-distribution');
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getEventQuestions: async (eventId: string) => { // Hàm lấy danh sách câu hỏi
+    try {
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/questions`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  postQuestion: async (eventId: string, text: string, accessToken: string) => { // Hàm đăng câu hỏi
+    try {
+      const response = await axiosInstance.post(
+        `${API_EVENT_BASE_URL}/${eventId}/questions`,
+        { text },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  postAnswer: async (questionId: string, text: string, accessToken: string) => { // Hàm đăng câu trả lời
+    try {
+      const response = await axiosInstance.post(
+        `${API_EVENT_BASE_URL}/questions/${questionId}/answers`,
+        { text },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getUserById: async (userId: string) => { // Hàm mới: Lấy thông tin user theo ID
+    try {
+      const response = await axiosInstance.get(`${API_USERS_BASE_URL}/${userId}`);
       return response.data;
     } catch (error: any) {
       throw error.response.data;

@@ -55,11 +55,9 @@ const EventDiscussion: React.FC<EventDiscussionProps> = ({ eventId, questions, s
           }
           fetchUserInfos(Array.from(allUserIds));
         } else {
-          message.error(response.message || 'Failed to load questions');
           setQuestions([]);
         }
       } catch (error: any) {
-        message.error(error.message || 'Failed to load questions');
         setQuestions([]);
       } finally {
         setLoadingQuestions(false);
@@ -184,7 +182,6 @@ const EventDiscussion: React.FC<EventDiscussionProps> = ({ eventId, questions, s
                 paddingBottom: '20px'
               }}
             >
-              {/* Hiển thị thông tin câu hỏi: avatar, tên (ở trên) và nội dung câu hỏi (ở dưới) */}
               <List.Item.Meta
                 avatar={
                   <Avatar

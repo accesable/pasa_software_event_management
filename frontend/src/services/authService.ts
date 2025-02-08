@@ -474,7 +474,6 @@ const authService = {
   getUserById: async (userId: string) => { // Hàm mới: Lấy thông tin user theo ID
     try {
       const response = await axiosInstance.get(`${API_USERS_BASE_URL}/${userId}`);
-      console.log(response.data);
       return response.data;
     } catch (error: any) {
       throw error.response.data;

@@ -1,6 +1,6 @@
 // src\pages\details\EventDetailsPage.tsx
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useOutletContext } from 'react-router-dom';
 import {
   Alert,
   Button,
@@ -42,6 +42,7 @@ export const EventDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
+  const { eventId } = useOutletContext<{ eventId: string }>();
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -49,7 +50,7 @@ export const EventDetailsPage: React.FC = () => {
       setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+        const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string }; // Sử dụng eventId lấy từ context
         if (response && response.statusCode === 200) {
           setEventDetails(response.data.event);
         } else {
@@ -66,7 +67,7 @@ export const EventDetailsPage: React.FC = () => {
     };
 
     fetchEventDetails();
-  }, [id, navigate]);
+  }, [eventId, navigate]);
 
   const handleRegisterEvent = async () => {
     setLoading(true);
@@ -216,24 +217,6 @@ export const EventDetailsPage: React.FC = () => {
             )}
           </Col>
           <Col span={24}>
-            <Descriptions bordered column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}>
-              <Descriptions.Item label="Name">{eventDetails.name}</Descriptions.Item>
-              <Descriptions.Item label="Category">{eventDetails.categoryId}</Descriptions.Item>
-              <Descriptions.Item label="Location">{eventDetails.location}</Descriptions.Item>
-              <Descriptions.Item label="Start Date">
-                {dayjs(eventDetails.startDate).format('YYYY-MM-DD HH:mm:ss')}
-              </Descriptions.Item>
-              <Descriptions.Item label="End Date">
-                {dayjs(eventDetails.endDate).format('YYYY-MM-DD HH:mm:ss')}
-              </Descriptions.Item>
-              <Descriptions.Item label="Status"><Tag color={eventDetails.status === 'SCHEDULED' ? 'blue' : eventDetails.status === 'CANCELED' ? 'red' : 'green'}>{eventDetails.status}</Tag></Descriptions.Item>
-              <Descriptions.Item label="Max Participants">{eventDetails.maxParticipants || 'Unlimited'}</Descriptions.Item>
-              <Descriptions.Item span={3} label="Description">
-                {eventDetails.description || "No description provided."}
-              </Descriptions.Item>
-            </Descriptions>
-          </Col>
-          <Col span={24}>
             <Card title="Schedule">
               {eventDetails.schedule && eventDetails.schedule.length > 0 ? (
                 <Table
@@ -251,21 +234,6 @@ export const EventDetailsPage: React.FC = () => {
               )}
             </Card>
           </Col>
-          {eventDetails.banner && (
-            <Col span={24}>
-              <Card title="Banner">
-                <iframe
-                  width="100%"
-                  height="480"
-                  src={eventDetails.banner}
-                  title="Event Introduction Video"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </Card>
-            </Col>
-          )}
           {eventDetails.documents && eventDetails.documents.length > 0 && (
             <Col span={24}>
               <Card title="Event Documents">
@@ -295,7 +263,7 @@ export const EventDetailsPage: React.FC = () => {
           )} */}
           <Col span={24}>
             <EventDiscussion
-              eventId={id || ''}
+              eventId={eventId}
               questions={questions}
               setQuestions={setQuestions}
             />
