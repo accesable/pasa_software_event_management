@@ -2,25 +2,13 @@ syntax = "proto3";
 
 package report;
 
-// Service report đơn giản, chỉ 5 hàm
 service ReportServiceProto {
-  // 1) Thống kê số người đã đăng ký, checkin, checkout
-  rpc GetEventParticipationStats (EventRequest) returns (EventParticipationStatsResponse) {}
-
-  // 2) Lấy timeline checkin/checkout theo khung giờ
-  rpc GetParticipationTimeline (EventRequest) returns (ParticipationTimelineResponse) {}
-
-  // 3) Thống kê số lượt tham gia trong từng tháng (cho 1 năm)
-  rpc GetMonthlyParticipationStats (MonthlyStatsRequest) returns (MonthlyParticipationStatsResponse) {}
-
-  // 4) Phân tích thời điểm checkin/checkout trung bình
-  rpc GetCheckInOutTimeAnalysis (EventRequest) returns (CheckInOutTimeAnalysisResponse) {}
-
-  // 5) Tỷ lệ checkin/checkout (theo %) so với tổng
-  rpc GetParticipationRate (EventRequest) returns (ParticipationRateResponse) {}
-
   rpc GetEventCategoryDistribution (Empty) returns (EventCategoryDistributionResponse) {}
-  rpc GetUserEventsByDate(UserEventsByDateRequest) returns (UserEventsByDateResponse) {}
+  rpc GetUserEventsByDate(UserEventsByDateRequest) returns (MonthlyEventCountsResponse); // Thay đổi response type
+
+  rpc GetOrganizerEventFeedbackSummary(OrganizerEventFeedbackSummaryRequest) returns (OrganizerEventFeedbackSummaryResponse) {}
+
+  rpc GetEventInvitationReport(EventInvitationReportRequest) returns (EventInvitationReportResponse) {}
 }
 
 message UserEventsByDateRequest {
@@ -29,12 +17,18 @@ message UserEventsByDateRequest {
   optional int32 month = 3;
 }
 
-message UserEventsByDateResponse {
-  repeated EventInfo organizedEvents = 1;
-  repeated EventInfo participatedEvents = 2;
+message MonthlyEventCountsResponse {
+  repeated MonthlyEventCount monthlyOrganizedEvents = 1;
+  repeated MonthlyEventCount monthlyParticipatedEvents = 2;
 }
 
-message EventInfo { // Message tái sử dụng, hoặc tạo mới nếu cần thiết
+message MonthlyEventCount {
+  int32 month = 1;
+  int32 count = 2;
+}
+
+
+message EventInfo { 
   string id = 1;
   string name = 2;
   string description = 3;
@@ -43,7 +37,6 @@ message EventInfo { // Message tái sử dụng, hoặc tạo mới nếu cần 
   string location = 6;
   string status = 7;
   string categoryId = 8;
-  // ... các trường thông tin sự kiện cần thiết khác ...
 }
 
 message Empty {
@@ -59,51 +52,34 @@ message CategoryDistribution {
   double value = 2;
 }
 
-message EventRequest {
+message OrganizerEventFeedbackSummaryRequest {
+  string userId = 1;
+}
+
+message OrganizerEventFeedbackSummaryResponse {
+  double averageRating = 1;
+  map<string, int32> ratingDistribution = 2;
+  int32 totalFeedbacks = 3;
+}
+
+message EventInvitationReportRequest {
   string eventId = 1;
 }
 
-// 1) Đếm participant: registeredCount, checkInCount, checkOutCount
-message EventParticipationStatsResponse {
+message EventInvitationReportResponse {
   string eventId = 1;
-  int32 registeredCount = 2;
-  int32 checkInCount = 3;
-  int32 checkOutCount = 4;
+  repeated InvitedUserStatus invitedUsers = 2;
+  InvitationSummary invitationSummary = 3;
 }
 
-// 2) Timeline checkin/checkout
-message ParticipationTimelineResponse {
-  repeated TimelinePoint timeline = 1;
+message InvitedUserStatus {
+  string email = 1;
+  string status = 2;
 }
 
-message TimelinePoint {
-  string timeSlot = 1;   // "00:00 - 00:59"
-  int32 checkInCount = 2;
-  int32 checkOutCount = 3;
-}
-
-// 3) Thống kê theo tháng
-message MonthlyStatsRequest {
-  int32 year = 1;
-}
-
-message MonthlyParticipationStatsResponse {
-  repeated MonthlyParticipationStat monthlyStats = 1;
-}
-
-message MonthlyParticipationStat {
-  int32 month = 1;
-  int32 participantCount = 2;
-}
-
-// 4) Phân tích thời gian checkin, checkout trung bình (phút)
-message CheckInOutTimeAnalysisResponse {
-  double averageCheckInTimeInMinutes = 1;
-  double averageCheckOutTimeInMinutes = 2;
-}
-
-// 5) Tỷ lệ checkIn / checkOut (phần trăm)
-message ParticipationRateResponse {
-  double checkInRate = 1;
-  double checkOutRate = 2;
+message InvitationSummary {
+  int32 accepted = 1;
+  int32 pending = 2;
+  int32 declined = 3;
+  int32 totalInvited = 4;
 }

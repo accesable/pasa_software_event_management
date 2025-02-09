@@ -1,55 +1,66 @@
-import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ReportServiceService } from './report-service.service';
 import { DecodeAccessResponse } from '../../../../libs/common/src';
 import { ResponseMessage, User } from '../decorators/public.decorator';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import {
+  ReportServiceProtoControllerMethods,
+  ReportServiceProtoController,
+  Empty,
+  EventCategoryDistributionResponse,
+  UserEventsByDateRequest,
+  OrganizerEventFeedbackSummaryRequest,
+  OrganizerEventFeedbackSummaryResponse,
+  EventInvitationReportRequest,
+  EventInvitationReportResponse,
+  MonthlyEventCountsResponse // Import MonthlyEventCountsResponse
+} from '../../../../libs/common/src/types/report';
+import { Observable } from 'rxjs';
 
 @Controller('reports')
+@ReportServiceProtoControllerMethods()
 export class ReportServiceController {
-  constructor(private readonly reportService: ReportServiceService) { }
+  constructor(private readonly reportServiceService: ReportServiceService) {}
 
   @Get('/events-by-date')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Get user events by date success')
   async getUserEventsByDate(
-    @Query() query: any,
+    @Query('year') year: number,
+    @Query('month') month: number | undefined,
     @User() user: DecodeAccessResponse,
-  ) {
-    return this.reportService.getUserEventsByDate(user.id, query.year, query.month);
+  ): Promise<MonthlyEventCountsResponse> { // Updated return type
+    const request: UserEventsByDateRequest = {
+      userId: user.id,
+      year: Number(year),
+      month: month ? Number(month) : undefined,
+    };
+    return this.reportServiceService.getUserEventsByDate(request);
   }
 
-  @Get('event-category-distribution')
-  async getEventCategoryDistribution() {
-    return this.reportService.getEventCategoryDistribution();
+  @Get('/event-category-distribution')
+  @ResponseMessage('Get event category distribution success')
+  async getEventCategoryDistribution(): Promise<EventCategoryDistributionResponse> {
+    const request: Empty = {};
+    return this.reportServiceService.getEventCategoryDistribution(request);
   }
 
-  // 1) /reports/:eventId/participation-stats
-  @Get(':eventId/participation-stats')
-  async getEventParticipationStats(@Param('eventId') eventId: string) {
-    return this.reportService.getEventParticipationStats(eventId);
+  @Get('/organizer-feedback-summary')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Get organizer event feedback summary success')
+  async getOrganizerEventFeedbackSummary(
+    @User() user: DecodeAccessResponse,
+  ): Promise<OrganizerEventFeedbackSummaryResponse> {
+    const request: OrganizerEventFeedbackSummaryRequest = { userId: user.id };
+    return this.reportServiceService.getOrganizerEventFeedbackSummary(request);
   }
 
-  // 2) /reports/:eventId/timeline
-  @Get(':eventId/timeline')
-  async getParticipationTimeline(@Param('eventId') eventId: string) {
-    return this.reportService.getParticipationTimeline(eventId);
-  }
-
-  // 3) /reports/monthly-participation?year=2025
-  @Get('monthly-participation')
-  async getMonthlyStats(@Query('year', ParseIntPipe) year: number) {
-    return this.reportService.getMonthlyParticipationStats(year);
-  }
-
-  // 4) /reports/:eventId/check-in-out-analysis
-  @Get(':eventId/check-in-out-analysis')
-  async getCheckInOutTimeAnalysis(@Param('eventId') eventId: string) {
-    return this.reportService.getCheckInOutTimeAnalysis(eventId);
-  }
-
-  // 5) /reports/:eventId/participation-rate
-  @Get(':eventId/participation-rate')
-  async getParticipationRate(@Param('eventId') eventId: string) {
-    return this.reportService.getParticipationRate(eventId);
+  @Get(':eventId/invitations')
+  @ResponseMessage('Get event invitation report success')
+  async getEventInvitationReport(
+    @Param('eventId') eventId: string,
+  ): Promise<EventInvitationReportResponse> {
+    const request: EventInvitationReportRequest = { eventId };
+    return this.reportServiceService.getEventInvitationReport(request);
   }
 }

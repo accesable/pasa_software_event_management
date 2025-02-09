@@ -16,12 +16,16 @@ export interface UserEventsByDateRequest {
   month?: number | undefined;
 }
 
-export interface UserEventsByDateResponse {
-  organizedEvents: EventInfo[];
-  participatedEvents: EventInfo[];
+export interface MonthlyEventCountsResponse {
+  monthlyOrganizedEvents: MonthlyEventCount[];
+  monthlyParticipatedEvents: MonthlyEventCount[];
 }
 
-/** Message tái sử dụng, hoặc tạo mới nếu cần thiết */
+export interface MonthlyEventCount {
+  month: number;
+  count: number;
+}
+
 export interface EventInfo {
   id: string;
   name: string;
@@ -30,7 +34,6 @@ export interface EventInfo {
   endDate: string;
   location: string;
   status: string;
-  /** ... các trường thông tin sự kiện cần thiết khác ... */
   categoryId: string;
 }
 
@@ -47,128 +50,60 @@ export interface CategoryDistribution {
   value: number;
 }
 
-export interface EventRequest {
+export interface OrganizerEventFeedbackSummaryRequest {
+  userId: string;
+}
+
+export interface OrganizerEventFeedbackSummaryResponse {
+  averageRating: number;
+  ratingDistribution: { [key: string]: number };
+  totalFeedbacks: number;
+}
+
+export interface OrganizerEventFeedbackSummaryResponse_RatingDistributionEntry {
+  key: string;
+  value: number;
+}
+
+export interface EventInvitationReportRequest {
   eventId: string;
 }
 
-/** 1) Đếm participant: registeredCount, checkInCount, checkOutCount */
-export interface EventParticipationStatsResponse {
+export interface EventInvitationReportResponse {
   eventId: string;
-  registeredCount: number;
-  checkInCount: number;
-  checkOutCount: number;
+  invitedUsers: InvitedUserStatus[];
+  invitationSummary: InvitationSummary | undefined;
 }
 
-/** 2) Timeline checkin/checkout */
-export interface ParticipationTimelineResponse {
-  timeline: TimelinePoint[];
+export interface InvitedUserStatus {
+  email: string;
+  status: string;
 }
 
-export interface TimelinePoint {
-  /** "00:00 - 00:59" */
-  timeSlot: string;
-  checkInCount: number;
-  checkOutCount: number;
-}
-
-/** 3) Thống kê theo tháng */
-export interface MonthlyStatsRequest {
-  year: number;
-}
-
-export interface MonthlyParticipationStatsResponse {
-  monthlyStats: MonthlyParticipationStat[];
-}
-
-export interface MonthlyParticipationStat {
-  month: number;
-  participantCount: number;
-}
-
-/** 4) Phân tích thời gian checkin, checkout trung bình (phút) */
-export interface CheckInOutTimeAnalysisResponse {
-  averageCheckInTimeInMinutes: number;
-  averageCheckOutTimeInMinutes: number;
-}
-
-/** 5) Tỷ lệ checkIn / checkOut (phần trăm) */
-export interface ParticipationRateResponse {
-  checkInRate: number;
-  checkOutRate: number;
+export interface InvitationSummary {
+  accepted: number;
+  pending: number;
+  declined: number;
+  totalInvited: number;
 }
 
 export const REPORT_PACKAGE_NAME = "report";
 
-/** Service report đơn giản, chỉ 5 hàm */
-
 export interface ReportServiceProtoClient {
-  /** 1) Thống kê số người đã đăng ký, checkin, checkout */
-
-  getEventParticipationStats(request: EventRequest): Observable<EventParticipationStatsResponse>;
-
-  /** 2) Lấy timeline checkin/checkout theo khung giờ */
-
-  getParticipationTimeline(request: EventRequest): Observable<ParticipationTimelineResponse>;
-
-  /** 3) Thống kê số lượt tham gia trong từng tháng (cho 1 năm) */
-
-  getMonthlyParticipationStats(request: MonthlyStatsRequest): Observable<MonthlyParticipationStatsResponse>;
-
-  /** 4) Phân tích thời điểm checkin/checkout trung bình */
-
-  getCheckInOutTimeAnalysis(request: EventRequest): Observable<CheckInOutTimeAnalysisResponse>;
-
-  /** 5) Tỷ lệ checkin/checkout (theo %) so với tổng */
-
-  getParticipationRate(request: EventRequest): Observable<ParticipationRateResponse>;
-
   getEventCategoryDistribution(request: Empty): Observable<EventCategoryDistributionResponse>;
 
-  getUserEventsByDate(request: UserEventsByDateRequest): Observable<UserEventsByDateResponse>;
+  /** Thay đổi response type */
+
+  getUserEventsByDate(request: UserEventsByDateRequest): Observable<MonthlyEventCountsResponse>;
+
+  getOrganizerEventFeedbackSummary(
+    request: OrganizerEventFeedbackSummaryRequest,
+  ): Observable<OrganizerEventFeedbackSummaryResponse>;
+
+  getEventInvitationReport(request: EventInvitationReportRequest): Observable<EventInvitationReportResponse>;
 }
 
-/** Service report đơn giản, chỉ 5 hàm */
-
 export interface ReportServiceProtoController {
-  /** 1) Thống kê số người đã đăng ký, checkin, checkout */
-
-  getEventParticipationStats(
-    request: EventRequest,
-  ):
-    | Promise<EventParticipationStatsResponse>
-    | Observable<EventParticipationStatsResponse>
-    | EventParticipationStatsResponse;
-
-  /** 2) Lấy timeline checkin/checkout theo khung giờ */
-
-  getParticipationTimeline(
-    request: EventRequest,
-  ): Promise<ParticipationTimelineResponse> | Observable<ParticipationTimelineResponse> | ParticipationTimelineResponse;
-
-  /** 3) Thống kê số lượt tham gia trong từng tháng (cho 1 năm) */
-
-  getMonthlyParticipationStats(
-    request: MonthlyStatsRequest,
-  ):
-    | Promise<MonthlyParticipationStatsResponse>
-    | Observable<MonthlyParticipationStatsResponse>
-    | MonthlyParticipationStatsResponse;
-
-  /** 4) Phân tích thời điểm checkin/checkout trung bình */
-
-  getCheckInOutTimeAnalysis(
-    request: EventRequest,
-  ):
-    | Promise<CheckInOutTimeAnalysisResponse>
-    | Observable<CheckInOutTimeAnalysisResponse>
-    | CheckInOutTimeAnalysisResponse;
-
-  /** 5) Tỷ lệ checkin/checkout (theo %) so với tổng */
-
-  getParticipationRate(
-    request: EventRequest,
-  ): Promise<ParticipationRateResponse> | Observable<ParticipationRateResponse> | ParticipationRateResponse;
-
   getEventCategoryDistribution(
     request: Empty,
   ):
@@ -176,21 +111,31 @@ export interface ReportServiceProtoController {
     | Observable<EventCategoryDistributionResponse>
     | EventCategoryDistributionResponse;
 
+  /** Thay đổi response type */
+
   getUserEventsByDate(
     request: UserEventsByDateRequest,
-  ): Promise<UserEventsByDateResponse> | Observable<UserEventsByDateResponse> | UserEventsByDateResponse;
+  ): Promise<MonthlyEventCountsResponse> | Observable<MonthlyEventCountsResponse> | MonthlyEventCountsResponse;
+
+  getOrganizerEventFeedbackSummary(
+    request: OrganizerEventFeedbackSummaryRequest,
+  ):
+    | Promise<OrganizerEventFeedbackSummaryResponse>
+    | Observable<OrganizerEventFeedbackSummaryResponse>
+    | OrganizerEventFeedbackSummaryResponse;
+
+  getEventInvitationReport(
+    request: EventInvitationReportRequest,
+  ): Promise<EventInvitationReportResponse> | Observable<EventInvitationReportResponse> | EventInvitationReportResponse;
 }
 
 export function ReportServiceProtoControllerMethods() {
   return function (constructor: Function) {
     const grpcMethods: string[] = [
-      "getEventParticipationStats",
-      "getParticipationTimeline",
-      "getMonthlyParticipationStats",
-      "getCheckInOutTimeAnalysis",
-      "getParticipationRate",
       "getEventCategoryDistribution",
       "getUserEventsByDate",
+      "getOrganizerEventFeedbackSummary",
+      "getEventInvitationReport",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
