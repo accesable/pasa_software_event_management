@@ -479,6 +479,46 @@ const authService = {
       throw error.response.data;
     }
   },
+  getEventFeedbackByUser: async (eventId: string | undefined, accessToken?: string) => {
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/feedback/user`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  postEventFeedback: async (eventId: string, feedbackData: any, accessToken: string) => {
+    try {
+      const response = await axiosInstance.post(`${API_EVENT_BASE_URL}/${eventId}/feedback`, feedbackData, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  patchEventFeedback: async (eventId: string, feedbackData: any, accessToken: string) => {
+    try {
+      const response = await axiosInstance.patch(`${API_EVENT_BASE_URL}/${eventId}/feedback`, feedbackData, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default authService;

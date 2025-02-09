@@ -256,6 +256,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         <Row gutter={[16, 16]}>
           <Col span={24}>
             {eventDetails?.videoIntro ? (
+              // Nếu có video, hiển thị video
               <Card title="Video Introduction">
                 <iframe
                   width="100%"
@@ -267,8 +268,18 @@ const ParticipatedEventDetailsPage: React.FC = () => {
                   allowFullScreen
                 />
               </Card>
+            ) : eventDetails?.banner ? (
+              // Nếu không có video mà có banner, hiển thị banner dưới dạng hình ảnh
+              <Card title="Event Banner">
+                <img
+                  src={eventDetails.banner}
+                  alt="Event Banner"
+                  style={{ width: "100%", height: "480px", objectFit: "cover" }}
+                />
+              </Card>
             ) : (
-              <Card title="Video Introduction">
+              // Nếu không có cả video lẫn banner, hiển thị link mặc định mà bạn để sẵn
+              <Card title="Event Introduction">
                 <iframe
                   width="100%"
                   height="480"
