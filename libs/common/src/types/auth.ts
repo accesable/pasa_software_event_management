@@ -18,7 +18,6 @@ export interface findUsersByIdsRequest {
 }
 
 export interface Forgot {
-  newPassword: string;
   user: UserResponse | undefined;
 }
 

@@ -104,8 +104,8 @@ export class NotificationServiceService {
     try {
       const payload = { email: request.email, id: request.id, type: 'forgot-password', name: request.name };
       const token = this.createToken(payload);
-      const url = `${this.configService.get<string>('FRONTEND_URL')}/reset-password?token=${token}`;
-      const data = { name: request.name, password: request.newPassword };
+      const url = `${this.configService.get<string>('FRONTEND_URL')}/password/reset-password?token=${token}`;
+      const data = { name: request.name, url };
       const res = await this.sendMail(request.email, EmailTemplates.FORGOT_PASSWORD, 'Reset Password', data);
       if (res.error) {
         throw new RpcException({

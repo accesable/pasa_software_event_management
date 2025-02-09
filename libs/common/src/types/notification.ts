@@ -28,7 +28,6 @@ export interface ForgotPasswordRequest {
   id: string;
   email: string;
   name: string;
-  newPassword: string;
 }
 
 export interface ForgotPasswordResponse {

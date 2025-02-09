@@ -30,7 +30,6 @@ export class EventServiceController {
     @Body('users') users: { email: string, id: string }[],
     @User() user: DecodeAccessResponse,
   ) {
-    console.log('users', users);
     if (!users || users.length === 0) {
       throw new BadRequestException('No users provided');
     }
@@ -358,7 +357,6 @@ export class EventServiceController {
     }
 
     if (event.event.createdBy.id !== user.id) {
-      console.log(event.event.createdBy.id, user.id);
       throw new BadRequestException(
         'You do not have permission to update this event',
       );

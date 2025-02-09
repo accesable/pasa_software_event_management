@@ -617,6 +617,9 @@ export class EventService {
             if (!oldEvent) {
                 throw new RpcException({ message: 'Event not found', code: HttpStatus.NOT_FOUND });
             }
+            if(oldEvent.status === 'FINISHED') {
+                throw new RpcException({ message: 'Event has been finished', code: HttpStatus.BAD_REQUEST });
+            }
             const oldStatus = oldEvent.status;
 
             const criticalFields = ['location', 'startDate', 'endDate', 'schedule'];

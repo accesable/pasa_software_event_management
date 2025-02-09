@@ -113,7 +113,7 @@ export class UsersService implements OnModuleInit {
     try {
       const user = await this.usersService.findByEmailWithoutPassword({ email }).toPromise();
       const { id, name } = user.user;
-      const data = await this.notificationService.sendMailForForgotPassword(email, id, name, user.newPassword);
+      const data = await this.notificationService.sendMailForForgotPassword(email, id, name);
       if (data.status === 'success') {
         const key = `reset_password:${data.token}`;
         const { tokenData } = data;
