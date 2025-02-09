@@ -15,6 +15,7 @@ import {
 } from 'antd';
 import {
   Link,
+  useLocation,
   useNavigate,
 } from 'react-router-dom';
 import authService from '../../services/authService';
@@ -39,6 +40,7 @@ export const SignInPage = () => {
   } = theme.useToken();
   const isMobile = useMediaQuery({ maxWidth: 769 });
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const useDispatchHook = useDispatch();
   const user = useSelector((state: RootState) => state.user);
@@ -61,7 +63,7 @@ export const SignInPage = () => {
           accessToken: string,
           user: any
         },
-        error? : string
+        error?: string
       };
 
       if (response.statusCode === 200) {
@@ -72,7 +74,8 @@ export const SignInPage = () => {
         useDispatchHook(setUser(response.data.user));
 
         setTimeout(() => {
-          navigate('/dashboards/general');
+          const from = location.state?.from || '/dashboards/general'; // Lấy URL đầy đủ từ state.from
+          navigate(from, { replace: true }); // Redirect đến URL đầy đủ hoặc dashboard
         }, 1000);
       } else {
         message.error(response.error || 'Login failed');

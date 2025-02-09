@@ -66,17 +66,17 @@ const DetailMyEventPage: React.FC = () => {
       setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+        const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
         if (response && response.statusCode === 200) {
           setEventDetails(response.data.event);
         } else {
-          setError(response?.message || 'Failed to load event details');
-          message.error(response?.message || 'Failed to load event details');
+          setError(response?.error || 'Failed to load event details');
+          message.error(response?.error);
         }
       } catch (error: any) {
         console.error('Error fetching event details:', error);
-        setError(error.message || 'Failed to load event details');
-        message.error(error.message || 'Failed to load event details');
+        setError(error.error || 'Failed to load event details');
+        message.error(error.error);
       } finally {
         setLoading(false);
       }

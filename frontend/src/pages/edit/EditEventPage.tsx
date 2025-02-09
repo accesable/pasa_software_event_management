@@ -63,12 +63,12 @@ const EditEventPage: React.FC = () => {
         });
       } else {
         setError(response?.error || 'Failed to load event details');
-        message.error(response?.error || 'Failed to load event details');
+        message.error(response?.error );
       }
     } catch (error: any) {
       console.error('Error fetching event details:', error);
-      setError(error.error || 'Failed to load event details');
-      message.error(error.error || 'Failed to load event details');
+      setError(error.error);
+      message.error(error.error );
     } finally {
       setLoading(false);
     }

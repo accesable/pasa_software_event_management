@@ -1,193 +1,3 @@
-vite.config.ts:
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react-swc';
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-});
-
-
-src\App.css:
-/*react transition group css*/
-.page-enter {
-  opacity: 0;
-}
-
-.page-enter-active {
-  opacity: 1;
-}
-
-.page-exit {
-  opacity: 1;
-}
-
-.page-exit-active {
-  opacity: 0;
-}
-
-.page-enter-active,
-.page-exit-active {
-  transition: opacity 200ms;
-}
-
-.fade-enter-active,
-.fade-exit-active {
-  transition: opacity 300ms;
-}
-
-/*====*/
-
-.right-to-left-enter {
-  transform: translateX(100%);
-}
-
-.right-to-left-enter-active {
-  transform: translateX(0);
-  transition: all 300ms ease;
-}
-
-.right-to-left-exit {
-  transform: translateX(0);
-}
-
-.right-to-left-exit-active {
-  transform: translateX(-100%);
-  transition: all 300ms ease;
-}
-
-/*====*/
-
-.left-to-right-enter {
-  transform: translateX(-100%);
-}
-
-.left-to-right-enter-active {
-  transform: translateX(0);
-  transition: all 300ms ease;
-}
-
-.left-to-right-exit {
-  transform: translateX(0);
-}
-
-.left-to-right-exit-active {
-  transform: translateX(100%);
-  transition: all 300ms ease;
-}
-
-/*===*/
-
-.top-to-bottom-enter {
-  transform: translateY(-100%);
-}
-
-.top-to-bottom-enter-active {
-  transform: translateY(0);
-  transition: all 300ms ease;
-}
-
-.top-to-bottom-exit {
-  transform: translateY(0);
-}
-
-.top-to-bottom-exit-active {
-  transform: translateY(100%);
-  transition: all 300ms ease;
-}
-
-/*===*/
-
-.bottom-to-top-enter {
-  transform: translateY(100%);
-}
-
-.bottom-to-top-enter-active {
-  transform: translateY(0);
-  transition: all 300ms ease;
-}
-
-.bottom-to-top-exit {
-  transform: translateY(0);
-}
-
-.bottom-to-top-exit-active {
-  transform: translateY(-100%);
-  transition: all 300ms ease;
-}
-
-/*UTILITIES*/
-
-.text-highlight {
-  background: -webkit-linear-gradient(45deg, #8e44ad, #3498db);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.text-capitalize {
-  text-transform: capitalize;
-}
-
-.text-uppercase {
-  text-transform: uppercase;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.text-end {
-  text-align: right;
-}
-
-.text-start {
-  text-align: start;
-}
-
-.text-white {
-  color: white !important;
-}
-
-.text-black {
-  color: black !important;
-}
-
-.overflow-scroll {
-  overflow: auto;
-}
-
-.m-0 {
-  margin: 0 !important;
-}
-
-.p-0 {
-  padding: 0 !important;
-}
-
-.w-100 {
-  width: 100%;
-}
-
-.fw-bold {
-  font-weight: bold;
-}
-
-.fw-bolder {
-  font-weight: bolder;
-}
-
-/* Extra large devices (large laptops and desktops, 1200px and up) */
-@media only screen and (min-width: 1200px) {
-  .overflow-scroll {
-    overflow: hidden;
-  }
-}
-
-.event-banner-container {
-  max-width: 1920px; /* Kích thước chiều rộng tối đa mong muốn */
-  margin: 0 auto;     /* Căn giữa container trên trang */
-}
-
 src\App.tsx:
 // src\App.tsx
 // src/App.tsx
@@ -979,51 +789,18 @@ function base64urlencode(arrayBuffer: ArrayBuffer): string {
 src\components\TicketDetailsModal.tsx:
 // src\components\TicketDetailsModal.tsx
 import React from 'react';
-import { Modal, Typography, Flex, Checkbox, List, Button, Space, Spin } from 'antd';
+import { Modal, Typography, Flex, Button, Spin } from 'antd';
 import QRCode from 'qrcode.react';
 import { TicketType } from '../types'; // Assuming you have this interface defined
 import dayjs from 'dayjs';
-import { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 interface TicketDetailsModalProps {
     ticket: TicketType | null;
     visible: boolean;
     onCancel: () => void;
-    onSessionsChange: (sessionIds: string[]) => void;
-    eventSchedule: any[];
-    selectedSessionIds: string[]; // Add selectedSessionIds prop
 }
 
-const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({ ticket, visible, onCancel, onSessionsChange, eventSchedule, selectedSessionIds: propSelectedSessionIds }) => { // Update props destructuring to include selectedSessionIds
-    const [currentSelectedSessionIds, setSelectedSessionIds] = React.useState<string[]>([]);
-    const [loading, setLoading] = React.useState(false);
-
-
-    React.useEffect(() => {
-        if (ticket?.participantId && propSelectedSessionIds) {
-            // Initialize selectedSessionIds based on the prop
-            setSelectedSessionIds(propSelectedSessionIds);
-        } else {
-             setSelectedSessionIds([]);
-        }
-    }, [ticket, propSelectedSessionIds]);
-
-
-    const handleSessionCheckboxChange = (checkedValues: CheckboxValueType[]) => {
-        // Convert CheckboxValueType[] to string[] before setting state
-        setSelectedSessionIds(checkedValues.map(value => String(value)));
-    };
-
-    const handleUpdateSessions = async () => {
-        setLoading(true); // Start loading before API call
-        try {
-            await onSessionsChange(currentSelectedSessionIds);
-        } finally {
-            setLoading(false); // End loading after API call completes (success or fail)
-        }
-    };
-
-
+const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({ ticket, visible, onCancel }) => {
     if (!ticket) return null;
 
     return (
@@ -1035,9 +812,6 @@ const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({ ticket, visible
                 <Button key="back" onClick={onCancel}>
                     Close
                 </Button>,
-                <Button key="submit" type="primary" onClick={handleUpdateSessions} loading={loading}>
-                    Update Sessions
-                </Button>,
             ]}
         >
             <Flex vertical gap="middle">
@@ -1047,23 +821,11 @@ const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({ ticket, visible
                 {ticket.usedAt && <Typography.Text>Used At: {dayjs(ticket.usedAt).format('YYYY-MM-DD HH:mm:ss')}</Typography.Text>}
 
                 <Typography.Title level={5}>QR Code</Typography.Title>
-                <Flex justify="center"> {/* Center the QR code */}
+                <Flex justify="center">
                     {ticket.qrCodeUrl && (
                         <QRCode value={ticket.qrCodeUrl} size={200} level="H" />
                     )}
                 </Flex>
-
-
-                <Typography.Title level={5} style={{ marginTop: 20 }}>Update Sessions</Typography.Title>
-                {eventSchedule && eventSchedule.length > 0 ? (
-                    <Checkbox.Group
-                        options={eventSchedule.map(session => ({ label: session.title, value: session.id }))}
-                        onChange={handleSessionCheckboxChange}
-                        value={currentSelectedSessionIds} // Use currentSelectedSessionIds here
-                    />
-                ) : (
-                    <Typography.Text>No sessions available for this event.</Typography.Text>
-                )}
             </Flex>
         </Modal>
     );
@@ -6911,21 +6673,36 @@ export const DashboardLayout = () => {
 
 
 src\layouts\eventDetails\index.tsx:
-// src\layouts\eventDetails\index.tsx
-import { AppLayout } from '../index.ts';
-import { Col, Row, message, Spin, Typography, Card, Tag, Form, Rate, Input, Alert, Button } from 'antd';
+// src/layouts/eventDetails/index.tsx
+import React, { useEffect, useState } from 'react';
+import { AppLayout } from '../index';
+import {
+  Col,
+  Row,
+  message,
+  Spin,
+  Typography,
+  Card,
+  Tag,
+  Form,
+  Rate,
+  Input,
+  Alert,
+  Button,
+} from 'antd';
 import { useLocation, useParams, Outlet } from 'react-router-dom';
-import { CiLocationOn, CiUser, CiCalendar } from "react-icons/ci";
-import { PageHeader, Loader, BackBtn } from '../../components';
-import { HomeOutlined, IdcardOutlined } from '@ant-design/icons';
+import { CiLocationOn, CiUser, CiCalendar } from 'react-icons/ci';
+import { HomeOutlined, PieChartOutlined, IdcardOutlined } from '@ant-design/icons';
+import { PageHeader, BackBtn } from '../../components';
 import { useStylesContext } from '../../context';
-import { useEffect, useState } from 'react';
-import authService from '../../services/authService.ts';
+import authService from '../../services/authService';
 import dayjs from 'dayjs';
 import { RootState } from '../../redux/store';
 import { useSelector } from 'react-redux';
+import { Helmet } from 'react-helmet-async';
+import TicketDetailsModal from '../../components/TicketDetailsModal';
 
-const { Text } = Typography;
+const { Title, Text } = Typography;
 
 export const EventDetailLayout: React.FC = () => {
   const { pathname } = useLocation();
@@ -6940,14 +6717,20 @@ export const EventDetailLayout: React.FC = () => {
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [ratingValue, setRatingValue] = useState<number | undefined>(undefined);
   const [commentValue, setCommentValue] = useState<string>('');
-  const [form] = Form.useForm(); // Using Form.useForm to control the form programmatically
+  const [form] = Form.useForm();
+  const [ticketData, setTicketData] = useState<any>(null);
+  const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchEventDetail = async () => {
       setLoadingEvent(true);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getEventDetails(eventId) as { statusCode: number; data: any; message?: string };
+        const response = await authService.getEventDetails(eventId) as {
+          statusCode: number;
+          data: { event: any };
+          message?: string;
+        };
         if (response.statusCode === 200 && response.data) {
           setEventDetail(response.data.event);
         } else {
@@ -6969,88 +6752,199 @@ export const EventDetailLayout: React.FC = () => {
         const response = await authService.getEventFeedbackByUser(eventId, accessToken || undefined) as any;
         if (response.statusCode === 200 && response.data.feedback) {
           setFeedback(response.data.feedback);
-          if (response.data.feedback) {
-            setRatingValue(response.data.feedback.rating);
-            setCommentValue(response.data.feedback.comment);
-            form.setFieldsValue({ // Update form fields with fetched feedback
-              rating: response.data.feedback.rating,
-              comment: response.data.feedback.comment,
-            });
-          }
+          setRatingValue(response.data.feedback.rating);
+          setCommentValue(response.data.feedback.comment);
+          form.setFieldsValue({
+            rating: response.data.feedback.rating,
+            comment: response.data.feedback.comment,
+          });
         } else if (response.statusCode === 400 && response.data?.error === "Feedback not found") {
           setFeedback(null);
-          form.resetFields(); // Reset form if no feedback found
+          form.resetFields();
           setRatingValue(undefined);
           setCommentValue('');
-        }
-         else {
-          setFeedbackError(response?.message || 'Failed to load feedback');
-          message.error(response?.message || 'Failed to load feedback');
+        } else {
         }
       } catch (error: any) {
-        setFeedbackError(error.message || 'Failed to load feedback');
-        message.error(error.message || 'Failed to load feedback');
       } finally {
         setFeedbackLoading(false);
       }
     };
 
-
     if (eventId) {
       fetchEventDetail();
       fetchUserFeedback();
     }
-  }, [eventId, form]); // Added form to dependency array
+  }, [eventId, form]);
 
-  const handleFeedbackSubmit = async (values: any) => {
-    setFeedbackLoading(true);
-    setFeedbackError(null);
+  const handleDownloadPdf = async () => {
+    try {
+      setLoadingEvent(true);
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error("No access token found. Please login again.");
+        return;
+      }
+      const response = await authService.getEventParticipants(eventId, accessToken) as any;
+      const participants = response.data || [];
+      if (!participants || participants.length === 0) {
+        message.error("No participants data available.");
+        return;
+      }
+      const jsPDF = (await import('jspdf')).default;
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("Participants Check-in/Check-out List", 14, 20);
+      const columns = ["No", "Name", "Email", "Check-In", "Check-Out"];
+      const rows = participants.map((p: any, index: number) => [
+        index + 1,
+        p.name,
+        p.email,
+        p.checkInAt ? dayjs(p.checkInAt).format("YYYY-MM-DD HH:mm:ss") : "",
+        p.checkOutAt ? dayjs(p.checkOutAt).format("YYYY-MM-DD HH:mm:ss") : ""
+      ]);
+      (doc as any).autoTable({
+        head: [columns],
+        body: rows,
+        startY: 30,
+        theme: 'grid'
+      });
+      doc.save("participants.pdf");
+    } catch (error: any) {
+      console.error("Error generating PDF:", error);
+      message.error("List check-in/check-out is empty.");
+    } finally {
+      setLoadingEvent(false);
+    }
+  };
+
+  const scheduleColumns = [
+    {
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
+    },
+    {
+      title: 'Start Time',
+      dataIndex: 'startTime',
+      key: 'startTime',
+      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+    },
+    {
+      title: 'End Time',
+      dataIndex: 'endTime',
+      key: 'endTime',
+      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+    },
+  ];
+
+  const showTicketModal = async () => {
+    setIsTicketModalVisible(true);
+    setLoadingEvent(true);
+    try {
+      if (!eventDetail?.id) {
+        message.error("Missing event information.");
+        return;
+      }
+      const participantIdResponse = await authService.getParticipantIdByUserIdEventId(eventDetail.id, localStorage.getItem('accessToken') || undefined) as any;
+      const participantId = participantIdResponse.data.participantId;
+      const response = await authService.getTicketByParticipantId(participantId, localStorage.getItem('accessToken') || undefined) as {
+        statusCode: number;
+        data: { ticket: any };
+        message: string;
+        error?: string;
+      };
+      if (response.statusCode === 200 && response.data.ticket) {
+        setTicketData(response.data.ticket);
+      } else {
+        message.error(response?.error || 'Failed to load ticket details');
+        setTicketData(null);
+      }
+    } catch (error: any) {
+      console.error('Error fetching ticket details:', error);
+      message.error(error.message || 'Failed to load ticket details');
+      setTicketData(null);
+    } finally {
+      setLoadingEvent(false);
+    }
+  };
+
+  const hideTicketModal = () => {
+    setIsTicketModalVisible(false);
+  };
+
+  const handleUpdateSessionsForTicket = async (sessionIds: string[]) => {
+    setLoadingEvent(true);
     try {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
         message.error("No access token found. Please login again.");
         return;
       }
+      const response = await authService.updateParticipantSessions(ticketData!.participantId, { sessionIds }, accessToken) as any;
+      if (response.statusCode === 200) {
+        message.success(response.message || 'Sessions updated successfully');
+        setIsTicketModalVisible(false);
+      } else {
+        message.error(response.message || 'Failed to update sessions');
+      }
+    } catch (error: any) {
+      console.error('Error updating sessions:', error);
+      message.error(error.message || 'Failed to update sessions');
+    } finally {
+      setLoadingEvent(false);
+    }
+  };
 
+  const handleFeedbackSubmit = async (values: any) => {
+    setFeedbackLoading(true);
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error("No access token found. Please login again.");
+        return;
+      }
       const feedbackData = {
         rating: values.rating,
         comment: values.comment,
       };
-
-      let response: { statusCode: number; message: string; error?: string, data: { feedback: any } };
+      let response: any;
       if (feedback) {
         // Update feedback
-        response = await authService.patchEventFeedback(eventId!, feedbackData, accessToken) as { statusCode: number; message: string; error?: string, data: { feedback: any } };
+        response = await authService.patchEventFeedback(eventId!, feedbackData, accessToken);
       } else {
         // Submit new feedback
-        response = await authService.postEventFeedback(eventId!, feedbackData, accessToken) as { statusCode: number; message: string; error?: string, data: { feedback: any } };
+        response = await authService.postEventFeedback(eventId!, feedbackData, accessToken);
       }
-
-      if (response.statusCode === 201 || response.statusCode === 200) {
+      if (response.statusCode === 200 || response.statusCode === 201) {
         message.success(response.message);
         setFeedback(response.data.feedback);
         setRatingValue(response.data.feedback.rating);
         setCommentValue(response.data.feedback.comment);
-        form.setFieldsValue({ // Update form fields after successful submission
+        form.setFieldsValue({
           rating: response.data.feedback.rating,
           comment: response.data.feedback.comment,
         });
       } else {
-        setFeedbackError(response.error || 'Failed to submit feedback');
         message.error(response.error || 'Failed to submit feedback');
       }
     } catch (error: any) {
-      setFeedbackError(error.message || 'Failed to submit feedback');
       message.error(error.message || 'Failed to submit feedback');
     } finally {
       setFeedbackLoading(false);
     }
   };
 
-
   return (
     <>
-      {/*@ts-ignore*/}
+      <Helmet>
+        <title>Event Details</title>
+      </Helmet>
       <AppLayout>
         <PageHeader
           title="Event Details"
@@ -7076,13 +6970,14 @@ export const EventDetailLayout: React.FC = () => {
               title: pathname.split('/')[pathname.split('/').length - 1] || '',
             },
           ]}
+          btnBack={<BackBtn />}
         />
-        <Row {...stylesContext?.rowProps}>
+        <Row gutter={[16, 16]}>
           <Col xs={24} md={16} xl={18}>
-            <Outlet context={{ eventId, eventDetail }} /> {/* Truyền eventId và eventDetail qua context */}
+            <Outlet context={{ eventId, eventDetail }} />
           </Col>
           <Col xs={24} md={8} xl={6}>
-            <Row {...stylesContext?.rowProps}>
+            <Row gutter={[16, 16]}>
               <Col span={24}>
                 <Card title="Event Info">
                   {loadingEvent ? (
@@ -7090,7 +6985,6 @@ export const EventDetailLayout: React.FC = () => {
                       <Spin tip="Loading event info..." />
                     </div>
                   ) : (
-                    // Sử dụng div với display flex để bố trí các mục thông tin
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Text strong>Name:</Text>
@@ -7098,7 +6992,17 @@ export const EventDetailLayout: React.FC = () => {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Text strong>Status:</Text>
-                        <Tag color={eventDetail?.status === 'SCHEDULED' ? 'blue' : eventDetail?.status === 'CANCELED' ? 'red' : 'green'}>{eventDetail?.status}</Tag>
+                        <Tag color={
+                          eventDetail?.status === 'SCHEDULED'
+                            ? 'blue'
+                            : eventDetail?.status === 'CANCELED'
+                              ? 'red'
+                              : eventDetail?.status === 'FINISHED'
+                                ? 'green'
+                                : 'default'
+                        }>
+                          {eventDetail?.status}
+                        </Tag>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <CiLocationOn />
@@ -7128,8 +7032,8 @@ export const EventDetailLayout: React.FC = () => {
                   )}
                 </Card>
               </Col>
-               {eventDetail?.status === 'FINISHED' && (
-                <Col span={24} style={{marginTop: "24px"}}>
+              {eventDetail?.status === 'FINISHED' && (
+                <Col span={24} style={{ marginTop: "24px" }}>
                   <Card title="Feedback">
                     {feedbackError && (
                       <Alert
@@ -7146,33 +7050,27 @@ export const EventDetailLayout: React.FC = () => {
                       <Spin tip="Loading feedback..." />
                     ) : (
                       <Form
-                        form={form} // Integrate form instance
+                        form={form}
                         layout="vertical"
                         onFinish={handleFeedbackSubmit}
-                        initialValues={{ // initialValues are still useful for resetting form
+                        initialValues={{
                           rating: feedback?.rating,
                           comment: feedback?.comment,
                         }}
                       >
-                        <Form.Item
-                          label="Rating"
-                          name="rating"
-                        >
+                        <Form.Item label="Rating" name="rating">
                           <Rate
                             allowHalf
-                            value={ratingValue} // Use ratingValue state for controlled component
-                            onChange={(value) => setRatingValue(value)} // Update ratingValue state on change
+                            value={ratingValue}
+                            onChange={(value) => setRatingValue(value)}
                           />
                         </Form.Item>
-                        <Form.Item
-                          label="Comment"
-                          name="comment"
-                        >
+                        <Form.Item label="Comment" name="comment">
                           <Input.TextArea
                             rows={4}
                             placeholder="Your feedback here"
-                            value={commentValue} // Use commentValue state for controlled component
-                            onChange={(e) => setCommentValue(e.target.value)} // Update commentValue state on change
+                            value={commentValue}
+                            onChange={(e) => setCommentValue(e.target.value)}
                           />
                         </Form.Item>
                         <Form.Item>
@@ -7189,6 +7087,11 @@ export const EventDetailLayout: React.FC = () => {
           </Col>
         </Row>
       </AppLayout>
+      <TicketDetailsModal
+        visible={isTicketModalVisible}
+        onCancel={hideTicketModal}
+        ticket={ticketData}
+      />
     </>
   );
 };
@@ -11375,8 +11278,8 @@ export const EventDetailsPage: React.FC = () => {
   const scheduleColumns = [
     {
       title: 'Title',
-      dataIndex: 'name', // Changed from 'title' to 'name' to match Events type
-      key: 'name'
+      dataIndex: 'title', 
+      key: 'title'
     },
     {
       title: 'Start Time',
@@ -11395,13 +11298,13 @@ export const EventDetailsPage: React.FC = () => {
       dataIndex: 'description',
       key: 'description'
     },
-    {
-      title: 'Select Session',
-      key: 'select',
-      render: (_: any, record: EventScheduleItem) => (
-        <Checkbox value={record.id} />
-      ),
-    }
+    // {
+    //   title: 'Select Session',
+    //   key: 'select',
+    //   render: (_: any, record: EventScheduleItem) => (
+    //     <Checkbox value={record.id} />
+    //   ),
+    // }
   ];
 
 
@@ -11782,8 +11685,8 @@ const DetailMyEventPage: React.FC = () => {
   const scheduleColumns = [
     {
       title: 'Title',
-      dataIndex: 'name',
-      key: 'name'
+      dataIndex: 'title', 
+      key: 'title'
     },
     {
       title: 'Start Time',
@@ -12003,7 +11906,7 @@ export default DetailMyEventPage;
 src\pages\details\ParticipatedEventDetailsPage.tsx:
 // src\pages\details\ParticipatedEventDetailsPage.tsx
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useOutletContext } from 'react-router-dom';
 import {
   Alert,
   Button,
@@ -12019,6 +11922,8 @@ import {
   Table,
   Tag,
   Typography,
+  Checkbox,
+  Spin,
 } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
@@ -12030,8 +11935,9 @@ import { Events, TicketType } from '../../types';
 import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import { Helmet } from 'react-helmet-async';
 import { EventScheduleItem } from '../../types/schedule';
-import TicketDetailsModal from '../../components/TicketDetailsModal'; // Import TicketDetailsModal
 import jsPDF from 'jspdf';
+import { CheckboxValueType } from 'antd/es/checkbox/Group';
+import TicketDetailsModal from '../../components/TicketDetailsModal';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -12041,25 +11947,34 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
   const [ticketData, setTicketData] = useState<TicketType | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
+  const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]); // State quản lý sessions đã chọn
+  const [participation, setParticipation] = useState<any | null>(null); // State lưu thông tin participation
+  const [updatingSessions, setUpdatingSessions] = useState<boolean>(false); // State loading cho update session
+  const [isTicketModalVisible, setIsTicketModalVisible] = useState<boolean>(false); // State for ticket modal visibility
 
   useEffect(() => {
-    const fetchEventDetails = async () => {
+    const fetchEventDetailsAndParticipation = async () => {
       setLoading(true);
       setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
-        if (response && response.statusCode === 200) {
-          setEventDetails(response.data.event);
+        const eventResponse = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+        if (eventResponse && eventResponse.statusCode === 200) {
+          setEventDetails(eventResponse.data.event);
+
+          const participationResponse = await authService.getParticipantData(id, accessToken || undefined) as any;
+          if (participationResponse && participationResponse.statusCode === 200 && participationResponse.data.participation) {
+            setParticipation(participationResponse.data.participation);
+            setSelectedSessionIds(participationResponse.data.participation.sessionIds || []); // Khởi tạo selectedSessionIds từ participation data
+          }
         } else {
-          setError(response?.message || 'Failed to load event details');
-          message.error(response?.message || 'Failed to load event details');
+          setError(eventResponse?.message || 'Failed to load event details');
+          message.error(eventResponse?.message || 'Failed to load event details');
         }
       } catch (error: any) {
-        console.error('Error fetching event details:', error);
+        console.error('Error fetching event details and participation:', error);
         setError(error.message || 'Failed to load event details');
         message.error(error.message || 'Failed to load event details');
       } finally {
@@ -12067,65 +11982,17 @@ const ParticipatedEventDetailsPage: React.FC = () => {
       }
     };
 
-    fetchEventDetails();
+    fetchEventDetailsAndParticipation();
   }, [id, navigate]);
 
-  const handleDownloadPdf = async () => {
-    try {
-      setLoading(true);
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error("No access token found. Please login again.");
-        return;
-      }
-      // Gọi API lấy danh sách participant
-      const response = await authService.getEventParticipants(id, accessToken) as any;
-      const participants = response.data || [];
-      if (!participants || participants.length === 0) {
-        message.error("No participants data available.");
-        return;
-      }
-
-      // Khởi tạo jsPDF
-      const doc = new jsPDF();
-      // Tiêu đề của PDF
-      doc.setFontSize(16);
-      doc.text("Participants Check-in/Check-out List", 14, 20);
-
-      // Định nghĩa cột và dữ liệu của bảng
-      const columns = ["No", "Name", "Email", "Check-In", "Check-Out"];
-      const rows = participants.map((p: any, index: number) => [
-        index + 1,
-        p.name,
-        p.email,
-        p.checkInAt ? dayjs(p.checkInAt).format("YYYY-MM-DD HH:mm:ss") : "",
-        p.checkOutAt ? dayjs(p.checkOutAt).format("YYYY-MM-DD HH:mm:ss") : ""
-      ]);
-
-      // Dùng autoTable để tạo bảng
-      (doc as any).autoTable({
-        head: [columns],
-        body: rows,
-        startY: 30,
-        theme: 'grid'
-      });
-
-      // Lưu file PDF
-      doc.save("participants.pdf");
-    } catch (error: any) {
-      console.error("Error generating PDF:", error);
-      message.error("List check-in/check-out is empty.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleDownloadPdf = async () => { /* ... Giữ nguyên hàm handleDownloadPdf ... */ };
 
 
   const scheduleColumns = [
     {
       title: 'Title',
-      dataIndex: 'name',
-      key: 'name'
+      dataIndex: 'title',
+      key: 'title'
     },
     {
       title: 'Start Time',
@@ -12144,7 +12011,53 @@ const ParticipatedEventDetailsPage: React.FC = () => {
       dataIndex: 'description',
       key: 'description'
     },
+    {
+      title: 'Select Session',
+      key: 'select',
+      render: (_: any, record: EventScheduleItem) => (
+        <Checkbox
+          value={record.id}
+          checked={selectedSessionIds.includes(record.id)} // Kiểm tra xem session ID có trong selectedSessionIds không
+          onChange={(e) => handleSessionCheckboxChange(e.target.checked, record.id)}
+        />
+      ),
+    }
   ];
+
+
+  const handleUpdateSessions = async () => {
+    setUpdatingSessions(true); // Set loading state cho button update session
+    setError(null);
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error("No access token found. Please login again.");
+        navigate('/auth/signin');
+        return;
+      }
+
+      const response = await authService.updateParticipantSessions(eventDetails!.id, { sessionIds: selectedSessionIds }, accessToken) as any;
+      if (response && response.statusCode === 200) {
+        message.success(response.message || 'Sessions updated successfully');
+        setParticipation({ ...participation, sessionIds: selectedSessionIds });
+      } else {
+        message.error(response.message || 'Failed to update sessions');
+      }
+    } catch (error: any) {
+      console.error('Error updating sessions:', error);
+      message.error(error.message || 'Failed to update sessions');
+    } finally {
+      setUpdatingSessions(false); // Reset loading state
+    }
+  };
+
+  const handleSessionCheckboxChange = (checked: boolean, sessionId: string) => {
+    if (checked) {
+      setSelectedSessionIds([...selectedSessionIds, sessionId]);
+    } else {
+      setSelectedSessionIds(selectedSessionIds.filter(id => id !== sessionId));
+    }
+  };
 
   const showTicketModal = async () => {
     setIsTicketModalVisible(true);
@@ -12179,33 +12092,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
 
   const hideTicketModal = () => {
     setIsTicketModalVisible(false);
-  };
-
-
-  const handleUpdateSessionsForTicket = async (sessionIds: string[]) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error("No access token found. Please login again.");
-        navigate('/auth/signin');
-        return;
-      }
-
-      const response = await authService.updateParticipantSessions(ticketData!.participantId, { sessionIds }, accessToken) as any;
-      if (response && response.statusCode === 200) {
-        message.success(response.message || 'Sessions updated successfully');
-        setIsTicketModalVisible(false);
-      } else {
-        message.error(response.message || 'Failed to update sessions');
-      }
-    } catch (error: any) {
-      console.error('Error updating sessions:', error);
-      message.error(error.message || 'Failed to update sessions');
-    } finally {
-      setLoading(false);
-    }
   };
 
 
@@ -12251,7 +12137,10 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         extra={
           <Space>
             <Button type="primary" onClick={showTicketModal} >
-              View Ticket / Update Sessions
+              View Ticket
+            </Button>
+            <Button type="primary" onClick={handleUpdateSessions} loading={updatingSessions}>
+              Update Sessions
             </Button>
           </Space>
         }
@@ -12343,8 +12232,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         visible={isTicketModalVisible}
         onCancel={hideTicketModal}
         ticket={ticketData}
-        onSessionsChange={handleUpdateSessionsForTicket}
-        eventSchedule={eventDetails?.schedule || []} selectedSessionIds={[]}      />
+      />
     </div>
   );
 };
@@ -12488,18 +12376,17 @@ const EditEventPage: React.FC = () => {
           endTime: session.endTime.toISOString(),
         }))
       };
-      const response = await authService.updateEvent(id!, eventData, accessToken) as { statusCode: number; message: string };
+      const response = await authService.updateEvent(id!, eventData, accessToken) as { statusCode: number; message: string; error?: string };
       if (response.statusCode === 200) {
         message.success(response.message);
         setTimeout(() => {
           navigate('/dashboards/my-events');
         }, 1000);
       } else {
-        message.error(response.message || 'Failed to update event');
+        message.error(response.error);
       }
     } catch (error: any) {
-      console.error('Error updating event:', error);
-      message.error(error.message || 'Failed to update event');
+      message.error(error.error);
     } finally {
       setLoading(false);
     }
@@ -13578,161 +13465,6 @@ export const UserProfileSecurityPage = () => {
   );
 };
 
-src\redux\eventDetailsSlice.tsx:
-// src\redux\eventDetailsSlice.tsx
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Events } from '../types'; // Import your Events type
-
-interface EventDetailsState {
-    eventDetails: Events | null;
-    loading: boolean;
-    error: string | null;
-}
-
-const initialState: EventDetailsState = {
-    eventDetails: null,
-    loading: false,
-    error: null,
-};
-
-const eventDetailsSlice = createSlice({
-    name: 'eventDetails',
-    initialState,
-    reducers: {
-        setEventDetails: (state, action: PayloadAction<Events>) => {
-            state.eventDetails = action.payload;
-            state.loading = false;
-            state.error = null;
-        },
-        fetchEventDetailsStart: (state) => {
-            state.loading = true;
-            state.error = null;
-        },
-        fetchEventDetailsFailure: (state, action: PayloadAction<string>) => {
-            state.loading = false;
-            state.error = action.payload;
-            state.eventDetails = null;
-        },
-        clearEventDetails: (state) => {
-            state.eventDetails = null;
-            state.loading = false;
-            state.error = null;
-        },
-    },
-});
-
-export const {
-    setEventDetails,
-    fetchEventDetailsStart,
-    fetchEventDetailsFailure,
-    clearEventDetails,
-} = eventDetailsSlice.actions;
-
-export default eventDetailsSlice.reducer;
-
-src\redux\store.ts:
-// src/redux/store.ts
-import { configureStore } from '@reduxjs/toolkit';
-import themeReducer from './theme/themeSlice';
-import { persistStore, persistReducer } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
-import userReducer from './userSlice';
-import eventDetailsReducer from './eventDetailsSlice'; // Import eventDetailsReducer
-
-const persistConfig = {
-  key: 'root',
-  storage,
-  blacklist: ['user', 'eventDetails'], // Blacklist eventDetails too if needed
-};
-
-const persistedThemeReducer = persistReducer(persistConfig, themeReducer);
-
-export const store = configureStore({
-  reducer: {
-    theme: persistedThemeReducer,
-    user: userReducer,
-    eventDetails: eventDetailsReducer, // Add eventDetailsReducer here
-  },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: false,
-    }),
-});
-
-export const persistor = persistStore(store);
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
-
-src\redux\userSlice.tsx:
-// src\redux\userSlice.tsx
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { User } from '../types';
-
-const initialState: User = {
-    id: '',
-    email: '',
-    name: '',
-    avatar: '',
-    phoneNumber: '',
-};
-
-const userSlice = createSlice({
-    name: 'user',
-    initialState,
-    reducers: {
-        setUser: (state, action: PayloadAction<User>) => {
-            state.id = action.payload.id;
-            state.email = action.payload.email;
-            state.name = action.payload.name;
-            state.avatar = action.payload.avatar;
-            state.phoneNumber = action.payload.phoneNumber;
-        },
-        clearUser: (state) => {
-            state.id = '';
-            state.email = '';
-            state.name = '';
-            state.avatar = '';
-            state.phoneNumber = '';
-        },
-        updateUserAvatar: (state, action: PayloadAction<string>) => { // Action mới
-            state.avatar = action.payload;
-        },
-        updateUserProfile: (state, action: PayloadAction<{ name: string, phoneNumber: string }>) => { // Action mới update name và phoneNumber
-            state.name = action.payload.name;
-            state.phoneNumber = action.payload.phoneNumber;
-        },
-    },
-});
-
-export const { setUser, clearUser, updateUserAvatar, updateUserProfile } = userSlice.actions; // Export action mới
-export default userSlice.reducer;
-
-src\redux\theme\themeSlice.ts:
-import { createSlice } from '@reduxjs/toolkit';
-
-export interface ThemeState {
-  mytheme: string;
-}
-
-const initialState: ThemeState = {
-  mytheme: 'light',
-};
-
-const themeSlice = createSlice({
-  name: 'mytheme',
-  initialState,
-  reducers: {
-    toggleTheme: (state: ThemeState) => {
-      state.mytheme = state.mytheme === 'light' ? 'dark' : 'light';
-    },
-  },
-});
-
-export const { toggleTheme } = themeSlice.actions;
-
-export default themeSlice.reducer;
-
-
 src\routes\routes.tsx:
 // src\routes\routes.tsx
 // src\routes\routes.tsx
@@ -14289,13 +14021,13 @@ const authService = {
 
   // Hàm update lại sessions của participant
   updateParticipantSessions: async (
-    participantId: string,
+    eventId: string,
     sessionsData: any,
     accessToken: string
   ) => {
     try {
       const response = await axiosInstance.patch(
-        `${API_PARTICIPANTS_BASE_URL}/${participantId}`,
+        `${API_PARTICIPANTS_BASE_URL}/${eventId}`,
         sessionsData,
         {
           headers: {

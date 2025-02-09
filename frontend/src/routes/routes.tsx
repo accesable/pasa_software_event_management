@@ -44,19 +44,15 @@ import { UserProfileInformationPage } from '../pages/userAccount/Information.tsx
 import QRScannerPage from '../pages/QRScannerPage.tsx';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store.ts';
+import ProtectedRoute from '../components/ProtectedRoute.tsx';
+import { Helmet } from 'react-helmet-async';
+import DeclineEventPage from '../pages/DeclineEventPage.tsx';
 
-// Custom scroll restoration function
 export const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
-
   useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: 'smooth',
-    });
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
   }, [pathname]);
-
   return null;
 };
 
@@ -64,30 +60,22 @@ type PageProps = {
   children: ReactNode;
 };
 
-// Create an HOC to wrap your route components with ScrollToTop
-const PageWrapper = ({ children }: PageProps) => {
-  return (
-    <>
-      <ScrollToTop />
-      {children}
-    </>
-  );
-};
+const PageWrapper = ({ children }: PageProps) => (
+  <>
+    <ScrollToTop />
+    {children}
+  </>
+);
 
-// **PrivateRoute Component**
 const PrivateRoute = ({ children }: { children: React.ReactNode }): React.ReactNode => {
   const user = useSelector((state: RootState) => state.user);
-  return user && user.id ? children : <Navigate to="/auth/signin" replace />; // Redirect nếu chưa đăng nhập
+
+  return user && user.id ? children : <Navigate to="/auth/signin" replace state={{ from: location.pathname + location.search }} />;
 };
 
-const RootRoute = () => { // Component for root path '/'
+const RootRoute = () => {
   const user = useSelector((state: RootState) => state.user);
-
-  if (user && user.id) {
-    return <Navigate to="/dashboards/general" replace />; // Redirect to dashboard if logged in
-  } else {
-    return <SignInPage />; // Render SignInPage if not logged in
-  }
+  return user && user.id ? <Navigate to="/dashboards/general" replace /> : <SignInPage />;
 };
 
 
@@ -95,11 +83,17 @@ const RootRoute = () => { // Component for root path '/'
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <PageWrapper children={<RootRoute />} />, // Use RootRoute for '/' path
-    errorElement: <ErrorPage />,
-    children: [
-      // No index route needed here as RootRoute handles '/'
-    ],
+    element: <PageWrapper children={<RootRoute />} />,
+    errorElement: <Helmet><title>Error</title></Helmet>,
+  },
+  {
+    path: '*',
+    element: <Navigate to="/errors/404" replace />,
+  },
+  {
+    path: '/details/events/:eventId/decline',
+    element: <PageWrapper children={<DeclineEventPage />} />,
+    errorElement: <Helmet><title>Error</title></Helmet>,
   },
   {
     path: '/create',

@@ -32,6 +32,7 @@ import { EventScheduleItem } from '../../types/schedule';
 import jsPDF from 'jspdf';
 import { CheckboxValueType } from 'antd/es/checkbox/Group';
 import TicketDetailsModal from '../../components/TicketDetailsModal';
+import EventDiscussion from '../../components/EventDiscussion';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -47,6 +48,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const [participation, setParticipation] = useState<any | null>(null); // State lưu thông tin participation
   const [updatingSessions, setUpdatingSessions] = useState<boolean>(false); // State loading cho update session
   const [isTicketModalVisible, setIsTicketModalVisible] = useState<boolean>(false); // State for ticket modal visibility
+  const { eventId } = useOutletContext<{ eventId: string }>();
 
   useEffect(() => {
     const fetchEventDetailsAndParticipation = async () => {
@@ -54,7 +56,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
       setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const eventResponse = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string };
+        const eventResponse = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
         if (eventResponse && eventResponse.statusCode === 200) {
           setEventDetails(eventResponse.data.event);
 
@@ -64,13 +66,13 @@ const ParticipatedEventDetailsPage: React.FC = () => {
             setSelectedSessionIds(participationResponse.data.participation.sessionIds || []); // Khởi tạo selectedSessionIds từ participation data
           }
         } else {
-          setError(eventResponse?.message || 'Failed to load event details');
-          message.error(eventResponse?.message || 'Failed to load event details');
+          setError(eventResponse?.error || 'Failed to load event details');
+          message.error(eventResponse?.error);
         }
       } catch (error: any) {
         console.error('Error fetching event details and participation:', error);
-        setError(error.message || 'Failed to load event details');
-        message.error(error.message || 'Failed to load event details');
+        setError(error.error);
+        message.error(error.error);
       } finally {
         setLoading(false);
       }
@@ -85,8 +87,8 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const scheduleColumns = [
     {
       title: 'Title',
-      dataIndex: 'name',
-      key: 'name'
+      dataIndex: 'title',
+      key: 'title'
     },
     {
       title: 'Start Time',
@@ -130,10 +132,9 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         return;
       }
 
-      const response = await authService.updateParticipantSessions(participation!.id, { sessionIds: selectedSessionIds }, accessToken) as any;
+      const response = await authService.updateParticipantSessions(eventDetails!.id, { sessionIds: selectedSessionIds }, accessToken) as any;
       if (response && response.statusCode === 200) {
         message.success(response.message || 'Sessions updated successfully');
-        // Cập nhật lại participation để đồng bộ sessionIds mới
         setParticipation({ ...participation, sessionIds: selectedSessionIds });
       } else {
         message.error(response.message || 'Failed to update sessions');
@@ -328,6 +329,13 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         onCancel={hideTicketModal}
         ticket={ticketData}
       />
+      <Col span={24}>
+        <EventDiscussion
+          eventId={eventId}
+          questions={questions}
+          setQuestions={setQuestions}
+        />
+      </Col>
     </div>
   );
 };

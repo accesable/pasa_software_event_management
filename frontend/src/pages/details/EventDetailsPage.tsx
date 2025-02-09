@@ -50,17 +50,17 @@ export const EventDetailsPage: React.FC = () => {
       setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string }; // Sử dụng eventId lấy từ context
+        const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string }; // Sử dụng eventId lấy từ context
         if (response && response.statusCode === 200) {
           setEventDetails(response.data.event);
         } else {
           setError(response?.message || 'Failed to load event details');
-          message.error(response?.message || 'Failed to load event details');
+          message.error(response?.error);
         }
       } catch (error: any) {
         console.error('Error fetching event details:', error);
         setError(error.message || 'Failed to load event details');
-        message.error(error.message || 'Failed to load event details');
+        message.error(error.error);
       } finally {
         setLoading(false);
       }

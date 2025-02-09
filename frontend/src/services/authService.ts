@@ -219,13 +219,13 @@ const authService = {
 
   // Hàm update lại sessions của participant
   updateParticipantSessions: async (
-    participantId: string,
+    eventId: string,
     sessionsData: any,
     accessToken: string
   ) => {
     try {
       const response = await axiosInstance.patch(
-        `${API_PARTICIPANTS_BASE_URL}/${participantId}`,
+        `${API_PARTICIPANTS_BASE_URL}/${eventId}`,
         sessionsData,
         {
           headers: {
@@ -528,6 +528,22 @@ const authService = {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
       const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/participant`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  declineEvent: async (eventId: string, token: string) => {
+    try {
+      const response = await axiosInstance.get(`/events/${eventId}/decline?token=${token}`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  acceptEvent: async (eventId: string, token: string) => {
+    try {
+      const response = await axiosInstance.get(`/events/${eventId}/accept?token=${token}`);
       return response.data;
     } catch (error: any) {
       throw error.response.data;
