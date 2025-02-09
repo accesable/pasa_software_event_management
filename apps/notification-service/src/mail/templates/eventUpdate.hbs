@@ -1,20 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Event Update Notification</title>
+  <title>Event Update Notification: {{eventName}}</title>
   <style>
-    /* Reset và định dạng cơ bản */
     body {
       margin: 0;
       padding: 0;
       background-color: #f4f4f4;
-      font-family: Arial, sans-serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       color: #333;
     }
     .email-container {
       max-width: 600px;
-      margin: 30px auto;
+      margin: 40px auto;
       background-color: #ffffff;
       border-radius: 8px;
       overflow: hidden;
@@ -32,17 +31,18 @@
       font-weight: bold;
     }
     .email-body {
-      padding: 20px;
+      padding: 30px 20px;
       line-height: 1.6;
+      text-align: center;
     }
     .email-body p {
       margin: 16px 0;
+      font-size: 16px;
     }
-    /* Bảng hiển thị thay đổi */
     .update-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 20px 0;
+      margin: 20px auto;
     }
     .update-table th,
     .update-table td {
@@ -57,23 +57,30 @@
     .update-table td {
       font-size: 14px;
     }
-    /* Nút xem chi tiết */
+    .button-container {
+      margin: 30px 0;
+      text-align: center;
+    }
     .btn {
-      display: inline-block;
-      margin: 20px 0;
-      padding: 12px 24px;
       background-color: #3182ce;
       color: #ffffff;
+      padding: 12px 24px;
       text-decoration: none;
       border-radius: 4px;
-      font-weight: bold;
+      font-size: 16px;
+      display: inline-block;
+      transition: background-color 0.2s ease-in-out;
+    }
+    .btn:hover {
+      background-color: #2b6cb0;
     }
     .email-footer {
       background-color: #f7fafc;
       text-align: center;
-      padding: 10px;
+      padding: 15px;
       font-size: 12px;
       color: #718096;
+      border-top: 1px solid #e2e8f0;
     }
   </style>
 </head>
@@ -110,9 +117,11 @@
       {{/if}}
       
       <p>You can view more details by clicking the button below:</p>
-      <p style="text-align: center;">
-        <a class="btn" href="{{eventUrl}}">View Event Details</a>
-      </p>
+      <div class="button-container">
+        <a class="btn" href="{{eventUrl}}" target="_blank">View Event Details</a>
+      </div>
+      <p>If the button is not working, please copy and paste the URL below into your browser:</p>
+      <p style="font-size: 14px; color: #3182ce;">{{eventUrl}}</p>
       <p>Thank you for your attention.</p>
     </div>
     <div class="email-footer">

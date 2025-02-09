@@ -185,12 +185,6 @@ export class EventService {
             if (invitedUser.status === 'pending') {
                 invitedUser.status = 'accepted';
                 await invitedUser.save();
-                await this.decreaseMaxParticipant(eventId);
-
-                this.clientTicket.emit('accepted_invite', {
-                    eventId: eventId,
-                    userId: userId,
-                });
             }
 
             return {

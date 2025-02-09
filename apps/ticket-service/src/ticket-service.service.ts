@@ -33,26 +33,6 @@ export class TicketServiceService implements OnModuleInit {
     this.authService = this.clientAuth.getService<UsersServiceClient>(USERS_SERVICE_NAME);
   }
 
-  async acceptedInvite(request: { eventId: string, userId: string }) {
-    try {
-      const participant = await this.participantModel.findOne({ eventId: request.eventId, userId: request.userId });
-      if (participant) {
-        throw new RpcException({
-          message: 'You have already registered for this event',
-          code: HttpStatus.BAD_REQUEST,
-        });
-      }
-      const event = await lastValueFrom(this.eventService.getEventById({ id: request.eventId }));
-      const sessionIds = event.event.schedule.map((session) => session.id);
-      await this.createParticipant({ eventId: request.eventId, userId: request.userId, sessionIds: sessionIds });
-      return {
-        message: 'Accepted invitation successfully',
-      };
-    } catch (error) {
-      throw handleRpcException(error, 'Failed to accept invitation');
-    }
-  }
-
   async getParticipantOfUser(request: QueryParamsRequest) {
     try {
       const { filter = {}, limit, sort } = aqp(request.query);

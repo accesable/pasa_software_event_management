@@ -29,12 +29,6 @@ export class TicketServiceController implements TicketServiceProtoController {
     console.log('getParticipant', request);
     return this.ticketServiceService.getParticipantOfUser(request);
   }
-
-  @EventPattern('accepted_invite')
-  acceptedInvite(request: { eventId: string, userId: string }) {
-    console.log('accepted_invite', request);
-    return this.ticketServiceService.acceptedInvite(request);
-  }
   
   @EventPattern('cancelEvent')
   cancelEvent(request: { eventId: string }) {
