@@ -28,7 +28,7 @@ export class FileServiceController implements FileServiceProtoController {
     const response: UploadFilesResponse = {
       files: result.map((fileInfo) => ({
         fileId: fileInfo._id.toString(),    // Lấy _id từ Mongo
-        filename: fileInfo.filename,
+        filename: this.normalizeFilename(fileInfo.filename),
         path: fileInfo.path,
         mimetype: fileInfo.mimetype,
         size: fileInfo.size,
@@ -37,6 +37,14 @@ export class FileServiceController implements FileServiceProtoController {
     };
 
     return response;
+  }
+
+  normalizeFilename(filename: string) {
+    return filename
+      .normalize('NFD')                           // Phân tách các ký tự có dấu
+      .replace(/[\u0300-\u036f]/g, '')              // Loại bỏ các dấu
+      .replace(/\s+/g, '_')                         // Thay thế khoảng trắng bằng dấu gạch dưới
+      .toLowerCase();                               // Chuyển thành chữ thường (tuỳ chọn)
   }
 
   async deleteFiles(request: DeleteFilesRequest): Promise<DeleteFilesResponse> {

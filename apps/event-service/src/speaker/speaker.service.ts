@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateSpeakerRequest, FindByIdRequest, Speaker as SpeakerType, UpdateSpeakerRequest } from '../../../../libs/common/src/types/event';
 import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
 import { Speaker, SpeakerDocument } from './schemas/speaker.schema';
@@ -10,9 +10,15 @@ import { Speaker, SpeakerDocument } from './schemas/speaker.schema';
 export class SpeakerService {
     constructor(
         @InjectModel(Speaker.name) private speakerModel: Model<SpeakerDocument>
-    ) {}
+    ) { }
 
     async getSpeakerById(request: FindByIdRequest) {
+        if (!Types.ObjectId.isValid(request.id)) {
+            throw new RpcException({
+                message: 'Invalid speaker id',
+                code: HttpStatus.BAD_REQUEST,
+            });
+        }
         try {
             const speaker = await this.speakerModel.findById(request.id);
             if (!speaker) {

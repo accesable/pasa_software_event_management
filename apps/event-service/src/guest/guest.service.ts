@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { CreateGuestRequest, Guest as GuestType, UpdateGuestRequest} from '../../../../libs/common/src/types/event';
+import { Model, Types } from 'mongoose';
+import { CreateGuestRequest, Guest as GuestType, UpdateGuestRequest } from '../../../../libs/common/src/types/event';
 import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
 import { Guest, GuestDocument } from './schemas/guest.schema';
 import { RpcException } from '@nestjs/microservices';
@@ -11,9 +11,15 @@ import { FindByIdRequest } from '../../../../libs/common/src';
 export class GuestService {
     constructor(
         @InjectModel(Guest.name) private speakerModel: Model<GuestDocument>
-    ) {}
+    ) { }
 
     async getGuestById(request: FindByIdRequest) {
+        if (!Types.ObjectId.isValid(request.id)) {
+            throw new RpcException({
+                message: 'Invalid speaker id',
+                code: HttpStatus.BAD_REQUEST,
+            });
+        }
         try {
             const guest = await this.speakerModel.findById(request.id);
             if (!guest) {
@@ -28,7 +34,7 @@ export class GuestService {
         }
     }
 
-    async updateGuest(request: UpdateGuestRequest){
+    async updateGuest(request: UpdateGuestRequest) {
         try {
             const guest = await this.speakerModel.findOne({ _id: request.id, createdBy: request.userId });
             if (!guest) {
@@ -43,7 +49,7 @@ export class GuestService {
             throw handleRpcException(error, 'Failed to update guest');
         }
     }
-    
+
     async getAllGuest(userId: string) {
         try {
             const guests = await this.speakerModel.find({ createdBy: userId });
@@ -63,7 +69,7 @@ export class GuestService {
         }
     }
 
-    async createGuest(request: CreateGuestRequest){
+    async createGuest(request: CreateGuestRequest) {
         try {
             const res = await this.speakerModel.create({ ...request, createdBy: request.userId });
             return { guest: this.transformGuest(res) };
