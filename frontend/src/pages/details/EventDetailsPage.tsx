@@ -105,8 +105,8 @@ export const EventDetailsPage: React.FC = () => {
   const scheduleColumns = [
     {
       title: 'Title',
-      dataIndex: 'name', // Changed from 'title' to 'name' to match Events type
-      key: 'name'
+      dataIndex: 'title', 
+      key: 'title'
     },
     {
       title: 'Start Time',
@@ -125,13 +125,13 @@ export const EventDetailsPage: React.FC = () => {
       dataIndex: 'description',
       key: 'description'
     },
-    {
-      title: 'Select Session',
-      key: 'select',
-      render: (_: any, record: EventScheduleItem) => (
-        <Checkbox value={record.id} />
-      ),
-    }
+    // {
+    //   title: 'Select Session',
+    //   key: 'select',
+    //   render: (_: any, record: EventScheduleItem) => (
+    //     <Checkbox value={record.id} />
+    //   ),
+    // }
   ];
 
 

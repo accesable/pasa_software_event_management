@@ -133,18 +133,17 @@ const EditEventPage: React.FC = () => {
           endTime: session.endTime.toISOString(),
         }))
       };
-      const response = await authService.updateEvent(id!, eventData, accessToken) as { statusCode: number; message: string };
+      const response = await authService.updateEvent(id!, eventData, accessToken) as { statusCode: number; message: string; error?: string };
       if (response.statusCode === 200) {
         message.success(response.message);
         setTimeout(() => {
           navigate('/dashboards/my-events');
         }, 1000);
       } else {
-        message.error(response.message || 'Failed to update event');
+        message.error(response.error);
       }
     } catch (error: any) {
-      console.error('Error updating event:', error);
-      message.error(error.message || 'Failed to update event');
+      message.error(error.error);
     } finally {
       setLoading(false);
     }

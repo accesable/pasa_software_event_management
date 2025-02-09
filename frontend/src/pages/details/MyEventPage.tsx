@@ -142,8 +142,8 @@ const DetailMyEventPage: React.FC = () => {
   const scheduleColumns = [
     {
       title: 'Title',
-      dataIndex: 'name',
-      key: 'name'
+      dataIndex: 'title', 
+      key: 'title'
     },
     {
       title: 'Start Time',
@@ -347,13 +347,6 @@ const DetailMyEventPage: React.FC = () => {
           </Col>
         </Row>
       </Card>
-      <TicketDetailsModal
-        visible={isTicketModalVisible}
-        onCancel={hideTicketModal}
-        ticket={ticketData}
-        onSessionsChange={handleUpdateSessionsForTicket}
-        eventSchedule={eventDetails?.schedule || []}
-      />
       <InviteUsersModal
         visible={isInviteModalVisible}
         onCancel={hideInviteModal}
