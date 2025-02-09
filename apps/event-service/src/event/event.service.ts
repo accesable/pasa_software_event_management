@@ -255,12 +255,26 @@ export class EventService {
         try {
             // Kiểm tra xem event có tồn tại và đã kết thúc chưa
             const event = await this.eventModel.findById(eventId);
-            const currentDate = new Date();
-            const eventEndDate = new Date(event.endDate);
-            if (currentDate < eventEndDate) {
-                throw new RpcException({ message: 'Event has not ended yet', code: HttpStatus.BAD_REQUEST });
+            if (event.status !== 'FINISHED') {
+                throw new RpcException({ message: 'Event has not finished yet', code: HttpStatus.BAD_REQUEST });
             }
             return await this.feedbackService.createFeedback(eventId, userId, rating, comment);
+        } catch (error) {
+            throw new RpcException(error);
+        }
+    }
+
+    async updateFeedback(eventId: string, userId: string, rating: number, comment: string) {
+        try {
+            return await this.feedbackService.updateFeedback(eventId, userId, rating, comment);
+        } catch (error) {
+            throw new RpcException(error);
+        }
+    }
+
+    async getFeedbackByUser(eventId: string, userId: string) {
+        try {
+            return await this.feedbackService.getFeedbackByUser(eventId, userId);
         } catch (error) {
             throw new RpcException(error);
         }

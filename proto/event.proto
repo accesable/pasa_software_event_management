@@ -33,12 +33,23 @@ service EventService{
   rpc AnswerQuestion(AnswerQuestionRequest) returns (AnswerQuestionResponse);
   rpc GetEventQuestions(EventByIdRequest) returns (GetEventQuestionsResponse);
 
-  rpc SubmitFeedback(SubmitFeedbackRequest) returns (SubmitFeedbackResponse);
+  rpc SubmitFeedback(SubmitFeedbackRequest) returns (GetFeedbackByUserResponse);
   rpc GetEventFeedbacks(EventByIdRequest) returns (GetEventFeedbacksResponse);
   rpc GetFeedbackAnalysis(EventByIdRequest) returns (FeedbackAnalysisResponse);
+  rpc UpdateFeedback(SubmitFeedbackRequest) returns (GetFeedbackByUserResponse);
+  rpc GetFeedbackByUser(GetFeedbackByUserRequest) returns (GetFeedbackByUserResponse);
 }
 
 message Empty{}
+
+message GetFeedbackByUserResponse {
+  Feedback feedback = 1;
+}
+
+message GetFeedbackByUserRequest {
+  string eventId = 1;
+  string userId = 2;
+}
 
 message CreateQuestionRequest {
   string eventId = 1;
@@ -80,7 +91,7 @@ message Answer {
 message SubmitFeedbackRequest {
   string eventId = 1;
   string userId = 2;
-  int32 rating = 3;
+  float rating = 3;
   string comment = 4;
 }
 
@@ -96,7 +107,7 @@ message Feedback {
   string id = 1;
   string eventId = 2;
   string userId = 3;
-  int32 rating = 4;
+  float rating = 4;
   string comment = 5;
   string createdAt = 6;
   string updatedAt = 7;
@@ -104,7 +115,7 @@ message Feedback {
 
 message FeedbackAnalysisResponse {
   string eventId = 1;
-  double averageRating = 2;
+  float averageRating = 2;
   int32 totalFeedbacks = 3;
   map<int32, int32> ratingDistribution = 4;
 }

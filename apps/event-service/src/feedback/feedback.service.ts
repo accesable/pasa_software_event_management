@@ -10,7 +10,7 @@ export class FeedbackService {
     @InjectModel(Feedback.name) private feedbackModel: Model<FeedbackDocument>,
   ) { }
 
-  async createFeedback(eventId: string, userId: string, rating: number, comment: string): Promise<{ message: string }> {
+  async createFeedback(eventId: string, userId: string, rating: number, comment: string) {
     try {
       const isExist = await this.feedbackModel.findOne({ eventId, userId });
       if (isExist) {
@@ -18,7 +18,34 @@ export class FeedbackService {
       }
       const feedback = new this.feedbackModel({ eventId, userId, rating, comment });
       await feedback.save();
-      return { message: 'Feedback created successfully' };
+      return { feedback: this.transformFeedback(feedback) };
+    } catch (error) {
+      throw new RpcException({ message: error.message, code: 500 });
+    }
+  }
+
+  async updateFeedback(eventId: string, userId: string, rating: number, comment: string) {
+    try {
+      const feedback = await this.feedbackModel.findOne({ eventId, userId });
+      if (!feedback) {
+        throw new RpcException({ message: 'Feedback not found', code: HttpStatus.NOT_FOUND });
+      }
+      feedback.rating = rating;
+      feedback.comment = comment;
+      await feedback.save();
+      return { feedback: this.transformFeedback(feedback) };
+    } catch (error) {
+      throw new RpcException({ message: error.message, code: 500 });
+    }
+  }
+
+  async getFeedbackByUser(eventId: string, userId: string) {
+    try {
+      const feedback = await this.feedbackModel.findOne({ eventId, userId });
+      if (!feedback) {
+        throw new RpcException({ message: 'Feedback not found', code: HttpStatus.NOT_FOUND });
+      }
+      return { feedback: this.transformFeedback(feedback) };
     } catch (error) {
       throw new RpcException({ message: error.message, code: 500 });
     }

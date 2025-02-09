@@ -148,6 +148,24 @@ export class EventServiceController {
     return this.eventServiceService.submitFeedback(eventId, user.id, body.rating, body.comment);
   }
 
+  @Patch(':id/feedback')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Feedback updated successfully')
+  async updateFeedback(
+    @Param('id') eventId: string,
+    @Body() body: { rating: number; comment: string },
+    @User() user: DecodeAccessResponse,
+  ) {
+    return this.eventServiceService.updateFeedback(eventId, user.id, body.rating, body.comment);
+  }
+
+  @Get(':id/feedback/user')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Feedback fetched successfully')
+  async getFeedbackByUser(@Param('id') eventId: string, @User() user: DecodeAccessResponse) {
+    return this.eventServiceService.getFeedbackByUser(eventId, user.id);
+  }
+
   @Get(':id/feedbacks')
   @ResponseMessage('Feedbacks fetched successfully')
   async getFeedbacks(@Param('id') eventId: string) {

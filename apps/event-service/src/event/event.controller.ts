@@ -155,5 +155,13 @@ export class EventController implements EventServiceController {
   updateCategory(request: UpdateCategoryRequest) {
     return this.categoryService.updateCategory(request);
   }
+
+  getFeedbackByUser(request: any) {
+    return this.eventService.getFeedbackByUser(request.eventId, request.userId);
+  }
+
+  updateFeedback(request: SubmitFeedbackRequest) {
+    return this.eventService.updateFeedback(request.eventId, request.userId, request.rating, request.comment);
+  }
 }
 

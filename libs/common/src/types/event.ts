@@ -13,6 +13,15 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+export interface GetFeedbackByUserResponse {
+  feedback: Feedback | undefined;
+}
+
+export interface GetFeedbackByUserRequest {
+  eventId: string;
+  userId: string;
+}
+
 export interface CreateQuestionRequest {
   eventId: string;
   userId: string;
@@ -515,11 +524,15 @@ export interface EventServiceClient {
 
   getEventQuestions(request: EventByIdRequest): Observable<GetEventQuestionsResponse>;
 
-  submitFeedback(request: SubmitFeedbackRequest): Observable<SubmitFeedbackResponse>;
+  submitFeedback(request: SubmitFeedbackRequest): Observable<GetFeedbackByUserResponse>;
 
   getEventFeedbacks(request: EventByIdRequest): Observable<GetEventFeedbacksResponse>;
 
   getFeedbackAnalysis(request: EventByIdRequest): Observable<FeedbackAnalysisResponse>;
+
+  updateFeedback(request: SubmitFeedbackRequest): Observable<GetFeedbackByUserResponse>;
+
+  getFeedbackByUser(request: GetFeedbackByUserRequest): Observable<GetFeedbackByUserResponse>;
 }
 
 export interface EventServiceController {
@@ -617,7 +630,7 @@ export interface EventServiceController {
 
   submitFeedback(
     request: SubmitFeedbackRequest,
-  ): Promise<SubmitFeedbackResponse> | Observable<SubmitFeedbackResponse> | SubmitFeedbackResponse;
+  ): Promise<GetFeedbackByUserResponse> | Observable<GetFeedbackByUserResponse> | GetFeedbackByUserResponse;
 
   getEventFeedbacks(
     request: EventByIdRequest,
@@ -626,6 +639,14 @@ export interface EventServiceController {
   getFeedbackAnalysis(
     request: EventByIdRequest,
   ): Promise<FeedbackAnalysisResponse> | Observable<FeedbackAnalysisResponse> | FeedbackAnalysisResponse;
+
+  updateFeedback(
+    request: SubmitFeedbackRequest,
+  ): Promise<GetFeedbackByUserResponse> | Observable<GetFeedbackByUserResponse> | GetFeedbackByUserResponse;
+
+  getFeedbackByUser(
+    request: GetFeedbackByUserRequest,
+  ): Promise<GetFeedbackByUserResponse> | Observable<GetFeedbackByUserResponse> | GetFeedbackByUserResponse;
 }
 
 export function EventServiceControllerMethods() {
@@ -661,6 +682,8 @@ export function EventServiceControllerMethods() {
       "submitFeedback",
       "getEventFeedbacks",
       "getFeedbackAnalysis",
+      "updateFeedback",
+      "getFeedbackByUser",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

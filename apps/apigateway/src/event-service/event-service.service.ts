@@ -59,6 +59,22 @@ export class EventServiceService implements OnModuleInit {
     }
   }
 
+  async getFeedbackByUser(eventId: string, userId: string) {
+    try {
+      return await this.eventService.getFeedbackByUser({ eventId, userId }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async updateFeedback(eventId: string, userId: string, rating: number, comment: string) {
+    try {
+      return await this.eventService.updateFeedback({ eventId, userId, rating, comment }).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
   async getEventFeedbacks(eventId: string) {
     try {
       return await this.eventService.getEventFeedbacks({ id: eventId }).toPromise();
