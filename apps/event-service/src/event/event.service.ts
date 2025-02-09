@@ -611,12 +611,12 @@ export class EventService {
             if (!oldEvent) {
                 throw new RpcException({ message: 'Event not found', code: HttpStatus.NOT_FOUND });
             }
-            if(oldEvent.status === 'FINISHED') {
+            if (oldEvent.status === 'FINISHED') {
                 throw new RpcException({ message: 'Event has been finished', code: HttpStatus.BAD_REQUEST });
             }
             const oldStatus = oldEvent.status;
 
-            const criticalFields = ['location', 'startDate', 'endDate', 'schedule'];
+            const criticalFields = ['location', 'startDate', 'endDate'];
             const updatedFields: Record<string, { old: string, new: string }> = {};
 
             for (const field of criticalFields) {
@@ -626,12 +626,6 @@ export class EventService {
                         const newVal = new Date(request[field]).toISOString();
                         if (oldVal !== newVal) {
                             updatedFields[field] = { old: oldVal, new: newVal };
-                        }
-                    } else if (field === 'schedule') {
-                        const oldSchedule = JSON.stringify(oldEvent.schedule);
-                        const newSchedule = JSON.stringify(request.schedule);
-                        if (oldSchedule !== newSchedule) {
-                            updatedFields[field] = { old: oldSchedule, new: newSchedule };
                         }
                     } else {
                         if (oldEvent[field] !== request[field]) {
