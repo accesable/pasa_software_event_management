@@ -555,7 +555,6 @@ export class EventService {
         try {
             const event = await this.eventModel
                 .findById(request.id)
-                .populate('guestIds')
                 .populate({
                     path: 'invitedUsers.user',
                     select: 'name email',
