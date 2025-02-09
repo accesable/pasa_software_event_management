@@ -191,10 +191,10 @@ const EditEventPage: React.FC = () => {
           navigate('/dashboards/my-events');
         }, 1000);
       } else {
-        message.error(response.message);
+        message.error(response.message || response.error || 'Failed to update event');
       }
     } catch (error: any) {
-      message.error(error.message);
+      message.error(error.message || error.error || 'Failed to update event');
     } finally {
       setLoading(false);
     }

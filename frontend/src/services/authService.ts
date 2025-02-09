@@ -8,6 +8,7 @@ const API_CATEGORY_BASE_URL = `${BASE_URL}/categories`;
 const API_USERS_BASE_URL = `${BASE_URL}/users`;
 const API_PARTICIPANTS_BASE_URL = `${BASE_URL}/participants`;
 const API_TICKETS_BASE_URL = `${BASE_URL}/tickets`;
+const API_REPORT_BASE_URL = `${BASE_URL}/reports`;
 
 const authService = {
   login: async (credentials: any) => {
@@ -571,6 +572,38 @@ const authService = {
           Authorization: `Bearer ${accessToken}`,
         },
       });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getOrganizerEventFeedbackSummary: async (accessToken: string) => {
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_REPORT_BASE_URL}/organizer-feedback-summary`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getUserEventsByDateReport: async (year: number, month: number | undefined, accessToken: string) => { // Đổi tên hàm rõ ràng hơn
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      let url = `${API_REPORT_BASE_URL}/events-by-date?year=${year}`;
+      if (month) {
+        url += `&month=${month}`;
+      }
+      const response = await axiosInstance.get(url, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;

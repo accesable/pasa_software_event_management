@@ -305,8 +305,8 @@ export const GeneralDashboardPage = () => {
           <Row {...stylesContext?.rowProps}>
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Visitors"
-                value={20149}
+                title="Event Views"
+                value={20149}        // Số lượt xem sự kiện (ví dụ)
                 diff={5.54}
                 height={180}
                 justify="space-between"
@@ -314,8 +314,8 @@ export const GeneralDashboardPage = () => {
             </Col>
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Customers"
-                value={5834}
+                title="Registrations"
+                value={5834}         // Số lượt đăng ký tham gia
                 diff={-12.3}
                 height={180}
                 justify="space-between"
@@ -323,8 +323,8 @@ export const GeneralDashboardPage = () => {
             </Col>
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Orders"
-                value={3270}
+                title="Check-Ins"
+                value={3270}         // Số người thực sự có mặt (check-in)
                 diff={9.52}
                 height={180}
                 justify="space-between"
@@ -332,23 +332,24 @@ export const GeneralDashboardPage = () => {
             </Col>
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Sales"
-                value="$ 1.324K"
+                title="Ticket Sales"
+                value="$ 1.324K"      // Doanh số bán vé
                 diff={2.34}
                 height={180}
                 justify="space-between"
               />
             </Col>
           </Row>
+
         </Col>
         <Col sm={24} lg={8}>
           <CustomerReviewsCard />
         </Col>
         <Col xs={24} lg={12}>
           <Card
-            title="Overall sales"
+            title="Total Revenue"
             extra={
-              <Popover content="Total sales over period x" title="Total sales">
+              <Popover content="Total revenue over period x" title="Total revenue">
                 <Button icon={<QuestionOutlined />} {...POPOVER_BUTTON_PROPS} />
               </Popover>
             }
@@ -384,3 +385,4 @@ export const GeneralDashboardPage = () => {
     </div>
   );
 };
+
