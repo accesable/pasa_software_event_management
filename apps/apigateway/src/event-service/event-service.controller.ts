@@ -62,7 +62,7 @@ export class EventServiceController {
   @UseGuards(JwtAuthGuard)
   async getParticipantByEventAndUser(
     @Param('eventId') eventId: string,
-    @User() user: DecodeAccessResponse, // lấy thông tin người dùng đã xác thực (userId, email, ...)
+    @User() user: DecodeAccessResponse,
   ) {
     return this.eventServiceService.getParticipantByEventAndUser(eventId, user.id);
   }

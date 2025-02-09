@@ -274,6 +274,7 @@ export class TicketServiceService implements OnModuleInit {
 
   async getParticipantByEventAndUser(request: { eventId: string, userId: string }) {
     try {
+      console.log('getParticipantByEventAndUser', request);
       const participant = await this.participantModel.findOne({ eventId: request.eventId, userId: request.userId });
       if (!participant) {
         throw new RpcException({
@@ -281,6 +282,7 @@ export class TicketServiceService implements OnModuleInit {
           code: HttpStatus.NOT_FOUND,
         });
       }
+      console.log('participant', participant);
       const ticket = await this.ticketModel.findOne({ participantId: participant._id });
       return { 
         participation: this.transformParticipant(participant),

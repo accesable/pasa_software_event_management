@@ -146,15 +146,6 @@ export class EventService {
         }
     }
 
-    async getParticipantByEventAndUser(eventId: string, userId: string) {
-        try {
-            const participant = await this.ticketService.getParticipantIdByUserIdEventId({ userId, eventId }).toPromise();
-            return participant;
-        } catch (error) {
-            throw handleRpcException(error, 'Failed to get participant by event and user');
-        }
-    }
-
     async acceptInvitation(eventId: string, token: string) {
         try {
             const event = await this.eventModel.findById(eventId).exec();
@@ -577,7 +568,6 @@ export class EventService {
                 })
                 .populate({
                     path: 'schedule',
-                    populate: { path: 'speakerIds', model: 'Speaker' },
                 })
                 .exec();
 

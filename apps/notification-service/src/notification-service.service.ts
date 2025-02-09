@@ -39,7 +39,7 @@ export class NotificationServiceService {
       );
       const url = `${this.configService.get<string>(
         'FRONTEND_URL',
-      )}/events/${eventId}`;
+      )}/details/events/${eventId}`;
       await this.sendMail(
         user.email,
         EmailTemplates.INVITE,
@@ -47,7 +47,7 @@ export class NotificationServiceService {
         {
           email: user.email,
           eventTitle: event.name,
-          acceptUrl: `${url}/accept?token=${token}`,
+          acceptUrl: `${url}?token=${token}`,
           declineUrl: `${url}/decline?token=${token}`,
         },
       );
@@ -56,7 +56,7 @@ export class NotificationServiceService {
 
   async sendFeedbackEmails(emails: string[], eventName: string, eventId: string): Promise<void> {
     const subject = `We Value Your Feedback for ${eventName}`;
-    const feedbackUrl = `${this.configService.get<string>('FRONTEND_URL')}/events/feedback?eventId=${eventId}`;
+    const feedbackUrl = `${this.configService.get<string>('FRONTEND_URL')}/details/participated-events/${eventId}`;
     console.log(eventName, eventId, feedbackUrl);
     for (const email of emails) {
       const res = await this.sendMail(email, EmailTemplates.FEEDBACK_INVITATION, subject, {
