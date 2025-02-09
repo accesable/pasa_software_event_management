@@ -1,5 +1,4 @@
 // src\pages\edit\EditEventPage.tsx
-// src\pages\edit\EditEventPage.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Alert,
@@ -26,6 +25,8 @@ import EventFileUploadForm from './EventFileUploadForm';
 import axiosInstance from '../../api/axiosInstance';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { HomeOutlined, PieChartOutlined, ArrowLeftOutlined, CloseOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
+import CreateSpeakerModal from '../../components/CreateSpeakerModal';
+import CreateGuestModal from '../../components/CreateGuestModal';
 
 const EditEventPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +36,9 @@ const EditEventPage: React.FC = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [speakersOptions, setSpeakersOptions] = useState<any>([]);
+  const [guestsOptions, setGuestsOptions] = useState<any>([]);
+  const [isCreateSpeakerModalVisible, setIsCreateSpeakerModalVisible] = useState(false);
+  const [isCreateGuestModalVisible, setIsCreateGuestModalVisible] = useState(false);
 
   const fetchEventDetails = useCallback(async () => {
     setLoading(true);
@@ -55,20 +59,24 @@ const EditEventPage: React.FC = () => {
           banner: response.data.event.banner,
           videoIntro: response.data.event.videoIntro,
           status: response.data.event.status,
+          guestIds: response.data.event.guestIds,
           schedule: response.data.event.schedule?.map((session: any) => ({
             ...session,
+            speakerIds: session.speakerIds,
+            title: session.title, // Make sure to include title
+            description: session.description, // Make sure to include description
             startTime: dayjs(session.startTime),
             endTime: dayjs(session.endTime),
-          })) || [], // Treat schedule as empty array if null or undefined
+          })) || [],
         });
       } else {
         setError(response?.error || 'Failed to load event details');
-        message.error(response?.error );
+        message.error(response?.error);
       }
     } catch (error: any) {
       console.error('Error fetching event details:', error);
       setError(error.error);
-      message.error(error.error );
+      message.error(error.error);
     } finally {
       setLoading(false);
     }
@@ -89,7 +97,6 @@ const EditEventPage: React.FC = () => {
 
       const data = response.data as { statusCode: number; data: { speakers: any[] } };
       if (data.statusCode === 200) {
-        // Nếu không có speakers, ta gán thành mảng rỗng
         const speakerList = data.data.speakers || [];
         setSpeakersOptions(
           speakerList.map((speaker: any) => ({
@@ -110,11 +117,48 @@ const EditEventPage: React.FC = () => {
     }
   }, [navigate]);
 
+  const fetchGuestsOptions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error("No access token found. Please login again.");
+        navigate(PATH_DASHBOARD.my_events);
+        return;
+      }
+      const response = await axiosInstance.get('/guests', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+
+      const data = response.data as { statusCode: number; data: { guests: any[] } };
+      if (data.statusCode === 200) {
+        const guestList = data.data.guests || [];
+        setGuestsOptions(
+          guestList.map((guest: any) => ({
+            value: guest.id,
+            label: guest.name,
+          }))
+        );
+      } else {
+        setError("Failed to load guests options.");
+        message.error("Failed to load guests options.");
+      }
+    } catch (error: any) {
+      console.error("Failed to load guests options:", error);
+      setError("Failed to load guests options.");
+      message.error("Failed to load guests options.");
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
+
 
   useEffect(() => {
     fetchEventDetails();
     fetchSpeakersOptions();
-  }, [fetchEventDetails, fetchSpeakersOptions]);
+    fetchGuestsOptions();
+  }, [fetchEventDetails, fetchSpeakersOptions, fetchGuestsOptions]);
+
 
   const onFinish = async (values: any) => {
     setLoading(true);
@@ -127,12 +171,19 @@ const EditEventPage: React.FC = () => {
       }
 
       const eventData = {
-        ...values, startDate: values.startDate.toISOString(), endDate: values.endDate.toISOString(), schedule: values.schedule?.map((session: any) => ({
-          ...session,
+        ...values,
+        startDate: values.startDate.toISOString(),
+        endDate: values.endDate.toISOString(),
+        guestIds: values.guestIds || [],
+        schedule: values.schedule?.map((session: any) => ({
+          title: session.title, // Include title
+          description: session.description, // Include description
+          speakerIds: session.speakerIds || [], // Ensure speakerIds is always an array
           startTime: session.startTime.toISOString(),
           endTime: session.endTime.toISOString(),
-        }))
+        })) || [],
       };
+
       const response = await authService.updateEvent(id!, eventData, accessToken) as { statusCode: number; message: string; error?: string };
       if (response.statusCode === 200) {
         message.success(response.message);
@@ -140,10 +191,10 @@ const EditEventPage: React.FC = () => {
           navigate('/dashboards/my-events');
         }, 1000);
       } else {
-        message.error(response.error);
+        message.error(response.message);
       }
     } catch (error: any) {
-      message.error(error.error);
+      message.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -152,6 +203,33 @@ const EditEventPage: React.FC = () => {
   const onFinishFailed = (errorInfo: any) => {
     console.log('Failed:', errorInfo);
   };
+
+  const handleCreateSpeaker = () => {
+    setIsCreateSpeakerModalVisible(true);
+  };
+
+  const handleCancelCreateSpeakerModal = () => {
+    setIsCreateSpeakerModalVisible(false);
+  };
+
+  const handleSpeakerCreated = (newSpeaker: any) => {
+    setSpeakersOptions((prevOptions: { value: string; label: string }[]) => [...prevOptions, { value: newSpeaker.id, label: newSpeaker.name }]);
+    form.setFieldsValue({ speakerIds: [...(form.getFieldValue('speakerIds') || []), newSpeaker.id] });
+  };
+
+  const handleCreateGuest = () => {
+    setIsCreateGuestModalVisible(true);
+  };
+
+  const handleCancelCreateGuestModal = () => {
+    setIsCreateGuestModalVisible(false);
+  };
+
+  const handleGuestCreated = (newGuest: any) => {
+    setGuestsOptions((prevOptions: { value: string; label: string }[]) => [...prevOptions, { value: newGuest.id, label: newGuest.name }]);
+    form.setFieldsValue({ guestIds: [...(form.getFieldValue('guestIds') || []), newGuest.id] });
+  };
+
 
   if (loading && !eventDetails) {
     return <Loader />;
@@ -165,7 +243,7 @@ const EditEventPage: React.FC = () => {
   return (
     <div>
       <Helmet>
-        <title>Edit Event | Antd Dashboard</title>
+        <title>Edit Event | Dashboard</title>
       </Helmet>
       <PageHeader
         title="Edit Event"
@@ -241,9 +319,7 @@ const EditEventPage: React.FC = () => {
               <Form.Item<any>
                 label="Start At"
                 name="startDate"
-                rules={[
-                  { required: true, message: 'Please input your start of event' },
-                ]}
+                rules={[{ required: true, message: 'Please input your start of event' },]}
               >
                 <DatePicker style={{ width: "100%" }} showTime format="YYYY-MM-DD HH:mm:ss" />
               </Form.Item>
@@ -252,9 +328,7 @@ const EditEventPage: React.FC = () => {
               <Form.Item<any>
                 label="End At"
                 name="endDate"
-                rules={[
-                  { required: true, message: 'Please input your end of event' },
-                ]}
+                rules={[{ required: true, message: 'Please input your end of event' },]}
               >
                 <DatePicker style={{ width: "100%" }} showTime format="YYYY-MM-DD HH:mm:ss" />
               </Form.Item>
@@ -317,6 +391,27 @@ const EditEventPage: React.FC = () => {
                 />
               </Form.Item>
             </Col>
+            <Col span={24} lg={12}>
+              <Form.Item<any>
+                label="Guests"
+                name="guestIds"
+              >
+                <Select
+                  mode="multiple"
+                  placeholder="Select Guests"
+                  options={guestsOptions}
+                  allowClear
+                  dropdownRender={(menu) => (
+                    <div>
+                      {menu}
+                      <Button type="text" onClick={handleCreateGuest} icon={<PlusOutlined />} style={{width: '100%', textAlign: 'left'}}>
+                        Create New Guest
+                      </Button>
+                    </div>
+                  )}
+                />
+              </Form.Item>
+            </Col>
 
             <Col span={24}>
               <Form.List name="schedule" >
@@ -366,6 +461,14 @@ const EditEventPage: React.FC = () => {
                             placeholder="Select Speakers"
                             options={speakersOptions}
                             allowClear
+                            dropdownRender={(menu) => (
+                              <div>
+                                {menu}
+                                <Button type="text" onClick={handleCreateSpeaker} icon={<PlusOutlined />} style={{width: '100%', textAlign: 'left'}}>
+                                  Create New Speaker
+                                </Button>
+                              </div>
+                            )}
                           />
                         </Form.Item>
                         <Button danger icon={<CloseOutlined />} onClick={() => remove(name)} />
@@ -381,7 +484,6 @@ const EditEventPage: React.FC = () => {
                 )}
               </Form.List>
             </Col>
-
           </Row>
 
           <Form.Item>
@@ -395,6 +497,17 @@ const EditEventPage: React.FC = () => {
       <Card title="Upload Files" style={{ marginTop: 24 }}>
         <EventFileUploadForm eventId={id!} />
       </Card>
+
+      <CreateSpeakerModal
+        visible={isCreateSpeakerModalVisible}
+        onCancel={handleCancelCreateSpeakerModal}
+        onCreated={handleSpeakerCreated}
+      />
+      <CreateGuestModal
+        visible={isCreateGuestModalVisible}
+        onCancel={handleCancelCreateGuestModal}
+        onCreated={handleGuestCreated}
+      />
     </div>
   );
 };

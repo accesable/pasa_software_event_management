@@ -1,12 +1,13 @@
 // src\services\authService.ts
 import axiosInstance from '../api/axiosInstance';
 
-const API_BASE_URL = 'http://localhost:8080/api/v1/auth';
-const API_EVENT_BASE_URL = 'http://localhost:8080/api/v1/events';
-const API_CATEGORY_BASE_URL = 'http://localhost:8080/api/v1/categories';
-const API_USERS_BASE_URL = 'http://localhost:8080/api/v1/users';
-const API_PARTICIPANTS_BASE_URL = 'http://localhost:8080/api/v1/participants';
-const API_TICKETS_BASE_URL = 'http://localhost:8080/api/v1/tickets';
+const BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = `${BASE_URL}/auth`;
+const API_EVENT_BASE_URL = `${BASE_URL}/events`;
+const API_CATEGORY_BASE_URL = `${BASE_URL}/categories`;
+const API_USERS_BASE_URL = `${BASE_URL}/users`;
+const API_PARTICIPANTS_BASE_URL = `${BASE_URL}/participants`;
+const API_TICKETS_BASE_URL = `${BASE_URL}/tickets`;
 
 const authService = {
   login: async (credentials: any) => {
@@ -544,6 +545,32 @@ const authService = {
   acceptEvent: async (eventId: string, token: string) => {
     try {
       const response = await axiosInstance.get(`/events/${eventId}/accept?token=${token}`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  createSpeaker: async (speakerData: any, accessToken: string) => { // Hàm createSpeaker mới
+    try {
+      const response = await axiosInstance.post(`${BASE_URL}/speakers`, speakerData, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  createGuest: async (guestData: any, accessToken: string) => { // Hàm createGuest mới
+    try {
+      const response = await axiosInstance.post(`${BASE_URL}/guests`, guestData, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
       return response.data;
     } catch (error: any) {
       throw error.response.data;
