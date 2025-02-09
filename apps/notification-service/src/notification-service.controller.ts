@@ -29,7 +29,7 @@ export class NotificationServiceController implements NotificationServiceProtoCo
   @EventPattern('event_update')
   async handleEventUpdate(@Payload() data: { event: any }) {
     console.log('Received event update notification:', data.event.registeredEmails);
-    const url = `${process.env.FRONTEND_URL}/details/participated-events/${data.event.id}`;
+    const url = `${process.env.FRONTEND_URL}/details/events/${data.event.id}`;
     const emails: string[] = data.event.registeredEmails || [];
     if (emails.length === 0) {
       console.log('No emails found for event update notification');
@@ -44,7 +44,7 @@ export class NotificationServiceController implements NotificationServiceProtoCo
         {
           eventName: data.event.name,
           updatedFields: data.event.updatedFields,
-          eventUrl: data.event.eventUrl,
+          eventUrl: url,
           currentYear: data.event.currentYear,
         }
       );
@@ -55,7 +55,7 @@ export class NotificationServiceController implements NotificationServiceProtoCo
   async handleEventCanceled(@Payload() data: { event: any }) {
     const users = data.event.participantsResponse.participants || [];
     console.log('cancel event and sent email to ', users);
-    const url = `${process.env.FRONTEND_URL}/details/participated-events/${data.event.id}`;
+    const url = `${process.env.FRONTEND_URL}/details/events/${data.event.id}`;
     for (const user of users) {
       await this.notificationService.sendMail(
         user.email,

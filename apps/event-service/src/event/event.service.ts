@@ -670,14 +670,12 @@ export class EventService {
                 // Hợp nhất và loại bỏ email trùng
                 const allEmails = Array.from(new Set([...registeredEmails, ...invitedEmails]));
 
-                const eventUrl = `https://yourdomain.com/events/${updated._id}`;
 
                 if (allEmails.length > 0) {
                     const eventNotificationPayload = {
                         ...updated.toObject(),
                         updatedFields, // object chứa chi tiết các thay đổi
                         registeredEmails: allEmails,
-                        eventUrl,
                         currentYear: new Date().getFullYear(),
                     };
 
