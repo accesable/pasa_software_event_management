@@ -1,56 +1,56 @@
-// src\pages\details\EventDetailsPage.tsx
+// src/pages/details/EventDetailsPage.tsx
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link, useOutletContext } from 'react-router-dom';
+import { useParams, useNavigate, Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Button,
   Card,
   Col,
-  Descriptions,
   Flex,
   Image,
   List,
   message,
   Row,
-  Space,
   Table,
-  Tag,
   Typography,
   Checkbox,
 } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { PageHeader, Loader } from '../../components';
-import { useFetchData } from '../../hooks';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
 import { Events } from '../../types';
-
 import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
-import jsPDF from 'jspdf';
 import { Helmet } from 'react-helmet-async';
-import { EventScheduleItem } from '../../types/schedule';
 import EventDiscussion from '../../components/EventDiscussion';
 
-const { Title, Text, Paragraph } = Typography;
 
 export const EventDetailsPage: React.FC = () => {
+  // Lấy eventId từ outlet context (hoặc từ useParams nếu cần)
   const { id } = useParams<{ id: string }>();
+  const { eventId } = useOutletContext<{ eventId: string }>();
+  // Lấy token từ query string (nếu có)
+  const [searchParams] = useSearchParams();
+
   const [eventDetails, setEventDetails] = useState<Events | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
-  const { eventId } = useOutletContext<{ eventId: string }>();
 
+  // State để đảm bảo API accept được gọi 1 lần duy nhất
+  const [hasAccepted, setHasAccepted] = useState(false);
+
+  // Fetch chi tiết sự kiện (sử dụng eventId từ outlet context)
   useEffect(() => {
     const fetchEventDetails = async () => {
       setLoading(true);
       setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string }; // Sử dụng eventId lấy từ context
+        const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
         if (response && response.statusCode === 200) {
           setEventDetails(response.data.event);
         } else {
@@ -68,6 +68,28 @@ export const EventDetailsPage: React.FC = () => {
 
     fetchEventDetails();
   }, [eventId, navigate]);
+
+  // Nếu URL có token, gọi API accept (chỉ gọi 1 lần)
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token && eventDetails && !hasAccepted) {
+      const acceptEvent = async () => {
+        try {
+          const response = await authService.acceptEvent(eventDetails.id, token) as { statusCode: number; message: string; error?: string };
+          if (response && response.statusCode === 200) {
+            message.success(response.message || 'Bạn đã xác nhận tham gia sự kiện thành công.');
+            setHasAccepted(true);
+          } else {
+            message.error(response.error || 'Xác nhận tham gia thất bại.');
+          }
+        } catch (error: any) {
+          console.error('Error accepting event:', error);
+          message.error(error.message || 'Có lỗi xảy ra khi xác nhận tham gia.');
+        }
+      };
+      acceptEvent();
+    }
+  }, [searchParams, eventDetails, hasAccepted]);
 
   const handleRegisterEvent = async () => {
     setLoading(true);
@@ -87,7 +109,6 @@ export const EventDetailsPage: React.FC = () => {
       const response = await authService.registerEvent(eventDetails.id, selectedSessionIds, accessToken) as { statusCode: number; message: string; error?: string };
       if (response && response.statusCode === 201) {
         message.success(response.message);
-        // Optionally redirect or update UI after successful registration
       } else {
         message.error(response?.error || 'Failed to register for event');
       }
@@ -105,7 +126,7 @@ export const EventDetailsPage: React.FC = () => {
   const scheduleColumns = [
     {
       title: 'Title',
-      dataIndex: 'title', 
+      dataIndex: 'title',
       key: 'title'
     },
     {
@@ -125,15 +146,7 @@ export const EventDetailsPage: React.FC = () => {
       dataIndex: 'description',
       key: 'description'
     },
-    // {
-    //   title: 'Select Session',
-    //   key: 'select',
-    //   render: (_: any, record: EventScheduleItem) => (
-    //     <Checkbox value={record.id} />
-    //   ),
-    // }
   ];
-
 
   if (loading) {
     return <Loader />;
@@ -146,7 +159,6 @@ export const EventDetailsPage: React.FC = () => {
   if (!eventDetails) {
     return <Alert message="Event not found" description="Could not load event details" type="warning" showIcon />;
   }
-
 
   return (
     <div>
@@ -185,13 +197,13 @@ export const EventDetailsPage: React.FC = () => {
         ]}
       />
 
-      <Card title={<Title level={3}>{eventDetails?.name}</Title>}
-        extra={<Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>Register Event</Button>}
-      >
+      <Card
+              title={<Typography.Title level={3}>{eventDetails.name}</Typography.Title>}
+              extra={<Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>Register Event</Button>}
+            >
         <Row gutter={[16, 16]}>
           <Col span={24}>
-            {eventDetails?.videoIntro ? (
-              // Nếu có video, hiển thị video
+            {eventDetails.videoIntro ? (
               <Card title="Video Introduction">
                 <iframe
                   width="100%"
@@ -203,8 +215,7 @@ export const EventDetailsPage: React.FC = () => {
                   allowFullScreen
                 />
               </Card>
-            ) : eventDetails?.banner ? (
-              // Nếu không có video mà có banner, hiển thị banner dưới dạng hình ảnh
+            ) : eventDetails.banner ? (
               <Card title="Event Banner">
                 <img
                   src={eventDetails.banner}
@@ -213,7 +224,6 @@ export const EventDetailsPage: React.FC = () => {
                 />
               </Card>
             ) : (
-              // Nếu không có cả video lẫn banner, hiển thị link mặc định mà bạn để sẵn
               <Card title="Event Introduction">
                 <iframe
                   width="100%"
@@ -261,20 +271,9 @@ export const EventDetailsPage: React.FC = () => {
               </Card>
             </Col>
           )}
-          {/* {eventDetails?.status === 'FINISHED' && (
-            <Col span={24}>
-              <Card title="Participants Check-in/Check-out List"
-                extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading} disabled={true}>
-                  Download PDF
-                </Button>}
-              >
-                <EventParticipantsTable eventId={id || ''} />
-              </Card>
-            </Col>
-          )} */}
           <Col span={24}>
             <EventDiscussion
-              eventId={eventId}
+              eventId={id || ''}
               questions={questions}
               setQuestions={setQuestions}
             />
