@@ -91,11 +91,11 @@ export interface FeedbackAnalysisResponse {
   eventId: string;
   averageRating: number;
   totalFeedbacks: number;
-  ratingDistribution: { [key: number]: number };
+  ratingDistribution: { [key: string]: number };
 }
 
 export interface FeedbackAnalysisResponse_RatingDistributionEntry {
-  key: number;
+  key: string;
   value: number;
 }
 

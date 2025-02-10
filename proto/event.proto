@@ -117,7 +117,7 @@ message FeedbackAnalysisResponse {
   string eventId = 1;
   float averageRating = 2;
   int32 totalFeedbacks = 3;
-  map<int32, int32> ratingDistribution = 4;
+  map<string, int32> ratingDistribution = 4;
 }
 
 message UpdateGuestRequest{

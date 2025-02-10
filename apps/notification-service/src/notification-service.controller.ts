@@ -71,33 +71,33 @@ export class NotificationServiceController implements NotificationServiceProtoCo
   }
 
   // @EventPattern('send_reminder')
-  async handleSendReminder(
-    @Payload() data: {
-      emails: string[];
-      eventName: string;
-      eventStartTime: string;
-      eventEndTime: string;
-      location: string;
-      eventDescription: string;
-    }
-  ) {
-    this.logger.log(`Processing reminder for event: ${data.eventName}`);
-    for (const email of data.emails) {
-      await this.notificationService.sendMail(
-        email,
-        EmailTemplates.EVENT_REMINDER,
-        `Reminder: ${data.eventName} is starting soon!`,
-        {
-          eventName: data.eventName,
-          eventStartTime: data.eventStartTime,
-          eventEndTime: data.eventEndTime,
-          location: data.location,
-          eventDescription: data.eventDescription,
-        }
-      );
-      this.logger.log(`Sent reminder email to ${email} for event ${data.eventName}`);
-    }
-  }
+  // async handleSendReminder(
+  //   @Payload() data: {
+  //     emails: string[];
+  //     eventName: string;
+  //     eventStartTime: string;
+  //     eventEndTime: string;
+  //     location: string;
+  //     eventDescription: string;
+  //   }
+  // ) {
+  //   this.logger.log(`Processing reminder for event: ${data.eventName}`);
+  //   for (const email of data.emails) {
+  //     await this.notificationService.sendMail(
+  //       email,
+  //       EmailTemplates.EVENT_REMINDER,
+  //       `Reminder: ${data.eventName} is starting soon!`,
+  //       {
+  //         eventName: data.eventName,
+  //         eventStartTime: data.eventStartTime,
+  //         eventEndTime: data.eventEndTime,
+  //         location: data.location,
+  //         eventDescription: data.eventDescription,
+  //       }
+  //     );
+  //     this.logger.log(`Sent reminder email to ${email} for event ${data.eventName}`);
+  //   }
+  // }
 
   @EventPattern('user_registered')
   async handleUserCreatedEvent(data: any) {

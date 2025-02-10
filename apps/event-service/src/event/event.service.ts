@@ -45,69 +45,69 @@ export class EventService {
 
     // tự động gửi tbao nhắc nhỡ mỗi 1h
     // @Cron(CronExpression.EVERY_30_SECONDS, { name: 'sendRemindersCron', timeZone: 'UTC' })
-    async sendReminders(): Promise<void> {
-        try {
-            const now = new Date();
-            const next24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    // async sendReminders(): Promise<void> {
+    //     try {
+    //         const now = new Date();
+    //         const next24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-            // Lấy các event bắt đầu trong 24h tới, có trạng thái "SCHEDULED" và chưa được gửi reminder
-            const events = await this.eventModel.find({
-                startDate: { $gte: now, $lte: next24h },
-                status: 'SCHEDULED',
-                reminderSent: { $ne: true },
-            }).exec();
+    //         // Lấy các event bắt đầu trong 24h tới, có trạng thái "SCHEDULED" và chưa được gửi reminder
+    //         const events = await this.eventModel.find({
+    //             startDate: { $gte: now, $lte: next24h },
+    //             status: 'SCHEDULED',
+    //             reminderSent: { $ne: true },
+    //         }).exec();
 
-            this.logger.log(`Found ${events.length} event(s) starting within 24 hours that haven't been reminded.`);
+    //         this.logger.log(`Found ${events.length} event(s) starting within 24 hours that haven't been reminded.`);
 
-            for (const event of events) {
-                let registeredEmails: string[] = [];
-                try {
-                    const participantsResponse = await lastValueFrom(
-                        this.ticketService.getUserParticipationByEventId({ eventId: event.id })
-                    );
-                    if (participantsResponse && participantsResponse.participants) {
-                        registeredEmails = participantsResponse.participants
-                            .map(p => p.email)
-                            .filter(email => email && email.trim().length > 0);
-                    }
-                } catch (err) {
-                    this.logger.error('Error fetching registered participants:', err);
-                }
+    //         for (const event of events) {
+    //             let registeredEmails: string[] = [];
+    //             try {
+    //                 const participantsResponse = await lastValueFrom(
+    //                     this.ticketService.getUserParticipationByEventId({ eventId: event.id })
+    //                 );
+    //                 if (participantsResponse && participantsResponse.participants) {
+    //                     registeredEmails = participantsResponse.participants
+    //                         .map(p => p.email)
+    //                         .filter(email => email && email.trim().length > 0);
+    //                 }
+    //             } catch (err) {
+    //                 this.logger.error('Error fetching registered participants:', err);
+    //             }
 
-                // Lấy danh sách email của những người được mời (invitedUsers)
-                const invitedUsers = await this.invitedUserModel.find({ eventId: event.id }).exec();
-                const invitedEmails = invitedUsers
-                    .map(u => u.email)
-                    .filter(email => email && email.trim().length > 0);
+    //             // Lấy danh sách email của những người được mời (invitedUsers)
+    //             const invitedUsers = await this.invitedUserModel.find({ eventId: event.id }).exec();
+    //             const invitedEmails = invitedUsers
+    //                 .map(u => u.email)
+    //                 .filter(email => email && email.trim().length > 0);
 
-                // Hợp nhất và loại bỏ email trùng
-                const allEmails = Array.from(new Set([...registeredEmails, ...invitedEmails]));
+    //             // Hợp nhất và loại bỏ email trùng
+    //             const allEmails = Array.from(new Set([...registeredEmails, ...invitedEmails]));
 
-                if (allEmails.length === 0) {
-                    this.logger.warn(`No invited/registered users found for event ${event.name}`);
-                    continue;
-                }
+    //             if (allEmails.length === 0) {
+    //                 this.logger.warn(`No invited/registered users found for event ${event.name}`);
+    //                 continue;
+    //             }
 
-                const payload = {
-                    emails: allEmails,
-                    eventName: event.name,
-                    eventStartTime: moment(event.startDate).format('MMMM Do YYYY, h:mm a'),
-                    eventEndTime: moment(event.endDate).format('MMMM Do YYYY, h:mm a'),
-                    location: event.location,
-                    eventDescription: event.description || '',
-                };
+    //             const payload = {
+    //                 emails: allEmails,
+    //                 eventName: event.name,
+    //                 eventStartTime: moment(event.startDate).format('MMMM Do YYYY, h:mm a'),
+    //                 eventEndTime: moment(event.endDate).format('MMMM Do YYYY, h:mm a'),
+    //                 location: event.location,
+    //                 eventDescription: event.description || '',
+    //             };
 
-                // Emit event reminder
-                this.clientNotification.emit('send_reminder', payload);
-                this.logger.log(`Emitted reminder for event ${event.name}`);
+    //             // Emit event reminder
+    //             this.clientNotification.emit('send_reminder', payload);
+    //             this.logger.log(`Emitted reminder for event ${event.name}`);
 
-                // Cập nhật trường reminderSent = true cho event này
-                await this.eventModel.findByIdAndUpdate(event.id, { reminderSent: true });
-            }
-        } catch (error) {
-            this.logger.error('Error in sendReminders', error);
-        }
-    }
+    //             // Cập nhật trường reminderSent = true cho event này
+    //             await this.eventModel.findByIdAndUpdate(event.id, { reminderSent: true });
+    //         }
+    //     } catch (error) {
+    //         this.logger.error('Error in sendReminders', error);
+    //     }
+    // }
 
     async sendEventInvites(request: SendEventInvitesRequest): Promise<SendEventInvitesResponse> {
         try {
@@ -277,6 +277,7 @@ export class EventService {
         try {
             const result = await this.feedbackService.getFeedbacks(eventId);
             const feedbacks = result.feedbacks;
+
             if (!feedbacks || feedbacks.length === 0) {
                 return {
                     eventId,
@@ -285,13 +286,17 @@ export class EventService {
                     ratingDistribution: {},
                 };
             }
+
             const totalFeedbacks = feedbacks.length;
             const sumRating = feedbacks.reduce((sum, fb) => sum + fb.rating, 0);
-            const averageRating = sumRating / totalFeedbacks;
-            const ratingDistribution: { [key: number]: number } = {};
+            const averageRating = parseFloat((sumRating / totalFeedbacks).toFixed(1));
+
+            const ratingDistribution: { [key: string]: number } = {}; // Dùng string làm key
             feedbacks.forEach(fb => {
-                ratingDistribution[fb.rating] = (ratingDistribution[fb.rating] || 0) + 1;
+                const ratingKey = fb.rating.toFixed(1); // Giữ định dạng float
+                ratingDistribution[ratingKey] = (ratingDistribution[ratingKey] || 0) + 1;
             });
+
             return {
                 eventId,
                 averageRating,
@@ -302,6 +307,7 @@ export class EventService {
             throw new RpcException(error);
         }
     }
+
 
     async createQuestion(eventId: string, userId: string, text: string) {
         const event = await this.eventModel.findById(eventId);
