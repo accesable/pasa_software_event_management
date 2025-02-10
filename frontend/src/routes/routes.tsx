@@ -14,7 +14,6 @@ import {
   ProjectsDashboardPage,
   SignInPage,
   SignUpPage,
-  UserProfileFeedbackPage,
   UserProfileSecurityPage,
   VerifyEmailPage,
   WelcomePage,
@@ -224,12 +223,6 @@ const router = createBrowserRouter([
         path: 'security',
         element: <PrivateRoute>
           <UserProfileSecurityPage />
-        </PrivateRoute>,
-      },
-      {
-        path: 'feedback',
-        element: <PrivateRoute>
-          <UserProfileFeedbackPage />
         </PrivateRoute>,
       },
     ],

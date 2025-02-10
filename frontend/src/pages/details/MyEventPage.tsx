@@ -149,14 +149,13 @@ const DetailMyEventPage: React.FC = () => {
       <Card title={<Title level={3}>{eventDetails?.name}</Title>}
         extra={
           <Space>
-            <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal} >Invite Users</Button>
             {eventDetails?.status === 'SCHEDULED' && (
-              <Button
+            <><Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal}>Invite Users</Button><Button
                 type="primary"
                 onClick={() => navigate(`/dashboards/check-in-out/${eventId}`)} // Navigate to QR scanner page
               >
                 Check-in/Check-out
-              </Button>
+              </Button></>
             )}
           </Space>
         }

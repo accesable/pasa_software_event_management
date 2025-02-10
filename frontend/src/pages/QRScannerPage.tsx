@@ -1,7 +1,7 @@
 // src/pages/QRScannerPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { QrReader } from 'react-qr-reader';
-import { Input, Button, message, Typography, Card } from 'antd';
+import { Input, Button, message, Typography, Card, Spin } from 'antd';
 import { BackBtn, PageHeader } from '../components';
 import { Helmet } from 'react-helmet-async';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
@@ -15,24 +15,68 @@ const QRScannerPage: React.FC = () => {
   const [lastScannedCode, setLastScannedCode] = useState<string>('');
   const [manualCode, setManualCode] = useState<string>('');
   const [isCameraActive, setIsCameraActive] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { id: eventId } = useParams<{ id: string }>();
+  const isProcessingScan = useRef(false); // Theo dõi trạng thái xử lý scan
 
-  // Hàm xử lý khi mã QR được quét
+  // Thêm tham số manual để phân biệt quét tự động (manual = false) và submit thủ công (manual = true)
+  const handleScanTicket = async (code: string, manual: boolean = false) => {
+    if (isProcessingScan.current) {
+      return;
+    }
+    isProcessingScan.current = true;
+    setIsCameraActive(false);
+    // Nếu không phải submit thủ công thì bật loading
+    if (!manual) {
+      setIsLoading(true);
+      message.loading({ content: 'Checking ticket...', key: 'scanMessage', duration: 0 });
+    }
+
+    const startTime = Date.now();
+    let response: { statusCode: number; data?: any[]; error?: string } | null = null;
+    try {
+      response = await authService.scanTicket(code.trim()) as { statusCode: number; data?: any[]; error?: string };
+    } catch (error: any) {
+      response = { statusCode: 500, error: error.error || 'Scan failed.' };
+    }
+
+    // Nếu submit tự động, đảm bảo hiển thị loading ít nhất 3s
+    if (!manual) {
+      const elapsed = Date.now() - startTime;
+      const remainingTime = 3000 - elapsed;
+      if (remainingTime > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remainingTime));
+      }
+    }
+
+    if (!manual) {
+      setIsLoading(false);
+    }
+
+    // Hiển thị thông báo kết quả
+    if (response.statusCode === 200) {
+      message.success({
+        content: `Ticket scanned: ${response.data && response.data[0]?.name ? response.data[0].name : ''}. Ready for next scan.`,
+        key: 'scanMessage',
+        duration: 2,
+      });
+    } else {
+      message.error({ content: response.error || 'Scan failed.', key: 'scanMessage', duration: 2 });
+    }
+
+    setIsCameraActive(true);
+    setLastScannedCode('');
+    isProcessingScan.current = false;
+  };
+
+  // Hàm xử lý khi mã QR được quét tự động (chỉ xử lý khi manualCode trống)
   const handleScan = (result: any) => {
-    // Nếu ô input đang trống và camera đang hoạt động, xử lý kết quả quét
     if (result && isCameraActive && manualCode.trim() === '') {
       const code = result.getText();
-      // Chỉ hiển thị thông báo nếu mã mới và khác với lần quét trước
       if (code && code !== lastScannedCode) {
         setLastScannedCode(code);
-        setManualCode(code); // Tự động điền vào ô input
-        message.success(`Scanned: ${code}`);
-        // Vô hiệu hóa scan tạm thời để tránh hiển thị liên tục (ví dụ 3 giây)
-        setIsCameraActive(false);
-        setTimeout(() => {
-          setIsCameraActive(true);
-        }, 3000);
+        handleScanTicket(code); // Gọi với manual = false (mặc định)
       }
     }
   };
@@ -40,32 +84,21 @@ const QRScannerPage: React.FC = () => {
   // Hàm xử lý lỗi camera
   const handleError = (error: any) => {
     setIsCameraActive(false);
+    console.error(error);
   };
 
-  // Hàm xử lý khi người dùng nhấn "Submit Code"
+  // Khi submit thủ công, gọi handleScanTicket với manual = true để bỏ qua delay
   const handleManualSubmit = async () => {
     if (manualCode.trim() === '') {
       message.warning('Please enter a code manually.');
       return;
     }
-    setIsCameraActive(false);
-    try {
-      const response = await authService.scanTicket(manualCode.trim()) as { statusCode: number; data: any[]; error?: string };
-      console.log('Scan response:', response);
-      if (response.statusCode === 200) {
-        message.success(`Ticket scanned: ${response.data[0]?.name || ''}. Ready for next scan.`);
-      } else {
-        message.error(response.error);
-      }
-    } catch (error: any) {
-      message.error(error.error);
-    } finally {
-      setManualCode('');
-      setIsCameraActive(true);
-    }
+    // Gọi hàm xử lý mà không chờ delay
+    handleScanTicket(manualCode.trim(), true);
+    setManualCode('');
   };
 
-  // Hàm xử lý hoàn thành sự kiện
+  // Hàm xử lý hoàn thành sự kiện (giữ nguyên)
   const handleFinish = async () => {
     setIsCameraActive(false);
     try {
@@ -123,6 +156,7 @@ const QRScannerPage: React.FC = () => {
         ]}
         btnBack={<BackBtn />}
       />
+      <BackBtn />
 
       <Card>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
@@ -136,6 +170,7 @@ const QRScannerPage: React.FC = () => {
               height: '400px',
               borderRadius: '8px',
               overflow: 'hidden',
+              position: 'relative',
             }}
           >
             <QrReader
@@ -155,6 +190,24 @@ const QRScannerPage: React.FC = () => {
                 objectFit: 'cover',
               }}
             />
+            {isLoading && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: '8px',
+                }}
+              >
+                <Spin size="large" tip="Checking Ticket..." />
+              </div>
+            )}
           </div>
           <Text>Scanning for QR codes...</Text>
 
@@ -166,10 +219,12 @@ const QRScannerPage: React.FC = () => {
               onChange={(e) => setManualCode(e.target.value)}
               style={{ width: 300 }}
             />
-            <Button onClick={handleManualSubmit}>Submit Code</Button>
+            <Button onClick={handleManualSubmit} disabled={isLoading}>
+              Submit Code
+            </Button>
           </div>
 
-          <Button type="primary" onClick={handleFinish} style={{ marginTop: 20 }}>
+          <Button type="primary" onClick={handleFinish} style={{ marginTop: 20 }} disabled={isLoading}>
             Finish Event
           </Button>
         </div>

@@ -236,6 +236,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         ]}
         btnBack={<BackBtn />}
       />
+      <BackBtn />
 
       <Card title={<Title level={3}>{eventDetails?.name}</Title>}
         extra={

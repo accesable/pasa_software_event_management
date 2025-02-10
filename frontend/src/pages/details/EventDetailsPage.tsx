@@ -19,7 +19,7 @@ import {
 } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { PageHeader, Loader } from '../../components';
+import { PageHeader, Loader, BackBtn } from '../../components';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
 import { Events } from '../../types';
@@ -54,6 +54,7 @@ export const EventDetailsPage: React.FC = () => {
 
   // Fetch chi tiết sự kiện (sử dụng eventId từ outlet context)
   useEffect(() => {
+    console.log("EventDetailsPage useEffect is running, eventId:", eventId); 
     const fetchEventDetails = async () => {
       setLoading(true);
       setError(null);
@@ -225,7 +226,9 @@ export const EventDetailsPage: React.FC = () => {
             title: 'Event Details',
           },
         ]}
+        btnBack={<BackBtn />}
       />
+      <BackBtn />
 
       <Card
         title={<Typography.Title level={3}>{eventDetails.name}</Typography.Title>}
