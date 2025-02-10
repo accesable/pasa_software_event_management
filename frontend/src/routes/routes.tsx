@@ -14,7 +14,6 @@ import {
   ProjectsDashboardPage,
   SignInPage,
   SignUpPage,
-  SitemapPage,
   UserProfileFeedbackPage,
   UserProfileSecurityPage,
   VerifyEmailPage,
@@ -32,7 +31,6 @@ import {
   UserAccountLayout,
 } from '../layouts';
 import React, { ReactNode, useEffect } from 'react';
-import { AboutPage } from '../pages/About.tsx';
 import EventsDashboardPage from '../pages/dashboards/Events.tsx';
 import EventsListPage from '../pages/dashboards/EventsList.tsx';
 import EventDetailsPage from '../pages/details/EventDetailsPage.tsx';
@@ -47,6 +45,7 @@ import { RootState } from '../redux/store.ts';
 import ProtectedRoute from '../components/ProtectedRoute.tsx';
 import { Helmet } from 'react-helmet-async';
 import DeclineEventPage from '../pages/DeclineEventPage.tsx';
+import EventFeedbacksPage from '../pages/feedbacks/EventFeedbacksPage.tsx';
 
 export const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -94,6 +93,19 @@ const router = createBrowserRouter([
     path: '/details/events/:eventId/decline',
     element: <PageWrapper children={<DeclineEventPage />} />,
     errorElement: <Helmet><title>Error</title></Helmet>,
+  },
+  {
+    path: '/feedbacks', // Route cho trang feedback riêng
+    element: <PageWrapper children={<DashboardLayout />} />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: 'events/:eventId',
+        element: <PrivateRoute>
+          <EventFeedbacksPage />
+        </PrivateRoute>,
+      },
+    ],
   },
   {
     path: '/create',
@@ -199,20 +211,6 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: '/sitemap',
-    element: <PageWrapper children={<DashboardLayout />} />,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        index: true,
-        path: '',
-        element: <PrivateRoute>
-          <SitemapPage />
-        </PrivateRoute>,
-      },
-    ],
-  },
-  {
     path: '/user-profile',
     element: <PageWrapper children={<UserAccountLayout />} />,
     errorElement: <ErrorPage />,
@@ -303,20 +301,6 @@ const router = createBrowserRouter([
       {
         path: '503',
         element: <Error503Page />,
-      },
-    ],
-  },
-  {
-    path: '/about',
-    element: <PageWrapper children={<DashboardLayout />} />,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        index: true,
-        path: '',
-        element: <PrivateRoute>
-          <AboutPage />
-        </PrivateRoute>,
       },
     ],
   },

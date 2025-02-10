@@ -1,4 +1,4 @@
-// src/pages/details/EventDetailsPage.tsx
+// src\pages\details\EventDetailsPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import {
@@ -10,7 +10,9 @@ import {
   Image,
   List,
   message,
+  Rate,
   Row,
+  Spin,
   Table,
   Typography,
   Checkbox,
@@ -25,6 +27,7 @@ import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import { Helmet } from 'react-helmet-async';
 import EventDiscussion from '../../components/EventDiscussion';
 
+const { Title, Text } = Typography;
 
 export const EventDetailsPage: React.FC = () => {
   // Lấy eventId từ outlet context (hoặc từ useParams nếu cần)
@@ -39,6 +42,12 @@ export const EventDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
+  const [feedbackSummary, setFeedbackSummary] = useState<{
+    averageRating: number;
+    totalFeedbacks: number;
+    ratingDistribution: Record<string, number>;
+  } | null>(null);
+  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
 
   // State để đảm bảo API accept được gọi 1 lần duy nhất
   const [hasAccepted, setHasAccepted] = useState(false);
@@ -66,7 +75,26 @@ export const EventDetailsPage: React.FC = () => {
       }
     };
 
+    const fetchEventFeedbackSummary = async () => {
+      if (!eventId) return;
+      setFeedbackSummaryLoading(true);
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
+        if (response.statusCode === 200 && response.data) {
+          setFeedbackSummary(response.data.data);
+        } else {
+          console.error('Failed to fetch feedback summary:', response.message);
+        }
+      } catch (error: any) {
+        console.error('Error fetching feedback summary:', error);
+      } finally {
+        setFeedbackSummaryLoading(false);
+      }
+    };
+
     fetchEventDetails();
+    fetchEventFeedbackSummary();
   }, [eventId, navigate]);
 
   // Nếu URL có token, gọi API accept (chỉ gọi 1 lần)
@@ -198,9 +226,9 @@ export const EventDetailsPage: React.FC = () => {
       />
 
       <Card
-              title={<Typography.Title level={3}>{eventDetails.name}</Typography.Title>}
-              extra={<Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>Register Event</Button>}
-            >
+        title={<Typography.Title level={3}>{eventDetails.name}</Typography.Title>}
+        extra={<Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>Register Event</Button>}
+      >
         <Row gutter={[16, 16]}>
           <Col span={24}>
             {eventDetails.videoIntro ? (
@@ -268,6 +296,52 @@ export const EventDetailsPage: React.FC = () => {
                     </List.Item>
                   )}
                 />
+              </Card>
+            </Col>
+          )}
+          {eventDetails?.status === 'FINISHED' && (
+            <Col span={24} >
+              <Card title="Feedback Summary">
+                {feedbackSummaryLoading ? (
+                  <Spin tip="Loading feedback summary..." />
+                ) : feedbackSummary ? (
+                  <Flex vertical gap="middle">
+                    <Flex align="center" gap="middle">
+                      <Rate allowHalf value={feedbackSummary.averageRating} disabled />
+                      <Typography.Text>
+                        {feedbackSummary.averageRating.toFixed(1)}/5 ({feedbackSummary.totalFeedbacks} reviews)
+                      </Typography.Text>
+                    </Flex>
+                    <Flex vertical gap="small">
+                      {/* Hiển thị rating distribution */}
+                      <Flex justify="space-between">
+                        <Text>5 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["5"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>4 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["4"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>3 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["3"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>2 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>1 star:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
+                      </Flex>
+                    </Flex>
+                    <Button type="primary" size="small" >
+                      <Link to={`/feedbacks/events/${eventId}`}>View All Feedbacks</Link>
+                    </Button>
+                  </Flex>
+                ) : (
+                  <Alert message="No feedback summary available for this event yet." type="info" showIcon />
+                )}
               </Card>
             </Col>
           )}

@@ -2254,6 +2254,8 @@ export { CustomerReviewsCard } from './CustomerReviewsCard/CustomerReviewsCard.t
 
 
 src\components\dashboard\ecommerce\CustomerReviewsCard\CustomerReviewsCard.tsx:
+// src/components/CustomerReviewsCard.tsx
+import { useState, useEffect } from 'react';
 import {
   Button,
   CardProps,
@@ -2267,21 +2269,86 @@ import {
 import { green, lime, orange, red, yellow } from '@ant-design/colors';
 import { QuestionOutlined } from '@ant-design/icons';
 import { Card } from '../../../index.ts';
+import authService from '../../../../services/authService';
+// Giả sử bạn có service feedbackService với hàm getOrganizerEventFeedbackSummary
+
+const { Title, Text } = Typography;
 
 const PROGRESS_PROPS: ProgressProps = {
   style: {
-    width: 300,
+    width: 200,
   },
 };
 
 type Props = CardProps;
 
 export const CustomerReviewsCard = ({ ...others }: Props) => {
+  const [feedbackData, setFeedbackData] = useState<{
+    averageRating: number;
+    ratingDistribution: { [key: string]: number };
+    totalFeedbacks: number;
+  } | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchFeedback = async () => {
+      setLoading(true);
+      try {
+        // Lấy accessToken theo cách của bạn (ví dụ từ localStorage)
+        const accessToken = localStorage.getItem('accessToken') || '';
+        const res = await authService.getOrganizerEventFeedbackSummary(accessToken) as { statusCode: number; data: { averageRating: number; ratingDistribution: { [key: string]: number }; totalFeedbacks: number; }; message?: string; };
+        if (res.statusCode === 200) {
+          setFeedbackData(res.data);
+        } else {
+          setError(res.message || 'Error fetching feedback summary');
+        }
+      } catch (err: any) {
+        setError(err.message || 'Error fetching feedback summary');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeedback();
+  }, []);
+
+  if (loading) {
+    return (
+      <Card title="Customer reviews" {...others}>
+        <Text>Loading feedback summary...</Text>
+      </Card>
+    );
+  }
+
+  if (error || !feedbackData) {
+    return (
+      <Card title="Customer reviews" {...others}>
+        <Text type="danger">{error || 'No feedback data available'}</Text>
+      </Card>
+    );
+  }
+
+  // Destructure data từ API
+  const { averageRating, ratingDistribution, totalFeedbacks } = feedbackData;
+
+  // Tính phần trăm cho từng hạng mục dựa trên tổng số feedback
+  const distributionPercentages = {
+    Excellent: Math.round(((ratingDistribution["4-5"] || 0) / totalFeedbacks) * 100),
+    Good: Math.round(((ratingDistribution["3-4"] || 0) / totalFeedbacks) * 100),
+    Average: Math.round(((ratingDistribution["2-3"] || 0) / totalFeedbacks) * 100),
+    Poor: Math.round(((ratingDistribution["1-2"] || 0) / totalFeedbacks) * 100),
+    Critical: Math.round(((ratingDistribution["0-1"] || 0) / totalFeedbacks) * 100),
+  };
+
   return (
     <Card
       title="Customer reviews"
       extra={
-        <Popover content="Overall rating of 5k reviews" title="Review ratings">
+        <Popover
+          content={`Overall rating based on ${totalFeedbacks} reviews`}
+          title="Review ratings"
+        >
           <Button icon={<QuestionOutlined />} size="small" type="text" />
         </Popover>
       }
@@ -2290,39 +2357,51 @@ export const CustomerReviewsCard = ({ ...others }: Props) => {
     >
       <Flex vertical gap="middle">
         <Flex align="center" gap="middle" justify="center">
-          <Rate allowHalf value={4.6} disabled />
-          <Typography.Title level={2} style={{ margin: 0 }}>
-            4.6/5
-          </Typography.Title>
+          <Rate allowHalf value={averageRating} disabled />
+          <Title level={2} style={{ margin: 0 }}>
+            {averageRating.toFixed(1)}/5
+          </Title>
         </Flex>
         <Flex vertical gap="small">
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Typography.Text>Excellent</Typography.Text>
-            <Progress percent={35} strokeColor={lime[6]} {...PROGRESS_PROPS} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Typography.Text>Good</Typography.Text>
-            <Progress percent={25} strokeColor={green[5]} {...PROGRESS_PROPS} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Typography.Text>Average</Typography.Text>
+            <Text>Excellent</Text>
             <Progress
-              percent={30}
+              percent={distributionPercentages.Excellent}
+              strokeColor={lime[6]}
+              {...PROGRESS_PROPS}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Text>Good</Text>
+            <Progress
+              percent={distributionPercentages.Good}
+              strokeColor={green[5]}
+              {...PROGRESS_PROPS}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Text>Average</Text>
+            <Progress
+              percent={distributionPercentages.Average}
               strokeColor={yellow[6]}
               {...PROGRESS_PROPS}
             />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Typography.Text>Poor</Typography.Text>
+            <Text>Poor</Text>
             <Progress
-              percent={30}
+              percent={distributionPercentages.Poor}
               strokeColor={orange[5]}
               {...PROGRESS_PROPS}
             />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Typography.Text>Critical</Typography.Text>
-            <Progress percent={30} strokeColor={red[6]} {...PROGRESS_PROPS} />
+            <Text>Critical</Text>
+            <Progress
+              percent={distributionPercentages.Critical}
+              strokeColor={red[6]}
+              {...PROGRESS_PROPS}
+            />
           </div>
         </Flex>
       </Flex>
@@ -2330,6 +2409,7 @@ export const CustomerReviewsCard = ({ ...others }: Props) => {
   );
 };
 
+export default CustomerReviewsCard;
 
 
 src\components\dashboard\events\ActivityTable.tsx:
@@ -3672,57 +3752,84 @@ src\components\dashboard\shared\ProjectsCard\styles.css:
 
 
 src\components\dashboard\shared\RevenueCard\RevenueCard.tsx:
-import { CardProps, Flex, Space, Typography } from 'antd';
+import React, { CSSProperties } from 'react';
+import { CardProps, Space, Typography } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { green, red } from '@ant-design/colors';
 import CountUp from 'react-countup';
 import { Card } from '../../../index.ts';
-import { CSSProperties } from 'react';
 
-type Props = {
+const { Title, Text } = Typography;
+
+type RevenueCardProps = {
   title: string;
-  value: string | number;
+  value: number | string;
   diff: number;
   justify?: CSSProperties['justifyContent'];
   height?: number;
 } & CardProps;
 
-export const RevenueCard = (props: Props) => {
-  const { title, value, diff, justify, height, ...others } = props;
+export const RevenueCard: React.FC<RevenueCardProps> = ({
+  title,
+  value,
+  diff,
+  justify = 'space-between',
+  height,
+  ...others
+}) => {
+  // Tính toán chiều cao nội dung bên trong (giảm đi khoảng padding, tiêu đề,...)
+  const contentHeight = height ? height - 60 : 'auto';
+
+  // Style cho container nội dung card
+  const containerStyle: CSSProperties = {
+    height: contentHeight,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: justify,
+    padding: 16,
+  };
 
   return (
-    <Card {...others} style={{ height }}>
-      <Flex
-        vertical
-        gap={justify ? 0 : 'large'}
-        justify={justify}
-        style={{ height: height ? height - 60 : 'auto' }}
-      >
-        <Typography.Text>{title}</Typography.Text>
-        <Flex justify="space-between" align="center">
-          <Typography.Title level={2} style={{ margin: 0 }}>
+    <Card
+      {...others}
+      style={{
+        height,
+        borderRadius: 8,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        ...others.style,
+      }}
+    >
+      <div style={containerStyle}>
+        <Text style={{ fontSize: 16, color: '#666' }}>{title}</Text>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: 8,
+          }}
+        >
+          <Title level={2} style={{ margin: 0 }}>
             {typeof value === 'number' ? (
               <>
-                $
-                <CountUp end={value} />
+                <CountUp end={value} duration={1.5} separator="," />
               </>
             ) : (
-              <span>{value}</span>
+              <span >{value}</span>
             )}
-          </Typography.Title>
-          <Space style={{ color: diff > 0 ? green[6] : red[5] }}>
-            {diff > 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-            <Typography.Text
-              style={{
-                color: diff > 0 ? green[6] : red[5],
-                fontWeight: 500,
-              }}
-            >
-              <CountUp end={diff} />%
-            </Typography.Text>
+          </Title>
+          <Space size="small" style={{ color: diff > 0 ? green[6] : red[5] }}>
+            {diff > 0 ? (
+              <ArrowUpOutlined style={{ fontSize: 18 }} />
+            ) : (
+              <ArrowDownOutlined style={{ fontSize: 18 }} />
+            )}
+            <Text style={{ fontSize: 16, fontWeight: 500, color: diff > 0 ? green[6] : red[5] }}>
+              <CountUp end={diff} duration={1.5} decimals={0} />%
+            </Text>
           </Space>
-        </Flex>
-      </Flex>
+        </div>
+      </div>
     </Card>
   );
 };
@@ -10070,8 +10177,8 @@ export const GeneralDashboardPage = () => {
           <Row {...stylesContext?.rowProps}>
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Visitors"
-                value={20149}
+                title="Event Views"
+                value={20149}        // Số lượt xem sự kiện (ví dụ)
                 diff={5.54}
                 height={180}
                 justify="space-between"
@@ -10079,8 +10186,8 @@ export const GeneralDashboardPage = () => {
             </Col>
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Customers"
-                value={5834}
+                title="Registrations"
+                value={5834}         // Số lượt đăng ký tham gia
                 diff={-12.3}
                 height={180}
                 justify="space-between"
@@ -10088,8 +10195,8 @@ export const GeneralDashboardPage = () => {
             </Col>
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Orders"
-                value={3270}
+                title="Check-Ins"
+                value={3270}         // Số người thực sự có mặt (check-in)
                 diff={9.52}
                 height={180}
                 justify="space-between"
@@ -10097,23 +10204,24 @@ export const GeneralDashboardPage = () => {
             </Col>
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Sales"
-                value="$ 1.324K"
+                title="Ticket Sales"
+                value="$ 1.324K"      // Doanh số bán vé
                 diff={2.34}
                 height={180}
                 justify="space-between"
               />
             </Col>
           </Row>
+
         </Col>
         <Col sm={24} lg={8}>
           <CustomerReviewsCard />
         </Col>
         <Col xs={24} lg={12}>
           <Card
-            title="Overall sales"
+            title="Total Revenue"
             extra={
-              <Popover content="Total sales over period x" title="Total sales">
+              <Popover content="Total revenue over period x" title="Total revenue">
                 <Button icon={<QuestionOutlined />} {...POPOVER_BUTTON_PROPS} />
               </Popover>
             }
@@ -10149,6 +10257,7 @@ export const GeneralDashboardPage = () => {
     </div>
   );
 };
+
 
 
 src\pages\dashboards\index.ts:
@@ -14266,6 +14375,7 @@ const API_CATEGORY_BASE_URL = `${BASE_URL}/categories`;
 const API_USERS_BASE_URL = `${BASE_URL}/users`;
 const API_PARTICIPANTS_BASE_URL = `${BASE_URL}/participants`;
 const API_TICKETS_BASE_URL = `${BASE_URL}/tickets`;
+const API_REPORT_BASE_URL = `${BASE_URL}/reports`;
 
 const authService = {
   login: async (credentials: any) => {
@@ -14829,6 +14939,38 @@ const authService = {
           Authorization: `Bearer ${accessToken}`,
         },
       });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getOrganizerEventFeedbackSummary: async (accessToken: string) => {
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_REPORT_BASE_URL}/organizer-feedback-summary`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getUserEventsByDateReport: async (year: number, month: number | undefined, accessToken: string) => { // Đổi tên hàm rõ ràng hơn
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      let url = `${API_REPORT_BASE_URL}/events-by-date?year=${year}`;
+      if (month) {
+        url += `&month=${month}`;
+      }
+      const response = await axiosInstance.get(url, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;

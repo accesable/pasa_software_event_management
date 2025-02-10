@@ -609,6 +609,35 @@ const authService = {
       throw error.response.data;
     }
   },
+  getEventFeedbackSummary: async (eventId: string | undefined, accessToken?: string) => { // Hàm mới: Lấy feedback summary
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/feedback/feedback-analysis`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getEventFeedbacks: async (eventId: string | undefined, accessToken?: string) => { // Hàm mới: Lấy danh sách feedbacks
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      // ** Sử dụng endpoint chính xác, dựa trên response mẫu của bạn **
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/feedbacks`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default authService;

@@ -1,54 +1,81 @@
-import { CardProps, Flex, Space, Typography } from 'antd';
+import React, { CSSProperties } from 'react';
+import { CardProps, Space, Typography } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { green, red } from '@ant-design/colors';
 import CountUp from 'react-countup';
 import { Card } from '../../../index.ts';
-import { CSSProperties } from 'react';
 
-type Props = {
+const { Title, Text } = Typography;
+
+type RevenueCardProps = {
   title: string;
-  value: string | number;
+  value: number | string;
   diff: number;
   justify?: CSSProperties['justifyContent'];
   height?: number;
 } & CardProps;
 
-export const RevenueCard = (props: Props) => {
-  const { title, value, diff, justify, height, ...others } = props;
+export const RevenueCard: React.FC<RevenueCardProps> = ({
+  title,
+  value,
+  diff,
+  justify = 'space-between',
+  height,
+  ...others
+}) => {
+  // Tính toán chiều cao nội dung bên trong (giảm đi khoảng padding, tiêu đề,...)
+  const contentHeight = height ? height - 60 : 'auto';
+
+  // Style cho container nội dung card
+  const containerStyle: CSSProperties = {
+    height: contentHeight,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: justify,
+    padding: 16,
+  };
 
   return (
-    <Card {...others} style={{ height }}>
-      <Flex
-        vertical
-        gap={justify ? 0 : 'large'}
-        justify={justify}
-        style={{ height: height ? height - 60 : 'auto' }}
-      >
-        <Typography.Text>{title}</Typography.Text>
-        <Flex justify="space-between" align="center">
-          <Typography.Title level={2} style={{ margin: 0 }}>
+    <Card
+      {...others}
+      style={{
+        height,
+        borderRadius: 8,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        ...others.style,
+      }}
+    >
+      <div style={containerStyle}>
+        <Text style={{ fontSize: 16, color: '#666' }}>{title}</Text>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: 8,
+          }}
+        >
+          <Title level={2} style={{ margin: 0 }}>
             {typeof value === 'number' ? (
               <>
-                $
-                <CountUp end={value} />
+                <CountUp end={value} duration={1.5} separator="," />
               </>
             ) : (
-              <span>{value}</span>
+              <span >{value}</span>
             )}
-          </Typography.Title>
-          <Space style={{ color: diff > 0 ? green[6] : red[5] }}>
-            {diff > 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-            <Typography.Text
-              style={{
-                color: diff > 0 ? green[6] : red[5],
-                fontWeight: 500,
-              }}
-            >
-              <CountUp end={diff} />%
-            </Typography.Text>
+          </Title>
+          <Space size="small" style={{ color: diff > 0 ? green[6] : red[5] }}>
+            {diff > 0 ? (
+              <ArrowUpOutlined style={{ fontSize: 18 }} />
+            ) : (
+              <ArrowDownOutlined style={{ fontSize: 18 }} />
+            )}
+            <Text style={{ fontSize: 16, fontWeight: 500, color: diff > 0 ? green[6] : red[5] }}>
+              <CountUp end={diff} duration={1.5} decimals={0} />%
+            </Text>
           </Space>
-        </Flex>
-      </Flex>
+        </div>
+      </div>
     </Card>
   );
 };
