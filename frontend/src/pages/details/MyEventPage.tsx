@@ -1,6 +1,6 @@
 // src\pages\details\MyEventPage.tsx
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Button,
@@ -17,8 +17,10 @@ import {
   Tag,
   Typography,
   Checkbox,
+  Rate,
+  Spin,
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined, QuestionOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { PageHeader, Loader, UserAvatar, BackBtn } from '../../components';
 import { useFetchData } from '../../hooks';
@@ -48,17 +50,23 @@ export interface ParticipantData {
 
 
 const DetailMyEventPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: eventId } = useParams<{ id: string }>(); // Corrected: Use 'id' and rename to 'eventId'
   const [eventDetails, setEventDetails] = useState<Events | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
-  const [ticketData, setTicketData] = useState<any | null>(null);
+  const [ticketData, setTicketData] = useState<TicketType | null>(null); // Declare ticketData here
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
-  const dispatch = useDispatch(); // Thêm dispatch để gọi action Redux (nếu bạn dùng Redux)
+  const dispatch = useDispatch();
   const [questions, setQuestions] = useState<any[]>([]);
+  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
+  const [feedbackSummary, setFeedbackSummary] = useState<{
+    averageRating: number;
+    totalFeedbacks: number;
+    ratingDistribution: Record<string, number>;
+  } | null>(null);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -66,7 +74,7 @@ const DetailMyEventPage: React.FC = () => {
       setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
+        const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
         if (response && response.statusCode === 200) {
           setEventDetails(response.data.event);
         } else {
@@ -82,67 +90,345 @@ const DetailMyEventPage: React.FC = () => {
       }
     };
 
+    const fetchEventFeedbackSummary = async () => { // Fetch feedback summary
+      if (!eventId) return;
+      setFeedbackSummaryLoading(true);
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
+        if (response.statusCode === 200 && response.data) {
+          setFeedbackSummary(response.data.data);
+        }
+      } catch (error: any) {
+        console.error('Error fetching feedback summary:', error);
+      } finally {
+        setFeedbackSummaryLoading(false);
+      }
+    };
+
     fetchEventDetails();
-  }, [id, navigate]);
+    eventDetails?.status === 'FINISHED' && fetchEventFeedbackSummary(); // Fetch feedback only if event finished
+  }, [eventId, navigate, eventDetails?.status]); // Fetch feedback summary when event status changes to finished
 
-  const handleDownloadPdf = async () => {
-    try {
-      setLoading(true);
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error("No access token found. Please login again.");
-        return;
-      }
-      // Gọi API lấy danh sách participant
-      const response = await authService.getEventParticipants(id, accessToken) as any;
-      const participants = response.data || [];
-      if (!participants || participants.length === 0) {
-        message.error("No participants data available.");
-        return;
-      }
 
-      // Khởi tạo jsPDF
-      const doc = new jsPDF();
-      // Tiêu đề của PDF
-      doc.setFontSize(16);
-      doc.text("Participants Check-in/Check-out List", 14, 20);
-
-      // Định nghĩa cột và dữ liệu của bảng
-      const columns = ["No", "Name", "Email", "Check-In", "Check-Out"];
-      const rows = participants.map((p: any, index: number) => [
-        index + 1,
-        p.name,
-        p.email,
-        p.checkInAt ? dayjs(p.checkInAt).format("YYYY-MM-DD HH:mm:ss") : "",
-        p.checkOutAt ? dayjs(p.checkOutAt).format("YYYY-MM-DD HH:mm:ss") : ""
-      ]);
-
-      // Dùng autoTable để tạo bảng
-      (doc as any).autoTable({
-        head: [columns],
-        body: rows,
-        startY: 30,
-        theme: 'grid'
-      });
-
-      // Lưu file PDF
-      doc.save("participants.pdf");
-    } catch (error: any) {
-      console.error("Error generating PDF:", error);
-      message.error("List check-in/check-out is empty.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
 
   const onSessionSelectChange = (selectedKeys: React.Key[]) => {
     setSelectedSessionIds(selectedKeys as string[]);
   };
 
-  const scheduleColumns = [
+  const scheduleColumns = getScheduleColumns();
+
+  const hideTicketModal = () => {
+    setIsTicketModalVisible(false);
+  };
+  const showInviteModal = () => {
+    setIsInviteModalVisible(true);
+  };
+
+  const hideInviteModal = () => {
+    setIsInviteModalVisible(false);
+  };
+
+
+  const handleUpdateSessionsForTicket = handleUpdateSessionsForTicketFunction(setLoading, message, navigate, localStorage, authService, setIsTicketModalVisible, setTicketData, ticketData);
+
+
+  return (
+    <div>
+      <Helmet>
+        <title>Details | Dashboard</title>
+      </Helmet>
+      <PageHeader
+        title="Event Details"
+        breadcrumbs={breadcrumbs}
+        btnBack={<BackBtn />}
+      />
+      <BackBtn />
+
+      <Card title={<Title level={3}>{eventDetails?.name}</Title>}
+        extra={
+          <Space>
+            <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal} >Invite Users</Button>
+            {eventDetails?.status === 'SCHEDULED' && (
+              <Button
+                type="primary"
+                onClick={() => navigate(`/dashboards/check-in-out/${eventId}`)} // Navigate to QR scanner page
+              >
+                Check-in/Check-out
+              </Button>
+            )}
+          </Space>
+        }
+      >
+        <Row gutter={[16, 16]}>
+          <Col span={24}>
+            {renderEventIntroduction(eventDetails)}
+          </Col>
+          <Col span={24}>
+            <Card title="Schedule">
+              {renderScheduleTable(eventDetails, scheduleColumns)}
+            </Card>
+          </Col>
+          {renderEventDocuments(eventDetails)}
+          {eventDetails?.status === 'FINISHED' && (
+            <Col span={24} >
+              <Card title="Feedback Summary">
+                {renderFeedbackSummary(feedbackSummaryLoading, feedbackSummary, eventId)}
+              </Card>
+            </Col>
+          )}
+          <Col span={24}>
+            <Card title="Participants Check-in/Check-out List"
+              extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
+                Download PDF
+              </Button>}
+            >
+              <EventParticipantsTable eventId={eventId || ''} />
+            </Card>
+          </Col>
+
+          <Col span={24}>
+            <EventDiscussion
+              eventId={eventId || ''}
+              questions={questions}
+              setQuestions={setQuestions}
+            />
+          </Col>
+        </Row>
+      </Card>
+      <InviteUsersModal
+        visible={isInviteModalVisible}
+        onCancel={hideInviteModal}
+        eventId={eventId || ''}
+        onInvitationsSent={() => { }} // Example callback
+      />
+      <TicketDetailsModal
+        visible={isTicketModalVisible}
+        onCancel={hideTicketModal}
+        ticket={ticketData}
+      />
+    </div>
+  );
+};
+
+
+export default DetailMyEventPage;
+
+
+// Các hàm helper để render UI và xử lý logic (giữ code sạch hơn trong component chính)
+const handleDownloadPdfFunction = (setLoading: React.Dispatch<React.SetStateAction<boolean>>, message: any, authService: any, dayjs: any, eventId: string | undefined) => async () => {
+  try {
+    setLoading(true);
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      message.error("No access token found. Please login again.");
+      return;
+    }
+    // Gọi API lấy danh sách participant
+    const response = await authService.getEventParticipants(eventId, accessToken) as any;
+    const participants = response.data || [];
+    if (!participants || participants.length === 0) {
+      message.error("No participants data available.");
+      return;
+    }
+
+    // Khởi tạo jsPDF
+    const doc = new jsPDF();
+    // Tiêu đề của PDF
+    doc.setFontSize(16);
+    doc.text("Participants Check-in/Check-out List", 14, 20);
+
+    // Định nghĩa cột và dữ liệu của bảng
+    const columns = ["No", "Name", "Email", "Check-In", "Check-Out"];
+    const rows = participants.map((p: any, index: number) => [
+      index + 1,
+      p.name,
+      p.email,
+      p.checkInAt ? dayjs(p.checkInAt).format("YYYY-MM-DD HH:mm:ss") : "",
+      p.checkOutAt ? dayjs(p.checkOutAt).format("YYYY-MM-DD HH:mm:ss") : ""
+    ]);
+
+    // Dùng autoTable để tạo bảng
+    (doc as any).autoTable({
+      head: [columns],
+      body: rows,
+      startY: 30,
+      theme: 'grid'
+    });
+
+    // Lưu file PDF
+    doc.save("participants.pdf");
+  } catch (error: any) {
+    console.error("Error generating PDF:", error);
+    message.error("List check-in/check-out is empty.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleUpdateSessionsForTicketFunction = (setLoading: React.Dispatch<React.SetStateAction<boolean>>, message: any, navigate: any, localStorage: any, authService: any, setIsTicketModalVisible: React.Dispatch<React.SetStateAction<boolean>>, setTicketData: React.Dispatch<React.SetStateAction<TicketType | null>>, ticketData: TicketType | null) => async (sessionIds: string[]) => {
+  setLoading(true);
+  try {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      message.error("No access token found. Please login again.");
+      navigate('/auth/signin');
+      return;
+    }
+
+    const response = await authService.updateParticipantSessions(ticketData?.participantId, { sessionIds }, accessToken) as any;
+    if (response && response.statusCode === 200) {
+      message.success(response.message || 'Sessions updated successfully');
+      setIsTicketModalVisible(false);
+    } else {
+      message.error(response.message || 'Failed to update sessions');
+    }
+  } catch (error: any) {
+    console.error('Error updating sessions:', error);
+    message.error(error.message || 'Failed to update sessions');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const renderEventIntroduction = (eventDetails: Events | null) => {
+  if (eventDetails?.videoIntro) {
+    return (
+      <Card title="Video Introduction">
+        <iframe
+          width="100%"
+          height="480"
+          src={eventDetails.videoIntro}
+          title="Event Introduction Video"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </Card>
+    );
+  } else if (eventDetails?.banner) {
+    return (
+      <Card title="Event Banner">
+        <Image
+          src={eventDetails.banner}
+          alt="Event Banner"
+          style={{ width: "100%", height: "480px", objectFit: "cover" }}
+        />
+      </Card>
+    );
+  } else {
+    return (
+      <Card title="Event Introduction">
+        <iframe
+          width="100%"
+          height="480"
+          src="https://www.youtube.com/embed/iTJJC2Hlmu0"
+          title="Event Introduction Video"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </Card>
+    );
+  }
+};
+
+const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) => {
+  return eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
+    <Table
+      rowKey="id"
+      dataSource={eventDetails.schedule}
+      columns={scheduleColumns}
+      pagination={false}
+    />
+  ) : (
+    <Alert message="No schedule available for this event." type="info" showIcon />
+  );
+};
+
+const renderEventDocuments = (eventDetails: Events | null) => {
+  return eventDetails?.documents && eventDetails.documents.length > 0 ? (
+    <Col span={24}>
+      <Card title="Event Documents">
+        <List
+          dataSource={eventDetails?.documents}
+          renderItem={item => (
+            <List.Item>
+              <Typography.Link href={item} target="_blank">
+                {item}
+              </Typography.Link>
+            </List.Item>
+          )}
+        />
+      </Card>
+    </Col>
+  ) : null;
+};
+const renderFeedbackSummary = (feedbackSummaryLoading: boolean, feedbackSummary: { averageRating: number; totalFeedbacks: number; ratingDistribution: Record<string, number>; } | null, eventId: string | undefined) => {
+  return feedbackSummaryLoading ? (
+    <Spin tip="Loading feedback summary..." />
+  ) : feedbackSummary ? (
+    <Flex vertical gap="middle">
+      <Flex align="center" gap="middle">
+        <Rate allowHalf value={feedbackSummary.averageRating} disabled />
+        <Typography.Text>
+          {feedbackSummary.averageRating.toFixed(1)}/5 ({feedbackSummary.totalFeedbacks} reviews)
+        </Typography.Text>
+      </Flex>
+      <Flex vertical gap="small">
+        {/* Hiển thị rating distribution */}
+        {Object.entries(feedbackSummary.ratingDistribution).map(([ratingValue, count]) => ( // Đổi tên key thành ratingValue
+          <Flex justify="space-between" key={ratingValue}> {/* Sử dụng ratingValue làm key */}
+            <Text>{ratingValue} stars:</Text> {/* Hiển thị ratingValue */}
+            <Text>{count} feedbacks</Text>
+          </Flex>
+        ))}
+      </Flex>
+      <Button type="primary" size="small" >
+        <Link to={`/feedbacks/events/${eventId}`}>View All Feedbacks</Link>
+      </Button>
+    </Flex>
+  ) : (
+    <Alert message="No feedback summary available for this event yet." type="info" showIcon />
+  );
+};
+
+
+const breadcrumbs = [
+  {
+    title: (
+      <>
+        <HomeOutlined />
+        <span>Home</span>
+      </>
+    ),
+    path: '/',
+  },
+  {
+    title: (
+      <>
+        <PieChartOutlined />
+        <span>Dashboards</span>
+      </>
+    ),
+    menu: {
+      items: DASHBOARD_ITEMS.map((d) => ({
+        key: d.title,
+        title: <Link to={d.path}>{d.title}</Link>,
+      })),
+    },
+  },
+  {
+    title: 'My Event Details', // Đổi breadcrumb title
+  },
+];
+
+const getScheduleColumns = () => {
+  return [
     {
       title: 'Title',
-      dataIndex: 'title', 
+      dataIndex: 'title',
       key: 'title'
     },
     {
@@ -162,199 +448,5 @@ const DetailMyEventPage: React.FC = () => {
       dataIndex: 'description',
       key: 'description'
     },
-    // **Không có cột "Select Session" ở đây**
   ];
-
-  const hideTicketModal = () => {
-    setIsTicketModalVisible(false);
-  };
-  const showInviteModal = () => {
-    setIsInviteModalVisible(true);
-  };
-
-  const hideInviteModal = () => {
-    setIsInviteModalVisible(false);
-  };
-
-
-  const handleUpdateSessionsForTicket = async (sessionIds: string[]) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error("No access token found. Please login again.");
-        navigate('/auth/signin');
-        return;
-      }
-
-      const response = await authService.updateParticipantSessions(ticketData?.participantId, { sessionIds }, accessToken) as any;
-      if (response && response.statusCode === 200) {
-        message.success(response.message || 'Sessions updated successfully');
-        setIsTicketModalVisible(false);
-      } else {
-        message.error(response.message || 'Failed to update sessions');
-      }
-    } catch (error: any) {
-      console.error('Error updating sessions:', error);
-      message.error(error.message || 'Failed to update sessions');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  return (
-    <div>
-      <Helmet>
-        <title>Details | Dashboard</title>
-      </Helmet>
-      <PageHeader
-        title="Event Details"
-        breadcrumbs={[
-          {
-            title: (
-              <>
-                <HomeOutlined />
-                <span>Home</span>
-              </>
-            ),
-            path: '/',
-          },
-          {
-            title: (
-              <>
-                <PieChartOutlined />
-                <span>Dashboards</span>
-              </>
-            ),
-            menu: {
-              items: DASHBOARD_ITEMS.map((d) => ({
-                key: d.title,
-                title: <Link to={d.path}>{d.title}</Link>,
-              })),
-            },
-          },
-          {
-            title: 'My Event Details', // Đổi breadcrumb title
-          },
-        ]}
-      />
-      <BackBtn />
-
-      <Card title={<Title level={3}>{eventDetails?.name}</Title>}
-        extra={
-          <Space>
-            <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>Download Participants PDF</Button>
-            <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal} >Invite Users</Button>
-            {eventDetails?.status === 'SCHEDULED' && (
-              <Button
-                type="primary"
-                onClick={() => navigate(`/dashboards/check-in-out/${id}`)} // Navigate to QR scanner page
-              >
-                Check-in/Check-out
-              </Button>
-            )}
-          </Space>
-        }
-      >
-        <Row gutter={[16, 16]}>
-          <Col span={24}>
-            {eventDetails?.videoIntro ? (
-              // Nếu có video, hiển thị video
-              <Card title="Video Introduction">
-                <iframe
-                  width="100%"
-                  height="480"
-                  src={eventDetails.videoIntro}
-                  title="Event Introduction Video"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </Card>
-            ) : eventDetails?.banner ? (
-              // Nếu không có video mà có banner, hiển thị banner dưới dạng hình ảnh
-              <Card title="Event Banner">
-                <img
-                  src={eventDetails.banner}
-                  alt="Event Banner"
-                  style={{ width: "100%", height: "480px", objectFit: "cover" }}
-                />
-              </Card>
-            ) : (
-              // Nếu không có cả video lẫn banner, hiển thị link mặc định mà bạn để sẵn
-              <Card title="Event Introduction">
-                <iframe
-                  width="100%"
-                  height="480"
-                  src="https://www.youtube.com/embed/iTJJC2Hlmu0"
-                  title="Event Introduction Video"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </Card>
-            )}
-          </Col>
-          <Col span={24}>
-            <Card title="Schedule">
-              {eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
-                <Table
-                  rowKey="id"
-                  dataSource={eventDetails?.schedule}
-                  columns={scheduleColumns}
-                  pagination={false}
-                />
-              ) : (
-                <Alert message="No schedule available for this event." type="info" showIcon />
-              )}
-            </Card>
-          </Col>
-          {eventDetails?.documents && eventDetails.documents.length > 0 && (
-            <Col span={24}>
-              <Card title="Event Documents">
-                <List
-                  dataSource={eventDetails?.documents}
-                  renderItem={item => (
-                    <List.Item>
-                      <Typography.Link href={item} target="_blank">
-                        {item}
-                      </Typography.Link>
-                    </List.Item>
-                  )}
-                />
-              </Card>
-            </Col>
-          )}
-
-          <Col span={24}>
-            <Card title="Participants Check-in/Check-out List"
-              extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
-                Download PDF
-              </Button>}
-            >
-              <EventParticipantsTable eventId={id || ''} />
-            </Card>
-          </Col>
-
-          <Col span={24}>
-            <EventDiscussion
-              eventId={id || ''}
-              questions={questions}
-              setQuestions={setQuestions}
-            />
-          </Col>
-        </Row>
-      </Card>
-      <InviteUsersModal
-        visible={isInviteModalVisible}
-        onCancel={hideInviteModal}
-        eventId={id || ''}
-        onInvitationsSent={() => { }} // Example callback
-      />
-    </div>
-  );
 };
-
-export default DetailMyEventPage;

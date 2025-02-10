@@ -19,7 +19,6 @@ import {
   VerifyEmailPage,
   WelcomePage,
   CreateEventPage,
-  DetailEventPage,
   MyEventDashboardPage,
   UserDashboardPage,
 } from '../pages';

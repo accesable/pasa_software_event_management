@@ -1,8 +1,8 @@
 // src\pages\feedbacks\EventFeedbacksPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Alert, Button, Card, List, Spin, Typography, Rate, message } from 'antd';
-import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
+import { Alert, Button, Card, List, Spin, Typography, Rate, message, Avatar } from 'antd';
+import { HomeOutlined, PieChartOutlined, UserOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { PageHeader, BackBtn, Loader } from '../../components';
 import { Helmet } from 'react-helmet-async';
@@ -15,6 +15,7 @@ const EventFeedbacksPage: React.FC = () => {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userInfos, setUserInfos] = useState<Record<string, any>>({}); // State to store user info
 
   useEffect(() => {
     const fetchEventFeedbacks = async () => {
@@ -23,8 +24,12 @@ const EventFeedbacksPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbacks(eventId, accessToken || undefined) as any;
+        console.log('Event feedbacks:', response);
         if (response.statusCode === 200 && response.data.feedbacks) {
           setFeedbacks(response.data.feedbacks);
+          // Fetch user info for each feedback
+          const userIds = response.data.feedbacks.map((feedback: any) => feedback.userId);
+          fetchUsersInfo(userIds);
         } else {
           setError(response?.message || 'Failed to load event feedbacks');
           message.error(response?.message || 'Failed to load event feedbacks');
@@ -36,6 +41,21 @@ const EventFeedbacksPage: React.FC = () => {
       } finally {
         setLoading(false);
       }
+    };
+
+    const fetchUsersInfo = async (userIds: string[]) => {
+      const usersInfoMap: Record<string, any> = {};
+      for (const userId of userIds) {
+        try {
+          const response = await authService.getUserById(userId) as any;
+          if (response.statusCode === 200 && response.data) {
+            usersInfoMap[userId] = response.data.data;
+          }
+        } catch (error) {
+          console.error(`Error fetching user info for ${userId}`, error);
+        }
+      }
+      setUserInfos(usersInfoMap);
     };
 
     fetchEventFeedbacks();
@@ -97,7 +117,8 @@ const EventFeedbacksPage: React.FC = () => {
             renderItem={(feedback) => (
               <List.Item>
                 <List.Item.Meta
-                  title={`Rating: ${feedback.rating} stars`}
+                  avatar={<Avatar src={userInfos[feedback.userId]?.avatar} icon={<UserOutlined />} />}
+                  title={<Text strong>{userInfos[feedback.userId]?.name || 'Unknown User'}</Text>}
                   description={<Rate disabled allowHalf value={feedback.rating} />}
                 />
                 <Paragraph>{feedback.comment}</Paragraph>

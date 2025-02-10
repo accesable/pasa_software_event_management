@@ -18,6 +18,7 @@ import {
   Typography,
   Checkbox,
   Spin,
+  Rate,
 } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
@@ -49,6 +50,12 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const [updatingSessions, setUpdatingSessions] = useState<boolean>(false); // State loading cho update session
   const [isTicketModalVisible, setIsTicketModalVisible] = useState<boolean>(false); // State for ticket modal visibility
   const { eventId } = useOutletContext<{ eventId: string }>();
+  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
+  const [feedbackSummary, setFeedbackSummary] = useState<{
+    averageRating: number;
+    totalFeedbacks: number;
+    ratingDistribution: Record<string, number>;
+  } | null>(null);
 
   useEffect(() => {
     const fetchEventDetailsAndParticipation = async () => {
@@ -191,6 +198,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   };
 
 
+
   return (
     <div>
       <Helmet>
@@ -312,6 +320,53 @@ const ParticipatedEventDetailsPage: React.FC = () => {
             </Col>
           )}
           {eventDetails?.status === 'FINISHED' && (
+            <Col span={24} >
+              <Card title="Feedback Summary">
+                {feedbackSummaryLoading ? (
+                  <Spin tip="Loading feedback summary..." />
+                ) : feedbackSummary ? (
+                  <Flex vertical gap="middle">
+                    <Flex align="center" gap="middle">
+                      <Rate allowHalf value={feedbackSummary.averageRating} disabled />
+                      <Typography.Text>
+                        {feedbackSummary.averageRating.toFixed(1)}/5 ({feedbackSummary.totalFeedbacks} reviews)
+                      </Typography.Text>
+                    </Flex>
+                    <Flex vertical gap="small">
+                      {/* Hiển thị rating distribution */}
+                      <Flex justify="space-between">
+                        <Text>5 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["5"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>4 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["4"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>3 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["3"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>2 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>1 star:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
+                      </Flex>
+                    </Flex>
+                    <Button type="primary" size="small" >
+                      <Link to={`/feedbacks/events/${eventId}`}>View All Feedbacks</Link>
+                    </Button>
+                  </Flex>
+                ) : (
+                  <Alert message="No feedback summary available for this event yet." type="info" showIcon />
+                )}
+
+              </Card>
+            </Col>
+          )}
+          {eventDetails?.status === 'FINISHED' && (
             <Col span={24}>
               <Card title="Participants Check-in/Check-out List"
                 extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
@@ -322,6 +377,13 @@ const ParticipatedEventDetailsPage: React.FC = () => {
               </Card>
             </Col>
           )}
+          <Col span={24}>
+            <EventDiscussion
+              eventId={id || ''}
+              questions={questions}
+              setQuestions={setQuestions}
+            />
+          </Col>
         </Row>
       </Card>
       <TicketDetailsModal
@@ -329,13 +391,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         onCancel={hideTicketModal}
         ticket={ticketData}
       />
-      <Col span={24}>
-        <EventDiscussion
-          eventId={eventId}
-          questions={questions}
-          setQuestions={setQuestions}
-        />
-      </Col>
     </div>
   );
 };

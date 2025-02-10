@@ -821,6 +821,11 @@ export default GoogleLoginButton;
 
 
 src\components\index.ts:
+export * from './Nprogress';
+export * from './dashboard';
+export * from './Container';
+export * from './CreateGuestModal';
+export * from './CreateSpeakerModal';
 export { BackBtn } from './BackBtn/BackBtn.tsx';
 export { Card } from './Card/Card';
 export { ContactForm } from './ContactForm/ContactForm';
@@ -839,9 +844,6 @@ export { SitemapCard } from './SitemapCard/SitemapCard';
 export { SocialMediaCard } from './SocialMediaCard/SocialMediaCard';
 export { TimelineCard } from './TimelineCard/TimelineCard';
 export { UserAvatar } from './UserAvatar/UserAvatar';
-export * from './Nprogress';
-export * from './dashboard';
-export * from './Container';
 
 
 src\components\InviteUsersModal.tsx:
@@ -2979,30 +2981,37 @@ export { ProjectsTable } from './ProjectsTables/ProjectsTable.tsx';
 
 
 src\components\dashboard\projects\ClientsTable\ClientsTable.tsx:
+// src\components\dashboard\projects\ClientsTable\ClientsTable.tsx
 import { Table, TableProps, Typography } from 'antd';
 import { Clients } from '../../../../types';
 import { UserAvatar } from '../../../index.ts';
+import dayjs from 'dayjs';
 
 const COLUMNS = [
   {
     title: 'Client Name',
-    dataIndex: 'client_name',
+    dataIndex: 'name', // changed from 'client_name' to 'name'
     key: 'c_name',
-    render: (_: any, { first_name, last_name }: Clients) => (
-      <UserAvatar fullName={`${first_name} ${last_name}`} />
+    render: (_: any, record: any) => ( // use any to avoid type error, or define proper type for record
+      <UserAvatar fullName={record.name} avatarUrl={record.avatar} /> // use record.name and record.avatarUrl
     ),
   },
   {
-    title: 'Amount',
-    dataIndex: 'total_price',
-    key: 'client_amount',
-    render: (_: any) => <Typography.Text>${_}</Typography.Text>,
+    title: 'Email',
+    dataIndex: 'email', // added Email column
+    key: 'client_email',
+  },
+  {
+    title: 'Last Login', // added Last Login column
+    dataIndex: 'lastLoginAt',
+    key: 'client_last_login',
+    render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm') : 'Never', // format date
   },
 ];
 
-type Props = {
-  data: Clients[];
-} & TableProps<any>;
+interface Props extends TableProps<any> {
+  data: any[]; // changed type to any[] to match fetched user data
+}
 
 export const ClientsTable = ({ data, ...others }: Props) => (
   <Table
@@ -6349,6 +6358,99 @@ const useFetchParticipatedEventsData = (status?: string) => {
 
 export default useFetchParticipatedEventsData;
 
+src\hooks\useFetchTopClients.tsx:
+// src\hooks\useFetchTopClients.tsx
+// src\hooks\useFetchTopClients.tsx
+import { useCallback, useEffect, useState } from 'react';
+import authService from '../services/authService';
+import { User } from '../types';
+
+interface UserApiResponse {
+    statusCode: number;
+    message: string;
+    data: {
+        users: User[];
+        meta: {
+            totalItems: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+            count: number;
+        };
+    };
+}
+
+const useFetchTopClients = (limit?: number) => {
+    const [data, setData] = useState<User[]>([]);
+    const [error, setError] = useState<any>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                throw new Error("No access token found. Please login again.");
+            }
+
+            const response = await authService.getUsers(accessToken);
+            const apiResponse = response as UserApiResponse;
+
+            if (apiResponse.statusCode === 200 && apiResponse.data.users) {
+                let users = apiResponse.data.users;
+                if (limit) {
+                    users = users.slice(0, limit);
+                }
+                setData(users);
+            } else {
+                throw new Error(apiResponse.message || "Failed to fetch users");
+            }
+        } catch (error: any) {
+            setError(error);
+        } finally {
+            setLoading(false);
+        }
+    }, [limit]);
+
+    useEffect(() => {
+        const fetchTopClientsData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const accessToken = localStorage.getItem('accessToken');
+                if (!accessToken) {
+                    throw new Error("No access token found. Please login again.");
+                }
+
+                const response = await authService.getUsers(accessToken);
+                const apiResponse = response as UserApiResponse;
+
+                if (apiResponse.statusCode === 200 && apiResponse.data.users) {
+                    let users = apiResponse.data.users;
+                    if (limit) {
+                        users = users.slice(0, limit);
+                    }
+                    setData(users);
+                } else {
+                    throw new Error(apiResponse.message || "Failed to fetch users");
+                }
+            } catch (error: any) {
+                setError(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTopClientsData();
+    }, [limit]);
+
+    return { data, error, loading };
+};
+
+export default useFetchTopClients;
+
+
 src\hooks\useFetchUserEventsByDate.tsx:
 // src\hooks\useFetchUserEventsByDate.tsx
 import { useState, useEffect, useCallback } from 'react';
@@ -7656,122 +7758,6 @@ src\layouts\userAccount\styles.css:
 }
 
 
-src\pages\About.tsx:
-import { Col, Flex, Row, Typography } from 'antd';
-import { useStylesContext } from '../context';
-import {
-  BugOutlined,
-  BulbOutlined,
-  CodeOutlined,
-  GithubOutlined,
-  HomeOutlined,
-  PieChartOutlined,
-} from '@ant-design/icons';
-import { Card, PageHeader } from '../components';
-import { createElement } from 'react';
-import { DASHBOARD_ITEMS, PATH_GITHUB } from '../constants';
-import { Link } from 'react-router-dom';
-
-const { Title, Text } = Typography;
-
-const SITES = [
-  {
-    title: 'GitHub',
-    description: 'Source code of the website.',
-    icon: GithubOutlined,
-    link: PATH_GITHUB.repo,
-  },
-  {
-    title: 'Report Bug',
-    description: 'Something not working? Report a bug',
-    icon: BugOutlined,
-    link: PATH_GITHUB.repo + '/issues/new/choose',
-  },
-  {
-    title: 'Request Feature',
-    description: 'Need something? Request a new feature.',
-    icon: BulbOutlined,
-    link: PATH_GITHUB.repo + '/issues/new/choose',
-  },
-  {
-    title: 'Contribute',
-    description: 'Contribute to this project.',
-    icon: CodeOutlined,
-    link: PATH_GITHUB.repo + '/blob/main/CONTRIBUTING.md',
-  },
-];
-
-export const AboutPage = () => {
-  const context = useStylesContext();
-
-  return (
-    <div>
-      <Flex vertical gap="middle">
-        <PageHeader
-          title="About"
-          breadcrumbs={[
-            {
-              title: (
-                <>
-                  <HomeOutlined />
-                  <span>home</span>
-                </>
-              ),
-              path: '/',
-            },
-            {
-              title: (
-                <>
-                  <PieChartOutlined />
-                  <span>dashboards</span>
-                </>
-              ),
-              menu: {
-                items: DASHBOARD_ITEMS.map((d) => ({
-                  key: d.title,
-                  title: <Link to={d.path}>{d.title}</Link>,
-                })),
-              },
-            },
-            {
-              title: 'about',
-            },
-          ]}
-        />
-        <Card>
-          <Flex vertical gap="small">
-            <Title level={3} className="m-0">
-              Antd Admin
-            </Title>
-            <Text>
-              A dynamic and versatile multipurpose dashboard template built
-              using React, Vite, Ant Design, and Storybook
-            </Text>
-          </Flex>
-        </Card>
-        <Row {...context?.rowProps}>
-          {SITES.map((s) => (
-            <Col xs={24} sm={12} key={`col-${s.title}`}>
-              <a href={s.link} target="_blank" rel="noopener noreferrer">
-                <Card hoverable>
-                  <Flex vertical gap="small">
-                    {createElement(s.icon, { style: { fontSize: 24 } })}
-                    <Title level={5} className="m-0">
-                      {s.title}
-                    </Title>
-                    <Text>{s.description}</Text>
-                  </Flex>
-                </Card>
-              </a>
-            </Col>
-          ))}
-        </Row>
-      </Flex>
-    </div>
-  );
-};
-
-
 src\pages\DeclineEventPage.tsx:
 // src/pages/DeclineEventPage.tsx
 import React, { useEffect, useState } from 'react';
@@ -8112,13 +8098,13 @@ export const HomePage = () => {
 
 src\pages\index.ts:
 export { HomePage } from './Home.tsx';
-export { SitemapPage } from './Sitemap.tsx';
 export * from './dashboards';
 export * from './userAccount';
 export * from './authentication';
 export * from './errors';
 export * from './create';
 export * from './details';
+
 
 src\pages\QRScannerPage.tsx:
 // src/pages/QRScannerPage.tsx
@@ -8302,59 +8288,6 @@ const QRScannerPage: React.FC = () => {
 };
 
 export default QRScannerPage;
-
-
-src\pages\Sitemap.tsx:
-import { SitemapCard } from '../components';
-import { Col, Flex, Row, Typography } from 'antd';
-import {
-  AUTHENTICATION_ITEMS,
-  DASHBOARD_ITEMS,
-  ERROR_ITEMS,
-  USER_PROFILE_ITEMS,
-} from '../constants';
-import { useStylesContext } from '../context';
-import { BranchesOutlined } from '@ant-design/icons';
-
-const SITES = [
-  {
-    title: 'dashboard',
-    links: DASHBOARD_ITEMS,
-  },
-  {
-    title: 'user profile',
-    links: USER_PROFILE_ITEMS,
-  },
-  {
-    title: 'authentication',
-    links: AUTHENTICATION_ITEMS,
-  },
-  {
-    title: 'errors',
-    links: ERROR_ITEMS,
-  },
-];
-
-export const SitemapPage = () => {
-  const context = useStylesContext();
-
-  return (
-    <div>
-      <Flex vertical gap="middle">
-        <Typography.Title level={3}>
-          <BranchesOutlined /> Sitemap
-        </Typography.Title>
-        <Row {...context?.rowProps}>
-          {SITES.map((s) => (
-            <Col xs={24} sm={12} md={8} xl={6} key={`col-${s.title}`}>
-              <SitemapCard data={s} style={{ height: '100%' }} />
-            </Col>
-          ))}
-        </Row>
-      </Flex>
-    </div>
-  );
-};
 
 
 src\pages\authentication\AccountDeactivate.tsx:
@@ -9921,126 +9854,30 @@ const { Text, Title } = Typography;
 
 const SalesChart = () => {
   const data = [
-    {
-      country: 'Online Store',
-      date: 'Jan',
-      value: 1390.5,
-    },
-    {
-      country: 'Online Store',
-      date: 'Feb',
-      value: 1469.5,
-    },
-    {
-      country: 'Online Store',
-      date: 'Mar',
-      value: 1521.7,
-    },
-    {
-      country: 'Online Store',
-      date: 'Apr',
-      value: 1615.9,
-    },
-    {
-      country: 'Online Store',
-      date: 'May',
-      value: 1703.7,
-    },
-    {
-      country: 'Online Store',
-      date: 'Jun',
-      value: 1767.8,
-    },
-    {
-      country: 'Online Store',
-      date: 'Jul',
-      value: 1806.2,
-    },
-    {
-      country: 'Online Store',
-      date: 'Aug',
-      value: 1903.5,
-    },
-    {
-      country: 'Online Store',
-      date: 'Sept',
-      value: 1986.6,
-    },
-    {
-      country: 'Online Store',
-      date: 'Oct',
-      value: 1952,
-    },
-    {
-      country: 'Online Store',
-      date: 'Nov',
-      value: 1910.4,
-    },
-    {
-      country: 'Online Store',
-      date: 'Dec',
-      value: 2015.8,
-    },
-    {
-      country: 'Facebook',
-      date: 'Jan',
-      value: 109.2,
-    },
-    {
-      country: 'Facebook',
-      date: 'Feb',
-      value: 115.7,
-    },
-    {
-      country: 'Facebook',
-      date: 'Mar',
-      value: 120.5,
-    },
-    {
-      country: 'Facebook',
-      date: 'Apr',
-      value: 128,
-    },
-    {
-      country: 'Facebook',
-      date: 'May',
-      value: 134.4,
-    },
-    {
-      country: 'Facebook',
-      date: 'Jun',
-      value: 142.2,
-    },
-    {
-      country: 'Facebook',
-      date: 'Jul',
-      value: 157.5,
-    },
-    {
-      country: 'Facebook',
-      date: 'Aug',
-      value: 169.5,
-    },
-    {
-      country: 'Facebook',
-      date: 'Sept',
-      value: 186.3,
-    },
-    {
-      country: 'Facebook',
-      date: 'Oct',
-      value: 195.5,
-    },
-    {
-      country: 'Facebook',
-      date: 'Nov',
-      value: 198,
-    },
-    {
-      country: 'Facebook',
-      date: 'Dec',
-      value: 211.7,
-    },
+    { country: 'Online Store', date: 'Jan', value: 1390.5 },
+    { country: 'Online Store', date: 'Feb', value: 1469.5 },
+    { country: 'Online Store', date: 'Mar', value: 1521.7 },
+    { country: 'Online Store', date: 'Apr', value: 1615.9 },
+    { country: 'Online Store', date: 'May', value: 1703.7 },
+    { country: 'Online Store', date: 'Jun', value: 1767.8 },
+    { country: 'Online Store', date: 'Jul', value: 1806.2 },
+    { country: 'Online Store', date: 'Aug', value: 1903.5 },
+    { country: 'Online Store', date: 'Sept', value: 1986.6 },
+    { country: 'Online Store', date: 'Oct', value: 1952 },
+    { country: 'Online Store', date: 'Nov', value: 1910.4 },
+    { country: 'Online Store', date: 'Dec', value: 2015.8 },
+    { country: 'Facebook', date: 'Jan', value: 109.2 },
+    { country: 'Facebook', date: 'Feb', value: 115.7 },
+    { country: 'Facebook', date: 'Mar', value: 120.5 },
+    { country: 'Facebook', date: 'Apr', value: 128 },
+    { country: 'Facebook', date: 'May', value: 134.4 },
+    { country: 'Facebook', date: 'Jun', value: 142.2 },
+    { country: 'Facebook', date: 'Jul', value: 157.5 },
+    { country: 'Facebook', date: 'Aug', value: 169.5 },
+    { country: 'Facebook', date: 'Sept', value: 186.3 },
+    { country: 'Facebook', date: 'Oct', value: 195.5 },
+    { country: 'Facebook', date: 'Nov', value: 198 },
+    { country: 'Facebook', date: 'Dec', value: 211.7 },
   ];
 
   const config = {
@@ -10056,73 +9893,6 @@ const SalesChart = () => {
 
   return <Area {...config} />;
 };
-//     {
-//       type: 'Appliances',
-//       value: 27,
-//     },
-//     {
-//       type: 'Electronics',
-//       value: 25,
-//     },
-//     {
-//       type: 'Clothing',
-//       value: 18,
-//     },
-//     {
-//       type: 'Shoes',
-//       value: 15,
-//     },
-//     {
-//       type: 'Food',
-//       value: 10,
-//     },
-//     {
-//       type: 'Cosmetice',
-//       value: 5,
-//     },
-//   ];
-
-//   const config = {
-//     appendPadding: 10,
-//     data,
-//     angleField: 'value',
-//     colorField: 'type',
-//     radius: 1,
-//     innerRadius: 0.5,
-//     label: {
-//       type: 'inner',
-//       offset: '-50%',
-//       content: '{value}%',
-//       style: {
-//         textAlign: 'center',
-//         fontSize: 16,
-//       },
-//     },
-//     interactions: [
-//       {
-//         type: 'element-selected',
-//       },
-//       {
-//         type: 'element-active',
-//       },
-//     ],
-//     statistic: {
-//       title: false,
-//       content: {
-//         style: {
-//           whiteSpace: 'pre-wrap',
-//           overflow: 'hidden',
-//           textOverflow: 'ellipsis',
-//           fontSize: 18,
-//         },
-//         content: '18,935\nsales',
-//       },
-//     },
-//   };
-
-//   // @ts-ignore
-//   return <Pie {...config} />;
-// };
 
 const POPOVER_BUTTON_PROPS: ButtonProps = {
   type: 'text',
@@ -10175,44 +9945,47 @@ export const GeneralDashboardPage = () => {
       <Row {...stylesContext?.rowProps}>
         <Col sm={24} lg={16}>
           <Row {...stylesContext?.rowProps}>
+            {/* RevenueCard cho số sự kiện người đó đã tổ chức */}
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Event Views"
-                value={20149}        // Số lượt xem sự kiện (ví dụ)
-                diff={5.54}
+                title="Organized Events"
+                value={15} // Số sự kiện đã tổ chức của người dùng (điều chỉnh theo dữ liệu BE)
+                diff={3.2} // Thay đổi % so với kỳ trước (nếu có)
                 height={180}
                 justify="space-between"
               />
             </Col>
+            {/* RevenueCard cho số sự kiện người đó tham dự */}
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Registrations"
-                value={5834}         // Số lượt đăng ký tham gia
-                diff={-12.3}
+                title="Attended Events"
+                value={8} // Số sự kiện người dùng tham dự
+                diff={2.1}
                 height={180}
                 justify="space-between"
               />
             </Col>
+            {/* RevenueCard cho số lượng speakers người đó đã tạo */}
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Check-Ins"
-                value={3270}         // Số người thực sự có mặt (check-in)
-                diff={9.52}
+                title="Speakers Created"
+                value={12} // Số lượng speakers do người dùng tạo ra
+                diff={5.5}
                 height={180}
                 justify="space-between"
               />
             </Col>
+            {/* RevenueCard cho số lượng guest người đó đã tạo */}
             <Col xs={24} sm={12}>
               <RevenueCard
-                title="Ticket Sales"
-                value="$ 1.324K"      // Doanh số bán vé
-                diff={2.34}
+                title="Guests Created"
+                value={5} // Số lượng guest do người dùng tạo ra
+                diff={1.7}
                 height={180}
                 justify="space-between"
               />
             </Col>
           </Row>
-
         </Col>
         <Col sm={24} lg={8}>
           <CustomerReviewsCard />
@@ -10257,7 +10030,6 @@ export const GeneralDashboardPage = () => {
     </div>
   );
 };
-
 
 
 src\pages\dashboards\index.ts:
@@ -10862,7 +10634,8 @@ export const ParticipationStatsPage: React.FC = () => {
 };
 
 src\pages\dashboards\Projects.tsx:
-import { Alert, Button, Col, Row, Segmented, Space } from 'antd';
+// src\pages\dashboards\Projects.tsx
+import { Alert, Button, Col, Row, Segmented, Space, Typography } from 'antd';
 import {
   Card,
   ClientsTable,
@@ -10873,7 +10646,7 @@ import {
   RevenueCard,
 } from '../../components';
 import { Column } from '@ant-design/charts';
-import { Projects } from '../../types';
+import { Events, Projects, User } from '../../types';
 import { useState } from 'react';
 import {
   CloudUploadOutlined,
@@ -10885,6 +10658,9 @@ import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useFetchData } from '../../hooks';
+import { EventsCard } from '../../components/dashboard/shared';
+import useFetchOrganizedEventsData from '../../hooks/useFetchOrganizedEventsData';
+import useFetchTopClients from '../../hooks/useFetchTopClients'; // Import useFetchTopClients
 
 const RevenueColumnChart = () => {
   const data = [
@@ -11016,11 +10792,15 @@ export const ProjectsDashboardPage = () => {
     loading: projectsDataLoading,
   } = useFetchData('../mocks/Projects.json');
   const {
-    data: clientsData,
-    error: clientsDataError,
-    loading: clientsDataLoading,
-  } = useFetchData('../mocks/Clients.json');
+    data: clientsData, // rename to topClientsData to avoid confusion
+    error: topClientsError, // rename to topClientsError
+    loading: topClientsLoading, // rename to topClientsLoading
+  } = useFetchTopClients(5); // use useFetchTopClients hook to fetch top clients
   const [projectTabsKey, setProjectsTabKey] = useState<string>('all');
+  const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } = useFetchOrganizedEventsData();
+  const getFilteredEvents = (status?: string) => {
+    return (eventsData || []).filter((event: Events) => status ? event.status === status : true);
+  };
 
   const PROJECT_TABS_CONTENT: Record<string, React.ReactNode> = {
     all: <ProjectsTable key="all-projects-table" data={projectsData} />,
@@ -11098,25 +10878,24 @@ export const ProjectsDashboardPage = () => {
         </Col>
         <Col span={24}>
           <Card
-            title="Recently added projects"
-            extra={<Button>View all projects</Button>}
+            title="Recently added events"
           >
-            {projectsDataError ? (
+            {eventsError && (
               <Alert
-                message="Error"
-                description={projectsDataError.toString()}
-                type="error"
+                message="No events participated yet."
+                type="info"
                 showIcon
               />
-            ) : projectsDataLoading ? (
+            )}
+            {eventsLoading ? (
               <Loader />
             ) : (
               <Row gutter={[16, 16]}>
-                {projectsData.slice(0, 4).map((o: Projects) => {
+                {getFilteredEvents().slice(0, 4).map((o: Events) => {
                   return (
-                    <Col xs={24} sm={12} xl={6} key={o.project_id}>
-                      <ProjectsCard
-                        project={o}
+                    <Col xs={24} sm={12} xl={6} key={o.id}>
+                      <EventsCard
+                        event={o}
                         type="inner"
                         style={{ height: '100%' }}
                       />
@@ -11141,17 +10920,17 @@ export const ProjectsDashboardPage = () => {
         </Col>
         <Col xs={24} sm={12} xl={8}>
           <Card title="Top clients">
-            {clientsDataError ? (
+            {topClientsError ? ( // use topClientsError
               <Alert
                 message="Error"
-                description={clientsDataError.toString()}
+                description={topClientsError.toString()} // use topClientsError
                 type="error"
                 showIcon
               />
-            ) : clientsDataLoading ? (
+            ) : topClientsLoading ? ( // use topClientsLoading
               <Loader />
             ) : (
-              <ClientsTable data={clientsData.slice(0, 5)} />
+              <ClientsTable data={clientsData} /> // use clientsData (fetched from useFetchTopClients)
             )}
           </Card>
         </Col>
@@ -11621,7 +11400,7 @@ export const UserDashboardPage = () => {
 }
 
 src\pages\details\EventDetailsPage.tsx:
-// src/pages/details/EventDetailsPage.tsx
+// src\pages\details\EventDetailsPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import {
@@ -11633,7 +11412,9 @@ import {
   Image,
   List,
   message,
+  Rate,
   Row,
+  Spin,
   Table,
   Typography,
   Checkbox,
@@ -11648,6 +11429,7 @@ import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import { Helmet } from 'react-helmet-async';
 import EventDiscussion from '../../components/EventDiscussion';
 
+const { Title, Text } = Typography;
 
 export const EventDetailsPage: React.FC = () => {
   // Lấy eventId từ outlet context (hoặc từ useParams nếu cần)
@@ -11662,6 +11444,12 @@ export const EventDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
+  const [feedbackSummary, setFeedbackSummary] = useState<{
+    averageRating: number;
+    totalFeedbacks: number;
+    ratingDistribution: Record<string, number>;
+  } | null>(null);
+  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
 
   // State để đảm bảo API accept được gọi 1 lần duy nhất
   const [hasAccepted, setHasAccepted] = useState(false);
@@ -11689,7 +11477,26 @@ export const EventDetailsPage: React.FC = () => {
       }
     };
 
+    const fetchEventFeedbackSummary = async () => {
+      if (!eventId) return;
+      setFeedbackSummaryLoading(true);
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
+        if (response.statusCode === 200 && response.data) {
+          setFeedbackSummary(response.data.data);
+        } else {
+          console.error('Failed to fetch feedback summary:', response.message);
+        }
+      } catch (error: any) {
+        console.error('Error fetching feedback summary:', error);
+      } finally {
+        setFeedbackSummaryLoading(false);
+      }
+    };
+
     fetchEventDetails();
+    fetchEventFeedbackSummary();
   }, [eventId, navigate]);
 
   // Nếu URL có token, gọi API accept (chỉ gọi 1 lần)
@@ -11741,6 +11548,8 @@ export const EventDetailsPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const handleDownloadPdf = async () => { /* ... Giữ nguyên hàm handleDownloadPdf ... */ };
 
   const onSessionSelectChange = (selectedKeys: React.Key[]) => {
     setSelectedSessionIds(selectedKeys as string[]);
@@ -11821,9 +11630,9 @@ export const EventDetailsPage: React.FC = () => {
       />
 
       <Card
-              title={<Typography.Title level={3}>{eventDetails.name}</Typography.Title>}
-              extra={<Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>Register Event</Button>}
-            >
+        title={<Typography.Title level={3}>{eventDetails.name}</Typography.Title>}
+        extra={<Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>Register Event</Button>}
+      >
         <Row gutter={[16, 16]}>
           <Col span={24}>
             {eventDetails.videoIntro ? (
@@ -11891,6 +11700,64 @@ export const EventDetailsPage: React.FC = () => {
                     </List.Item>
                   )}
                 />
+              </Card>
+            </Col>
+          )}
+          {eventDetails?.status === 'FINISHED' && (
+            <Col span={24} >
+              <Card title="Feedback Summary">
+                {feedbackSummaryLoading ? (
+                  <Spin tip="Loading feedback summary..." />
+                ) : feedbackSummary ? (
+                  <Flex vertical gap="middle">
+                    <Flex align="center" gap="middle">
+                      <Rate allowHalf value={feedbackSummary.averageRating} disabled />
+                      <Typography.Text>
+                        {feedbackSummary.averageRating.toFixed(1)}/5 ({feedbackSummary.totalFeedbacks} reviews)
+                      </Typography.Text>
+                    </Flex>
+                    <Flex vertical gap="small">
+                      {/* Hiển thị rating distribution */}
+                      <Flex justify="space-between">
+                        <Text>5 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["5"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>4 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["4"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>3 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["3"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>2 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>1 star:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
+                      </Flex>
+                    </Flex>
+                    <Button type="primary" size="small" >
+                      <Link to={`/feedbacks/events/${eventId}`}>View All Feedbacks</Link>
+                    </Button>
+                  </Flex>
+                ) : (
+                  <Alert message="No feedback summary available for this event yet." type="info" showIcon />
+                )}
+
+              </Card>
+            </Col>
+          )}
+          {eventDetails?.status === 'FINISHED' && (
+            <Col span={24}>
+              <Card title="Participants Check-in/Check-out List"
+                extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
+                  Download PDF
+                </Button>}
+              >
+                <EventParticipantsTable eventId={id || ''} />
               </Card>
             </Col>
           )}
@@ -11992,7 +11859,7 @@ export {DetailEventPage} from './Events'
 src\pages\details\MyEventPage.tsx:
 // src\pages\details\MyEventPage.tsx
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Button,
@@ -12009,8 +11876,10 @@ import {
   Tag,
   Typography,
   Checkbox,
+  Rate,
+  Spin,
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined, QuestionOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { PageHeader, Loader, UserAvatar, BackBtn } from '../../components';
 import { useFetchData } from '../../hooks';
@@ -12040,17 +11909,23 @@ export interface ParticipantData {
 
 
 const DetailMyEventPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: eventId } = useParams<{ id: string }>(); // Corrected: Use 'id' and rename to 'eventId'
   const [eventDetails, setEventDetails] = useState<Events | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
-  const [ticketData, setTicketData] = useState<any | null>(null);
+  const [ticketData, setTicketData] = useState<TicketType | null>(null); // Declare ticketData here
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
-  const dispatch = useDispatch(); // Thêm dispatch để gọi action Redux (nếu bạn dùng Redux)
+  const dispatch = useDispatch();
   const [questions, setQuestions] = useState<any[]>([]);
+  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
+  const [feedbackSummary, setFeedbackSummary] = useState<{
+    averageRating: number;
+    totalFeedbacks: number;
+    ratingDistribution: Record<string, number>;
+  } | null>(null);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -12058,7 +11933,7 @@ const DetailMyEventPage: React.FC = () => {
       setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
+        const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
         if (response && response.statusCode === 200) {
           setEventDetails(response.data.event);
         } else {
@@ -12074,67 +11949,345 @@ const DetailMyEventPage: React.FC = () => {
       }
     };
 
+    const fetchEventFeedbackSummary = async () => { // Fetch feedback summary
+      if (!eventId) return;
+      setFeedbackSummaryLoading(true);
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
+        if (response.statusCode === 200 && response.data) {
+          setFeedbackSummary(response.data.data);
+        }
+      } catch (error: any) {
+        console.error('Error fetching feedback summary:', error);
+      } finally {
+        setFeedbackSummaryLoading(false);
+      }
+    };
+
     fetchEventDetails();
-  }, [id, navigate]);
+    eventDetails?.status === 'FINISHED' && fetchEventFeedbackSummary(); // Fetch feedback only if event finished
+  }, [eventId, navigate, eventDetails?.status]); // Fetch feedback summary when event status changes to finished
 
-  const handleDownloadPdf = async () => {
-    try {
-      setLoading(true);
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error("No access token found. Please login again.");
-        return;
-      }
-      // Gọi API lấy danh sách participant
-      const response = await authService.getEventParticipants(id, accessToken) as any;
-      const participants = response.data || [];
-      if (!participants || participants.length === 0) {
-        message.error("No participants data available.");
-        return;
-      }
 
-      // Khởi tạo jsPDF
-      const doc = new jsPDF();
-      // Tiêu đề của PDF
-      doc.setFontSize(16);
-      doc.text("Participants Check-in/Check-out List", 14, 20);
-
-      // Định nghĩa cột và dữ liệu của bảng
-      const columns = ["No", "Name", "Email", "Check-In", "Check-Out"];
-      const rows = participants.map((p: any, index: number) => [
-        index + 1,
-        p.name,
-        p.email,
-        p.checkInAt ? dayjs(p.checkInAt).format("YYYY-MM-DD HH:mm:ss") : "",
-        p.checkOutAt ? dayjs(p.checkOutAt).format("YYYY-MM-DD HH:mm:ss") : ""
-      ]);
-
-      // Dùng autoTable để tạo bảng
-      (doc as any).autoTable({
-        head: [columns],
-        body: rows,
-        startY: 30,
-        theme: 'grid'
-      });
-
-      // Lưu file PDF
-      doc.save("participants.pdf");
-    } catch (error: any) {
-      console.error("Error generating PDF:", error);
-      message.error("List check-in/check-out is empty.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
 
   const onSessionSelectChange = (selectedKeys: React.Key[]) => {
     setSelectedSessionIds(selectedKeys as string[]);
   };
 
-  const scheduleColumns = [
+  const scheduleColumns = getScheduleColumns();
+
+  const hideTicketModal = () => {
+    setIsTicketModalVisible(false);
+  };
+  const showInviteModal = () => {
+    setIsInviteModalVisible(true);
+  };
+
+  const hideInviteModal = () => {
+    setIsInviteModalVisible(false);
+  };
+
+
+  const handleUpdateSessionsForTicket = handleUpdateSessionsForTicketFunction(setLoading, message, navigate, localStorage, authService, setIsTicketModalVisible, setTicketData, ticketData);
+
+
+  return (
+    <div>
+      <Helmet>
+        <title>Details | Dashboard</title>
+      </Helmet>
+      <PageHeader
+        title="Event Details"
+        breadcrumbs={breadcrumbs}
+        btnBack={<BackBtn />}
+      />
+      <BackBtn />
+
+      <Card title={<Title level={3}>{eventDetails?.name}</Title>}
+        extra={
+          <Space>
+            <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal} >Invite Users</Button>
+            {eventDetails?.status === 'SCHEDULED' && (
+              <Button
+                type="primary"
+                onClick={() => navigate(`/dashboards/check-in-out/${eventId}`)} // Navigate to QR scanner page
+              >
+                Check-in/Check-out
+              </Button>
+            )}
+          </Space>
+        }
+      >
+        <Row gutter={[16, 16]}>
+          <Col span={24}>
+            {renderEventIntroduction(eventDetails)}
+          </Col>
+          <Col span={24}>
+            <Card title="Schedule">
+              {renderScheduleTable(eventDetails, scheduleColumns)}
+            </Card>
+          </Col>
+          {renderEventDocuments(eventDetails)}
+          {eventDetails?.status === 'FINISHED' && (
+            <Col span={24} >
+              <Card title="Feedback Summary">
+                {renderFeedbackSummary(feedbackSummaryLoading, feedbackSummary, eventId)}
+              </Card>
+            </Col>
+          )}
+          <Col span={24}>
+            <Card title="Participants Check-in/Check-out List"
+              extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
+                Download PDF
+              </Button>}
+            >
+              <EventParticipantsTable eventId={eventId || ''} />
+            </Card>
+          </Col>
+
+          <Col span={24}>
+            <EventDiscussion
+              eventId={eventId || ''}
+              questions={questions}
+              setQuestions={setQuestions}
+            />
+          </Col>
+        </Row>
+      </Card>
+      <InviteUsersModal
+        visible={isInviteModalVisible}
+        onCancel={hideInviteModal}
+        eventId={eventId || ''}
+        onInvitationsSent={() => { }} // Example callback
+      />
+      <TicketDetailsModal
+        visible={isTicketModalVisible}
+        onCancel={hideTicketModal}
+        ticket={ticketData}
+      />
+    </div>
+  );
+};
+
+
+export default DetailMyEventPage;
+
+
+// Các hàm helper để render UI và xử lý logic (giữ code sạch hơn trong component chính)
+const handleDownloadPdfFunction = (setLoading: React.Dispatch<React.SetStateAction<boolean>>, message: any, authService: any, dayjs: any, eventId: string | undefined) => async () => {
+  try {
+    setLoading(true);
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      message.error("No access token found. Please login again.");
+      return;
+    }
+    // Gọi API lấy danh sách participant
+    const response = await authService.getEventParticipants(eventId, accessToken) as any;
+    const participants = response.data || [];
+    if (!participants || participants.length === 0) {
+      message.error("No participants data available.");
+      return;
+    }
+
+    // Khởi tạo jsPDF
+    const doc = new jsPDF();
+    // Tiêu đề của PDF
+    doc.setFontSize(16);
+    doc.text("Participants Check-in/Check-out List", 14, 20);
+
+    // Định nghĩa cột và dữ liệu của bảng
+    const columns = ["No", "Name", "Email", "Check-In", "Check-Out"];
+    const rows = participants.map((p: any, index: number) => [
+      index + 1,
+      p.name,
+      p.email,
+      p.checkInAt ? dayjs(p.checkInAt).format("YYYY-MM-DD HH:mm:ss") : "",
+      p.checkOutAt ? dayjs(p.checkOutAt).format("YYYY-MM-DD HH:mm:ss") : ""
+    ]);
+
+    // Dùng autoTable để tạo bảng
+    (doc as any).autoTable({
+      head: [columns],
+      body: rows,
+      startY: 30,
+      theme: 'grid'
+    });
+
+    // Lưu file PDF
+    doc.save("participants.pdf");
+  } catch (error: any) {
+    console.error("Error generating PDF:", error);
+    message.error("List check-in/check-out is empty.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleUpdateSessionsForTicketFunction = (setLoading: React.Dispatch<React.SetStateAction<boolean>>, message: any, navigate: any, localStorage: any, authService: any, setIsTicketModalVisible: React.Dispatch<React.SetStateAction<boolean>>, setTicketData: React.Dispatch<React.SetStateAction<TicketType | null>>, ticketData: TicketType | null) => async (sessionIds: string[]) => {
+  setLoading(true);
+  try {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      message.error("No access token found. Please login again.");
+      navigate('/auth/signin');
+      return;
+    }
+
+    const response = await authService.updateParticipantSessions(ticketData?.participantId, { sessionIds }, accessToken) as any;
+    if (response && response.statusCode === 200) {
+      message.success(response.message || 'Sessions updated successfully');
+      setIsTicketModalVisible(false);
+    } else {
+      message.error(response.message || 'Failed to update sessions');
+    }
+  } catch (error: any) {
+    console.error('Error updating sessions:', error);
+    message.error(error.message || 'Failed to update sessions');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const renderEventIntroduction = (eventDetails: Events | null) => {
+  if (eventDetails?.videoIntro) {
+    return (
+      <Card title="Video Introduction">
+        <iframe
+          width="100%"
+          height="480"
+          src={eventDetails.videoIntro}
+          title="Event Introduction Video"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </Card>
+    );
+  } else if (eventDetails?.banner) {
+    return (
+      <Card title="Event Banner">
+        <Image
+          src={eventDetails.banner}
+          alt="Event Banner"
+          style={{ width: "100%", height: "480px", objectFit: "cover" }}
+        />
+      </Card>
+    );
+  } else {
+    return (
+      <Card title="Event Introduction">
+        <iframe
+          width="100%"
+          height="480"
+          src="https://www.youtube.com/embed/iTJJC2Hlmu0"
+          title="Event Introduction Video"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </Card>
+    );
+  }
+};
+
+const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) => {
+  return eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
+    <Table
+      rowKey="id"
+      dataSource={eventDetails.schedule}
+      columns={scheduleColumns}
+      pagination={false}
+    />
+  ) : (
+    <Alert message="No schedule available for this event." type="info" showIcon />
+  );
+};
+
+const renderEventDocuments = (eventDetails: Events | null) => {
+  return eventDetails?.documents && eventDetails.documents.length > 0 ? (
+    <Col span={24}>
+      <Card title="Event Documents">
+        <List
+          dataSource={eventDetails?.documents}
+          renderItem={item => (
+            <List.Item>
+              <Typography.Link href={item} target="_blank">
+                {item}
+              </Typography.Link>
+            </List.Item>
+          )}
+        />
+      </Card>
+    </Col>
+  ) : null;
+};
+const renderFeedbackSummary = (feedbackSummaryLoading: boolean, feedbackSummary: { averageRating: number; totalFeedbacks: number; ratingDistribution: Record<string, number>; } | null, eventId: string | undefined) => {
+  return feedbackSummaryLoading ? (
+    <Spin tip="Loading feedback summary..." />
+  ) : feedbackSummary ? (
+    <Flex vertical gap="middle">
+      <Flex align="center" gap="middle">
+        <Rate allowHalf value={feedbackSummary.averageRating} disabled />
+        <Typography.Text>
+          {feedbackSummary.averageRating.toFixed(1)}/5 ({feedbackSummary.totalFeedbacks} reviews)
+        </Typography.Text>
+      </Flex>
+      <Flex vertical gap="small">
+        {/* Hiển thị rating distribution */}
+        {Object.entries(feedbackSummary.ratingDistribution).map(([ratingValue, count]) => ( // Đổi tên key thành ratingValue
+          <Flex justify="space-between" key={ratingValue}> {/* Sử dụng ratingValue làm key */}
+            <Text>{ratingValue} stars:</Text> {/* Hiển thị ratingValue */}
+            <Text>{count} feedbacks</Text>
+          </Flex>
+        ))}
+      </Flex>
+      <Button type="primary" size="small" >
+        <Link to={`/feedbacks/events/${eventId}`}>View All Feedbacks</Link>
+      </Button>
+    </Flex>
+  ) : (
+    <Alert message="No feedback summary available for this event yet." type="info" showIcon />
+  );
+};
+
+
+const breadcrumbs = [
+  {
+    title: (
+      <>
+        <HomeOutlined />
+        <span>Home</span>
+      </>
+    ),
+    path: '/',
+  },
+  {
+    title: (
+      <>
+        <PieChartOutlined />
+        <span>Dashboards</span>
+      </>
+    ),
+    menu: {
+      items: DASHBOARD_ITEMS.map((d) => ({
+        key: d.title,
+        title: <Link to={d.path}>{d.title}</Link>,
+      })),
+    },
+  },
+  {
+    title: 'My Event Details', // Đổi breadcrumb title
+  },
+];
+
+const getScheduleColumns = () => {
+  return [
     {
       title: 'Title',
-      dataIndex: 'title', 
+      dataIndex: 'title',
       key: 'title'
     },
     {
@@ -12154,202 +12307,8 @@ const DetailMyEventPage: React.FC = () => {
       dataIndex: 'description',
       key: 'description'
     },
-    // **Không có cột "Select Session" ở đây**
   ];
-
-  const hideTicketModal = () => {
-    setIsTicketModalVisible(false);
-  };
-  const showInviteModal = () => {
-    setIsInviteModalVisible(true);
-  };
-
-  const hideInviteModal = () => {
-    setIsInviteModalVisible(false);
-  };
-
-
-  const handleUpdateSessionsForTicket = async (sessionIds: string[]) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error("No access token found. Please login again.");
-        navigate('/auth/signin');
-        return;
-      }
-
-      const response = await authService.updateParticipantSessions(ticketData?.participantId, { sessionIds }, accessToken) as any;
-      if (response && response.statusCode === 200) {
-        message.success(response.message || 'Sessions updated successfully');
-        setIsTicketModalVisible(false);
-      } else {
-        message.error(response.message || 'Failed to update sessions');
-      }
-    } catch (error: any) {
-      console.error('Error updating sessions:', error);
-      message.error(error.message || 'Failed to update sessions');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  return (
-    <div>
-      <Helmet>
-        <title>Details | Dashboard</title>
-      </Helmet>
-      <PageHeader
-        title="Event Details"
-        breadcrumbs={[
-          {
-            title: (
-              <>
-                <HomeOutlined />
-                <span>Home</span>
-              </>
-            ),
-            path: '/',
-          },
-          {
-            title: (
-              <>
-                <PieChartOutlined />
-                <span>Dashboards</span>
-              </>
-            ),
-            menu: {
-              items: DASHBOARD_ITEMS.map((d) => ({
-                key: d.title,
-                title: <Link to={d.path}>{d.title}</Link>,
-              })),
-            },
-          },
-          {
-            title: 'My Event Details', // Đổi breadcrumb title
-          },
-        ]}
-      />
-      <BackBtn />
-
-      <Card title={<Title level={3}>{eventDetails?.name}</Title>}
-        extra={
-          <Space>
-            <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>Download Participants PDF</Button>
-            <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal} >Invite Users</Button>
-            {eventDetails?.status === 'SCHEDULED' && (
-              <Button
-                type="primary"
-                onClick={() => navigate(`/dashboards/check-in-out/${id}`)} // Navigate to QR scanner page
-              >
-                Check-in/Check-out
-              </Button>
-            )}
-          </Space>
-        }
-      >
-        <Row gutter={[16, 16]}>
-          <Col span={24}>
-            {eventDetails?.videoIntro ? (
-              // Nếu có video, hiển thị video
-              <Card title="Video Introduction">
-                <iframe
-                  width="100%"
-                  height="480"
-                  src={eventDetails.videoIntro}
-                  title="Event Introduction Video"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </Card>
-            ) : eventDetails?.banner ? (
-              // Nếu không có video mà có banner, hiển thị banner dưới dạng hình ảnh
-              <Card title="Event Banner">
-                <img
-                  src={eventDetails.banner}
-                  alt="Event Banner"
-                  style={{ width: "100%", height: "480px", objectFit: "cover" }}
-                />
-              </Card>
-            ) : (
-              // Nếu không có cả video lẫn banner, hiển thị link mặc định mà bạn để sẵn
-              <Card title="Event Introduction">
-                <iframe
-                  width="100%"
-                  height="480"
-                  src="https://www.youtube.com/embed/iTJJC2Hlmu0"
-                  title="Event Introduction Video"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </Card>
-            )}
-          </Col>
-          <Col span={24}>
-            <Card title="Schedule">
-              {eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
-                <Table
-                  rowKey="id"
-                  dataSource={eventDetails?.schedule}
-                  columns={scheduleColumns}
-                  pagination={false}
-                />
-              ) : (
-                <Alert message="No schedule available for this event." type="info" showIcon />
-              )}
-            </Card>
-          </Col>
-          {eventDetails?.documents && eventDetails.documents.length > 0 && (
-            <Col span={24}>
-              <Card title="Event Documents">
-                <List
-                  dataSource={eventDetails?.documents}
-                  renderItem={item => (
-                    <List.Item>
-                      <Typography.Link href={item} target="_blank">
-                        {item}
-                      </Typography.Link>
-                    </List.Item>
-                  )}
-                />
-              </Card>
-            </Col>
-          )}
-
-          <Col span={24}>
-            <Card title="Participants Check-in/Check-out List"
-              extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
-                Download PDF
-              </Button>}
-            >
-              <EventParticipantsTable eventId={id || ''} />
-            </Card>
-          </Col>
-
-          <Col span={24}>
-            <EventDiscussion
-              eventId={id || ''}
-              questions={questions}
-              setQuestions={setQuestions}
-            />
-          </Col>
-        </Row>
-      </Card>
-      <InviteUsersModal
-        visible={isInviteModalVisible}
-        onCancel={hideInviteModal}
-        eventId={id || ''}
-        onInvitationsSent={() => { }} // Example callback
-      />
-    </div>
-  );
 };
-
-export default DetailMyEventPage;
 
 
 src\pages\details\ParticipatedEventDetailsPage.tsx:
@@ -12373,6 +12332,7 @@ import {
   Typography,
   Checkbox,
   Spin,
+  Rate,
 } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
@@ -12404,6 +12364,12 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const [updatingSessions, setUpdatingSessions] = useState<boolean>(false); // State loading cho update session
   const [isTicketModalVisible, setIsTicketModalVisible] = useState<boolean>(false); // State for ticket modal visibility
   const { eventId } = useOutletContext<{ eventId: string }>();
+  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
+  const [feedbackSummary, setFeedbackSummary] = useState<{
+    averageRating: number;
+    totalFeedbacks: number;
+    ratingDistribution: Record<string, number>;
+  } | null>(null);
 
   useEffect(() => {
     const fetchEventDetailsAndParticipation = async () => {
@@ -12546,6 +12512,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   };
 
 
+
   return (
     <div>
       <Helmet>
@@ -12667,6 +12634,53 @@ const ParticipatedEventDetailsPage: React.FC = () => {
             </Col>
           )}
           {eventDetails?.status === 'FINISHED' && (
+            <Col span={24} >
+              <Card title="Feedback Summary">
+                {feedbackSummaryLoading ? (
+                  <Spin tip="Loading feedback summary..." />
+                ) : feedbackSummary ? (
+                  <Flex vertical gap="middle">
+                    <Flex align="center" gap="middle">
+                      <Rate allowHalf value={feedbackSummary.averageRating} disabled />
+                      <Typography.Text>
+                        {feedbackSummary.averageRating.toFixed(1)}/5 ({feedbackSummary.totalFeedbacks} reviews)
+                      </Typography.Text>
+                    </Flex>
+                    <Flex vertical gap="small">
+                      {/* Hiển thị rating distribution */}
+                      <Flex justify="space-between">
+                        <Text>5 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["5"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>4 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["4"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>3 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["3"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>2 stars:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+                      </Flex>
+                      <Flex justify="space-between">
+                        <Text>1 star:</Text>
+                        <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
+                      </Flex>
+                    </Flex>
+                    <Button type="primary" size="small" >
+                      <Link to={`/feedbacks/events/${eventId}`}>View All Feedbacks</Link>
+                    </Button>
+                  </Flex>
+                ) : (
+                  <Alert message="No feedback summary available for this event yet." type="info" showIcon />
+                )}
+
+              </Card>
+            </Col>
+          )}
+          {eventDetails?.status === 'FINISHED' && (
             <Col span={24}>
               <Card title="Participants Check-in/Check-out List"
                 extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
@@ -12677,6 +12691,13 @@ const ParticipatedEventDetailsPage: React.FC = () => {
               </Card>
             </Col>
           )}
+          <Col span={24}>
+            <EventDiscussion
+              eventId={id || ''}
+              questions={questions}
+              setQuestions={setQuestions}
+            />
+          </Col>
         </Row>
       </Card>
       <TicketDetailsModal
@@ -12684,13 +12705,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         onCancel={hideTicketModal}
         ticket={ticketData}
       />
-      <Col span={24}>
-        <EventDiscussion
-          eventId={eventId}
-          questions={questions}
-          setQuestions={setQuestions}
-        />
-      </Col>
     </div>
   );
 };
@@ -13486,6 +13500,143 @@ export { Error500Page } from './Error500.tsx';
 export { Error503Page } from './Error503.tsx';
 
 
+src\pages\feedbacks\EventFeedbacksPage.tsx:
+// src\pages\feedbacks\EventFeedbacksPage.tsx
+import React, { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Alert, Button, Card, List, Spin, Typography, Rate, message, Avatar } from 'antd';
+import { HomeOutlined, PieChartOutlined, UserOutlined } from '@ant-design/icons';
+import { DASHBOARD_ITEMS } from '../../constants';
+import { PageHeader, BackBtn, Loader } from '../../components';
+import { Helmet } from 'react-helmet-async';
+import authService from '../../services/authService';
+
+const { Title, Text, Paragraph } = Typography;
+
+const EventFeedbacksPage: React.FC = () => {
+  const { eventId } = useParams<{ eventId: string }>();
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [userInfos, setUserInfos] = useState<Record<string, any>>({}); // State to store user info
+
+  useEffect(() => {
+    const fetchEventFeedbacks = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await authService.getEventFeedbacks(eventId, accessToken || undefined) as any;
+        console.log('Event feedbacks:', response);
+        if (response.statusCode === 200 && response.data.feedbacks) {
+          setFeedbacks(response.data.feedbacks);
+          // Fetch user info for each feedback
+          const userIds = response.data.feedbacks.map((feedback: any) => feedback.userId);
+          fetchUsersInfo(userIds);
+        } else {
+          setError(response?.message || 'Failed to load event feedbacks');
+          message.error(response?.message || 'Failed to load event feedbacks');
+        }
+      } catch (error: any) {
+        console.error('Error fetching event feedbacks:', error);
+        setError(error.message || 'Failed to load event feedbacks');
+        message.error(error.message || 'Failed to load event feedbacks');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchUsersInfo = async (userIds: string[]) => {
+      const usersInfoMap: Record<string, any> = {};
+      for (const userId of userIds) {
+        try {
+          const response = await authService.getUserById(userId) as any;
+          if (response.statusCode === 200 && response.data) {
+            usersInfoMap[userId] = response.data.data;
+          }
+        } catch (error) {
+          console.error(`Error fetching user info for ${userId}`, error);
+        }
+      }
+      setUserInfos(usersInfoMap);
+    };
+
+    fetchEventFeedbacks();
+  }, [eventId]);
+
+  return (
+    <div>
+      <Helmet>
+        <title>Event Feedbacks</title>
+      </Helmet>
+      <PageHeader
+        title="Event Feedbacks"
+        breadcrumbs={[
+          {
+            title: (
+              <>
+                <HomeOutlined />
+                <span>Home</span>
+              </>
+            ),
+            path: '/',
+          },
+          {
+            title: (
+              <>
+                <PieChartOutlined />
+                <span>Dashboards</span>
+              </>
+            ),
+            menu: {
+              items: DASHBOARD_ITEMS.map((d) => ({
+                key: d.title,
+                title: <Link to={d.path}>{d.title}</Link>,
+              })),
+            },
+          },
+          {
+            title: 'Event Feedbacks',
+          },
+        ]}
+        btnBack={<BackBtn />}
+      />
+
+      <Card title={<Title level={3}>User Feedbacks for Event ID: {eventId}</Title>}>
+        {error && (
+          <Alert
+            message="Error"
+            description={error}
+            type="error"
+            showIcon
+          />
+        )}
+        {loading ? (
+          <Loader />
+        ) : (
+          <List
+            itemLayout="vertical"
+            dataSource={feedbacks}
+            renderItem={(feedback) => (
+              <List.Item>
+                <List.Item.Meta
+                  avatar={<Avatar src={userInfos[feedback.userId]?.avatar} icon={<UserOutlined />} />}
+                  title={<Text strong>{userInfos[feedback.userId]?.name || 'Unknown User'}</Text>}
+                  description={<Rate disabled allowHalf value={feedback.rating} />}
+                />
+                <Paragraph>{feedback.comment}</Paragraph>
+              </List.Item>
+            )}
+          />
+        )}
+      </Card>
+    </div>
+  );
+};
+
+export default EventFeedbacksPage;
+
+
 src\pages\userAccount\Feedback.tsx:
 import { Button, Col, Flex, Form, Input, Rate, Row, Typography } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
@@ -14053,7 +14204,6 @@ import {
   ProjectsDashboardPage,
   SignInPage,
   SignUpPage,
-  SitemapPage,
   UserProfileFeedbackPage,
   UserProfileSecurityPage,
   VerifyEmailPage,
@@ -14071,7 +14221,6 @@ import {
   UserAccountLayout,
 } from '../layouts';
 import React, { ReactNode, useEffect } from 'react';
-import { AboutPage } from '../pages/About.tsx';
 import EventsDashboardPage from '../pages/dashboards/Events.tsx';
 import EventsListPage from '../pages/dashboards/EventsList.tsx';
 import EventDetailsPage from '../pages/details/EventDetailsPage.tsx';
@@ -14086,6 +14235,7 @@ import { RootState } from '../redux/store.ts';
 import ProtectedRoute from '../components/ProtectedRoute.tsx';
 import { Helmet } from 'react-helmet-async';
 import DeclineEventPage from '../pages/DeclineEventPage.tsx';
+import EventFeedbacksPage from '../pages/feedbacks/EventFeedbacksPage.tsx';
 
 export const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -14133,6 +14283,19 @@ const router = createBrowserRouter([
     path: '/details/events/:eventId/decline',
     element: <PageWrapper children={<DeclineEventPage />} />,
     errorElement: <Helmet><title>Error</title></Helmet>,
+  },
+  {
+    path: '/feedbacks', // Route cho trang feedback riêng
+    element: <PageWrapper children={<DashboardLayout />} />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: 'events/:eventId',
+        element: <PrivateRoute>
+          <EventFeedbacksPage />
+        </PrivateRoute>,
+      },
+    ],
   },
   {
     path: '/create',
@@ -14238,20 +14401,6 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: '/sitemap',
-    element: <PageWrapper children={<DashboardLayout />} />,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        index: true,
-        path: '',
-        element: <PrivateRoute>
-          <SitemapPage />
-        </PrivateRoute>,
-      },
-    ],
-  },
-  {
     path: '/user-profile',
     element: <PageWrapper children={<UserAccountLayout />} />,
     errorElement: <ErrorPage />,
@@ -14342,20 +14491,6 @@ const router = createBrowserRouter([
       {
         path: '503',
         element: <Error503Page />,
-      },
-    ],
-  },
-  {
-    path: '/about',
-    element: <PageWrapper children={<DashboardLayout />} />,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        index: true,
-        path: '',
-        element: <PrivateRoute>
-          <AboutPage />
-        </PrivateRoute>,
       },
     ],
   },
@@ -14654,7 +14789,7 @@ const authService = {
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
-      const response = await axiosInstance.get(`${API_BASE_URL}/users`, { headers }); // Gọi API /users
+      const response = await axiosInstance.get(`${BASE_URL}/users`, { headers }); // Gọi API /users
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -14971,6 +15106,37 @@ const authService = {
         url += `&month=${month}`;
       }
       const response = await axiosInstance.get(url, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getEventFeedbackSummary: async (eventId: string | undefined, accessToken?: string) => { // Hàm mới: Lấy feedback summary
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/feedback-analysis`, { headers });
+      console.log('Event feedback summary:', response);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getEventFeedbacks: async (eventId: string | undefined, accessToken?: string) => { // Hàm mới: Lấy danh sách feedbacks
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      // ** Sử dụng endpoint chính xác, dựa trên response mẫu của bạn **
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/feedbacks`, { headers });
+      console.log('Event feedbacks:', response);
       return response.data;
     } catch (error: any) {
       throw error.response.data;

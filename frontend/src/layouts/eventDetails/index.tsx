@@ -168,62 +168,8 @@ export const EventDetailLayout: React.FC = () => {
     },
   ];
 
-  const showTicketModal = async () => {
-    setIsTicketModalVisible(true);
-    setLoadingEvent(true);
-    try {
-      if (!eventDetail?.id) {
-        message.error("Missing event information.");
-        return;
-      }
-      const participantIdResponse = await authService.getParticipantIdByUserIdEventId(eventDetail.id, localStorage.getItem('accessToken') || undefined) as any;
-      const participantId = participantIdResponse.data.participantId;
-      const response = await authService.getTicketByParticipantId(participantId, localStorage.getItem('accessToken') || undefined) as {
-        statusCode: number;
-        data: { ticket: any };
-        message: string;
-        error?: string;
-      };
-      if (response.statusCode === 200 && response.data.ticket) {
-        setTicketData(response.data.ticket);
-      } else {
-        message.error(response?.error || 'Failed to load ticket details');
-        setTicketData(null);
-      }
-    } catch (error: any) {
-      console.error('Error fetching ticket details:', error);
-      message.error(error.message || 'Failed to load ticket details');
-      setTicketData(null);
-    } finally {
-      setLoadingEvent(false);
-    }
-  };
-
   const hideTicketModal = () => {
     setIsTicketModalVisible(false);
-  };
-
-  const handleUpdateSessionsForTicket = async (sessionIds: string[]) => {
-    setLoadingEvent(true);
-    try {
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error("No access token found. Please login again.");
-        return;
-      }
-      const response = await authService.updateParticipantSessions(ticketData!.participantId, { sessionIds }, accessToken) as any;
-      if (response.statusCode === 200) {
-        message.success(response.message || 'Sessions updated successfully');
-        setIsTicketModalVisible(false);
-      } else {
-        message.error(response.message || 'Failed to update sessions');
-      }
-    } catch (error: any) {
-      console.error('Error updating sessions:', error);
-      message.error(error.message || 'Failed to update sessions');
-    } finally {
-      setLoadingEvent(false);
-    }
   };
 
   const handleFeedbackSubmit = async (values: any) => {

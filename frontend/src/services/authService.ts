@@ -287,7 +287,7 @@ const authService = {
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
-      const response = await axiosInstance.get(`${API_BASE_URL}/users`, { headers }); // Gọi API /users
+      const response = await axiosInstance.get(`${BASE_URL}/users`, { headers }); // Gọi API /users
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -617,7 +617,8 @@ const authService = {
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
-      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/feedback/feedback-analysis`, { headers });
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/feedback-analysis`, { headers });
+      console.log('Event feedback summary:', response);
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -633,6 +634,7 @@ const authService = {
       }
       // ** Sử dụng endpoint chính xác, dựa trên response mẫu của bạn **
       const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/feedbacks`, { headers });
+      console.log('Event feedbacks:', response);
       return response.data;
     } catch (error: any) {
       throw error.response.data;

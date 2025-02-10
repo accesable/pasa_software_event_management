@@ -1,27 +1,34 @@
+// src\components\dashboard\projects\ClientsTable\ClientsTable.tsx
 import { Table, TableProps, Typography } from 'antd';
 import { Clients } from '../../../../types';
 import { UserAvatar } from '../../../index.ts';
+import dayjs from 'dayjs';
 
 const COLUMNS = [
   {
     title: 'Client Name',
-    dataIndex: 'client_name',
+    dataIndex: 'name', // changed from 'client_name' to 'name'
     key: 'c_name',
-    render: (_: any, { first_name, last_name }: Clients) => (
-      <UserAvatar fullName={`${first_name} ${last_name}`} />
+    render: (_: any, record: any) => ( // use any to avoid type error, or define proper type for record
+      <UserAvatar fullName={record.name} avatarUrl={record.avatar} /> // use record.name and record.avatarUrl
     ),
   },
   {
-    title: 'Amount',
-    dataIndex: 'total_price',
-    key: 'client_amount',
-    render: (_: any) => <Typography.Text>${_}</Typography.Text>,
+    title: 'Email',
+    dataIndex: 'email', // added Email column
+    key: 'client_email',
+  },
+  {
+    title: 'Last Login', // added Last Login column
+    dataIndex: 'lastLoginAt',
+    key: 'client_last_login',
+    render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm') : 'Never', // format date
   },
 ];
 
-type Props = {
-  data: Clients[];
-} & TableProps<any>;
+interface Props extends TableProps<any> {
+  data: any[]; // changed type to any[] to match fetched user data
+}
 
 export const ClientsTable = ({ data, ...others }: Props) => (
   <Table

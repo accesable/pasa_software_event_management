@@ -147,6 +147,8 @@ export const EventDetailsPage: React.FC = () => {
     }
   };
 
+  const handleDownloadPdf = async () => { /* ... Giữ nguyên hàm handleDownloadPdf ... */ };
+
   const onSessionSelectChange = (selectedKeys: React.Key[]) => {
     setSelectedSessionIds(selectedKeys as string[]);
   };
@@ -342,6 +344,18 @@ export const EventDetailsPage: React.FC = () => {
                 ) : (
                   <Alert message="No feedback summary available for this event yet." type="info" showIcon />
                 )}
+
+              </Card>
+            </Col>
+          )}
+          {eventDetails?.status === 'FINISHED' && (
+            <Col span={24}>
+              <Card title="Participants Check-in/Check-out List"
+                extra={<Button icon={<DownloadOutlined />} onClick={handleDownloadPdf} loading={loading}>
+                  Download PDF
+                </Button>}
+              >
+                <EventParticipantsTable eventId={id || ''} />
               </Card>
             </Col>
           )}

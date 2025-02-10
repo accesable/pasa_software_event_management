@@ -1,4 +1,5 @@
-import { Alert, Button, Col, Row, Segmented, Space } from 'antd';
+// src\pages\dashboards\Projects.tsx
+import { Alert, Button, Col, Row, Segmented, Space, Typography } from 'antd';
 import {
   Card,
   ClientsTable,
@@ -9,7 +10,7 @@ import {
   RevenueCard,
 } from '../../components';
 import { Column } from '@ant-design/charts';
-import { Projects } from '../../types';
+import { Events, Projects, User } from '../../types';
 import { useState } from 'react';
 import {
   CloudUploadOutlined,
@@ -21,6 +22,9 @@ import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useFetchData } from '../../hooks';
+import { EventsCard } from '../../components/dashboard/shared';
+import useFetchOrganizedEventsData from '../../hooks/useFetchOrganizedEventsData';
+import useFetchTopClients from '../../hooks/useFetchTopClients'; // Import useFetchTopClients
 
 const RevenueColumnChart = () => {
   const data = [
@@ -152,11 +156,15 @@ export const ProjectsDashboardPage = () => {
     loading: projectsDataLoading,
   } = useFetchData('../mocks/Projects.json');
   const {
-    data: clientsData,
-    error: clientsDataError,
-    loading: clientsDataLoading,
-  } = useFetchData('../mocks/Clients.json');
+    data: clientsData, // rename to topClientsData to avoid confusion
+    error: topClientsError, // rename to topClientsError
+    loading: topClientsLoading, // rename to topClientsLoading
+  } = useFetchTopClients(5); // use useFetchTopClients hook to fetch top clients
   const [projectTabsKey, setProjectsTabKey] = useState<string>('all');
+  const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } = useFetchOrganizedEventsData();
+  const getFilteredEvents = (status?: string) => {
+    return (eventsData || []).filter((event: Events) => status ? event.status === status : true);
+  };
 
   const PROJECT_TABS_CONTENT: Record<string, React.ReactNode> = {
     all: <ProjectsTable key="all-projects-table" data={projectsData} />,
@@ -234,25 +242,24 @@ export const ProjectsDashboardPage = () => {
         </Col>
         <Col span={24}>
           <Card
-            title="Recently added projects"
-            extra={<Button>View all projects</Button>}
+            title="Recently added events"
           >
-            {projectsDataError ? (
+            {eventsError && (
               <Alert
-                message="Error"
-                description={projectsDataError.toString()}
-                type="error"
+                message="No events participated yet."
+                type="info"
                 showIcon
               />
-            ) : projectsDataLoading ? (
+            )}
+            {eventsLoading ? (
               <Loader />
             ) : (
               <Row gutter={[16, 16]}>
-                {projectsData.slice(0, 4).map((o: Projects) => {
+                {getFilteredEvents().slice(0, 4).map((o: Events) => {
                   return (
-                    <Col xs={24} sm={12} xl={6} key={o.project_id}>
-                      <ProjectsCard
-                        project={o}
+                    <Col xs={24} sm={12} xl={6} key={o.id}>
+                      <EventsCard
+                        event={o}
                         type="inner"
                         style={{ height: '100%' }}
                       />
@@ -277,17 +284,17 @@ export const ProjectsDashboardPage = () => {
         </Col>
         <Col xs={24} sm={12} xl={8}>
           <Card title="Top clients">
-            {clientsDataError ? (
+            {topClientsError ? ( // use topClientsError
               <Alert
                 message="Error"
-                description={clientsDataError.toString()}
+                description={topClientsError.toString()} // use topClientsError
                 type="error"
                 showIcon
               />
-            ) : clientsDataLoading ? (
+            ) : topClientsLoading ? ( // use topClientsLoading
               <Loader />
             ) : (
-              <ClientsTable data={clientsData.slice(0, 5)} />
+              <ClientsTable data={clientsData} /> // use clientsData (fetched from useFetchTopClients)
             )}
           </Card>
         </Col>
