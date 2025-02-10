@@ -17,7 +17,7 @@ import {
 } from 'antd';
 import { useLocation, useParams, Outlet } from 'react-router-dom';
 import { CiLocationOn, CiUser, CiCalendar } from 'react-icons/ci';
-import { HomeOutlined, PieChartOutlined, IdcardOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, IdcardOutlined, SendOutlined } from '@ant-design/icons';
 import { PageHeader, BackBtn } from '../../components';
 import { useStylesContext } from '../../context';
 import authService from '../../services/authService';
@@ -45,6 +45,7 @@ export const EventDetailLayout: React.FC = () => {
   const [form] = Form.useForm();
   const [ticketData, setTicketData] = useState<any>(null);
   const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
+  const [isParticipant, setIsParticipant] = useState<boolean | null>(null);
 
   useEffect(() => {
     const fetchEventDetail = async () => {
@@ -58,6 +59,14 @@ export const EventDetailLayout: React.FC = () => {
         };
         if (response.statusCode === 200 && response.data) {
           setEventDetail(response.data.event);
+          if(eventDetail?.status === 'FINISHED') {
+            const checkParticipant = await authService.getEventParticipants(eventId, accessToken || '') as any;
+            if(checkParticipant.statusCode === 200) {
+              setIsParticipant(true);
+            } else {
+              setIsParticipant(false);
+            }
+          }
         } else {
           message.error(response.message || 'Failed to load event details');
         }
@@ -303,7 +312,7 @@ export const EventDetailLayout: React.FC = () => {
                   )}
                 </Card>
               </Col>
-              {eventDetail?.status === 'FINISHED' && (
+              {eventDetail?.status === 'FINISHED' && isParticipant && (
                 <Col span={24} style={{ marginTop: "24px" }}>
                   <Card title="Feedback">
                     {feedbackError && (
@@ -345,7 +354,7 @@ export const EventDetailLayout: React.FC = () => {
                           />
                         </Form.Item>
                         <Form.Item>
-                          <Button type="primary" htmlType="submit" loading={feedbackLoading}>
+                          <Button type="primary" htmlType="submit" loading={feedbackLoading} icon={<SendOutlined />}>
                             Submit Feedback
                           </Button>
                         </Form.Item>

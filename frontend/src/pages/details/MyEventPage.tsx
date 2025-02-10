@@ -97,7 +97,7 @@ const DetailMyEventPage: React.FC = () => {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
         if (response.statusCode === 200 && response.data) {
-          setFeedbackSummary(response.data.data);
+          setFeedbackSummary(response.data);
         }
       } catch (error: any) {
         console.error('Error fetching feedback summary:', error);
@@ -378,12 +378,30 @@ const renderFeedbackSummary = (feedbackSummaryLoading: boolean, feedbackSummary:
       </Flex>
       <Flex vertical gap="small">
         {/* Hiển thị rating distribution */}
-        {Object.entries(feedbackSummary.ratingDistribution).map(([ratingValue, count]) => ( // Đổi tên key thành ratingValue
-          <Flex justify="space-between" key={ratingValue}> {/* Sử dụng ratingValue làm key */}
-            <Text>{ratingValue} stars:</Text> {/* Hiển thị ratingValue */}
-            <Text>{count} feedbacks</Text>
-          </Flex>
-        ))}
+        {feedbackSummary.ratingDistribution && ( // Thêm kiểm tra ratingDistribution tồn tại
+          <>
+            <Flex justify="space-between">
+              <Text>5 stars:</Text>
+              <Text>{feedbackSummary.ratingDistribution["5.0"] || 0} feedbacks</Text>
+            </Flex>
+            <Flex justify="space-between">
+              <Text>4 stars:</Text>
+              <Text>{feedbackSummary.ratingDistribution["4"] || 0} feedbacks</Text>
+            </Flex>
+            <Flex justify="space-between">
+              <Text>3 stars:</Text>
+              <Text>{feedbackSummary.ratingDistribution["3"] || 0} feedbacks</Text>
+            </Flex>
+            <Flex justify="space-between">
+              <Text>2 stars:</Text>
+              <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+            </Flex>
+            <Flex justify="space-between">
+              <Text>1 star:</Text>
+              <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
+            </Flex>
+          </>
+        )}
       </Flex>
       <Button type="primary" size="small" >
         <Link to={`/feedbacks/events/${eventId}`}>View All Feedbacks</Link>

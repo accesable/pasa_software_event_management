@@ -618,7 +618,6 @@ const authService = {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
       const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/feedback-analysis`, { headers });
-      console.log('Event feedback summary:', response);
       return response.data;
     } catch (error: any) {
       throw error.response.data;
