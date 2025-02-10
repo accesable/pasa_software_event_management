@@ -95,11 +95,6 @@ const items: MenuProps['items'] = [
       PATH_USER_PROFILE.security, // key = pathname
       null
     ),
-    getItem(
-      <Link to={PATH_USER_PROFILE.feedback}>Feedback</Link>,
-      PATH_USER_PROFILE.feedback, // key = pathname
-      null
-    ),
   ]),
 ];
 
