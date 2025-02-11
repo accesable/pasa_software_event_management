@@ -219,3 +219,4 @@ export const CampaignsCard = ({ error, data, loading, ...others }: Props) => {
     </Card>
   );
 };
+

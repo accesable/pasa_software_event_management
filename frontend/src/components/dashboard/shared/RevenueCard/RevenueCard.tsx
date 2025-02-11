@@ -67,12 +67,17 @@ export const RevenueCard: React.FC<RevenueCardProps> = ({
           <Space size="small" style={{ color: diff > 0 ? green[6] : red[5] }}>
             {diff > 0 ? (
               <ArrowUpOutlined style={{ fontSize: 18 }} />
-            ) : (
+            ) : diff < 0 ? (
               <ArrowDownOutlined style={{ fontSize: 18 }} />
-            )}
-            <Text style={{ fontSize: 16, fontWeight: 500, color: diff > 0 ? green[6] : red[5] }}>
-              <CountUp end={diff} duration={1.5} decimals={0} />%
-            </Text>
+            ) : null
+            }
+            {
+              diff !== 0 ? (
+                <Text style={{ fontSize: 16, fontWeight: 500, color: diff > 0 ? green[6] : red[5] }}>
+                  <CountUp end={diff} duration={1.5} decimals={0} />%
+                </Text>
+              ) : null
+            }
           </Space>
         </div>
       </div>

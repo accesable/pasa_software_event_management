@@ -1,5 +1,4 @@
 // src\pages\dashboards\Projects.tsx
-import { Alert, Button, Col, Row, Segmented, Space, Typography } from 'antd';
 import {
   Card,
   ClientsTable,
@@ -11,7 +10,6 @@ import {
 } from '../../components';
 import { Column } from '@ant-design/charts';
 import { Events, Projects, User } from '../../types';
-import { useState } from 'react';
 import {
   CloudUploadOutlined,
   HomeOutlined,
@@ -25,6 +23,8 @@ import { useFetchData } from '../../hooks';
 import { EventsCard } from '../../components/dashboard/shared';
 import useFetchOrganizedEventsData from '../../hooks/useFetchOrganizedEventsData';
 import useFetchTopClients from '../../hooks/useFetchTopClients'; // Import useFetchTopClients
+import { Row, Col, Alert, Segmented } from 'antd';
+import { useState, useEffect } from 'react';
 
 const RevenueColumnChart = () => {
   const data = [
@@ -105,29 +105,8 @@ const RevenueColumnChart = () => {
     xField: 'period',
     yField: 'value',
     seriesField: 'name',
-
-    /** set color */
-    // color: ['#1ca9e6', '#f88c24'],
-
-    /** Set spacing */
-    // marginRatio: 0.1,
     label: {
-      // Label data label position can be manually configured
-      position: 'middle',
-      // 'top', 'middle', 'bottom'
-      // Configurable additional layout method
-      layout: [
-        // Column chart data label position automatically adjusted
-        {
-          type: 'interval-adjust-position',
-        }, // Data label anti-obstruction
-        {
-          type: 'interval-hide-overlap',
-        }, // Data label text color automatically adjusted
-        {
-          type: 'adjust-color',
-        },
-      ],
+      position: 'top',
     },
   };
   // @ts-ignore
@@ -149,6 +128,23 @@ const PROJECT_TABS = [
   },
 ];
 
+const formatTime = (milliseconds: number): string => {
+  const seconds = Math.floor((milliseconds / 1000) % 60);
+  const minutes = Math.floor((milliseconds / (1000 * 60)) % 60);
+  const hours = Math.floor((milliseconds / (1000 * 60 * 60)));
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
+
+const useFetchUserProfile = () => {
+    const { data, error, loading } = useFetchData(
+        'http://localhost:8080/api/v1/users/profile',
+        localStorage.getItem('accessToken') || undefined
+    );
+    return { userData: data?.data?.user, userError: error, userLoading: loading };
+};
+
+
 export const ProjectsDashboardPage = () => {
   const {
     data: projectsData,
@@ -156,10 +152,10 @@ export const ProjectsDashboardPage = () => {
     loading: projectsDataLoading,
   } = useFetchData('../mocks/Projects.json');
   const {
-    data: clientsData, // rename to topClientsData to avoid confusion
-    error: topClientsError, // rename to topClientsError
-    loading: topClientsLoading, // rename to topClientsLoading
-  } = useFetchTopClients(5); // use useFetchTopClients hook to fetch top clients
+    data: clientsData,
+    error: topClientsError,
+    loading: topClientsLoading,
+  } = useFetchTopClients(5);
   const [projectTabsKey, setProjectsTabKey] = useState<string>('all');
   const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } = useFetchOrganizedEventsData();
   const getFilteredEvents = (status?: string) => {
@@ -185,6 +181,32 @@ export const ProjectsDashboardPage = () => {
   const onProjectsTabChange = (key: string) => {
     setProjectsTabKey(key);
   };
+
+  const { data: dashboardStats, error: dashboardStatsError, loading: dashboardStatsLoading } = useFetchData(
+    'http://localhost:8080/api/v1/events/dashboard-stats',
+    localStorage.getItem('accessToken') || undefined
+  );
+
+  const { userData, userError, userLoading: profileLoading } = useFetchUserProfile();
+  const [onlineTime, setOnlineTime] = useState<string>('00:00:00');
+
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    if (userData?.lastLoginAt) {
+      const lastLogin = new Date(userData.lastLoginAt).getTime();
+      intervalId = setInterval(() => {
+        const now = Date.now();
+        const diff = now - lastLogin;
+        setOnlineTime(() => formatTime(diff));
+      }, 1000);
+    }
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [userData?.lastLoginAt]);
+
 
   return (
     <div>
@@ -229,16 +251,36 @@ export const ProjectsDashboardPage = () => {
         ]}
       >
         <Col xs={24} sm={12} lg={6}>
-          <RevenueCard title="Total revenue" value={1556.3} diff={280} />
+          <RevenueCard
+            title="Total Events"
+            value={dashboardStats?.data?.totalEventsCount || 0}
+            diff={280}
+            loading={dashboardStatsLoading}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <RevenueCard title="Spent this week" value={1806.3} diff={180} />
+          <RevenueCard
+            title="Events Created"
+            value={dashboardStats?.data?.organizedEventsCount || 0}
+            diff={180}
+            loading={dashboardStatsLoading}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <RevenueCard title="Worked this week" value="35:12" diff={-10.0} />
+          <RevenueCard
+            title="Total Categories"
+            value={dashboardStats?.data?.totalEventCategoriesCount || 0}
+            diff={0}
+            loading={dashboardStatsLoading}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <RevenueCard title="Worked today" value="05:30:00" diff={-20.1} />
+          <RevenueCard
+            title="Online Time"
+            value={onlineTime}
+            diff={0}  
+            loading={profileLoading}
+          />
         </Col>
         <Col span={24}>
           <Card
