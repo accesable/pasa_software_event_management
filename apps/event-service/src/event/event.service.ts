@@ -346,6 +346,33 @@ export class EventService {
         }
     }
 
+    async getEventInvitedUsers(eventId: string) {
+        try {
+            if (!Types.ObjectId.isValid(eventId)) {
+                throw new RpcException({
+                    message: 'Invalid event ID',
+                    code: HttpStatus.BAD_REQUEST,
+                });
+            }
+            const invitedUsers = await this.invitedUserModel.find({ eventId: eventId }).exec();
+            return { invitedUsers: invitedUsers.map(this.transformInvitedUser) }; // Sử dụng transformInvitedUser
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get invited users by event id');
+        }
+    }
+
+    private transformInvitedUser(invitedUser: InvitedUserDocument): any { // <-- Hàm transform mới
+        return {
+            id: invitedUser._id.toString(),
+            eventId: invitedUser.eventId.toString(),
+            userId: invitedUser.userId ? invitedUser.userId.toString() : null,
+            email: invitedUser.email,
+            status: invitedUser.status,
+            createdAt: invitedUser.createdAt.toISOString(),
+            updatedAt: invitedUser.updatedAt.toISOString(),
+        };
+    }
+
     async getTotalEventsOverTime(request: GetTotalOrganizedEventsOverTimeRequest) {
         try {
             const userId = request.userId;

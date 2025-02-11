@@ -40,9 +40,14 @@ service EventService{
   rpc GetFeedbackByUser(GetFeedbackByUserRequest) returns (GetFeedbackByUserResponse);
   rpc GetEventRegistrationsOverTime(EventByIdRequest) returns (EventRegistrationsOverTimeResponse);
   rpc getTotalEventsOverTime(GetTotalOrganizedEventsOverTimeRequest) returns (MonthlyEventCountsResponse);
+  rpc GetEventInvitedUsers(EventByIdRequest) returns (GetEventInvitedUsersResponse); 
 }
 
 message Empty{}
+
+message GetEventInvitedUsersResponse { 
+  repeated InvitedUser invitedUsers = 1;
+}
 
 message GetTotalOrganizedEventsOverTimeRequest {
     string userId = 1;

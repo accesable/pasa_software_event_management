@@ -10,7 +10,7 @@ import {
 
 import { EVENT_SERVICE, TICKET_SERVICE } from '../../apigateway/src/constants/service.constant';
 import { handleRpcException } from '../../../libs/common/src/filters/handleException';
-import { EVENT_SERVICE_NAME, EventServiceClient, EventType } from '../../../libs/common/src/types/event';
+import { EVENT_SERVICE_NAME, EventServiceClient, EventType, GetEventInvitedUsersResponse } from '../../../libs/common/src/types/event';
 import { EventCategoryDistributionResponse, CategoryDistribution, OrganizerEventFeedbackSummaryRequest, OrganizerEventFeedbackSummaryResponse, EventInvitationReportRequest, EventInvitationReportResponse, MonthlyEventCountsResponse, MonthlyEventCount, UserEventsByDateRequest, Empty, InvitationSummary, InvitedUserStatus, CategoryEventStats, EventCategoryStatsResponse } from '../../../libs/common/src/types/report';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class ReportServiceService implements OnModuleInit {
   private ticketService: TicketServiceProtoClient;
   private eventService: EventServiceClient;
   private readonly logger = new Logger(ReportServiceService.name);
-  
+
   constructor(
     @Inject(TICKET_SERVICE) private readonly ticketServiceClient: ClientGrpc,
     @Inject(EVENT_SERVICE) private readonly eventServiceClient: ClientGrpc,
@@ -146,7 +146,7 @@ export class ReportServiceService implements OnModuleInit {
         this.eventService.getAllCategory(request)
       ) as { categories: any[] };
 
-      if (!allCategoriesResponse || !allCategoriesResponse.categories || allCategoriesResponse.categories.length === 0 || !Array.isArray(allCategoriesResponse.categories)) { 
+      if (!allCategoriesResponse || !allCategoriesResponse.categories || allCategoriesResponse.categories.length === 0 || !Array.isArray(allCategoriesResponse.categories)) {
         return { categoryDistribution: [], totalEvents: 0 };
       }
 
@@ -233,11 +233,10 @@ export class ReportServiceService implements OnModuleInit {
   async getEventInvitationReport(request: EventInvitationReportRequest): Promise<EventInvitationReportResponse> {
     try {
       const eventId = request.eventId;
-      const eventResponse = await lastValueFrom(
-        this.eventService.getEventById({ id: eventId })
+      const invitedUsersResponse: GetEventInvitedUsersResponse = await lastValueFrom( 
+        this.eventService.getEventInvitedUsers({ id: eventId })
       );
-      const event: EventType = eventResponse.event;
-      const invitedUsersData = event.invitedUsers || [];
+      const invitedUsersData = invitedUsersResponse.invitedUsers || []; 
 
       let acceptedCount = 0;
       let pendingCount = 0;
@@ -281,8 +280,8 @@ export class ReportServiceService implements OnModuleInit {
       const allEvents = await lastValueFrom(
         this.eventService.getAllEvent({ query: {} })
       ).then((res: { events: any[] }) => res.events);
-      
-      if(!allCategories || !allEvents) {
+
+      if (!allCategories || !allEvents) {
         return { categoryStats: [] };
       }
 

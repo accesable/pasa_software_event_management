@@ -13,6 +13,10 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+export interface GetEventInvitedUsersResponse {
+  invitedUsers: InvitedUser[];
+}
+
 export interface GetTotalOrganizedEventsOverTimeRequest {
   userId: string;
 }
@@ -563,6 +567,8 @@ export interface EventServiceClient {
   getEventRegistrationsOverTime(request: EventByIdRequest): Observable<EventRegistrationsOverTimeResponse>;
 
   getTotalEventsOverTime(request: GetTotalOrganizedEventsOverTimeRequest): Observable<MonthlyEventCountsResponse>;
+
+  getEventInvitedUsers(request: EventByIdRequest): Observable<GetEventInvitedUsersResponse>;
 }
 
 export interface EventServiceController {
@@ -688,6 +694,10 @@ export interface EventServiceController {
   getTotalEventsOverTime(
     request: GetTotalOrganizedEventsOverTimeRequest,
   ): Promise<MonthlyEventCountsResponse> | Observable<MonthlyEventCountsResponse> | MonthlyEventCountsResponse;
+
+  getEventInvitedUsers(
+    request: EventByIdRequest,
+  ): Promise<GetEventInvitedUsersResponse> | Observable<GetEventInvitedUsersResponse> | GetEventInvitedUsersResponse;
 }
 
 export function EventServiceControllerMethods() {
@@ -727,6 +737,7 @@ export function EventServiceControllerMethods() {
       "getFeedbackByUser",
       "getEventRegistrationsOverTime",
       "getTotalEventsOverTime",
+      "getEventInvitedUsers",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
