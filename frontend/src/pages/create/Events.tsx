@@ -6,7 +6,7 @@ import { Events } from '../../types';
 import { useState, useEffect } from 'react';
 import { useFetchData } from '../../hooks';
 import { useNavigate } from 'react-router-dom';
-import { PATH_DASHBOARD } from '../../constants';
+import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
 import authService from '../../services/authService'; // Import authService
 import dayjs from 'dayjs';
 
@@ -45,7 +45,7 @@ export const CreateEventPage = () => {
                 const accessToken = localStorage.getItem('accessToken');
                 if (!accessToken) {
                     message.error("No access token found. Please login again.");
-                    navigate(PATH_DASHBOARD.default);
+                    navigate(PATH_AUTH.signin);
                     return;
                 }
                 const response = await authService.getCategories(accessToken) as { statusCode: number; data: { categories: any[] } };
@@ -54,14 +54,8 @@ export const CreateEventPage = () => {
                         value: category.id,
                         label: category.name,
                     })));
-                } else {
-                    setCategoriesError("Failed to load event categories.");
-                    message.error("Failed to load event categories.");
-                }
+                } 
             } catch (error: any) {
-                console.error("Failed to load event categories:", error);
-                setCategoriesError("Failed to load event categories.");
-                message.error("Failed to load event categories.");
             } finally {
                 setCategoriesLoading(false);
             }
@@ -91,7 +85,7 @@ export const CreateEventPage = () => {
             const accessToken = localStorage.getItem('accessToken');
             if (!accessToken) {
                 message.error("No access token found. Please login again.");
-                navigate(PATH_DASHBOARD.default);
+                navigate(PATH_AUTH.signin);
                 return;
             }
 
@@ -158,7 +152,7 @@ export const CreateEventPage = () => {
             const accessToken = localStorage.getItem('accessToken');
             if (!accessToken) {
                 message.error("No access token found. Please login again.");
-                navigate(PATH_DASHBOARD.default);
+                navigate(PATH_AUTH.signin);
                 return;
             }
             const response = await authService.createCategory({ name: values.event_type, description: "" }, accessToken) as { statusCode: number; message: string; data: { category: { id: string; name: string } } };

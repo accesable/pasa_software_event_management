@@ -61,8 +61,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
         }
         setCategoryNamesMap(newCategoryNamesMap);
       } catch (error: any) {
-        console.error('Error fetching category names:', error);
-        message.error('Failed to load category names');
+        message.error(error.error);
         setCategoryNamesMap({}); // Clear the map in case of a general error
       } finally {
         setCategoryLoading(false);

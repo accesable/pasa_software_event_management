@@ -26,8 +26,7 @@ const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({ ticket, visible
             ]}
         >
             <Flex vertical gap="middle">
-                <Typography.Title level={4}>{ticket.id ? `Ticket ID: ${ticket.id}` : 'Ticket Information'}</Typography.Title>
-                <Typography.Text>Participant ID: {ticket.participantId}</Typography.Text>
+                <Typography.Title level={4}>{ticket.id ? `Ticket ID: ${ticket.participantId}` : 'Ticket Information'}</Typography.Title>
                 <Typography.Text>Status: {ticket.status}</Typography.Text>
                 {ticket.usedAt && <Typography.Text>Used At: {dayjs(ticket.usedAt).format('YYYY-MM-DD HH:mm:ss')}</Typography.Text>}
 

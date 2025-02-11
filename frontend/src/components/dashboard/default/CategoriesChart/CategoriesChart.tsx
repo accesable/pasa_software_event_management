@@ -1,5 +1,4 @@
-// src\components\dashboard\default\CategoriesChart\CategoriesChart.tsx
-import { CardProps, Typography, Spin, Alert } from 'antd';
+import { CardProps, Typography, Spin, Alert, Empty } from 'antd';
 import { Pie } from '@ant-design/charts';
 import { Card } from '../../../index.ts';
 import React, { useState, useEffect } from 'react'; // Import useState and useEffect
@@ -21,9 +20,9 @@ const CategoriesChartComponent: React.FC<Props> = ({ ...others }) => {
         const response = await authService.getEventCategoryDistribution();
         const data = response as { data: { categoryDistribution: any[], totalEvents: number } };
         setData(data.data.categoryDistribution);
-        setTotalEvents(data.data.totalEvents); // Set totalEvents from response
+        setTotalEvents(data.data.totalEvents);
       } catch (error: any) {
-        setError(error.message || 'Failed to load category distribution.');
+        setError(error.error);
       } finally {
         setLoading(false);
       }
@@ -66,10 +65,19 @@ const CategoriesChartComponent: React.FC<Props> = ({ ...others }) => {
           fontSize: 18,
         },
         // Use totalEvents in the statistic content
-        content: `${totalEvents} Events\nTotal`, 
+        content: `${totalEvents} Events\nTotal`,
       },
     },
   };
+
+  // Handle the case when there are no categories or events
+  if (totalEvents === 0) {
+    return (
+      <Card title="Categories" {...others}>
+        <Empty description="No events available" />
+      </Card>
+    );
+  }
 
   return (
     <Card title="Categories" {...others}>

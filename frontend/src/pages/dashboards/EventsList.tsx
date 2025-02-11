@@ -58,7 +58,7 @@ const EventsListPage = () => {
       setCategoryLoading(true);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getCategories(accessToken || '') as { statusCode: number; data: { categories?: any[] } };
+        const response = await authService.getCategories(accessToken || '') as { statusCode: number; data: { categories?: any[] }; message?: string };
         if (response.statusCode === 200 && response.data.categories) {
           const categoryMap: Record<string, string> = {};
           categoryMap[''] = 'All Categories'; // Add "All Categories" option with empty string key
@@ -67,10 +67,10 @@ const EventsListPage = () => {
           });
           setCategoryNamesMap(categoryMap);
         } else {
-          message.error("Failed to load event categories.");
+          // message.error(response.message);
         }
       } catch (error: any) {
-        message.error("Failed to load event categories.");
+        // message.error(error.message);
       } finally {
         setCategoryLoading(false);
       }

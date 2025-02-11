@@ -88,7 +88,57 @@ const ParticipatedEventDetailsPage: React.FC = () => {
     fetchEventDetailsAndParticipation();
   }, [id, navigate]);
 
-  const handleDownloadPdf = async () => { /* ... Giữ nguyên hàm handleDownloadPdf ... */ };
+  const handleDownloadPdfFunction = (setLoading: React.Dispatch<React.SetStateAction<boolean>>, message: any, authService: any, dayjs: any, eventId: string | undefined) => async () => {
+    try {
+      setLoading(true);
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error("No access token found. Please login again.");
+        return;
+      }
+      // Gọi API lấy danh sách participant
+      const response = await authService.getEventParticipants(eventId, accessToken) as any;
+      const participants = response.data || [];
+      if (!participants || participants.length === 0) {
+        message.error("No participants data available.");
+        return;
+      }
+
+      // Khởi tạo jsPDF
+      const doc = new jsPDF();
+      // Tiêu đề của PDF
+      doc.setFontSize(16);
+      doc.text("Participants Check-in/Check-out List", 14, 20);
+
+      // Định nghĩa cột và dữ liệu của bảng
+      const columns = ["No", "Name", "Email", "Check-In", "Check-Out"];
+      const rows = participants.map((p: any, index: number) => [
+        index + 1,
+        p.name,
+        p.email,
+        p.checkInAt ? dayjs(p.checkInAt).format("YYYY-MM-DD HH:mm:ss") : "",
+        p.checkOutAt ? dayjs(p.checkOutAt).format("YYYY-MM-DD HH:mm:ss") : ""
+      ]);
+
+      // Dùng autoTable để tạo bảng
+      (doc as any).autoTable({
+        head: [columns],
+        body: rows,
+        startY: 30,
+        theme: 'grid'
+      });
+
+      // Lưu file PDF
+      doc.save("participants.pdf");
+    } catch (error: any) {
+      console.error("Error generating PDF:", error);
+      message.error("List check-in/check-out is empty.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
 
 
   const scheduleColumns = [
@@ -374,7 +424,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
                   Download PDF
                 </Button>}
               >
-                <EventParticipantsTable eventId={id || ''} />
+                <EventParticipantsTable eventId={eventId || ''} />
               </Card>
             </Col>
           )}

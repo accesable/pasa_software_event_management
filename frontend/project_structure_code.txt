@@ -400,7 +400,6 @@ export default CreateGuestModal;
 
 
 src\components\CreateSpeakerModal.tsx:
-// src\components\CreateSpeakerModal.tsx
 import React, { useState } from 'react';
 import { Modal, Form, Input, Button, message, Spin } from 'antd';
 import authService from '../services/authService';
@@ -497,7 +496,7 @@ const CreateSpeakerModal: React.FC<CreateSpeakerModalProps> = ({ visible, onCanc
         <Form.Item
           label="Bio"
           name="bio"
-        >
+          rules={[]}> {/* Make Bio field optional */}
           <Input.TextArea rows={4} placeholder="Bio (Optional)" />
         </Form.Item>
       </Form>
@@ -1518,8 +1517,7 @@ export const CampaignsCard = ({ error, data, loading, ...others }: Props) => {
 
 
 src\components\dashboard\default\CategoriesChart\CategoriesChart.tsx:
-// src\components\dashboard\default\CategoriesChart\CategoriesChart.tsx
-import { CardProps, Typography, Spin, Alert } from 'antd';
+import { CardProps, Typography, Spin, Alert, Empty } from 'antd';
 import { Pie } from '@ant-design/charts';
 import { Card } from '../../../index.ts';
 import React, { useState, useEffect } from 'react'; // Import useState and useEffect
@@ -1541,9 +1539,9 @@ const CategoriesChartComponent: React.FC<Props> = ({ ...others }) => {
         const response = await authService.getEventCategoryDistribution();
         const data = response as { data: { categoryDistribution: any[], totalEvents: number } };
         setData(data.data.categoryDistribution);
-        setTotalEvents(data.data.totalEvents); // Set totalEvents from response
+        setTotalEvents(data.data.totalEvents);
       } catch (error: any) {
-        setError(error.message || 'Failed to load category distribution.');
+        setError(error.error);
       } finally {
         setLoading(false);
       }
@@ -1586,10 +1584,19 @@ const CategoriesChartComponent: React.FC<Props> = ({ ...others }) => {
           fontSize: 18,
         },
         // Use totalEvents in the statistic content
-        content: `${totalEvents} Events\nTotal`, 
+        content: `${totalEvents} Events\nTotal`,
       },
     },
   };
+
+  // Handle the case when there are no categories or events
+  if (totalEvents === 0) {
+    return (
+      <Card title="Categories" {...others}>
+        <Empty description="No events available" />
+      </Card>
+    );
+  }
 
   return (
     <Card title="Categories" {...others}>
@@ -2809,8 +2816,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
         }
         setCategoryNamesMap(newCategoryNamesMap);
       } catch (error: any) {
-        console.error('Error fetching category names:', error);
-        message.error('Failed to load category names');
+        message.error(error.error);
         setCategoryNamesMap({}); // Clear the map in case of a general error
       } finally {
         setCategoryLoading(false);
@@ -5995,7 +6001,6 @@ const DASHBOARD_ITEMS = [
 const USER_PROFILE_ITEMS = [
   { title: 'information', path: PATH_USER_PROFILE.personalInformation },
   { title: 'security', path: PATH_USER_PROFILE.security },
-  { title: 'feedback', path: PATH_USER_PROFILE.feedback },
 ];
 
 const AUTHENTICATION_ITEMS = [
@@ -6328,6 +6333,64 @@ import { usePageContext } from './usePageContext.tsx';
 import useFetchData from './useFetchData.tsx';
 
 export { usePageContext, useFetchData };
+
+
+src\hooks\useFetchCategoryStatsData.tsx:
+// src\hooks\useFetchCategoryStatsData.tsx
+import { useCallback, useEffect, useState } from 'react';
+import authService from '../services/authService';
+
+interface CategoryStats {
+    categoryName: string;
+    eventCount: number;
+    participantCount: number;
+}
+
+interface CategoryStatsResponse {
+    statusCode: number;
+    message: string;
+    data: {
+        categoryStats: CategoryStats[];
+    };
+}
+
+const useFetchCategoryStatsData = () => {
+    const [data, setData] = useState<CategoryStats[]>([]);
+    const [error, setError] = useState<any>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                throw new Error("No access token found. Please login again.");
+            }
+
+            const response = await authService.getEventCategoryStats(accessToken);
+            const apiResponse = response as CategoryStatsResponse;
+
+            if (apiResponse.statusCode === 200 && apiResponse.data.categoryStats) {
+                setData(apiResponse.data.categoryStats);
+            } else {
+                throw new Error(apiResponse.message || "Failed to fetch category stats");
+            }
+        } catch (error: any) {
+            setError(error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    return { data, error, loading };
+};
+
+export default useFetchCategoryStatsData;
 
 
 src\hooks\useFetchData.tsx:
@@ -9153,7 +9216,7 @@ import { Events } from '../../types';
 import { useState, useEffect } from 'react';
 import { useFetchData } from '../../hooks';
 import { useNavigate } from 'react-router-dom';
-import { PATH_DASHBOARD } from '../../constants';
+import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
 import authService from '../../services/authService'; // Import authService
 import dayjs from 'dayjs';
 
@@ -9192,7 +9255,7 @@ export const CreateEventPage = () => {
                 const accessToken = localStorage.getItem('accessToken');
                 if (!accessToken) {
                     message.error("No access token found. Please login again.");
-                    navigate(PATH_DASHBOARD.default);
+                    navigate(PATH_AUTH.signin);
                     return;
                 }
                 const response = await authService.getCategories(accessToken) as { statusCode: number; data: { categories: any[] } };
@@ -9201,14 +9264,8 @@ export const CreateEventPage = () => {
                         value: category.id,
                         label: category.name,
                     })));
-                } else {
-                    setCategoriesError("Failed to load event categories.");
-                    message.error("Failed to load event categories.");
-                }
+                } 
             } catch (error: any) {
-                console.error("Failed to load event categories:", error);
-                setCategoriesError("Failed to load event categories.");
-                message.error("Failed to load event categories.");
             } finally {
                 setCategoriesLoading(false);
             }
@@ -9238,7 +9295,7 @@ export const CreateEventPage = () => {
             const accessToken = localStorage.getItem('accessToken');
             if (!accessToken) {
                 message.error("No access token found. Please login again.");
-                navigate(PATH_DASHBOARD.default);
+                navigate(PATH_AUTH.signin);
                 return;
             }
 
@@ -9305,7 +9362,7 @@ export const CreateEventPage = () => {
             const accessToken = localStorage.getItem('accessToken');
             if (!accessToken) {
                 message.error("No access token found. Please login again.");
-                navigate(PATH_DASHBOARD.default);
+                navigate(PATH_AUTH.signin);
                 return;
             }
             const response = await authService.createCategory({ name: values.event_type, description: "" }, accessToken) as { statusCode: number; message: string; data: { category: { id: string; name: string } } };
@@ -9493,6 +9550,7 @@ export const CreateEventPage = () => {
         </Card>
     );
 };
+
 
 src\pages\create\index.ts:
 export {CreateEventPage} from './Events';
@@ -9715,7 +9773,7 @@ const EventsListPage = () => {
       setCategoryLoading(true);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getCategories(accessToken || '') as { statusCode: number; data: { categories?: any[] } };
+        const response = await authService.getCategories(accessToken || '') as { statusCode: number; data: { categories?: any[] }; message?: string };
         if (response.statusCode === 200 && response.data.categories) {
           const categoryMap: Record<string, string> = {};
           categoryMap[''] = 'All Categories'; // Add "All Categories" option with empty string key
@@ -9724,10 +9782,10 @@ const EventsListPage = () => {
           });
           setCategoryNamesMap(categoryMap);
         } else {
-          message.error("Failed to load event categories.");
+          // message.error(response.message);
         }
       } catch (error: any) {
-        message.error("Failed to load event categories.");
+        // message.error(error.message);
       } finally {
         setCategoryLoading(false);
       }
@@ -10722,94 +10780,70 @@ import { useFetchData } from '../../hooks';
 import { EventsCard } from '../../components/dashboard/shared';
 import useFetchOrganizedEventsData from '../../hooks/useFetchOrganizedEventsData';
 import useFetchTopClients from '../../hooks/useFetchTopClients'; // Import useFetchTopClients
-import { Row, Col, Alert, Segmented } from 'antd';
+import { Row, Col, Segmented, Spin, Alert } from 'antd';
 import { useState, useEffect } from 'react';
 
 const RevenueColumnChart = () => {
-  const data = [
+  const { data: categoryStatsResponse, error: categoryStatsError, loading: categoryStatsLoading } = useFetchData(
+    'http://localhost:8080/api/v1/reports/event-category-stats',
+    localStorage.getItem('accessToken') || undefined
+  );
+
+  const data = categoryStatsResponse?.data?.categoryStats || [];
+
+  const chartData = data.flatMap((item: any) => [
     {
-      name: 'Income',
-      period: 'Mon',
-      value: 18.9,
+      categoryName: item.categoryName,
+      type: 'Event Count',
+      count: item.eventCount,
     },
     {
-      name: 'Income',
-      period: 'Tue',
-      value: 28.8,
+      categoryName: item.categoryName,
+      type: 'Participant Count',
+      count: item.participantCount,
     },
-    {
-      name: 'Income',
-      period: 'Wed',
-      value: 39.3,
-    },
-    {
-      name: 'Income',
-      period: 'Thur',
-      value: 81.4,
-    },
-    {
-      name: 'Income',
-      period: 'Fri',
-      value: 47,
-    },
-    {
-      name: 'Income',
-      period: 'Sat',
-      value: 20.3,
-    },
-    {
-      name: 'Income',
-      period: 'Sun',
-      value: 24,
-    },
-    {
-      name: 'Spent',
-      period: 'Mon',
-      value: 12.4,
-    },
-    {
-      name: 'Spent',
-      period: 'Tue',
-      value: 23.2,
-    },
-    {
-      name: 'Spent',
-      period: 'Wed',
-      value: 34.5,
-    },
-    {
-      name: 'Spent',
-      period: 'Thur',
-      value: 99.7,
-    },
-    {
-      name: 'Spent',
-      period: 'Fri',
-      value: 52.6,
-    },
-    {
-      name: 'Spent',
-      period: 'Sat',
-      value: 35.5,
-    },
-    {
-      name: 'Spent',
-      period: 'Sun',
-      value: 37.4,
-    },
-  ];
+  ]);
+
+
   const config = {
-    data,
+    data: chartData,
     isGroup: true,
-    xField: 'period',
-    yField: 'value',
-    seriesField: 'name',
+    xField: 'categoryName',
+    yField: 'count',
+    seriesField: 'type',
     label: {
       position: 'top',
     },
+    xAxis: {
+      label: {
+        autoHide: true,
+        autoRotate: false,
+      },
+    },
   };
-  // @ts-ignore
-  return <Column {...config} />;
+
+  return (
+    <>
+      {categoryStatsError && (
+        <Alert
+          message="Error loading category stats"
+          description={categoryStatsError.toString()}
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      {categoryStatsLoading ? (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <Spin tip="Loading category stats..." />
+        </div>
+      ) : (
+        // @ts-ignore
+        <Column {...config} />
+      )}
+    </>
+
+  );
 };
 
 const PROJECT_TABS = [
@@ -10977,7 +11011,7 @@ export const ProjectsDashboardPage = () => {
           <RevenueCard
             title="Online Time"
             value={onlineTime}
-            diff={0}  
+            diff={0}
             loading={profileLoading}
           />
         </Col>
@@ -11013,12 +11047,7 @@ export const ProjectsDashboardPage = () => {
         </Col>
         <Col xs={24} sm={12} xl={16}>
           <Card
-            title="Project stats"
-            extra={
-              <Segmented
-                options={['Daily', 'Monthly', 'Yearly']}
-              />
-            }
+            title="Categories stats"
           >
             <RevenueColumnChart />
           </Card>
@@ -15103,6 +15132,20 @@ const authService = {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
       const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/dashboard-stats`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getEventCategoryStats: async (accessToken?: string) => {
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_REPORT_BASE_URL}/event-category-stats`, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;

@@ -1,4 +1,3 @@
-// src\components\CreateSpeakerModal.tsx
 import React, { useState } from 'react';
 import { Modal, Form, Input, Button, message, Spin } from 'antd';
 import authService from '../services/authService';
@@ -95,7 +94,7 @@ const CreateSpeakerModal: React.FC<CreateSpeakerModalProps> = ({ visible, onCanc
         <Form.Item
           label="Bio"
           name="bio"
-        >
+          rules={[]}> {/* Make Bio field optional */}
           <Input.TextArea rows={4} placeholder="Bio (Optional)" />
         </Form.Item>
       </Form>
