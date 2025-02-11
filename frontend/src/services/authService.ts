@@ -667,6 +667,20 @@ const authService = {
       throw error.response.data;
     }
   },
+  getEventCategoryStats: async (accessToken?: string) => {
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_REPORT_BASE_URL}/event-category-stats`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default authService;

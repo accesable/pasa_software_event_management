@@ -23,94 +23,70 @@ import { useFetchData } from '../../hooks';
 import { EventsCard } from '../../components/dashboard/shared';
 import useFetchOrganizedEventsData from '../../hooks/useFetchOrganizedEventsData';
 import useFetchTopClients from '../../hooks/useFetchTopClients'; // Import useFetchTopClients
-import { Row, Col, Alert, Segmented } from 'antd';
+import { Row, Col, Segmented, Spin, Alert } from 'antd';
 import { useState, useEffect } from 'react';
 
 const RevenueColumnChart = () => {
-  const data = [
+  const { data: categoryStatsResponse, error: categoryStatsError, loading: categoryStatsLoading } = useFetchData(
+    'http://localhost:8080/api/v1/reports/event-category-stats',
+    localStorage.getItem('accessToken') || undefined
+  );
+
+  const data = categoryStatsResponse?.data?.categoryStats || [];
+
+  const chartData = data.flatMap((item: any) => [
     {
-      name: 'Income',
-      period: 'Mon',
-      value: 18.9,
+      categoryName: item.categoryName,
+      type: 'Event Count',
+      count: item.eventCount,
     },
     {
-      name: 'Income',
-      period: 'Tue',
-      value: 28.8,
+      categoryName: item.categoryName,
+      type: 'Participant Count',
+      count: item.participantCount,
     },
-    {
-      name: 'Income',
-      period: 'Wed',
-      value: 39.3,
-    },
-    {
-      name: 'Income',
-      period: 'Thur',
-      value: 81.4,
-    },
-    {
-      name: 'Income',
-      period: 'Fri',
-      value: 47,
-    },
-    {
-      name: 'Income',
-      period: 'Sat',
-      value: 20.3,
-    },
-    {
-      name: 'Income',
-      period: 'Sun',
-      value: 24,
-    },
-    {
-      name: 'Spent',
-      period: 'Mon',
-      value: 12.4,
-    },
-    {
-      name: 'Spent',
-      period: 'Tue',
-      value: 23.2,
-    },
-    {
-      name: 'Spent',
-      period: 'Wed',
-      value: 34.5,
-    },
-    {
-      name: 'Spent',
-      period: 'Thur',
-      value: 99.7,
-    },
-    {
-      name: 'Spent',
-      period: 'Fri',
-      value: 52.6,
-    },
-    {
-      name: 'Spent',
-      period: 'Sat',
-      value: 35.5,
-    },
-    {
-      name: 'Spent',
-      period: 'Sun',
-      value: 37.4,
-    },
-  ];
+  ]);
+
+
   const config = {
-    data,
+    data: chartData,
     isGroup: true,
-    xField: 'period',
-    yField: 'value',
-    seriesField: 'name',
+    xField: 'categoryName',
+    yField: 'count',
+    seriesField: 'type',
     label: {
       position: 'top',
     },
+    xAxis: {
+      label: {
+        autoHide: true,
+        autoRotate: false,
+      },
+    },
   };
-  // @ts-ignore
-  return <Column {...config} />;
+
+  return (
+    <>
+      {categoryStatsError && (
+        <Alert
+          message="Error loading category stats"
+          description={categoryStatsError.toString()}
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      {categoryStatsLoading ? (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <Spin tip="Loading category stats..." />
+        </div>
+      ) : (
+        // @ts-ignore
+        <Column {...config} />
+      )}
+    </>
+
+  );
 };
 
 const PROJECT_TABS = [
@@ -278,7 +254,7 @@ export const ProjectsDashboardPage = () => {
           <RevenueCard
             title="Online Time"
             value={onlineTime}
-            diff={0}  
+            diff={0}
             loading={profileLoading}
           />
         </Col>
@@ -314,12 +290,7 @@ export const ProjectsDashboardPage = () => {
         </Col>
         <Col xs={24} sm={12} xl={16}>
           <Card
-            title="Project stats"
-            extra={
-              <Segmented
-                options={['Daily', 'Monthly', 'Yearly']}
-              />
-            }
+            title="Categories stats"
           >
             <RevenueColumnChart />
           </Card>
