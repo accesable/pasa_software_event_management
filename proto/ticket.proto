@@ -51,7 +51,17 @@ message GetParticipantByEventIdResponse{
 }
 
 message ScanTicketResponse{
-  DataResultCheckInOut result = 1;
+  DateResponseScanTicket result = 1;
+}
+
+message DateResponseScanTicket{
+  string eventId = 7;
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  optional string phoneNumber = 4;
+  string checkInAt = 5;
+  optional string checkOutAt = 6;
 }
 
 message DataResultCheckInOut{

@@ -71,7 +71,7 @@ export class TicketServiceService implements OnModuleInit {
 
   async scanTicket(code: string): Promise<ScanTicketResponse> {
     try {
-      const ticket = await this.ticketModel.findOne({ code });
+      const ticket = await this.ticketModel.findOne({ code: code });
       if (!ticket) {
         throw new RpcException({
           message: 'Ticket is invalid',
@@ -81,7 +81,7 @@ export class TicketServiceService implements OnModuleInit {
 
       const ticketStatus = ticket.status.toUpperCase();
 
-      if (ticketStatus === 'ACTIVE') {
+      if (ticketStatus === 'ACTIVE') { // -- [CHECK-IN LOGIC - LẦN SCAN ĐẦU TIÊN] --
         const participant = await this.participantModel.findByIdAndUpdate(
           ticket.participantId,
           { checkinAt: new Date() },
@@ -93,8 +93,7 @@ export class TicketServiceService implements OnModuleInit {
             code: HttpStatus.NOT_FOUND,
           });
         }
-        ticket.status = 'USED';
-        ticket.usedAt = new Date();
+        ticket.status = 'CHECKED_IN';
         await ticket.save();
 
         const userInfo = await this.authService.findById({ id: participant.userId }).toPromise();
@@ -111,18 +110,11 @@ export class TicketServiceService implements OnModuleInit {
           email: userInfo.email,
           name: userInfo.name,
           phoneNumber: userInfo.phoneNumber || '',
-          // checkInAt: participant.checkinAt.toISOString(),
-          // checkOutAt: null,
           checkInAt: participant.checkinAt ? participant.checkinAt.toISOString() : null,
-          checkOutAt: participant.checkoutAt ? participant.checkoutAt.toISOString() : null,
-          participantId: participant._id.toString(),
-          createdAt: participant.createdAt ? participant.createdAt.toISOString() : null,
+          checkOutAt: null
         };
-
         return { result };
-      }
-
-      if (ticketStatus === 'USED') {
+      } else if (ticketStatus === 'CHECKED_IN') {
         const participant = await this.participantModel.findById(ticket.participantId);
         if (!participant) {
           throw new RpcException({
@@ -130,47 +122,46 @@ export class TicketServiceService implements OnModuleInit {
             code: HttpStatus.NOT_FOUND,
           });
         }
-        if (!participant.checkoutAt) {
-          participant.checkoutAt = new Date();
-          await participant.save();
 
-          const userInfo = await this.authService.findById({ id: participant.userId }).toPromise();
-          if (!userInfo) {
-            throw new RpcException({
-              message: 'User information not found',
-              code: HttpStatus.NOT_FOUND,
-            });
-          }
-          const result = {
-            eventId: participant.eventId,
-            id: userInfo.id,
-            email: userInfo.email,
-            name: userInfo.name,
-            phoneNumber: userInfo.phoneNumber || '',
-            checkInAt: participant.checkinAt.toISOString(),
-            checkOutAt: participant.checkoutAt.toISOString(),
-            participantId: participant._id.toString(),
-            createdAt: participant.createdAt.toISOString() || null,
-          };
-          return { result };
+        participant.checkoutAt = new Date();
+        await participant.save();
+        ticket.status = 'USED';
+        ticket.usedAt = new Date();
+        await ticket.save();
+
+        const userInfo = await this.authService.findById({ id: participant.userId }).toPromise();
+        if (!userInfo) {
+          throw new RpcException({
+            message: 'User information not found',
+            code: HttpStatus.NOT_FOUND,
+          });
         }
+        const result = {
+          eventId: participant.eventId,
+          id: userInfo.id,
+          email: userInfo.email,
+          name: userInfo.name,
+          phoneNumber: userInfo.phoneNumber || '',
+          checkInAt: participant?.checkinAt ? participant.checkinAt.toISOString() : null,
+          checkOutAt: participant?.checkoutAt ? participant.checkoutAt.toISOString() : null
+        };
+        return { result };
+      } else if (ticketStatus === 'USED') { // -- [TICKET ĐÃ SỬ DỤNG - CÁC LẦN SCAN SAU CHECK-OUT] --
         throw new RpcException({
           message: 'Ticket has been used',
           code: HttpStatus.BAD_REQUEST,
         });
-      }
-
-      if (ticketStatus === 'CANCELED') {
+      } else if (ticketStatus === 'CANCELED') { // -- [TICKET BỊ HỦY] --
         throw new RpcException({
           message: 'Ticket has been canceled',
           code: HttpStatus.BAD_REQUEST,
         });
+      } else { // -- [STATUS KHÔNG HỢP LỆ] --
+        throw new RpcException({
+          message: 'Ticket status is not recognized',
+          code: HttpStatus.BAD_REQUEST,
+        });
       }
-
-      throw new RpcException({
-        message: 'Ticket status is not recognized',
-        code: HttpStatus.BAD_REQUEST,
-      });
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;
@@ -178,7 +169,6 @@ export class TicketServiceService implements OnModuleInit {
       throw handleRpcException(error, 'Failed to scan ticket');
     }
   }
-
 
   // async cancelEvent(eventId: string) {
   //   try {
@@ -363,7 +353,7 @@ export class TicketServiceService implements OnModuleInit {
           checkInAt: participant.checkinAt ? participant.checkinAt.toISOString() : null,
           checkOutAt: participant.checkoutAt ? participant.checkoutAt.toISOString() : null,
           participantId: participant._id.toString(),
-          createdAt: participant.createdAt.toISOString(),
+          createdAt: participant?.createdAt ? participant.createdAt.toISOString() : null,
         };
       });
 
@@ -483,10 +473,10 @@ export class TicketServiceService implements OnModuleInit {
       userId: participant.userId,
       sessionIds: participant.sectionIds,
       status: participant.status,
-      createdAt: participant.createdAt.toISOString(),
-      updatedAt: participant.updatedAt.toISOString(),
-      checkedInAt: participant.checkinAt?.toISOString(),
-      checkedOutAt: participant.checkoutAt?.toISOString(),
+      createdAt: participant?.createdAt ? participant.createdAt.toISOString() : null,
+      updatedAt: participant?.updatedAt ? participant.updatedAt.toISOString() : null,
+      checkedInAt: participant.checkinAt ? participant.checkinAt.toISOString() : null,
+      checkedOutAt: participant.checkoutAt ? participant.checkoutAt.toISOString() : null,
     };
   }
 
@@ -496,7 +486,7 @@ export class TicketServiceService implements OnModuleInit {
       participantId: ticket.participantId,
       qrCodeUrl: ticket.qrCodeUrl,
       status: ticket.status,
-      usedAt: ticket.usedAt?.toISOString(),
+      usedAt: ticket.usedAt ? ticket.usedAt.toISOString() : null,
     };
   }
 }

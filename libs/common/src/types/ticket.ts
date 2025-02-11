@@ -47,7 +47,17 @@ export interface GetParticipantByEventIdResponse {
 }
 
 export interface ScanTicketResponse {
-  result: DataResultCheckInOut | undefined;
+  result: DateResponseScanTicket | undefined;
+}
+
+export interface DateResponseScanTicket {
+  eventId: string;
+  id: string;
+  email: string;
+  name: string;
+  phoneNumber?: string | undefined;
+  checkInAt: string;
+  checkOutAt?: string | undefined;
 }
 
 export interface DataResultCheckInOut {

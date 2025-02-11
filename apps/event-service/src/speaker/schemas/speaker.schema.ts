@@ -11,7 +11,7 @@ export class Speaker {
     @Prop({ required: true, trim: true })
     name: string;
 
-    @Prop({ required: true, trim: true })
+    @Prop({ trim: true })
     bio: string;
 
     @Prop({ trim: true, default: 'https://www.facebook.com'})

@@ -6,9 +6,9 @@ export class CreateSpeakerDto {
     @IsString({ message: 'Name must be string' })
     name: string;
 
-    @IsNotEmpty({ message: 'Bio is required' })
+    @IsOptional()
     @IsString({ message: 'Bio must be string' })
-    bio: string;
+    bio?: string;
 
     @IsOptional()
     @IsUrl({}, { message: 'Invalid url' })
