@@ -639,6 +639,34 @@ const authService = {
       throw error.response.data;
     }
   },
+  getTotalEventsOverTime: async (accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/total-events-over-time`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getDashboardStats: async (accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/dashboard-stats`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default authService;

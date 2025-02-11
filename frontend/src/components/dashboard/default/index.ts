@@ -9,3 +9,4 @@ export { WeeklyActivityCard } from './WeeklyActivityCard/WeeklyActivityCard.tsx'
 export { TasksChartCard } from './TasksChartCard/TasksChartCard.tsx';
 export { TasksListCard } from './TasksListCard/TasksListCard.tsx';
 export { CategoriesChart } from './CategoriesChart/CategoriesChart.tsx';
+export { EventsOverTimeChart } from './EventsOverTimeChart/EventsOverTimeChart.tsx';
