@@ -11,7 +11,7 @@ import {
 import { EVENT_SERVICE, TICKET_SERVICE } from '../../apigateway/src/constants/service.constant';
 import { handleRpcException } from '../../../libs/common/src/filters/handleException';
 import { EVENT_SERVICE_NAME, EventServiceClient, EventType } from '../../../libs/common/src/types/event';
-import { EventCategoryDistributionResponse, CategoryDistribution, OrganizerEventFeedbackSummaryRequest, OrganizerEventFeedbackSummaryResponse, EventInvitationReportRequest, EventInvitationReportResponse, MonthlyEventCountsResponse, MonthlyEventCount, UserEventsByDateRequest, Empty, InvitationSummary, InvitedUserStatus } from '../../../libs/common/src/types/report';
+import { EventCategoryDistributionResponse, CategoryDistribution, OrganizerEventFeedbackSummaryRequest, OrganizerEventFeedbackSummaryResponse, EventInvitationReportRequest, EventInvitationReportResponse, MonthlyEventCountsResponse, MonthlyEventCount, UserEventsByDateRequest, Empty, InvitationSummary, InvitedUserStatus, CategoryEventStats, EventCategoryStatsResponse } from '../../../libs/common/src/types/report';
 
 @Injectable()
 export class ReportServiceService implements OnModuleInit {
@@ -257,6 +257,45 @@ export class ReportServiceService implements OnModuleInit {
       };
     } catch (error) {
       throw handleRpcException(error, 'Fail getEventInvitationReport');
+    }
+  }
+
+  async getEventCategoryStats(request: Empty): Promise<EventCategoryStatsResponse> {
+    try {
+      const allCategoriesResponse = await lastValueFrom(
+        this.eventService.getAllCategory(request)
+      ) as { categories: any[] };
+      const allCategories = allCategoriesResponse.categories;
+      const allEvents = await lastValueFrom(
+        this.eventService.getAllEvent({ query: {} })
+      ).then((res: { events: any[] }) => res.events);
+
+      const categoryStatsMap: Map<string, { categoryName: string, eventCount: number, participantCount: number }> = new Map();
+
+      allCategories.forEach(category => {
+        categoryStatsMap.set(category.id, { categoryName: category.name, eventCount: 0, participantCount: 0 });
+      });
+
+      for (const event of allEvents) {
+        const categoryStat = categoryStatsMap.get(event.categoryId);
+        if (categoryStat) {
+          categoryStat.eventCount++;
+        }
+        const participantsResponse = await lastValueFrom(
+          this.ticketService.getParticipantByEventId({ eventId: event.id })
+        );
+        const participantCount = participantsResponse.participants?.length || 0;
+        if (categoryStat) {
+          categoryStat.participantCount += participantCount;
+        }
+      }
+
+      const categoryStats: CategoryEventStats[] = Array.from(categoryStatsMap.values());
+
+
+      return { categoryStats };
+    } catch (error) {
+      throw handleRpcException(error, 'Fail getEventCategoryStats');
     }
   }
 }

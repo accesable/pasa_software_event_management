@@ -22,6 +22,12 @@ import { Observable } from 'rxjs';
 export class ReportServiceController {
   constructor(private readonly reportServiceService: ReportServiceService) {}
 
+  @Get('/event-category-stats')
+  @ResponseMessage('Get event category stats success')
+  async getEventCategoryStats() {
+    return this.reportServiceService.getEventCategoryStats();
+  }
+
   @Get('/events-by-date')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Get user events by date success')

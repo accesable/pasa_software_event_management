@@ -50,4 +50,14 @@ export class ReportServiceService implements OnModuleInit {
       throw handleRpcException(error, 'Failed to get event invitation report');
     }
   }
+
+  async getEventCategoryStats(){ // Method MỚI
+    try {
+      return await lastValueFrom(
+        this.reportService.getEventCategoryStats({})
+      );
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get event category stats');
+    }
+  }
 }

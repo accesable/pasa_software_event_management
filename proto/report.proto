@@ -9,6 +9,17 @@ service ReportServiceProto {
   rpc GetOrganizerEventFeedbackSummary(OrganizerEventFeedbackSummaryRequest) returns (OrganizerEventFeedbackSummaryResponse) {}
 
   rpc GetEventInvitationReport(EventInvitationReportRequest) returns (EventInvitationReportResponse) {}
+  rpc GetEventCategoryStats (Empty) returns (EventCategoryStatsResponse) {}
+}
+
+message CategoryEventStats {
+    string categoryName = 1;
+    int32 eventCount = 2;
+    int32 participantCount = 3;
+}
+
+message EventCategoryStatsResponse {
+    repeated CategoryEventStats categoryStats = 1;
 }
 
 message UserEventsByDateRequest {

@@ -10,6 +10,16 @@ import { Observable } from "rxjs";
 
 export const protobufPackage = "report";
 
+export interface CategoryEventStats {
+  categoryName: string;
+  eventCount: number;
+  participantCount: number;
+}
+
+export interface EventCategoryStatsResponse {
+  categoryStats: CategoryEventStats[];
+}
+
 export interface UserEventsByDateRequest {
   userId: string;
   year: number;
@@ -101,6 +111,8 @@ export interface ReportServiceProtoClient {
   ): Observable<OrganizerEventFeedbackSummaryResponse>;
 
   getEventInvitationReport(request: EventInvitationReportRequest): Observable<EventInvitationReportResponse>;
+
+  getEventCategoryStats(request: Empty): Observable<EventCategoryStatsResponse>;
 }
 
 export interface ReportServiceProtoController {
@@ -127,6 +139,10 @@ export interface ReportServiceProtoController {
   getEventInvitationReport(
     request: EventInvitationReportRequest,
   ): Promise<EventInvitationReportResponse> | Observable<EventInvitationReportResponse> | EventInvitationReportResponse;
+
+  getEventCategoryStats(
+    request: Empty,
+  ): Promise<EventCategoryStatsResponse> | Observable<EventCategoryStatsResponse> | EventCategoryStatsResponse;
 }
 
 export function ReportServiceProtoControllerMethods() {
@@ -136,6 +152,7 @@ export function ReportServiceProtoControllerMethods() {
       "getUserEventsByDate",
       "getOrganizerEventFeedbackSummary",
       "getEventInvitationReport",
+      "getEventCategoryStats",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

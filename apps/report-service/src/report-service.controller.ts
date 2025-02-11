@@ -9,6 +9,7 @@ import {
   OrganizerEventFeedbackSummaryResponse,
   EventInvitationReportRequest,
   EventInvitationReportResponse,
+  EventCategoryStatsResponse,
 } from '../../../libs/common/src/types/report';
 import { ReportServiceService } from './report-service.service';
 import { Observable } from 'rxjs';
@@ -17,6 +18,9 @@ import { Observable } from 'rxjs';
 @ReportServiceProtoControllerMethods()
 export class ReportServiceController implements ReportServiceProtoController {
   constructor(private readonly reportServiceService: ReportServiceService) {}
+  getEventCategoryStats(request: Empty){
+    return this.reportServiceService.getEventCategoryStats({});
+  }
 
   getUserEventsByDate(request: UserEventsByDateRequest) {
     return this.reportServiceService.getUserEventsByDate(request);
