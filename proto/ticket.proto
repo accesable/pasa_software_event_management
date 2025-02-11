@@ -62,6 +62,8 @@ message DataResultCheckInOut{
   optional string phoneNumber = 4;
   string checkInAt = 5;
   optional string checkOutAt = 6;
+  string participantId = 8;
+  string createdAt = 9; 
 }
 
 message ScanTicketRequest{

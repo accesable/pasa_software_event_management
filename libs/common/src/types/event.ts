@@ -13,6 +13,32 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+export interface GetTotalOrganizedEventsOverTimeRequest {
+  userId: string;
+}
+
+export interface MonthlyEventCountsResponse {
+  monthlyOrganizedEvents: MonthlyEventCount[];
+  monthlyParticipatedEvents: MonthlyEventCount[];
+}
+
+export interface MonthlyEventCount {
+  /** "YYYY-MM" format */
+  month: string;
+  count: number;
+}
+
+export interface EventRegistrationsOverTimeResponse {
+  registrationCounts: RegistrationCountData[];
+}
+
+export interface RegistrationCountData {
+  /** Ngày đăng ký (YYYY-MM-DD) */
+  date: string;
+  /** Số lượng đăng ký trong ngày */
+  registrations: number;
+}
+
 export interface GetFeedbackByUserResponse {
   feedback: Feedback | undefined;
 }
@@ -533,6 +559,10 @@ export interface EventServiceClient {
   updateFeedback(request: SubmitFeedbackRequest): Observable<GetFeedbackByUserResponse>;
 
   getFeedbackByUser(request: GetFeedbackByUserRequest): Observable<GetFeedbackByUserResponse>;
+
+  getEventRegistrationsOverTime(request: EventByIdRequest): Observable<EventRegistrationsOverTimeResponse>;
+
+  getTotalEventsOverTime(request: GetTotalOrganizedEventsOverTimeRequest): Observable<MonthlyEventCountsResponse>;
 }
 
 export interface EventServiceController {
@@ -647,6 +677,17 @@ export interface EventServiceController {
   getFeedbackByUser(
     request: GetFeedbackByUserRequest,
   ): Promise<GetFeedbackByUserResponse> | Observable<GetFeedbackByUserResponse> | GetFeedbackByUserResponse;
+
+  getEventRegistrationsOverTime(
+    request: EventByIdRequest,
+  ):
+    | Promise<EventRegistrationsOverTimeResponse>
+    | Observable<EventRegistrationsOverTimeResponse>
+    | EventRegistrationsOverTimeResponse;
+
+  getTotalEventsOverTime(
+    request: GetTotalOrganizedEventsOverTimeRequest,
+  ): Promise<MonthlyEventCountsResponse> | Observable<MonthlyEventCountsResponse> | MonthlyEventCountsResponse;
 }
 
 export function EventServiceControllerMethods() {
@@ -684,6 +725,8 @@ export function EventServiceControllerMethods() {
       "getFeedbackAnalysis",
       "updateFeedback",
       "getFeedbackByUser",
+      "getEventRegistrationsOverTime",
+      "getTotalEventsOverTime",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

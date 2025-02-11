@@ -38,9 +38,34 @@ service EventService{
   rpc GetFeedbackAnalysis(EventByIdRequest) returns (FeedbackAnalysisResponse);
   rpc UpdateFeedback(SubmitFeedbackRequest) returns (GetFeedbackByUserResponse);
   rpc GetFeedbackByUser(GetFeedbackByUserRequest) returns (GetFeedbackByUserResponse);
+  rpc GetEventRegistrationsOverTime(EventByIdRequest) returns (EventRegistrationsOverTimeResponse);
+  rpc getTotalEventsOverTime(GetTotalOrganizedEventsOverTimeRequest) returns (MonthlyEventCountsResponse);
 }
 
 message Empty{}
+
+message GetTotalOrganizedEventsOverTimeRequest {
+    string userId = 1;
+}
+
+message MonthlyEventCountsResponse {
+  repeated MonthlyEventCount monthlyOrganizedEvents = 1;
+  repeated MonthlyEventCount monthlyParticipatedEvents = 2;
+}
+
+message MonthlyEventCount {
+    string month = 1; // "YYYY-MM" format
+    int32 count = 2;
+}
+
+message EventRegistrationsOverTimeResponse {
+  repeated RegistrationCountData registrationCounts = 1;
+}
+
+message RegistrationCountData {
+  string date = 1; // Ngày đăng ký (YYYY-MM-DD)
+  int32 registrations = 2; // Số lượng đăng ký trong ngày
+}
 
 message GetFeedbackByUserResponse {
   Feedback feedback = 1;

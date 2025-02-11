@@ -49,7 +49,7 @@ import { ReportServiceModule } from './report-service/report-service.module';
         },
       },
     ]),
-    forwardRef(() => EventServiceModule),
+    // forwardRef(() => EventServiceModule),
   ],
   controllers: [],
   providers: [

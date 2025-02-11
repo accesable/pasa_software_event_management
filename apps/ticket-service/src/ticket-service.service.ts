@@ -111,8 +111,12 @@ export class TicketServiceService implements OnModuleInit {
           email: userInfo.email,
           name: userInfo.name,
           phoneNumber: userInfo.phoneNumber || '',
-          checkInAt: participant.checkinAt.toISOString(),
-          checkOutAt: null,
+          // checkInAt: participant.checkinAt.toISOString(),
+          // checkOutAt: null,
+          checkInAt: participant.checkinAt ? participant.checkinAt.toISOString() : null,
+          checkOutAt: participant.checkoutAt ? participant.checkoutAt.toISOString() : null,
+          participantId: participant._id.toString(),
+          createdAt: participant.createdAt ? participant.createdAt.toISOString() : null,
         };
 
         return { result };
@@ -145,6 +149,8 @@ export class TicketServiceService implements OnModuleInit {
             phoneNumber: userInfo.phoneNumber || '',
             checkInAt: participant.checkinAt.toISOString(),
             checkOutAt: participant.checkoutAt.toISOString(),
+            participantId: participant._id.toString(),
+            createdAt: participant.createdAt.toISOString() || null,
           };
           return { result };
         }
@@ -240,7 +246,7 @@ export class TicketServiceService implements OnModuleInit {
       const code = `${participant._id}`;
       // const url = `${baseUrl}/tickets/scan?code=${code}`;
       const url = `${code}`;
-  
+
       const ticket = await this.ticketModel.create({ participantId: participant._id.toString(), qrCodeUrl: url, code });
       this.clientEvent.emit('ticket_created', { eventId: request.eventId });
       return {
@@ -262,10 +268,10 @@ export class TicketServiceService implements OnModuleInit {
         });
       }
       const ticket = await this.ticketModel.findOne({ participantId: participant._id });
-      return { 
+      return {
         participation: this.transformParticipant(participant),
         ticket: this.transformTicket(ticket),
-       };
+      };
     } catch (error) {
       throw handleRpcException(error, 'Failed to get participant by event and user');
     }

@@ -1,5 +1,6 @@
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientGrpc, ClientProxy, RpcException } from '@nestjs/microservices';
+import * as _ from 'lodash';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
 import { EventDocument } from './schemas/event.schema';
@@ -8,7 +9,7 @@ import { Question, QuestionDocument } from './schemas/question.schema';
 import { Model, Types } from 'mongoose';
 import { CategoryDocument, EventCategory } from '../event-category/schemas/event-category.schema';
 import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
-import { SendEventInvitesRequest, SendEventInvitesResponse, CancelEventRequest, EventType, EventResponse, CreateEventRequest, UpdateEventRequest, UserTypeInvite, GetEventFeedbacksResponse } from '../../../../libs/common/src/types/event';
+import { SendEventInvitesRequest, SendEventInvitesResponse, CancelEventRequest, EventType, EventResponse, CreateEventRequest, UpdateEventRequest, UserTypeInvite, GetEventFeedbacksResponse, EventByIdRequest, RegistrationCountData, EventRegistrationsOverTimeResponse, GetTotalOrganizedEventsOverTimeRequest, MonthlyEventCount, MonthlyEventCountsResponse } from '../../../../libs/common/src/types/event';
 import { Feedback, FeedbackDocument } from './schemas/feedback.schema';
 import { QueryParamsRequest } from '../../../../libs/common/src';
 import { lastValueFrom } from 'rxjs';
@@ -18,6 +19,7 @@ import { JwtService } from '@nestjs/jwt';
 import { FeedbackService } from '../feedback/feedback.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as moment from 'moment';
+import { of } from 'rxjs';
 
 @Injectable()
 export class EventService {
@@ -308,6 +310,122 @@ export class EventService {
         }
     }
 
+    async getTotalEventsOverTime(request: GetTotalOrganizedEventsOverTimeRequest) {
+        try {
+            const userId = request.userId;
+            const participatedEventsResponse = await lastValueFrom(
+                await this.getParticipatedEventsForOverTime(userId)
+            );
+            const participatedEvents = participatedEventsResponse.events || [];
+            const monthlyParticipatedEventsCounts = this.aggregateEventsByMonth(participatedEvents, 2025);
+
+            const organizedEventsResponse = await lastValueFrom(
+                await this.getOrganizedEventsForTotalOverTime(userId)
+            );
+            const organizedEvents = organizedEventsResponse.events || [];
+            const monthlyOrganizedEventsCounts = this.aggregateEventsByMonth(organizedEvents, 2025);
+
+
+            const monthlyEventCountsResponse: MonthlyEventCountsResponse = {
+                monthlyOrganizedEvents: monthlyOrganizedEventsCounts.map(({ month, count }) => ({ month, count })), // Map về kiểu MonthlyEventCount
+                monthlyParticipatedEvents: monthlyParticipatedEventsCounts.map(({ month, count }) => ({ month, count })), // Map về kiểu MonthlyEventCount
+            };
+            return monthlyEventCountsResponse;
+
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get total participated events over time');
+        }
+    }
+
+    async getParticipatedEventsForOverTime(userId: string, status?: string) { // Thay đổi return type thành Observable<AllEventResponse>
+        try {
+            const participantPerEvent = await lastValueFrom(
+                this.clientTicket.send('getParticipant', {
+                    query: {
+                        userId: userId,
+                    },
+                } as QueryParamsRequest),
+            );
+            if (
+                !participantPerEvent ||
+                !Array.isArray(participantPerEvent) ||
+                participantPerEvent.length === 0
+            ) {
+                const emptyResponseData = { // Tạo response data object
+                    meta: { page: 1, limit: null, totalPages: 1, totalItems: 0, count: 0 },
+                    events: []
+                };
+                return of(emptyResponseData); // Wrap emptyResponseData trong of() và return Observable
+            }
+
+            const eventIds = participantPerEvent.map((participant) => participant.eventId);
+
+            const events = await this.eventModel.find({
+                _id: { $in: eventIds },
+                ...(status && { status }),
+            });
+
+            const responseData = { // Tạo response data object
+                meta:
+                {
+                    page: 1,
+                    limit: null,
+                    totalPages: 1,
+                    totalItems: events.length,
+                    count: events.length
+                },
+                events: events.map(event => this.transformEvent(event)),
+            };
+            return of(responseData); // Wrap responseData trong of() và return Observable
+        } catch (error) {
+            throw new RpcException(error);
+        }
+    }
+
+    private aggregateEventsByMonth(events: any[], year: number): MonthlyEventCount[] {
+        // Tạo mảng chứa tất cả 12 tháng của năm
+        const allMonths = Array.from({ length: 12 }, (_, index) => {
+            const month = index + 1;
+            return moment({ year, month: month - 1 }).format('YYYY-MM'); // Format month YYYY-MM
+        });
+
+        // Group events theo tháng như trước
+        const groupedEvents = _(events)
+            .groupBy(event => moment(event.startDate).format('YYYY-MM'))
+            .value();
+
+        // Map qua tất cả 12 tháng và trả về count, default 0 nếu không có event trong tháng
+        return allMonths.map(month => ({
+            month,
+            count: groupedEvents[month]?.length || 0, // Default count = 0 nếu không có event trong tháng
+        }));
+    }
+
+    async getEventRegistrationsOverTime(request: EventByIdRequest): Promise<EventRegistrationsOverTimeResponse> {
+        try {
+            const eventId = request.id;
+            const participantsResponse = await lastValueFrom(
+                this.ticketService.getParticipantByEventId({ eventId })
+            );
+            const participants = participantsResponse.participants || [];
+
+            const registrationData = participants.map(p => ({
+                date: moment(p.createdAt).format('YYYY-MM-DD'), // Sử dụng p.createdAt (đã có trong DataResultCheckInOut)
+                count: 1
+            }));
+
+            const groupedData = _.groupBy(registrationData, 'date');
+            const registrationCounts: RegistrationCountData[] = Object.keys(groupedData).map(date => ({
+                date,
+                registrations: groupedData[date].length
+            }));
+
+            return { registrationCounts };
+
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get event registrations over time');
+        }
+    }
 
     async createQuestion(eventId: string, userId: string, text: string) {
         const event = await this.eventModel.findById(eventId);
@@ -398,6 +516,23 @@ export class EventService {
                 },
                 events: events.map(event => this.transformEvent(event)),
             }
+        } catch (error) {
+            throw new RpcException(error);
+        }
+    }
+
+    async getOrganizedEventsForTotalOverTime(userId: string) {
+        try {
+            const query: any = {
+                'createdBy.id': userId,
+            };
+
+            const events = await this.eventModel.find(query);
+            const responseData = {
+                meta: { page: 1, limit: null, totalPages: 1, totalItems: events.length, count: events.length },
+                events: events.map(event => this.transformEvent(event))
+            };
+            return of(responseData);
         } catch (error) {
             throw new RpcException(error);
         }

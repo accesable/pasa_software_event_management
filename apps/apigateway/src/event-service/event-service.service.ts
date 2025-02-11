@@ -9,7 +9,8 @@ import { CreateGuestDto, UpdateGuestDto } from './dto/create-guest.dto';
 import { RedisCacheService } from '../redis/redis.service';
 import { lastValueFrom } from 'rxjs';
 import { TicketServiceService } from '../ticket-service/ticket-service.service';
-import { CreatedBy, CreateEventRequest, DecodeAccessResponse, EVENT_SERVICE_NAME, EventResponse, EventServiceClient, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
+import { CreatedBy, CreateEventRequest, DecodeAccessResponse, EVENT_SERVICE_NAME, EventRegistrationsOverTimeResponse, EventResponse, EventServiceClient, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
+import { DashboardStatsDto } from './dto/dashboard-stats.dto';
 
 @Injectable()
 export class EventServiceService implements OnModuleInit {
@@ -25,6 +26,57 @@ export class EventServiceService implements OnModuleInit {
 
   onModuleInit() {
     this.eventService = this.client.getService<EventServiceClient>(EVENT_SERVICE_NAME);
+  }
+
+  async getEventRegistrationsOverTime(eventId: string): Promise<EventRegistrationsOverTimeResponse> {
+    try {
+      return await lastValueFrom(
+        this.eventService.getEventRegistrationsOverTime({ id: eventId })
+      );
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async getTotalEventsOverTime(userId: string) {
+    try {
+      return await lastValueFrom(
+        this.eventService.getTotalEventsOverTime({ userId })
+      );
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async getDashboardStats(userId: string): Promise<DashboardStatsDto> {
+    const [
+      organizedEvents,
+      participatedEvents,
+      // eventFeedbacks,
+      createdGuests,
+      createdSpeakers,
+      allCategories,
+      allEvents,
+    ] = await Promise.all([
+      this.getOrganizedEvents(userId),
+      this.getParticipatedEvents(userId),
+      // this.getEventFeedbacks('your-event-id-placeholder'),
+      this.getAllGuest(userId),
+      this.getAllSpeaker(userId),
+      this.getAllCategory(),
+      this.getAllEvent({ query: {} }),
+    ]);
+
+    const dashboardStatsDto = new DashboardStatsDto();
+    dashboardStatsDto.organizedEventsCount = organizedEvents.meta.totalItems;
+    dashboardStatsDto.participatedEventsCount = participatedEvents.meta.totalItems;
+    // dashboardStatsDto.receivedFeedbacksCount = eventFeedbacks.feedbacks ? eventFeedbacks.feedbacks.length : 0; // **Cần sửa logic này**
+    dashboardStatsDto.createdGuestsCount = createdGuests.meta.totalItems;
+    dashboardStatsDto.createdSpeakersCount = createdSpeakers.meta.totalItems;
+    dashboardStatsDto.totalEventCategoriesCount = allCategories.meta.totalItems;
+    dashboardStatsDto.totalEventsCount = allEvents.meta.totalItems;
+
+    return dashboardStatsDto;
   }
 
   async createQuestion(eventId: string, userId: string, text: string) {

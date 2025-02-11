@@ -7,11 +7,12 @@ import { LoginDto } from './dto/login';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { ProfileDto } from './dto/profile';
-import { NotificationService } from '../notification/notification.service'; 
+import { NotificationService } from '../notification/notification.service';
 import { RedisCacheService } from '../redis/redis.service';
 import { FileServiceService } from '../file-service/file-service.service';
 import { AllUserResponse, ChangePasswordRequest, GoogleAuthRequest, QueryParamsRequest, UpdateAvatarRequest, UpdateProfileRequest, USERS_SERVICE_NAME, UsersServiceClient } from '../../../../libs/common/src';
 import { EventServiceService } from '../event-service/event-service.service';
+import { DashboardStatsDto } from '../event-service/dto/dashboard-stats.dto';
 
 @Injectable()
 export class UsersService implements OnModuleInit {

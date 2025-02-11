@@ -12,6 +12,7 @@ import { RedisCacheModule } from '../redis/redis.module';
 import { FileServiceModule } from '../file-service/file-service.module';
 import { AUTH_PACKAGE_NAME } from '../../../../libs/common/src';
 import { GoogleStrategy } from '../strategies/google.stategy';
+import { EventServiceModule } from '../event-service/event-service.module';
 
 @Module({
   imports: [

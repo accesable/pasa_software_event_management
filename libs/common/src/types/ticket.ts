@@ -58,6 +58,8 @@ export interface DataResultCheckInOut {
   phoneNumber?: string | undefined;
   checkInAt: string;
   checkOutAt?: string | undefined;
+  participantId: string;
+  createdAt: string;
 }
 
 export interface ScanTicketRequest {

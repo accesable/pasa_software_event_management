@@ -5,7 +5,7 @@ import { EventCategoryService } from '../event-category/event-category.service';
 import { SpeakerService } from '../speaker/speaker.service';
 import { GuestService } from '../guest/guest.service';
 import { EventPattern, RpcException } from '@nestjs/microservices';
-import { AcceptInvitationRequest, AllEventResponse, AnswerQuestionRequest, AnswerQuestionResponse, CancelEventRequest, CategoryByIdRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateQuestionRequest, CreateQuestionResponse, CreateSpeakerRequest, DeclineInvitationRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, FeedbackAnalysisResponse, FindByIdRequest, GetAllRequest, GetEventFeedbacksResponse, GetEventQuestionsResponse, getOrganizedEventsRequest, getParticipatedEventsRequest, GuestResponse, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, SpeakerResponse, SubmitFeedbackRequest, SubmitFeedbackResponse, UpdateCategoryRequest, UpdateEventRequest, UpdateGuestRequest, UpdateSpeakerRequest } from '../../../../libs/common/src/types/event';
+import { AcceptInvitationRequest, AllEventResponse, AnswerQuestionRequest, AnswerQuestionResponse, CancelEventRequest, CategoryByIdRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateQuestionRequest, CreateQuestionResponse, CreateSpeakerRequest, DeclineInvitationRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, FeedbackAnalysisResponse, FindByIdRequest, GetAllRequest, GetEventFeedbacksResponse, GetEventQuestionsResponse, getOrganizedEventsRequest, getParticipatedEventsRequest, GetTotalOrganizedEventsOverTimeRequest, GuestResponse, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, SpeakerResponse, SubmitFeedbackRequest, SubmitFeedbackResponse, UpdateCategoryRequest, UpdateEventRequest, UpdateGuestRequest, UpdateSpeakerRequest } from '../../../../libs/common/src/types/event';
 
 @Controller()
 @EventServiceControllerMethods()
@@ -16,6 +16,14 @@ export class EventController implements EventServiceController {
     private readonly speakerService: SpeakerService,
     private readonly guestService: GuestService,
   ) { }
+
+  getTotalEventsOverTime(request: GetTotalOrganizedEventsOverTimeRequest) {
+    return this.eventService.getTotalEventsOverTime(request);
+  }
+
+  getEventRegistrationsOverTime(request: EventByIdRequest){
+    return this.eventService.getEventRegistrationsOverTime(request);
+  }
 
   createQuestion(request: CreateQuestionRequest) {
     return this.eventService.createQuestion(request.eventId, request.userId, request.text);

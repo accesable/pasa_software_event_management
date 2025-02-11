@@ -13,6 +13,7 @@ import { Types } from 'mongoose';
 import { DecodeAccessResponse } from '../../../../libs/common/src';
 import { CheckEventMaxParticipantsGuard } from '../guards/check-event-max-participants.guard';
 import { CheckEventStatusGuard } from '../guards/check-event-status.guard';
+import { DashboardStatsDto } from './dto/dashboard-stats.dto';
 
 @Controller('events')
 export class EventServiceController {
@@ -20,6 +21,32 @@ export class EventServiceController {
     private readonly eventServiceService: EventServiceService,
     private readonly filesService: FileServiceService,
   ) { }
+
+  @Get(':id/registrations-over-time')
+  @ResponseMessage('Event registrations over time fetched successfully')
+  async getRegistrationsOverTime(
+    @Param('id') eventId: string,
+  ) {
+    return this.eventServiceService.getEventRegistrationsOverTime(eventId);
+  }
+
+  @Get('total-events-over-time')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Total organized events over time fetched successfully')
+  async getTotalEventsOverTime(
+    @User() user: DecodeAccessResponse,
+  ){
+    return this.eventServiceService.getTotalEventsOverTime(user.id);
+  }
+
+  @Get('dashboard-stats')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Dashboard statistics fetched successfully')
+  async getDashboardStats(
+    @User() user: DecodeAccessResponse,
+  ): Promise<DashboardStatsDto> {
+    return this.eventServiceService.getDashboardStats(user.id);
+  }
 
   @Post(':id/invite')
   @UseGuards(JwtAuthGuard, CheckEventMaxParticipantsGuard, CheckEventStatusGuard)
@@ -50,7 +77,7 @@ export class EventServiceController {
       event
     );
   }
- 
+
   @Get(':id/participants')
   @ResponseMessage('Get participants success')
   async getParticipantsEvent(@Param('id') eventId: string) {
@@ -376,7 +403,7 @@ export class EventServiceController {
   @StatusEvent('Scheduled')
   @ResponseMessage('Cancel event success')
   async cancelEvent(@Param('id') id: string, @User() user: DecodeAccessResponse) {
-    
+
     return this.eventServiceService.cancelEvent(id, user.id);
   }
 }
@@ -447,7 +474,7 @@ export class SpeakerServiceController {
 @Controller('guests')
 export class GuestServiceController {
   constructor(private readonly eventServiceService: EventServiceService) { }
-  
+
   @Get(':id')
   @ResponseMessage('Get guest by id success')
   getGuestById(@Param('id') id: string) {
