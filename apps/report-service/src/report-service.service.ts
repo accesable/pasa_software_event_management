@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { Injectable, OnModuleInit, Inject, Logger } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import * as moment from 'moment';
@@ -17,6 +17,8 @@ import { EventCategoryDistributionResponse, CategoryDistribution, OrganizerEvent
 export class ReportServiceService implements OnModuleInit {
   private ticketService: TicketServiceProtoClient;
   private eventService: EventServiceClient;
+  private readonly logger = new Logger(ReportServiceService.name);
+  
   constructor(
     @Inject(TICKET_SERVICE) private readonly ticketServiceClient: ClientGrpc,
     @Inject(EVENT_SERVICE) private readonly eventServiceClient: ClientGrpc,
@@ -138,13 +140,22 @@ export class ReportServiceService implements OnModuleInit {
     }
   }
 
-  // Các hàm khác giữ nguyên...
   async getEventCategoryDistribution(request: Empty): Promise<EventCategoryDistributionResponse> {
     try {
       const allCategoriesResponse = await lastValueFrom(
         this.eventService.getAllCategory(request)
       ) as { categories: any[] };
+
+      if (!allCategoriesResponse || !allCategoriesResponse.categories || allCategoriesResponse.categories.length === 0 || !Array.isArray(allCategoriesResponse.categories)) { 
+        return { categoryDistribution: [], totalEvents: 0 };
+      }
+
       const allCategories = allCategoriesResponse.categories;
+      if (!Array.isArray(allCategories)) { // Check if allCategories is an array
+        this.logger.error('allCategories is not an array', allCategories); // Log if not an array
+        return { categoryDistribution: [], totalEvents: 0 }; // Return default value
+      }
+
       const allEvents = await lastValueFrom(
         this.eventService.getAllEvent({ query: {} })
       ).then((res: { events: any[] }) => res.events);
@@ -166,6 +177,7 @@ export class ReportServiceService implements OnModuleInit {
 
       return { categoryDistribution, totalEvents };
     } catch (error) {
+      this.logger.error('Error in getEventCategoryDistribution', error); // Log error
       throw handleRpcException(error, 'Fail getEventCategoryDistribution');
     }
   }
@@ -269,6 +281,10 @@ export class ReportServiceService implements OnModuleInit {
       const allEvents = await lastValueFrom(
         this.eventService.getAllEvent({ query: {} })
       ).then((res: { events: any[] }) => res.events);
+      
+      if(!allCategories || !allEvents) {
+        return { categoryStats: [] };
+      }
 
       const categoryStatsMap: Map<string, { categoryName: string, eventCount: number, participantCount: number }> = new Map();
 

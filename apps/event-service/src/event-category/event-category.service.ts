@@ -22,7 +22,7 @@ export class EventCategoryService {
                 });
             }
             const res = await this.categoryModel.create({ ...request });
-            return { category: this.transformCategory(res)};
+            return { category: this.transformCategory(res) };
         } catch (error) {
             throw handleRpcException(error, 'Failed to create category');
         }
@@ -30,18 +30,18 @@ export class EventCategoryService {
 
     async getAllCategory() {
         try {
-            const categories  = await this.categoryModel.find();
+            const categories = await this.categoryModel.find();
             const categoryResponses: Category[] = categories.map(category => this.transformCategory(category));
 
             const meta = {
                 totalItems: categories.length,
                 count: categories.length,
             }
-        
-              return { 
+
+            return {
                 categories: categoryResponses,
                 meta: meta
-               };
+            };
         } catch (error) {
             throw handleRpcException(error, 'Failed to get all category');
         }
@@ -50,7 +50,7 @@ export class EventCategoryService {
     async getCategoryById(id: string) {
         try {
             const res = await this.categoryModel.findById(id);
-            return { category: this.transformCategory(res)};
+            return { category: this.transformCategory(res) };
         } catch (error) {
             throw handleRpcException(error, 'Failed to get category by id');
         }
@@ -66,7 +66,7 @@ export class EventCategoryService {
                 });
             }
             const category = await this.categoryModel.findByIdAndUpdate
-            (request.id, request, { new: true });
+                (request.id, request, { new: true });
             return { category: this.transformCategory(category) };
         } catch (error) {
             throw handleRpcException(error, 'Failed to update category');

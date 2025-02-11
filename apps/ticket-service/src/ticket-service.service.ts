@@ -180,14 +180,29 @@ export class TicketServiceService implements OnModuleInit {
   }
 
 
+  // async cancelEvent(eventId: string) {
+  //   try {
+  //     const participants = await this.participantModel.find({ eventId });
+  //     participants.forEach(async (participant) => {
+  //       this.ticketModel.findOneAndUpdate({ participantId: participant._id }, { status: 'CANCELED' });
+  //       participant.status = 'CANCELED';
+  //       await participant.save();
+  //     });
+  //   } catch (error) {
+  //     throw handleRpcException(error, 'Failed to cancel event');
+  //   }
+  // }
+
   async cancelEvent(eventId: string) {
     try {
       const participants = await this.participantModel.find({ eventId });
-      participants.forEach(async (participant) => {
-        this.ticketModel.findOneAndUpdate({ participantId: participant._id }, { status: 'CANCELED' });
+
+      // Using for...of to handle async/await properly
+      for (const participant of participants) {
+        await this.ticketModel.findOneAndUpdate({ participantId: participant._id }, { status: 'CANCELED' });
         participant.status = 'CANCELED';
         await participant.save();
-      });
+      }
     } catch (error) {
       throw handleRpcException(error, 'Failed to cancel event');
     }
@@ -347,6 +362,8 @@ export class TicketServiceService implements OnModuleInit {
           phoneNumber: user?.phoneNumber || null,
           checkInAt: participant.checkinAt ? participant.checkinAt.toISOString() : null,
           checkOutAt: participant.checkoutAt ? participant.checkoutAt.toISOString() : null,
+          participantId: participant._id.toString(),
+          createdAt: participant.createdAt.toISOString(),
         };
       });
 

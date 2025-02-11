@@ -275,6 +275,41 @@ export class EventService {
         }
     }
 
+    // async getFeedbackAnalysis(eventId: string) {
+    //     try {
+    //         const result = await this.feedbackService.getFeedbacks(eventId);
+    //         const feedbacks = result.feedbacks;
+
+    //         if (!feedbacks || feedbacks.length === 0) {
+    //             return {
+    //                 eventId,
+    //                 averageRating: 0,
+    //                 totalFeedbacks: 0,
+    //                 ratingDistribution: {},
+    //             };
+    //         }
+
+    //         const totalFeedbacks = feedbacks.length;
+    //         const sumRating = feedbacks.reduce((sum, fb) => sum + fb.rating, 0);
+    //         const averageRating = parseFloat((sumRating / totalFeedbacks).toFixed(1));
+
+    //         const ratingDistribution: { [key: string]: number } = {}; // Dùng string làm key
+    //         feedbacks.forEach(fb => {
+    //             const ratingKey = fb.rating.toFixed(1); // Giữ định dạng float
+    //             ratingDistribution[ratingKey] = (ratingDistribution[ratingKey] || 0) + 1;
+    //         });
+
+    //         return {
+    //             eventId, 
+    //             averageRating,
+    //             totalFeedbacks,
+    //             ratingDistribution,
+    //         };
+    //     } catch (error) {
+    //         throw new RpcException(error);
+    //     }
+    // }
+
     async getFeedbackAnalysis(eventId: string) {
         try {
             const result = await this.feedbackService.getFeedbacks(eventId);
@@ -293,11 +328,12 @@ export class EventService {
             const sumRating = feedbacks.reduce((sum, fb) => sum + fb.rating, 0);
             const averageRating = parseFloat((sumRating / totalFeedbacks).toFixed(1));
 
-            const ratingDistribution: { [key: string]: number } = {}; // Dùng string làm key
-            feedbacks.forEach(fb => {
-                const ratingKey = fb.rating.toFixed(1); // Giữ định dạng float
-                ratingDistribution[ratingKey] = (ratingDistribution[ratingKey] || 0) + 1;
-            });
+            // Replace forEach with reduce for ratingDistribution
+            const ratingDistribution = feedbacks.reduce((acc, fb) => {
+                const ratingKey = fb.rating.toFixed(1);
+                acc[ratingKey] = (acc[ratingKey] || 0) + 1;
+                return acc;
+            }, {});
 
             return {
                 eventId,
