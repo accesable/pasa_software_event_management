@@ -43,7 +43,7 @@ const PARTICIPANTS_COLUMNS = [
 
 const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId }) => {
     const { data: participantsData, error: participantsError, loading: participantsLoading } = useFetchData(
-        eventId ? `http://localhost:8080/api/v1/events/${eventId}/participants` : "", // Correct API URL
+        eventId ? `http://47.129.247.0:8080/api/v1/events/${eventId}/participants` : "", // Correct API URL
         localStorage.getItem('accessToken') || undefined
     );
 

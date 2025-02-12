@@ -57,7 +57,7 @@ export const GeneralDashboardPage = () => {
   const stylesContext = useStylesContext();
   
   const { data: dashboardStats, error: dashboardStatsError, loading: dashboardStatsLoading } = useFetchData(
-    'http://localhost:8080/api/v1/events/dashboard-stats', // API URL
+    'http://47.129.247.0:8080/api/v1/events/dashboard-stats', // API URL
     localStorage.getItem('accessToken') || undefined // Access token
   );
 

@@ -1,62 +1,86 @@
+// src\pages\details\components\DetailedParticipantsTable.tsx
 import React from 'react';
-import { Alert } from 'antd';
-import { Pie } from '@ant-design/plots';
+import { Table, Alert, Spin } from 'antd';
+import { ColumnsType } from 'antd/es/table';
+import dayjs from 'dayjs';
 
-interface DetailedParticipantsChartProps {
-  detailedParticipants: any[];
-  meta: any;
+interface DetailedParticipantsTableProps {
+    detailedParticipants: any[];
+    meta: any;
 }
 
-const DetailedParticipantsChart: React.FC<DetailedParticipantsChartProps> = ({ detailedParticipants, meta }) => {
-  // Nếu không có dữ liệu hoặc tổng số phần tử là 0 thì hiển thị Alert
-  if (!detailedParticipants || detailedParticipants.length === 0 || (meta && meta.totalItems === 0)) {
-    return <Alert message="No detailed participants data" type="info" showIcon />;
-  }
+const DetailedParticipantsTable: React.FC<DetailedParticipantsTableProps> = ({ detailedParticipants, meta }) => {
+    if (!detailedParticipants || detailedParticipants.length === 0) {
+        return <Alert message="No detailed participants data" type="info" showIcon />;
+    }
 
-  // Mapping trạng thái vé theo các giá trị số
-  const ticketStatusMapping: { [key: number]: string } = {
-    0: 'ACTIVE',
-    1: 'USED',
-    2: 'CHECKED_IN',
-    3: 'CANCELED',
-  };
+    const columns: ColumnsType<any> = [
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+        },
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: 'Email',
+            dataIndex: 'email',
+            key: 'email',
+        },
+        {
+            title: 'Registration Date',
+            dataIndex: 'registrationDate',
+            key: 'registrationDate',
+            render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+        },
+        {
+            title: 'Check-in Time',
+            dataIndex: 'checkInAt',
+            key: 'checkInAt',
+            render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+        },
+        {
+            title: 'Check-out Time',
+            dataIndex: 'checkOutAt',
+            key: 'checkOutAt',
+            render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+        },
+        {
+            title: 'Ticket Status',
+            dataIndex: 'ticketStatus',
+            key: 'ticketStatus',
+            render: (status: number) => {
+                let statusText = 'Unknown';
+                switch (status) {
+                    case 0: statusText = 'ACTIVE'; break;
+                    case 1: statusText = 'USED'; break;
+                    case 2: statusText = 'CHECKED_IN'; break;
+                    case 3: statusText = 'CANCELED'; break;
+                    default: statusText = 'UNKNOWN'; break;
+                }
+                return statusText;
+            }
+        },
+    ];
 
-  // Tính số lượng người tham gia theo trạng thái vé
-  const statusCounts: { [key: string]: number } = {};
-  detailedParticipants.forEach((participant) => {
-    const status = participant.ticketStatus;
-    const statusText = ticketStatusMapping[status] || 'UNKNOWN';
-    statusCounts[statusText] = (statusCounts[statusText] || 0) + 1;
-  });
-
-  // Chuyển đối tượng statusCounts thành mảng dữ liệu cho biểu đồ
-  const data = Object.keys(statusCounts).map((key) => ({
-    type: key,
-    value: statusCounts[key],
-  }));
-
-  // Cấu hình cho biểu đồ Pie
-  const config = {
-    appendPadding: 10,
-    data,
-    angleField: 'value',
-    colorField: 'type',
-    radius: 1,
-    label: {
-      type: 'outer',
-      content: '{name} {percentage}',
-    },
-    interactions: [
-      {
-        type: 'pie-legend-active',
-      },
-      {
-        type: 'element-active',
-      },
-    ],
-  };
-
-  return <Pie {...config} />;
+    return (
+        <Table
+            columns={columns}
+            dataSource={detailedParticipants}
+            pagination={{
+                current: meta.page,
+                pageSize: meta.limit,
+                total: meta.totalItems,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showSizeChanger: true,
+            }}
+            rowKey="id"
+        />
+    );
 };
 
-export default DetailedParticipantsChart;
+export default DetailedParticipantsTable;

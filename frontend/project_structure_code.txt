@@ -13060,89 +13060,115 @@ export default CheckInOutStatsChart;
 src\pages\details\components\DetailedParticipantsTable.tsx:
 import React from 'react';
 import { Alert } from 'antd';
-import { Pie } from '@ant-design/plots';
+import { Scatter } from '@ant-design/plots';
+
+// Định nghĩa kiểu dữ liệu (có thể thêm avatar nếu có)
+interface DetailedParticipant {
+  id: string;
+  userId: string;
+  email: string;
+  name: string;
+  registrationDate: string;
+  checkInAt: string;
+  checkOutAt: string;
+  ticketStatus: number;
+  avatar?: string; // URL avatar, nếu có
+}
 
 interface DetailedParticipantsChartProps {
-  detailedParticipants: any[];
+  detailedParticipants: DetailedParticipant[];
   meta: any;
 }
 
-const DetailedParticipantsChart: React.FC<DetailedParticipantsChartProps> = ({ detailedParticipants, meta }) => {
-  // Nếu không có dữ liệu hoặc tổng số phần tử là 0 thì hiển thị Alert
+const DetailedParticipantsTimeline: React.FC<DetailedParticipantsChartProps> = ({ detailedParticipants, meta }) => {
   if (!detailedParticipants || detailedParticipants.length === 0 || (meta && meta.totalItems === 0)) {
     return <Alert message="No detailed participants data" type="info" showIcon />;
   }
 
-  // Mapping trạng thái vé theo các giá trị số
-  const ticketStatusMapping: { [key: number]: string } = {
-    0: 'ACTIVE',
-    1: 'USED',
-    2: 'CHECKED_IN',
-    3: 'CANCELED',
-  };
-
-  // Tính số lượng người tham gia theo trạng thái vé
-  const statusCounts: { [key: string]: number } = {};
-  detailedParticipants.forEach((participant) => {
-    const status = participant.ticketStatus;
-    const statusText = ticketStatusMapping[status] || 'UNKNOWN';
-    statusCounts[statusText] = (statusCounts[statusText] || 0) + 1;
-  });
-
-  // Chuyển đối tượng statusCounts thành mảng dữ liệu cho biểu đồ
-  const data = Object.keys(statusCounts).map((key) => ({
-    type: key,
-    value: statusCounts[key],
+  // Sử dụng checkInAt làm mốc thời gian chính
+  // Nếu không có avatar, sử dụng ảnh placeholder
+  const data = detailedParticipants.map((participant, index) => ({
+    time: participant.checkInAt,
+    // Dùng index làm giá trị Y để tách biệt các điểm
+    y: index,
+    name: participant.name,
+    avatar: participant.avatar || 'https://via.placeholder.com/40', // ảnh mặc định nếu chưa có avatar
   }));
 
-  // Cấu hình cho biểu đồ Pie
+  // Cấu hình biểu đồ Scatter
   const config = {
-    appendPadding: 10,
     data,
-    angleField: 'value',
-    colorField: 'type',
-    radius: 1,
-    label: {
-      type: 'outer',
-      content: '{name} {percentage}',
+    xField: 'time',
+    yField: 'y',
+    // Thiết lập trục X kiểu thời gian
+    xAxis: {
+      type: 'time',
+      title: { text: 'Thời gian' },
     },
-    interactions: [
-      {
-        type: 'pie-legend-active',
+    // Ẩn trục Y vì chỉ dùng để phân chia vị trí
+    yAxis: { visible: false },
+    // Các tương tác (tooltip) hiển thị tên và thời gian
+    tooltip: {
+      fields: ['name', 'time'],
+      formatter: (datum: any) => ({
+        name: datum.name,
+        value: datum.time,
+      }),
+    },
+    // Thêm annotation để hiển thị avatar lên từng điểm
+    annotations: data.map((item) => ({
+      type: 'image',
+      src: item.avatar,
+      // Lưu ý: sử dụng start và end dưới dạng đối tượng với khóa x và y
+      start: { x: item.time, y: item.y },
+      end: { x: item.time, y: item.y },
+      style: {
+        width: 40,
+        height: 40,
       },
-      {
-        type: 'element-active',
-      },
-    ],
+    })),
+    // Tùy chỉnh giao diện của điểm dữ liệu (có thể ẩn marker mặc định)
+    point: {
+      size: 0, // ẩn marker mặc định vì đã dùng annotation hiển thị avatar
+    },
   };
 
-  return <Pie {...config} />;
+  return <Scatter {...config} />;
 };
 
-export default DetailedParticipantsChart;
+export default DetailedParticipantsTimeline;
 
 
 src\pages\details\components\EventComparisonChart.tsx:
-// src\pages\details\components\EventComparisonChart.tsx
+// src/pages/details/components/EventComparisonChart.tsx
 import React from 'react';
 import { Column } from '@ant-design/charts';
 import { Alert, Spin } from 'antd';
 
 interface EventComparisonChartProps {
-    eventComparisonDataList: any[]; // Thay 'any' bằng interface/type cụ thể nếu có
+    eventComparisonDataList: any[]; // Nên thay 'any' bằng type cụ thể nếu có
     loading: boolean;
     error: string | null;
 }
 
 const EventComparisonChart: React.FC<EventComparisonChartProps> = ({ eventComparisonDataList, loading, error }) => {
     if (error) {
-        return <Alert message="Error loading event comparison data" description={error} type="error" showIcon />;
+        return (
+            <Alert
+                message="Error loading event comparison data"
+                description={error}
+                type="error"
+                showIcon
+            />
+        );
     }
 
     if (loading) {
-        return <div style={{ textAlign: 'center', padding: '20px' }}>
-            <Spin tip="Loading event comparison data..." />
-        </div>;
+        return (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+                <Spin tip="Loading event comparison data..." />
+            </div>
+        );
     }
 
     if (!eventComparisonDataList || eventComparisonDataList.length === 0) {
@@ -13184,18 +13210,21 @@ const EventComparisonChart: React.FC<EventComparisonChartProps> = ({ eventCompar
             label: {
                 autoHide: true,
                 autoRotate: false,
+                // Giới hạn độ dài của tên nếu quá dài
+                formatter: (text: string) => {
+                    const maxLength = 10; // Số ký tự tối đa, thay đổi nếu cần
+                    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+                },
             },
         },
         yAxis: {
             min: 0,
         },
         tooltip: {
-            formatter: (params: any) => {
-                return {
-                    name: params.category,
-                    value: params.value,
-                };
-            },
+            formatter: (params: any) => ({
+                name: params.category,
+                value: params.value,
+            }),
         },
     };
 

@@ -28,7 +28,7 @@ import { useState, useEffect } from 'react';
 
 const RevenueColumnChart = () => {
   const { data: categoryStatsResponse, error: categoryStatsError, loading: categoryStatsLoading } = useFetchData(
-    'http://localhost:8080/api/v1/reports/event-category-stats',
+    'http://47.129.247.0:8080/api/v1/reports/event-category-stats',
     localStorage.getItem('accessToken') || undefined
   );
 
@@ -114,7 +114,7 @@ const formatTime = (milliseconds: number): string => {
 
 const useFetchUserProfile = () => {
     const { data, error, loading } = useFetchData(
-        'http://localhost:8080/api/v1/users/profile',
+        'http://47.129.247.0:8080/api/v1/users/profile',
         localStorage.getItem('accessToken') || undefined
     );
     return { userData: data?.data?.user, userError: error, userLoading: loading };
@@ -159,7 +159,7 @@ export const ProjectsDashboardPage = () => {
   };
 
   const { data: dashboardStats, error: dashboardStatsError, loading: dashboardStatsLoading } = useFetchData(
-    'http://localhost:8080/api/v1/events/dashboard-stats',
+    'http://47.129.247.0:8080/api/v1/events/dashboard-stats',
     localStorage.getItem('accessToken') || undefined
   );
 

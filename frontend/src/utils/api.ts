@@ -1,5 +1,5 @@
 // src/utils/api.ts
-const API_BASE_URL = 'http://localhost:8080/api/v1'; // Thay đổi nếu cần
+const API_BASE_URL = 'http://47.129.247.0:8080/api/v1'; // Thay đổi nếu cần
 
 const api = {
   get: async <T>(url: string, config?: RequestInit): Promise<T> => {

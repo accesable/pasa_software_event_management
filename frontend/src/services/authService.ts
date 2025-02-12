@@ -1,7 +1,7 @@
 // src\services\authService.ts
 import axiosInstance from '../api/axiosInstance';
 
-const BASE_URL = 'http://localhost:8080/api/v1';
+const BASE_URL = 'http://47.129.247.0:8080/api/v1';
 const API_BASE_URL = `${BASE_URL}/auth`;
 const API_EVENT_BASE_URL = `${BASE_URL}/events`;
 const API_CATEGORY_BASE_URL = `${BASE_URL}/categories`;

@@ -46,7 +46,7 @@ const EventsListPage = () => {
     error: eventsError,
     loading: eventsLoading,
   } = useFetchData( 
-    `http://localhost:8080/api/v1/events?page=${currentPage}&limit=${pageSize}` +
+    `http://47.129.247.0:8080/api/v1/events?page=${currentPage}&limit=${pageSize}` +
     `${statusFilter ? `&status=${statusFilter}` : ''}` +
     `${categoryFilter ? `&categoryId=${categoryFilter}` : ''}` +
     `${searchQuery ? `&search=${searchQuery}` : ''}`,

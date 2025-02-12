@@ -7,7 +7,7 @@ const GoogleLoginButton: React.FC<any> = ({
 }) => {
     const handleGoogleLogin = async () => {
         // Chuyển hướng người dùng đến backend endpoint login google
-        window.location.href = 'http://localhost:8080/api/v1/auth/google/login';
+        window.location.href = 'http://47.129.247.0:8080/api/v1/auth/google/login';
     };
 
     return (

@@ -99,7 +99,6 @@ export const EventDetailsPage: React.FC = () => {
     fetchEventFeedbackSummary();
   }, [eventId, navigate]);
 
-  // Nếu URL có token, gọi API accept (chỉ gọi 1 lần)
   useEffect(() => {
     const token = searchParams.get('token');
     if (token && eventDetails && !hasAccepted) {
@@ -107,14 +106,14 @@ export const EventDetailsPage: React.FC = () => {
         try {
           const response = await authService.acceptEvent(eventDetails.id, token) as { statusCode: number; message: string; error?: string };
           if (response && response.statusCode === 200) {
-            message.success(response.message || 'Bạn đã xác nhận tham gia sự kiện thành công.');
+            message.success(response.message || 'You have successfully accepted the invitation.');
             setHasAccepted(true);
           } else {
-            message.error(response.error || 'Xác nhận tham gia thất bại.');
+            message.error(response.error || 'Failed to accept invitation.');
           }
         } catch (error: any) {
           console.error('Error accepting event:', error);
-          message.error(error.message || 'Có lỗi xảy ra khi xác nhận tham gia.');
+          message.error(error.message || 'Failed to accept invitation.');
         }
       };
       acceptEvent();
