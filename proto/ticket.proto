@@ -27,7 +27,7 @@ message DetailedParticipant {
     string userId = 2;
     string email = 3;
     string name = 4;
-    optional string phoneNumber = 5;
+    string avatar = 5;
     string registrationDate = 6;
     string checkInAt = 7;
     string checkOutAt = 8;

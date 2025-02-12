@@ -326,7 +326,7 @@ export class TicketServiceService implements OnModuleInit {
             userId: userInfo.id,
             email: userInfo.email,
             name: userInfo.name,
-            phoneNumber: userInfo.phoneNumber || null,
+            avatar: userInfo.avatar,
             registrationDate: participant.createdAt.toISOString(),
             checkInAt: participant.checkinAt ? participant.checkinAt.toISOString() : null,
             checkOutAt: participant.checkoutAt ? participant.checkoutAt.toISOString() : null,

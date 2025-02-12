@@ -27,7 +27,7 @@ export interface DetailedParticipant {
   userId: string;
   email: string;
   name: string;
-  phoneNumber?: string | undefined;
+  avatar: string;
   registrationDate: string;
   checkInAt: string;
   checkOutAt: string;

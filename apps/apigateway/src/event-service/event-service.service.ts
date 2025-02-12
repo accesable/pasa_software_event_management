@@ -30,10 +30,17 @@ export class EventServiceService implements OnModuleInit {
   }
 
   async getEventComparisonData() { // <-- Thêm function này
+    const cacheKey = 'eventComparisonData';
     try {
-      return await lastValueFrom(
+      const cachedResult = await this.redisCacheService.get<any>(cacheKey);
+      if (cachedResult) {
+        return cachedResult;
+      }
+      const result = await lastValueFrom(
         this.eventService.getEventComparisonData({})
       );
+      await this.redisCacheService.set(cacheKey, result, 300); // cache for 300 seconds
+      return result;
     } catch (error) {
       throw new RpcException(error);
     }
@@ -51,9 +58,16 @@ export class EventServiceService implements OnModuleInit {
 
   async getTotalEventsOverTime(userId: string) {
     try {
-      return await lastValueFrom(
+      const cacheKey = `totalEventsOverTime:${userId}`;
+      const cachedResult = await this.redisCacheService.get<any>(cacheKey);
+      if (cachedResult) {
+        return cachedResult;
+      }
+      const result = await lastValueFrom(
         this.eventService.getTotalEventsOverTime({ userId })
       );
+      await this.redisCacheService.set(cacheKey, result, 300);
+      return result;
     } catch (error) {
       throw new RpcException(error);
     }

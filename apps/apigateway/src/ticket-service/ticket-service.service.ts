@@ -21,15 +21,26 @@ export class TicketServiceService {
         this.ticketService = this.client.getService<TicketServiceProtoClient>(TICKET_SERVICE_PROTO_SERVICE_NAME);
     }
 
-    getCheckInOutStats(request: GetParticipantByEventIdRequest){ // <-- Thêm handler này
-        return this.ticketService.getCheckInOutStats(request);
+    async getCheckInOutStats(request: GetParticipantByEventIdRequest) {
+        try {
+            const cacheKey = `checkInOutStats:event:${request.eventId}`;
+            const cachedData = await this.redisCacheService.get<string>(cacheKey);
+            if (cachedData) {
+                return cachedData
+            }
+            const data = await this.ticketService.getCheckInOutStats(request).toPromise();
+            await this.redisCacheService.set(cacheKey, JSON.stringify(data));
+            return data;
+        } catch (error) {
+            throw new RpcException(error);
+        }
     }
 
     async getParticipantByEventId(eventId: string) {
         try {
             return await this.ticketService.getParticipantByEventId({ eventId }).toPromise();
         } catch (error) {
-            throw handleRpcException(error, 'Failed to get participant by event id');
+            throw new RpcException(error);
         }
     }
 
@@ -37,7 +48,7 @@ export class TicketServiceService {
         try {
             return await this.ticketService.getParticipantIdByUserIdEventId(request).toPromise();
         } catch (error) {
-            throw handleRpcException(error, 'Failed to get participant id by user id and event id');
+            throw new RpcException(error);
         }
     }
 
@@ -52,7 +63,7 @@ export class TicketServiceService {
             }
             return await this.ticketService.updateParticipant(request).toPromise();
         } catch (error) {
-            throw handleRpcException(error, 'Failed to update participant');
+            throw new RpcException(error);
         }
     }
 
@@ -60,7 +71,7 @@ export class TicketServiceService {
         try {
             return await this.ticketService.deleteParticipant({ id }).toPromise();
         } catch (error) {
-            throw handleRpcException(error, 'Failed to delete participant');
+            throw new RpcException(error);
         }
     }
 
@@ -69,15 +80,22 @@ export class TicketServiceService {
             await this.eventService.isExistEvent(request.eventId);
             return await this.ticketService.createParticipant(request).toPromise();
         } catch (error) {
-            throw handleRpcException(error, 'Failed to create participant');
+            throw new RpcException(error);
         }
     }
 
     async getDetailedParticipantList(request: { eventId: string, query: QueryParamsRequest }) {
         try {
-            return await this.ticketService.getDetailedParticipantList(request).toPromise();
+            const cacheKey = `detailedParticipantList:event:${request.eventId}:query:${JSON.stringify(request.query)}`;
+            const cachedData = await this.redisCacheService.get<string>(cacheKey);
+            if (cachedData) {
+                return cachedData;
+            }
+            const data = await this.ticketService.getDetailedParticipantList(request).toPromise();
+            await this.redisCacheService.set(cacheKey, JSON.stringify(data));
+            return data;
         } catch (error) {
-            throw handleRpcException(error, 'Failed to get detailed participant list');
+            throw new RpcException(error);
         }
     }
 
@@ -85,7 +103,7 @@ export class TicketServiceService {
         try {
             return await this.ticketService.getTicketByParticipantId({ participantId }).toPromise();
         } catch (error) {
-            throw handleRpcException(error, 'Failed to get ticket by participant id');
+            throw new RpcException(error);
         }
     }
 
@@ -93,7 +111,7 @@ export class TicketServiceService {
         try {
             return await this.ticketService.getParticipantByEventAndUser(request).toPromise();
         } catch (error) {
-            throw handleRpcException(error, 'Failed to get participant by event and user');
+            throw new RpcException(error);
         }
     }
 
@@ -106,7 +124,7 @@ export class TicketServiceService {
                 });
             }
         } catch (error) {
-            throw handleRpcException(error, 'Failed to check event');
+            throw new RpcException(error);
         }
     }
 
@@ -114,7 +132,7 @@ export class TicketServiceService {
         try {
             return await this.ticketService.getAllTicket(request).toPromise();
         } catch (error) {
-            throw handleRpcException(error, 'Failed to get all ticket');
+            throw new RpcException(error);
         }
     }
 
@@ -144,7 +162,7 @@ export class TicketServiceService {
             const response = await this.redisCacheService.get<string>(`event:${result.result.eventId}:checkInOut`);
             return response;
         } catch (error) {
-            throw handleRpcException(error, 'Failed to scan ticket');
+            throw new RpcException(error);
         }
     }
 }

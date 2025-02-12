@@ -4,12 +4,14 @@ import { lastValueFrom } from 'rxjs';
 import { REPORT_SERVICE } from '../constants/service.constant';
 import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
 import { ReportServiceProtoClient, REPORT_SERVICE_PROTO_SERVICE_NAME, UserEventsByDateRequest, EventCategoryDistributionResponse, Empty, OrganizerEventFeedbackSummaryRequest, OrganizerEventFeedbackSummaryResponse, EventInvitationReportRequest, EventInvitationReportResponse } from '../../../../libs/common/src/types/report';
+import { RedisCacheService } from '../redis/redis.service';
 
 @Injectable()
 export class ReportServiceService implements OnModuleInit {
   private reportService: ReportServiceProtoClient;
 
   constructor(
+    private readonly redisCacheService: RedisCacheService,
     @Inject(REPORT_SERVICE) private readonly reportClient: ClientGrpc,
   ) { }
 
@@ -51,11 +53,21 @@ export class ReportServiceService implements OnModuleInit {
     }
   }
 
-  async getEventCategoryStats(){ // Method MỚI
+  async getEventCategoryStats() { // Method MỚI with Redis caching
+    const cacheKey = 'eventCategoryStats';
     try {
-      return await lastValueFrom(
+      // Try to get the result from Redis cache
+      const cached = await this.redisCacheService.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      // If not cached, fetch the result
+      const result = await lastValueFrom(
         this.reportService.getEventCategoryStats({})
       );
+      // Cache the result for 1 hour (3600 seconds)
+      await this.redisCacheService.set(cacheKey, result, 300);
+      return result;
     } catch (error) {
       throw handleRpcException(error, 'Failed to get event category stats');
     }

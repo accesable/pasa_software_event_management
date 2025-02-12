@@ -5,9 +5,11 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import { REPORT_PACKAGE_NAME } from '../../../../libs/common/src/types/report';
 import { REPORT_SERVICE } from '../constants/service.constant';
+import { RedisCacheModule } from '../redis/redis.module';
 
 @Module({
   imports: [
+    RedisCacheModule,
     ClientsModule.register([
       {
         name: REPORT_SERVICE,
