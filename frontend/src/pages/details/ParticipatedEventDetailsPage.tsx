@@ -1,29 +1,25 @@
 // src\pages\details\ParticipatedEventDetailsPage.tsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link, useOutletContext } from 'react-router-dom';
 import {
   Alert,
   Button,
   Card,
   Col,
-  Descriptions,
   Flex,
-  Image,
   List,
   message,
   Row,
   Space,
   Table,
-  Tag,
   Typography,
   Checkbox,
   Spin,
   Rate,
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { PageHeader, Loader, BackBtn } from '../../components';
-import { useFetchData } from '../../hooks';
+import { PageHeader, BackBtn } from '../../components';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
 import { Events, TicketType } from '../../types';
@@ -31,17 +27,16 @@ import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import { Helmet } from 'react-helmet-async';
 import { EventScheduleItem } from '../../types/schedule';
 import jsPDF from 'jspdf';
-import { CheckboxValueType } from 'antd/es/checkbox/Group';
 import TicketDetailsModal from '../../components/TicketDetailsModal';
 import EventDiscussion from '../../components/EventDiscussion';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const ParticipatedEventDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [eventDetails, setEventDetails] = useState<Events | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [] = useState<string | null>(null);
   const navigate = useNavigate();
   const [ticketData, setTicketData] = useState<TicketType | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -50,8 +45,8 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const [updatingSessions, setUpdatingSessions] = useState<boolean>(false); // State loading cho update session
   const [isTicketModalVisible, setIsTicketModalVisible] = useState<boolean>(false); // State for ticket modal visibility
   const { eventId } = useOutletContext<{ eventId: string }>();
-  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
-  const [feedbackSummary, setFeedbackSummary] = useState<{
+  const [feedbackSummaryLoading] = useState(false);
+  const [feedbackSummary] = useState<{
     averageRating: number;
     totalFeedbacks: number;
     ratingDistribution: Record<string, number>;
@@ -60,7 +55,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   useEffect(() => {
     const fetchEventDetailsAndParticipation = async () => {
       setLoading(true);
-      setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
         const eventResponse = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
@@ -73,12 +67,9 @@ const ParticipatedEventDetailsPage: React.FC = () => {
             setSelectedSessionIds(participationResponse.data.participation.sessionIds || []); // Khởi tạo selectedSessionIds từ participation data
           }
         } else {
-          setError(eventResponse?.error || 'Failed to load event details');
           message.error(eventResponse?.error);
         }
       } catch (error: any) {
-        console.error('Error fetching event details and participation:', error);
-        setError(error.error);
         message.error(error.error);
       } finally {
         setLoading(false);
@@ -180,7 +171,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
 
   const handleUpdateSessions = async () => {
     setUpdatingSessions(true); // Set loading state cho button update session
-    setError(null);
     try {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
@@ -215,7 +205,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const showTicketModal = async () => {
     setIsTicketModalVisible(true);
     setLoading(true);
-    setError(null);
     try {
       if (!eventDetails?.id) {
         message.error("Missing user or event information.");
@@ -229,13 +218,11 @@ const ParticipatedEventDetailsPage: React.FC = () => {
       if (response && response.statusCode === 200 && response.data.ticket) {
         setTicketData(response.data.ticket);
       } else {
-        setError(response?.error || 'Failed to load ticket details');
         message.error(response?.error || 'Failed to load ticket details');
         setTicketData(null);
       }
     } catch (error: any) {
       console.error('Error fetching ticket details:', error);
-      setError(error.error || 'Failed to load ticket details');
       message.error(error.error || 'Failed to load ticket details');
       setTicketData(null);
     } finally {

@@ -1,8 +1,7 @@
 // src\routes\routes.tsx
 // src\routes\routes.tsx
-import { createBrowserRouter, useLocation, Navigate, RouteObject } from 'react-router-dom';
+import { createBrowserRouter, useLocation, Navigate } from 'react-router-dom';
 import {
-  AccountDeactivePage,
   GeneralDashboardPage,
   Error400Page,
   Error403Page,
@@ -15,11 +14,8 @@ import {
   SignInPage,
   SignUpPage,
   UserProfileSecurityPage,
-  VerifyEmailPage,
-  WelcomePage,
   CreateEventPage,
   MyEventDashboardPage,
-  UserDashboardPage,
 } from '../pages';
 import DetailMyEventPage from '../pages/details/MyEventPage';
 import {
@@ -29,7 +25,6 @@ import {
   UserAccountLayout,
 } from '../layouts';
 import React, { ReactNode, useEffect } from 'react';
-import EventsDashboardPage from '../pages/dashboards/Events.tsx';
 import EventsListPage from '../pages/dashboards/EventsList.tsx';
 import EventDetailsPage from '../pages/details/EventDetailsPage.tsx';
 import EditEventPage from '../pages/edit/EditEventPage.tsx';
@@ -40,7 +35,6 @@ import { UserProfileInformationPage } from '../pages/userAccount/Information.tsx
 import QRScannerPage from '../pages/QRScannerPage.tsx';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store.ts';
-import ProtectedRoute from '../components/ProtectedRoute.tsx';
 import { Helmet } from 'react-helmet-async';
 import DeclineEventPage from '../pages/DeclineEventPage.tsx';
 import EventFeedbacksPage from '../pages/feedbacks/EventFeedbacksPage.tsx';
@@ -189,22 +183,9 @@ const router = createBrowserRouter([
         </PrivateRoute>,
       },
       {
-        path: 'events',
-        element: <PrivateRoute>
-          <EventsDashboardPage />
-        </PrivateRoute>,
-
-      },
-      {
         path: 'my-events',
         element: <PrivateRoute>
           <MyEventDashboardPage />
-        </PrivateRoute>,
-      },
-      {
-        path: 'users',
-        element: <PrivateRoute>
-          <UserDashboardPage />
         </PrivateRoute>,
       },
       {
@@ -247,20 +228,8 @@ const router = createBrowserRouter([
         element: <SignInPage />,
       },
       {
-        path: 'welcome',
-        element: <WelcomePage />,
-      },
-      {
-        path: 'verify-email',
-        element: <VerifyEmailPage />,
-      },
-      {
         path: 'password-reset',
         element: <PasswordResetPage />,
-      },
-      {
-        path: 'account-delete',
-        element: <AccountDeactivePage />,
       },
     ],
   },

@@ -1,5 +1,5 @@
 // src\pages\dashboards\MyEvents.tsx
-import { Alert, Button, Col, Row, Space, Spin } from 'antd';
+import { Alert, Button, Col, Row, Space } from 'antd';
 import {
     Card,
     Loader,
@@ -8,7 +8,6 @@ import {
 import { Events } from '../../types';
 import { useState } from 'react';
 import {
-    CloudUploadOutlined,
     HomeOutlined,
     PieChartOutlined,
     PlusOutlined,

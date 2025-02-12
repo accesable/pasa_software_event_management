@@ -47,7 +47,7 @@ export const LatestOrdersCard = ({
     data: ordersData,
     loading: ordersDataLoading,
     error: ordersDataError,
-  } = useFetchData('/mocks/CountryOrders.json');
+  } = useFetchData(data);
 
   return (
     <Card title={`Latest Orders`} extra={<MoreMenu />} {...others}>

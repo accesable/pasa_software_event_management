@@ -1,6 +1,5 @@
 // src\components\dashboard\projects\ClientsTable\ClientsTable.tsx
-import { Table, TableProps, Typography } from 'antd';
-import { Clients } from '../../../../types';
+import { Table, TableProps } from 'antd';
 import { UserAvatar } from '../../../index.ts';
 import dayjs from 'dayjs';
 

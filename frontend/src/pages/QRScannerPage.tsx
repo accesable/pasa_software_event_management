@@ -177,10 +177,10 @@ const QRScannerPage: React.FC = () => {
               constraints={{ facingMode: 'environment' }}
               scanDelay={300}
               onResult={(result, error) => {
-                if (!!result) {
+                if (result) {
                   handleScan(result);
                 }
-                if (!!error) {
+                if (error) {
                   handleError(error);
                 }
               }}

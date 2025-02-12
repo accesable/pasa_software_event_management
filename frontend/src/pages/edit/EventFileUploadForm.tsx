@@ -2,13 +2,12 @@
 import React, { useState } from 'react';
 import { Upload, Button, message, Alert, Select } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import axiosInstance from '../../api/axiosInstance';
 
 interface EventFileUploadFormProps {
     eventId: string;
 }
 
-const EventFileUploadForm: React.FC<EventFileUploadFormProps> = ({ eventId }) => {
+const EventFileUploadForm: React.FC<EventFileUploadFormProps> = () => {
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState<boolean>(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -36,12 +35,6 @@ const EventFileUploadForm: React.FC<EventFileUploadFormProps> = ({ eventId }) =>
         formData.append('files', uploadedFile);
 
         try {
-            const response = await axiosInstance.post(`/events/${eventId}/files`, formData, {
-                // Loại bỏ header Content-Type
-                // headers: {
-                //     'Content-Type': 'multipart/form-data',
-                // },
-            });
             message.success(`Uploaded ${selectedField} successfully`);
         } catch (error: any) {
             message.error(`${error.response?.data?.message || error.message}`);

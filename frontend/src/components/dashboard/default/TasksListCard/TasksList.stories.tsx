@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import TasksListData from '../../../../../public/mocks/TasksList.json';
 
 import { TasksListCard } from './TasksListCard.tsx';
 
@@ -18,7 +17,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    data: TasksListData,
+    data: [],
     style: { width: 800 },
   },
 };

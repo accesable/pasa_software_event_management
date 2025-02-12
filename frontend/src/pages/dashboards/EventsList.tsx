@@ -1,6 +1,6 @@
 // src/pages/dashboards/EventsList.tsx
-import React, { useEffect, useState } from 'react';
-import { Alert, Button, Card, Space, Table, Tag, Select, message, Spin, Input } from 'antd';
+import { useEffect, useState } from 'react';
+import { Alert, Button, Card, Space, Table, Tag, Select, Spin, Input } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
@@ -11,18 +11,6 @@ import { ColumnsType } from 'antd/es/table';
 import { Events } from '../../types';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
-
-interface EventsListResponse {
-  data: {
-    events: Events[];
-    meta: {
-      totalItems: number;
-      // ... other meta properties if any ...
-    };
-  };
-  statusCode: number;
-  message: string;
-}
 
 const EVENT_STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },

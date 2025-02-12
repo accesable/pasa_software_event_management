@@ -21,8 +21,8 @@ const EventAnalysisPage: React.FC = () => {
   const [eventComparisonData, setEventComparisonData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [comparisonError, setComparisonError] = useState<string | null>(null);
-  const [comparisonLoading, setComparisonLoading] = useState(false);
+  const [comparisonError] = useState<string | null>(null);
+  const [comparisonLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {

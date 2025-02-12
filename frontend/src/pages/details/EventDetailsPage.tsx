@@ -7,7 +7,6 @@ import {
   Card,
   Col,
   Flex,
-  Image,
   List,
   message,
   Rate,
@@ -15,7 +14,6 @@ import {
   Spin,
   Table,
   Typography,
-  Checkbox,
 } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
@@ -28,7 +26,7 @@ import { Helmet } from 'react-helmet-async';
 import EventDiscussion from '../../components/EventDiscussion';
 import jsPDF from 'jspdf';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const EventDetailsPage: React.FC = () => {
   // Lấy eventId từ outlet context (hoặc từ useParams nếu cần)

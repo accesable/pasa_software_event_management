@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import NotificationsData from '../../../public/mocks/Notifications.json';
 
 import { NotificationsCard } from './NotificationsCard.tsx';
 
@@ -17,7 +16,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    data: NotificationsData.slice(0, 10),
+    data: [].slice(0, 10),
     style: { width: 500 },
   },
 };

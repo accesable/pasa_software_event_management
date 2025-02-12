@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import SocialsCommentsData from '../../../../../public/mocks/SocialComments.json';
 
 import { CommentsCard } from './CommentsCard.tsx';
 
@@ -18,7 +17,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    data: SocialsCommentsData.slice(0, 5),
+    data: [].slice(0, 5),
     style: { width: 600 },
   },
 };

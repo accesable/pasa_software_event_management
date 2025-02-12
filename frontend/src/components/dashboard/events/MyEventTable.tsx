@@ -9,7 +9,6 @@ import {
   Table,
   TableProps,
   Tag,
-  TagProps,
   Typography,
   message,
 } from 'antd';
@@ -71,7 +70,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
     fetchCategoryNames();
   }, [data]);
 
-  const COLUMNS = (navigate: ReturnType<typeof useNavigate>, setLoading: (loading: boolean) => void, fetchData: () => void, activeTabKey: string): ColumnsType<Events> => [
+  const COLUMNS = (navigate: ReturnType<typeof useNavigate>, _setLoading: (loading: boolean) => void, fetchData: () => void, activeTabKey: string): ColumnsType<Events> => [
     {
       title: 'Name',
       dataIndex: 'name',

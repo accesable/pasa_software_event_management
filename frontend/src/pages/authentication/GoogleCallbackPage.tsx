@@ -18,7 +18,6 @@ interface GoogleCallbackPageProps {
 const GoogleCallbackPage: React.FC<GoogleCallbackPageProps> = ({
     clientId,
     redirectUri,
-    scope,
     backendTokenEndpoint,
     onLoginSuccess,
     onLoginFailure,

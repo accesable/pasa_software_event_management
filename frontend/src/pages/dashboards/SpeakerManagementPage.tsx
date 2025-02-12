@@ -4,29 +4,23 @@ import {
     Button,
     Card,
     message,
-    Popconfirm,
     Space,
     Table,
     Modal,
     Form,
     Input,
-    Typography,
     Alert,
-    Tabs,
 } from 'antd';
 import {
     HomeOutlined,
     PieChartOutlined,
     EditOutlined,
     PlusOutlined,
-    SaveOutlined,
-    DeleteOutlined,
-    CloseOutlined
 } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { PageHeader, Loader } from '../../components';
+import { PageHeader } from '../../components';
 import { ColumnsType } from 'antd/es/table';
 import { Speaker, Guest, SpeakerGuestData } from '../../types';
 import axiosInstance from '../../api/axiosInstance';
@@ -124,24 +118,14 @@ const SpeakerGuestManagementPage: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            let response;
             const isSpeaker = values.entityType === 'speaker';
-            const endpoint = isSpeaker ? '/speakers' : '/guests';
             const idToEdit = editingItemId;
 
-            const payload = { // ** Tạo payload theo đúng format backend yêu cầu **
-                name: values.name,
-                jobTitle: values.jobTitle,
-                email: values.email,
-                ...(isSpeaker ? { bio: values.bio } : { organization: values.organization, linkSocial: values.linkSocial }) // ** Conditional payload cho speaker và guest **
-            };
 
 
             if (idToEdit) {
-                response = await axiosInstance.patch(`${endpoint}/${idToEdit}`, payload); // ** Gửi payload đã format **
                 message.success(`${isSpeaker ? 'Speaker' : 'Guest'} updated successfully`);
             } else {
-                response = await axiosInstance.post(endpoint, payload); // ** Gửi payload đã format **
                 message.success(`${isSpeaker ? 'Speaker' : 'Guest'} created successfully`);
             }
 

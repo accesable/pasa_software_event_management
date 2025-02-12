@@ -1,7 +1,7 @@
 // src\pages\feedbacks\EventFeedbacksPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Alert, Button, Card, List, Spin, Typography, Rate, message, Avatar } from 'antd';
+import { Alert, Card, List, Typography, Rate, message, Avatar } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { PageHeader, BackBtn, Loader } from '../../components';

@@ -1,6 +1,6 @@
 // src\pages\details\components\DetailedParticipantsTable.tsx
 import React from 'react';
-import { Table, Alert, Spin } from 'antd';
+import { Table, Alert } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 

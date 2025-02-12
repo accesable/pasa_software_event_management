@@ -1,4 +1,4 @@
-import { CardProps, Typography, Spin, Alert, Empty } from 'antd';
+import { CardProps, Spin, Alert, Empty } from 'antd';
 import { Pie } from '@ant-design/charts';
 import { Card } from '../../../index.ts';
 import React, { useState, useEffect } from 'react'; // Import useState and useEffect

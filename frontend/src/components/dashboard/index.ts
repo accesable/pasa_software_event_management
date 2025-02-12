@@ -15,8 +15,6 @@ export { CustomerReviewsCard } from './ecommerce';
 export { ProjectsCountCard, ProjectsTable, ClientsTable } from './projects';
 export {
   EventTable,
-  EventTimelineCard,
-  MyEventTimelineCard
 } from './events';
 export {
   UserTable

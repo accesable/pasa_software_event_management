@@ -11,7 +11,6 @@ import {
   InputNumber,
   Row,
   Select,
-  Typography,
   message,
   Space
 } from 'antd';

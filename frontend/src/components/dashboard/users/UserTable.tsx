@@ -8,10 +8,8 @@ import {
     Modal,
     Table,
 } from 'antd';
-// import { useNavigate } from 'react-router-dom';  
 import { Card } from '../..';
 import { useState } from 'react';
-// navigate: ReturnType<typeof useNavigate>
 const USER_COLUMNS = () => [
     {
       title: 'ID',

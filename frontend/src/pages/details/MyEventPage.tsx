@@ -1,12 +1,11 @@
 // src\pages\details\MyEventPage.tsx
-import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link, useOutletContext, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Alert,
   Button,
   Card,
   Col,
-  Descriptions,
   Flex,
   Image,
   List,
@@ -14,30 +13,25 @@ import {
   Row,
   Space,
   Table,
-  Tag,
   Typography,
-  Checkbox,
   Rate,
   Spin,
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined, QuestionOutlined, BarChartOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined, BarChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { PageHeader, Loader, UserAvatar, BackBtn } from '../../components';
-import { useFetchData } from '../../hooks';
+import { PageHeader, BackBtn } from '../../components';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
-import { Events, TicketType, User } from '../../types';
+import { Events, TicketType } from '../../types';
 import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Helmet } from 'react-helmet-async';
-import { EventScheduleItem } from '../../types/schedule';
 import TicketDetailsModal from '../../components/TicketDetailsModal';
 import InviteUsersModal from '../../components/InviteUsersModal';
-import { useDispatch } from 'react-redux';
 import EventDiscussion from '../../components/EventDiscussion';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 export interface ParticipantData {
   id: string;
@@ -53,13 +47,11 @@ const DetailMyEventPage: React.FC = () => {
   const { id: eventId } = useParams<{ id: string }>();
   const [eventDetails, setEventDetails] = useState<Events | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
-  const [ticketData, setTicketData] = useState<TicketType | null>(null); // Declare ticketData here
+  const [ticketData] = useState<TicketType | null>(null); // Declare ticketData here
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
-  const dispatch = useDispatch();
   const [questions, setQuestions] = useState<any[]>([]);
   const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
   const [feedbackSummary, setFeedbackSummary] = useState<{
@@ -114,9 +106,6 @@ const DetailMyEventPage: React.FC = () => {
 
   const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
 
-  const onSessionSelectChange = (selectedKeys: React.Key[]) => {
-    setSelectedSessionIds(selectedKeys as string[]);
-  };
 
   const scheduleColumns = getScheduleColumns();
 
@@ -132,7 +121,6 @@ const DetailMyEventPage: React.FC = () => {
   };
 
 
-  const handleUpdateSessionsForTicket = handleUpdateSessionsForTicketFunction(setLoading, message, navigate, localStorage, authService, setIsTicketModalVisible, setTicketData, ticketData);
 
 
   return (
@@ -274,30 +262,6 @@ const handleDownloadPdfFunction = (setLoading: React.Dispatch<React.SetStateActi
   }
 };
 
-const handleUpdateSessionsForTicketFunction = (setLoading: React.Dispatch<React.SetStateAction<boolean>>, message: any, navigate: any, localStorage: any, authService: any, setIsTicketModalVisible: React.Dispatch<React.SetStateAction<boolean>>, setTicketData: React.Dispatch<React.SetStateAction<TicketType | null>>, ticketData: TicketType | null) => async (sessionIds: string[]) => {
-  setLoading(true);
-  try {
-    const accessToken = localStorage.getItem('accessToken');
-    if (!accessToken) {
-      message.error("No access token found. Please login again.");
-      navigate('/auth/signin');
-      return;
-    }
-
-    const response = await authService.updateParticipantSessions(ticketData?.participantId, { sessionIds }, accessToken) as any;
-    if (response && response.statusCode === 200) {
-      message.success(response.message || 'Sessions updated successfully');
-      setIsTicketModalVisible(false);
-    } else {
-      message.error(response.message || 'Failed to update sessions');
-    }
-  } catch (error: any) {
-    console.error('Error updating sessions:', error);
-    message.error(error.message || 'Failed to update sessions');
-  } finally {
-    setLoading(false);
-  }
-};
 
 const renderEventIntroduction = (eventDetails: Events | null) => {
   if (eventDetails?.videoIntro) {

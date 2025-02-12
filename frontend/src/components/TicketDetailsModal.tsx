@@ -1,6 +1,6 @@
 // src\components\TicketDetailsModal.tsx
 import React from 'react';
-import { Modal, Typography, Flex, Button, Spin } from 'antd';
+import { Modal, Typography, Flex, Button } from 'antd';
 import QRCode from 'qrcode.react';
 import { TicketType } from '../types'; // Assuming you have this interface defined
 import dayjs from 'dayjs';

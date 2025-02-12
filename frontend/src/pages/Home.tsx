@@ -9,22 +9,12 @@ import {
 } from '../constants';
 import { Link } from 'react-router-dom';
 import {
-  AntDesignOutlined,
-  AppstoreOutlined,
-  BorderOutlined,
-  CalendarOutlined,
-  EditOutlined,
-  FileOutlined,
-  FormatPainterOutlined,
   GithubOutlined,
   LoginOutlined,
-  MergeCellsOutlined,
-  PieChartOutlined,
   RocketFilled,
-  TableOutlined,
 } from '@ant-design/icons';
 import { Card, Container } from '../components';
-import { createElement, CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 
 const { Title, Text } = Typography;
 

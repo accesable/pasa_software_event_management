@@ -1,5 +1,5 @@
 // src/pages/dashboards/ParticipatedEventsPage.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Alert,
   Button,
@@ -34,7 +34,7 @@ const ParticipatedEventsPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } =
+  const { data: eventsData, loading: eventsLoading, fetchData } =
     useFetchParticipatedEventsData(statusFilter === 'all' ? undefined : statusFilter);
   // loading dành cho thao tác update/delete
   const [actionLoading, setActionLoading] = useState(false);

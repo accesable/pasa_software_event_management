@@ -38,7 +38,7 @@ export const RecentUsersCard = ({ data, loading, error, ...others }: Props) => {
     data: usersData,
     loading: usersDataLoading,
     error: usersDataError,
-  } = useFetchData('/mocks/ChannelUsers.json');
+  } = useFetchData(data);
 
   return (
     <Card title={`Recent Users`} extra={<MoreMenu />} {...others}>

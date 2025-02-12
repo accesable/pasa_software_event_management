@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CardProps, Typography, Spin, Alert } from 'antd';
+import { CardProps, Spin, Alert } from 'antd';
 import { Area } from '@ant-design/charts';
 import { Card } from '../../../index.ts';
 import authService from '../../../../services/authService.ts';

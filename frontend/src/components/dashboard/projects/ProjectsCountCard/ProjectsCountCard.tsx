@@ -10,8 +10,9 @@ import {
   Statistic,
   Tooltip,
 } from 'antd';
-import ProjectsData from '../../../../../public/mocks/Projects.json';
 import './styles.scss';
+
+const ProjectsData: any[] = [];
 
 const PROGRESS_PROPS: ProgressProps = {
   type: 'circle',

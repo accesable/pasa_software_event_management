@@ -1,5 +1,4 @@
 // src\components\dashboard\shared\EventsCard\EventsCard.tsx
-import React from 'react';
 import {
   Card as AntdCard,
   CardProps,

@@ -1,6 +1,6 @@
 // src\pages\authentication\SignIn.tsx
 // src\pages\authentication\SignInPage.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Button,
   Col,

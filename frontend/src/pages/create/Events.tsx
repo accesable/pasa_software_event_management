@@ -1,14 +1,11 @@
 // src\pages\create\Events.tsx
-import { Button, Col, DatePicker, Form, Input, InputNumber, message, Modal, Row, Select, Typography, Checkbox, Alert } from 'antd';
-import { Card, Loader } from '../../components';
+import { Button, Col, DatePicker, Form, Input, InputNumber, message, Modal, Row, Select, Alert } from 'antd';
+import { Card } from '../../components';
 import { SaveOutlined } from '@ant-design/icons';
-import { Events } from '../../types';
 import { useState, useEffect } from 'react';
-import { useFetchData } from '../../hooks';
 import { useNavigate } from 'react-router-dom';
 import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
 import authService from '../../services/authService'; // Import authService
-import dayjs from 'dayjs';
 
 type FieldType = {
     name: string;
@@ -25,10 +22,8 @@ type FieldType = {
 };
 
 export const CreateEventPage = () => {
-    const { data: users } = useFetchData('../mocks/Users.json');
 
     const [loading, setLoading] = useState(false);
-    // Modal State for create event type
     const [isCreateTypeModalOpen, setIsCreateTypeModalOpen] = useState<any>(false);
     const [types, setTypes] = useState<any>([]); // Initialize types as empty array
     const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -130,9 +125,6 @@ export const CreateEventPage = () => {
     // Modal State for create user
     const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState<any>(false);
 
-    const showCreateUserModal = () => {
-        setIsCreateUserModalOpen(true);
-    };
 
     const handleOkCreateUser = () => {
         setIsCreateUserModalOpen(false);

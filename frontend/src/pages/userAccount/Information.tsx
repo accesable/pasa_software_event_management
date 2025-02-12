@@ -1,10 +1,9 @@
 // src\pages\userAccount\Information.tsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
   Card,
-  Checkbox,
   Col,
   DatePicker,
   Flex,
@@ -12,10 +11,9 @@ import {
   Input,
   Row,
   Select,
-  Spin,
   message,
 } from 'antd';
-import { SaveOutlined, UploadOutlined, MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { SaveOutlined, MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import { updateUserProfile } from '../../redux/userSlice';
 import dayjs from 'dayjs';

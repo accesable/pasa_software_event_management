@@ -10,7 +10,7 @@ import {
   message,
 } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import authService from '../../services/authService';
 
 type FieldType = {

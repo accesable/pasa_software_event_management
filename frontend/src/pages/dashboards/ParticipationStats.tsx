@@ -8,12 +8,6 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import axiosInstance from '../../api/axiosInstance';
 
-interface TimelineData {
-  timeSlot: string;
-  checkInCount: number;
-  checkOutCount: number;
-}
-
 interface ParticipationData {
     eventId: string;
     registeredCount: number;

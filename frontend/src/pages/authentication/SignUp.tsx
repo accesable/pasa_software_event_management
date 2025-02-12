@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Button,
   Col,
@@ -18,9 +18,8 @@ import {
 } from '@ant-design/icons';
 import { Logo } from '../../components';
 import { useMediaQuery } from 'react-responsive';
-import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
+import { PATH_AUTH } from '../../constants';
 import { useNavigate } from 'react-router-dom';
-import authService from '../../services/authService'; // Import service
 
 const { Title, Text, Link } = Typography;
 
@@ -39,11 +38,9 @@ export const SignUpPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = async (values: FieldType) => {
+  const onFinish = async (_values: FieldType) => {
     setLoading(true);
     try {
-      const response = await authService.register(values);
-
       message.success('Registration successful, please login.');
       setTimeout(() => {
         navigate(PATH_AUTH.signin);

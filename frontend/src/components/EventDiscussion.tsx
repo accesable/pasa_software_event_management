@@ -3,8 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { List, Card, Input, Button, message, Avatar, Typography, Form, Spin, Collapse, Flex } from 'antd';
 import authService from '../services/authService';
 import { UserOutlined } from '@ant-design/icons';
-import { useSelector } from 'react-redux';
-import { RootState } from '../redux/store';
 import { Answer, Question } from '../types';
 
 interface EventDiscussionProps {
@@ -30,7 +28,6 @@ const EventDiscussion: React.FC<EventDiscussionProps> = ({ eventId, questions, s
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
   // State lưu thông tin của người dùng theo dạng: userId -> { name, avatar }
   const [userInfos, setUserInfos] = useState<Record<string, UserInfo>>({});
-  const user = useSelector((state: RootState) => state.user);
 
   useEffect(() => {
     const fetchQuestionsAndUserInfos = async () => {

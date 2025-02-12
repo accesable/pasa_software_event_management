@@ -1,48 +1,27 @@
 import {
-  Alert,
   Button,
   ButtonProps,
   Col,
-  Flex,
-  Image,
   Popover,
-  Progress,
   Row,
-  Space,
-  Table,
-  Tag,
-  TagProps,
-  Typography,
 } from 'antd';
 import {
   Card,
   CustomerReviewsCard,
   PageHeader,
   RevenueCard,
-  UserAvatar,
 } from '../../components';
-import { Area, Bullet, Pie } from '@ant-design/charts';
 import {
-  ArrowDownOutlined,
-  ArrowUpOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  ExclamationCircleOutlined,
   HomeOutlined,
   PieChartOutlined,
   QuestionOutlined,
-  StarFilled,
-  SyncOutlined,
 } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useStylesContext } from '../../context';
-import { createElement, CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 import { useFetchData } from '../../hooks';
-import { blue, green, red, yellow } from '@ant-design/colors';
-import CountUp from 'react-countup';
-import { numberWithCommas } from '../../utils';
 import { CategoriesChart, EventsOverTimeChart } from '../../components/dashboard/default';
 
 const POPOVER_BUTTON_PROPS: ButtonProps = {
@@ -56,7 +35,7 @@ const cardStyles: CSSProperties = {
 export const GeneralDashboardPage = () => {
   const stylesContext = useStylesContext();
   
-  const { data: dashboardStats, error: dashboardStatsError, loading: dashboardStatsLoading } = useFetchData(
+  const { data: dashboardStats, loading: dashboardStatsLoading } = useFetchData(
     'http://47.129.247.0:8080/api/v1/events/dashboard-stats', // API URL
     localStorage.getItem('accessToken') || undefined // Access token
   );

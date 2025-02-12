@@ -17,24 +17,18 @@ import {
 } from 'antd';
 import { useLocation, useParams, Outlet } from 'react-router-dom';
 import { CiLocationOn, CiUser, CiCalendar } from 'react-icons/ci';
-import { HomeOutlined, PieChartOutlined, IdcardOutlined, SendOutlined } from '@ant-design/icons';
+import { HomeOutlined, IdcardOutlined, SendOutlined } from '@ant-design/icons';
 import { PageHeader, BackBtn } from '../../components';
-import { useStylesContext } from '../../context';
 import authService from '../../services/authService';
 import dayjs from 'dayjs';
-import { RootState } from '../../redux/store';
-import { useSelector } from 'react-redux';
 import { Helmet } from 'react-helmet-async';
 import TicketDetailsModal from '../../components/TicketDetailsModal';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const EventDetailLayout: React.FC = () => {
   const { pathname } = useLocation();
   const { id: eventId } = useParams<{ id: string }>();
-  const stylesContext = useStylesContext();
-  const user = useSelector((state: RootState) => state.user);
-
   const [eventDetail, setEventDetail] = useState<any>(null);
   const [loadingEvent, setLoadingEvent] = useState(true);
   const [feedback, setFeedback] = useState<any | null>(null);
@@ -43,7 +37,7 @@ export const EventDetailLayout: React.FC = () => {
   const [ratingValue, setRatingValue] = useState<number | undefined>(undefined);
   const [commentValue, setCommentValue] = useState<string>('');
   const [form] = Form.useForm();
-  const [ticketData, setTicketData] = useState<any>(null);
+  const [ticketData] = useState<any>(null);
   const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
   const [isParticipant, setIsParticipant] = useState<boolean | null>(null);
 
@@ -110,72 +104,6 @@ export const EventDetailLayout: React.FC = () => {
       fetchUserFeedback();
     }
   }, [eventId, form]);
-
-  const handleDownloadPdf = async () => {
-    try {
-      setLoadingEvent(true);
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error("No access token found. Please login again.");
-        return;
-      }
-      const response = await authService.getEventParticipants(eventId, accessToken) as any;
-      const participants = response.data || [];
-      if (!participants || participants.length === 0) {
-        message.error("No participants data available.");
-        return;
-      }
-      const jsPDF = (await import('jspdf')).default;
-      const doc = new jsPDF();
-      doc.setFontSize(16);
-      doc.text("Participants Check-in/Check-out List", 14, 20);
-      const columns = ["No", "Name", "Email", "Check-In", "Check-Out"];
-      const rows = participants.map((p: any, index: number) => [
-        index + 1,
-        p.name,
-        p.email,
-        p.checkInAt ? dayjs(p.checkInAt).format("YYYY-MM-DD HH:mm:ss") : "",
-        p.checkOutAt ? dayjs(p.checkOutAt).format("YYYY-MM-DD HH:mm:ss") : ""
-      ]);
-      (doc as any).autoTable({
-        head: [columns],
-        body: rows,
-        startY: 30,
-        theme: 'grid'
-      });
-      doc.save("participants.pdf");
-    } catch (error: any) {
-      console.error("Error generating PDF:", error);
-      message.error("List check-in/check-out is empty.");
-    } finally {
-      setLoadingEvent(false);
-    }
-  };
-
-  const scheduleColumns = [
-    {
-      title: 'Title',
-      dataIndex: 'title',
-      key: 'title',
-    },
-    {
-      title: 'Start Time',
-      dataIndex: 'startTime',
-      key: 'startTime',
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
-    },
-    {
-      title: 'End Time',
-      dataIndex: 'endTime',
-      key: 'endTime',
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-    },
-  ];
 
   const hideTicketModal = () => {
     setIsTicketModalVisible(false);

@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import ClientsData from '../../../../../public/mocks/Clients.json';
 
 import { ClientsTable } from './ClientsTable.tsx';
 
@@ -17,7 +16,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    data: ClientsData.slice(0, 10),
+    data: [].slice(0, 10),
     style: { width: 600 },
   },
 };
