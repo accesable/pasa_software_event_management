@@ -1,6 +1,6 @@
 // src/pages/details/components/EventComparisonChart.tsx
 import React from 'react';
-import { Column } from '@ant-design/charts';
+import { Column, ColumnConfig } from '@ant-design/charts';
 import { Alert, Spin } from 'antd';
 
 interface EventComparisonChartProps {
@@ -51,7 +51,7 @@ const EventComparisonChart: React.FC<EventComparisonChartProps> = ({ eventCompar
         },
     ]);
 
-    const config = {
+    const config: ColumnConfig = { // Thêm type annotation ColumnConfig
         data: chartData,
         isGroup: true,
         xField: 'eventName',
@@ -68,9 +68,8 @@ const EventComparisonChart: React.FC<EventComparisonChartProps> = ({ eventCompar
             label: {
                 autoHide: true,
                 autoRotate: false,
-                // Giới hạn độ dài của tên nếu quá dài
                 formatter: (text: string) => {
-                    const maxLength = 10; // Số ký tự tối đa, thay đổi nếu cần
+                    const maxLength = 10;
                     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
                 },
             },
@@ -83,6 +82,9 @@ const EventComparisonChart: React.FC<EventComparisonChartProps> = ({ eventCompar
                 name: params.category,
                 value: params.value,
             }),
+        },
+        legend: {
+            position: 'bottom',
         },
     };
 

@@ -181,7 +181,7 @@ export const EventDetailLayout: React.FC = () => {
           btnBack={<BackBtn />}
         />
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={16} xl={18}>
+           <Col xs={24} md={16} xl={18}>
             <Outlet context={{ eventId, eventDetail }} />
           </Col>
           <Col xs={24} md={8} xl={6}>

@@ -5,3 +5,27 @@
 body {
   margin: 0;
 }
+
+
+@media (max-width: 768px) {
+
+  h1.ant-typography,
+  h2.ant-typography,
+  h3.ant-typography,
+  h4.ant-typography,
+  .ant-typography-title {
+    font-size: 1.8rem !important;
+    /* Giảm font size cho titles trên mobile */
+    line-height: 1.3;
+  }
+}
+
+/* Responsive padding cho Card body trên mobile */
+@media (max-width: 576px) {
+
+  /* Breakpoint nhỏ hơn cho mobile portrait */
+  .ant-card-body {
+    padding: 16px;
+    /* Giảm padding card body trên mobile */
+  }
+}

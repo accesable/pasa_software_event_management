@@ -83,11 +83,13 @@ const items: MenuProps['items'] = [
   ]),
 ];
 
-const rootSubmenuKeys = ['dashboards', 'corporate', 'user-profile'];
+const rootSubmenuKeys = ['dashboards', 'user-profile'];
 
-type SideNavProps = SiderProps;
+type SideNavProps = SiderProps & {
+  onCollapseSideNav: () => void; // Thêm type cho prop onCollapseSideNav
+};
 
-const SideNav = ({ ...others }: SideNavProps) => {
+const SideNav = ({ onCollapseSideNav, ...others }: SideNavProps) => { // Nhận prop onCollapseSideNav
   const nodeRef = useRef(null);
   const { pathname } = useLocation();
   const [openKeys, setOpenKeys] = useState(['']);
@@ -95,6 +97,9 @@ const SideNav = ({ ...others }: SideNavProps) => {
 
   const onClick: MenuProps['onClick'] = (e) => {
     console.log('click ', e);
+    if (!others.collapsed) { // Kiểm tra nếu sidebar đang expanded
+      onCollapseSideNav(); // Gọi function collapse sidebar
+    }
   };
 
   const onOpenChange: MenuProps['onOpenChange'] = (keys) => {
@@ -136,7 +141,7 @@ const SideNav = ({ ...others }: SideNavProps) => {
         <Menu
           mode="inline"
           items={items}
-          onClick={onClick}
+          onClick={onClick} // Sử dụng onClick đã chỉnh sửa
           openKeys={openKeys}
           onOpenChange={onOpenChange}
           selectedKeys={[current]}

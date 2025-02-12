@@ -153,7 +153,8 @@ const ParticipatedEventDetailsPage: React.FC = () => {
     {
       title: 'Description',
       dataIndex: 'description',
-      key: 'description'
+      key: 'description',
+      responsive: ['md']
     },
     {
       title: 'Select Session',
@@ -234,7 +235,19 @@ const ParticipatedEventDetailsPage: React.FC = () => {
     setIsTicketModalVisible(false);
   };
 
-
+  const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) => {
+    return eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
+      <Table
+        rowKey="id"
+        dataSource={eventDetails.schedule}
+        columns={scheduleColumns}
+        pagination={false}
+        scroll={{ x: 'max-content' }} // Thêm scroll ngang
+      />
+    ) : (
+      <Alert message="No schedule available for this event." type="info" showIcon />
+    );
+  };
 
   return (
     <div>
@@ -329,16 +342,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
 
           <Col span={24}>
             <Card title="Schedule">
-              {eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
-                <Table
-                  rowKey="id"
-                  dataSource={eventDetails?.schedule}
-                  columns={scheduleColumns}
-                  pagination={false}
-                />
-              ) : (
-                <Alert message="No schedule available for this event." type="info" showIcon />
-              )}
+              {renderScheduleTable(eventDetails, scheduleColumns)}
             </Card>
           </Col>
           {eventDetails?.documents && eventDetails.documents.length > 0 && (

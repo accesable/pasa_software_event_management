@@ -65,7 +65,6 @@ export const PATH_USER_PROFILE = {
   root: ROOTS_PROFILE,
   personalInformation: path(ROOTS_PROFILE, '/personal-information'),
   security: path(ROOTS_PROFILE, '/security'),
-  feedback: path(ROOTS_PROFILE, '/feedback'),
 };
 
 export const PATH_SOCIAL = {

@@ -179,9 +179,32 @@ body {
 }
 
 
+@media (max-width: 768px) {
+
+  h1.ant-typography,
+  h2.ant-typography,
+  h3.ant-typography,
+  h4.ant-typography,
+  .ant-typography-title {
+    font-size: 1.8rem !important;
+    /* Giảm font size cho titles trên mobile */
+    line-height: 1.3;
+  }
+}
+
+/* Responsive padding cho Card body trên mobile */
+@media (max-width: 576px) {
+
+  /* Breakpoint nhỏ hơn cho mobile portrait */
+  .ant-card-body {
+    padding: 16px;
+    /* Giảm padding card body trên mobile */
+  }
+}
+
+
 src\main.tsx:
 // src\main.tsx
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
@@ -225,7 +248,7 @@ const baseURL = 'http://localhost:8080/api/v1'; // Sử dụng biến môi trư�
 
 const axiosInstance = axios.create({
   baseURL: baseURL,
-  withCredentials: true, 
+  withCredentials: true,
 });
 
 axiosInstance.interceptors.request.use(
@@ -297,7 +320,7 @@ export default axiosInstance;
 src\components\CreateGuestModal.tsx:
 // src\components\CreateGuestModal.tsx
 import React, { useState } from 'react';
-import { Modal, Form, Input, Button, message, Spin } from 'antd';
+import { Modal, Form, Input, message } from 'antd';
 import authService from '../services/authService';
 
 interface CreateGuestModalProps {
@@ -401,7 +424,7 @@ export default CreateGuestModal;
 
 src\components\CreateSpeakerModal.tsx:
 import React, { useState } from 'react';
-import { Modal, Form, Input, Button, message, Spin } from 'antd';
+import { Modal, Form, Input, message } from 'antd';
 import authService from '../services/authService';
 
 interface CreateSpeakerModalProps {
@@ -513,8 +536,6 @@ import React, { useState, useEffect } from 'react';
 import { List, Card, Input, Button, message, Avatar, Typography, Form, Spin, Collapse, Flex } from 'antd';
 import authService from '../services/authService';
 import { UserOutlined } from '@ant-design/icons';
-import { useSelector } from 'react-redux';
-import { RootState } from '../redux/store';
 import { Answer, Question } from '../types';
 
 interface EventDiscussionProps {
@@ -540,7 +561,6 @@ const EventDiscussion: React.FC<EventDiscussionProps> = ({ eventId, questions, s
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
   // State lưu thông tin của người dùng theo dạng: userId -> { name, avatar }
   const [userInfos, setUserInfos] = useState<Record<string, UserInfo>>({});
-  const user = useSelector((state: RootState) => state.user);
 
   useEffect(() => {
     const fetchQuestionsAndUserInfos = async () => {
@@ -805,16 +825,16 @@ import { GoogleOutlined } from '@ant-design/icons';
 
 const GoogleLoginButton: React.FC<any> = ({
 }) => {
-    const handleGoogleLogin = async () => {
-        // Chuyển hướng người dùng đến backend endpoint login google
-        window.location.href = 'http://localhost:8080/api/v1/auth/google/login';
-    };
+  const handleGoogleLogin = async () => {
+    // Chuyển hướng người dùng đến backend endpoint login google
+    window.location.href = 'http://localhost:8080/api/v1/auth/google/login';
+  };
 
-    return (
-        <Button icon={<GoogleOutlined />} onClick={handleGoogleLogin}>
-            Sign in with Google
-        </Button>
-    );
+  return (
+    <Button icon={<GoogleOutlined />} onClick={handleGoogleLogin}>
+      Sign in with Google
+    </Button>
+  );
 };
 
 export default GoogleLoginButton;
@@ -1004,7 +1024,7 @@ export async function generateCodeChallenge(codeVerifier: string): Promise<strin
 }
 
 function base64urlencode(arrayBuffer: ArrayBuffer): string {
-  let base64String = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+  const base64String = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
   return base64String.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
@@ -1043,7 +1063,7 @@ export default ProtectedRoute;
 src\components\TicketDetailsModal.tsx:
 // src\components\TicketDetailsModal.tsx
 import React from 'react';
-import { Modal, Typography, Flex, Button, Spin } from 'antd';
+import { Modal, Typography, Flex, Button } from 'antd';
 import QRCode from 'qrcode.react';
 import { TicketType } from '../types'; // Assuming you have this interface defined
 import dayjs from 'dayjs';
@@ -1267,8 +1287,6 @@ export { CustomerReviewsCard } from './ecommerce';
 export { ProjectsCountCard, ProjectsTable, ClientsTable } from './projects';
 export {
   EventTable,
-  EventTimelineCard,
-  MyEventTimelineCard
 } from './events';
 export {
   UserTable
@@ -1308,7 +1326,6 @@ import {
 import { ReactNode, useEffect, useState } from 'react';
 import { CalendarOutlined, PlusOutlined } from '@ant-design/icons';
 import { blue, green, orange } from '@ant-design/colors';
-import CampaignsData from '../../../../../public/mocks/Campaigns.json';
 import { Loader } from '../../../index.ts';
 
 // socials - Facebook, Instagram, Twitter, LinkedIn
@@ -1323,7 +1340,7 @@ enum Status {
   Completed = 'completed',
 }
 
-const DATA_SOURCE = CampaignsData;
+const DATA_SOURCE: any[] = [];
 
 const COLUMNS = [
   {
@@ -1516,10 +1533,11 @@ export const CampaignsCard = ({ error, data, loading, ...others }: Props) => {
 
 
 src\components\dashboard\default\CategoriesChart\CategoriesChart.tsx:
-import { CardProps, Typography, Spin, Alert, Empty } from 'antd';
+// src\components\dashboard\default\CategoriesChart\CategoriesChart.tsx
+import { CardProps, Spin, Alert, Empty } from 'antd';
 import { Pie } from '@ant-design/charts';
 import { Card } from '../../../index.ts';
-import React, { useState, useEffect } from 'react'; // Import useState and useEffect
+import React, { useState, useEffect } from 'react';
 import authService from '../../../../services/authService.ts';
 
 type Props = CardProps;
@@ -1528,7 +1546,7 @@ const CategoriesChartComponent: React.FC<Props> = ({ ...others }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [totalEvents, setTotalEvents] = useState<number>(0); // State for total events
+  const [totalEvents, setTotalEvents] = useState<number>(0);
 
   useEffect(() => {
     const fetchCategoryData = async () => {
@@ -1562,7 +1580,7 @@ const CategoriesChartComponent: React.FC<Props> = ({ ...others }) => {
       content: ({ percent }: any) => `${(percent * 100).toFixed(0)}%`,
       style: {
         textAlign: 'center',
-        fontSize: 16,
+        fontSize: '1em', // Changed to relative unit
       },
     },
     interactions: [
@@ -1580,15 +1598,13 @@ const CategoriesChartComponent: React.FC<Props> = ({ ...others }) => {
           whiteSpace: 'pre-wrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          fontSize: 18,
+          fontSize: '1.1em', // Changed to relative unit
         },
-        // Use totalEvents in the statistic content
         content: `${totalEvents} Events\nTotal`,
       },
     },
   };
 
-  // Handle the case when there are no categories or events
   if (totalEvents === 0) {
     return (
       <Card title="Categories" {...others}>
@@ -1705,7 +1721,7 @@ export const EarningsCard = ({ data, title, diff, ...others }: Props) => {
 
 src\components\dashboard\default\EventsOverTimeChart\EventsOverTimeChart.tsx:
 import React, { useState, useEffect } from 'react';
-import { CardProps, Typography, Spin, Alert } from 'antd';
+import { CardProps, Spin, Alert } from 'antd';
 import { Area } from '@ant-design/charts';
 import { Card } from '../../../index.ts';
 import authService from '../../../../services/authService.ts';
@@ -1884,7 +1900,7 @@ export const LatestOrdersCard = ({
     data: ordersData,
     loading: ordersDataLoading,
     error: ordersDataError,
-  } = useFetchData('/mocks/CountryOrders.json');
+  } = useFetchData(data);
 
   return (
     <Card title={`Latest Orders`} extra={<MoreMenu />} {...others}>
@@ -2022,7 +2038,7 @@ export const RecentUsersCard = ({ data, loading, error, ...others }: Props) => {
     data: usersData,
     loading: usersDataLoading,
     error: usersDataError,
-  } = useFetchData('/mocks/ChannelUsers.json');
+  } = useFetchData(data);
 
   return (
     <Card title={`Recent Users`} extra={<MoreMenu />} {...others}>
@@ -2518,71 +2534,6 @@ export const CustomerReviewsCard = ({ ...others }: Props) => {
 export default CustomerReviewsCard;
 
 
-src\components\dashboard\events\EventSchedule.tsx:
-import { Alert, Button, CardProps, Flex, Timeline, Typography } from 'antd';
-import {
-  LaptopOutlined,
-  MobileOutlined,
-  TabletOutlined,
-} from '@ant-design/icons';
-// import { ActivityTimeline } from '../../../types';
-import { Card, Loader } from '../../index.ts';
-import { ReactNode } from 'react';
-
-type Props = {
-  data?: [];
-  loading?: boolean;
-  error?: ReactNode;
-} & CardProps;
-
-export const EventTimelineCard = ({ data, error, loading, ...others }: Props) => {
-  return (
-    <Card title="Latest activities" {...others}>
-      {error ? (
-        <Alert
-          message="Error"
-          description={error.toString()}
-          type="error"
-          showIcon
-        />
-      ) : loading ? (
-        <Loader />
-      ) : (
-        <Timeline
-          mode="left"
-          items={data?.map((_) => ({
-            // dot:
-            //   _.device_type === 'desktop' ? (
-            //     <LaptopOutlined />
-            //   ) : _.device_type === 'tablet' ? (
-            //     <TabletOutlined />
-            //   ) : (
-            //     <MobileOutlined />
-            //   ),
-            children: (
-              <Flex gap="small" vertical>
-                <Typography.Paragraph
-                  ellipsis={{
-                    rows: 2,
-                  }}
-                  // title={`${_.post_content}--${_.timestamp}`}
-                  style={{ marginBottom: 0 }}
-                >
-                  {_.post_content} - By <i>{_.speaker_name}</i>
-                </Typography.Paragraph>
-                {/* <Typography.Text type="secondary">
-                  {_.timestamp}
-                </Typography.Text> */}
-              </Flex>
-            ),
-          }))}
-        />
-      )}
-    </Card>
-  );
-};
-
-
 src\components\dashboard\events\EventTable.tsx:
   // src\components\dashboard\events\EventTable.tsx
   import {
@@ -2675,8 +2626,7 @@ src\components\dashboard\events\EventTable.tsx:
 
 src\components\dashboard\events\index.tsx:
 export {EventTable} from './EventTable.tsx';
-export {EventTimelineCard} from './EventSchedule.tsx';
-export {MyEventTimelineCard} from './MyEventTimelineCard.tsx';
+// export {MyEventTimelineCard} from './MyEventTimelineCard.tsx';
 
 
 src\components\dashboard\events\MyEventTable.tsx:
@@ -2691,7 +2641,6 @@ import {
   Table,
   TableProps,
   Tag,
-  TagProps,
   Typography,
   message,
 } from 'antd';
@@ -2753,7 +2702,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
     fetchCategoryNames();
   }, [data]);
 
-  const COLUMNS = (navigate: ReturnType<typeof useNavigate>, setLoading: (loading: boolean) => void, fetchData: () => void, activeTabKey: string): ColumnsType<Events> => [
+  const COLUMNS = (navigate: ReturnType<typeof useNavigate>, _setLoading: (loading: boolean) => void, fetchData: () => void, activeTabKey: string): ColumnsType<Events> => [
     {
       title: 'Name',
       dataIndex: 'name',
@@ -2895,114 +2844,6 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
 };
 
 
-src\components\dashboard\events\MyEventTimelineCard.tsx:
-import { Alert, Button, CardProps, Flex, Form, Input, Modal, Timeline, Typography } from 'antd';
-import {
-  LaptopOutlined,
-  MobileOutlined,
-  TabletOutlined,
-} from '@ant-design/icons';
-// import { ActivityTimeline } from '../../../types';
-import { Card, Loader } from '../../index.ts';
-import { ReactNode, useEffect, useState } from 'react';
-
-type Props = {
-  data?: [];
-  loading?: boolean;
-  error?: ReactNode;
-} & CardProps;
-
-export const MyEventTimelineCard = ({ data, error, loading, ...others }: Props) => {
-
-    // Modal State for create event type
-    const [activityTimeline, setActivityTimeline] = useState(data);
-    useEffect(() => {
-      setActivityTimeline(data);
-    }, [data]);
-    const [isCreateTimelineModalOpen, setIsCreateTimelineModalOpen] = useState<any>(false);
-  
-      const [form] = Form.useForm();
-  
-    const showCreateTimelineModal = () => {
-      setIsCreateTimelineModalOpen(true);
-    };
-  
-    const handleOkCreateTimeline = () => {
-      setIsCreateTimelineModalOpen(false);
-      form.submit()
-    };
-  
-    const handleCancelCreateTimeline = () => {
-      setIsCreateTimelineModalOpen(false);
-    };
-
-    const onFinishTimeline = (values : any) => {
-      setActivityTimeline([...activityTimeline, {
-        speaker_name: values.speaker_name,
-        post_content: values.post_content
-      }]);
-      setIsCreateTimelineModalOpen(false);
-    };
-  return (
-    <Card title="Latest activities" {...others} extra={<Button type='primary' onClick={showCreateTimelineModal}>Add New Activity</Button>}>
-      {error ? (
-        <Alert
-          message="Error"
-          description={error.toString()}
-          type="error"
-          showIcon
-        />
-      ) : loading ? (
-        <Loader />
-      ) : (
-        <Timeline
-          mode="left"
-          items={activityTimeline?.map((_) => ({
-            // dot:
-            //   _.device_type === 'desktop' ? (
-            //     <LaptopOutlined />
-            //   ) : _.device_type === 'tablet' ? (
-            //     <TabletOutlined />
-            //   ) : (
-            //     <MobileOutlined />
-            //   ),
-            children: (
-              <Flex gap="small" vertical>
-                <Typography.Paragraph
-                  ellipsis={{
-                    rows: 2,
-                  }}
-                  // title={`${_.post_content}--${_.timestamp}`}
-                  style={{ marginBottom: 0 }}
-                >
-                  {_.post_content} - By <i>{_.speaker_name}</i>
-                </Typography.Paragraph>
-                {/* <Typography.Text type="secondary">
-                  {_.timestamp}
-                </Typography.Text> */}
-              </Flex>
-            ),
-          }))}
-        />
-      )}
-              <Modal title="Create Event Type" open={isCreateTimelineModalOpen} onOk={handleOkCreateTimeline} onCancel={handleCancelCreateTimeline}>
-          <Form layout='vertical'
-            onFinish={onFinishTimeline}
-            form={form}
-          >
-            <Form.Item label="Speaker's Name" name="speaker_name">
-              <Input placeholder="John Doe" />
-            </Form.Item>
-            <Form.Item label="Talk About" name="post_content">
-              <Input placeholder="Software Engineering Future" />
-            </Form.Item>
-          </Form>
-      </Modal>
-    </Card>
-  );
-};
-
-
 src\components\dashboard\projects\index.ts:
 export { ClientsTable } from './ClientsTable/ClientsTable.tsx';
 export { ProjectsCountCard } from './ProjectsCountCard/ProjectsCountCard.tsx';
@@ -3011,8 +2852,7 @@ export { ProjectsTable } from './ProjectsTables/ProjectsTable.tsx';
 
 src\components\dashboard\projects\ClientsTable\ClientsTable.tsx:
 // src\components\dashboard\projects\ClientsTable\ClientsTable.tsx
-import { Table, TableProps, Typography } from 'antd';
-import { Clients } from '../../../../types';
+import { Table, TableProps } from 'antd';
 import { UserAvatar } from '../../../index.ts';
 import dayjs from 'dayjs';
 
@@ -3067,8 +2907,9 @@ import {
   Statistic,
   Tooltip,
 } from 'antd';
-import ProjectsData from '../../../../../public/mocks/Projects.json';
 import './styles.scss';
+
+const ProjectsData: any[] = [];
 
 const PROGRESS_PROPS: ProgressProps = {
   type: 'circle',
@@ -3281,7 +3122,6 @@ export {EventsCard } from './EventsCard/EventsCard.tsx';
 
 src\components\dashboard\shared\EventsCard\EventsCard.tsx:
 // src\components\dashboard\shared\EventsCard\EventsCard.tsx
-import React from 'react';
 import {
   Card as AntdCard,
   CardProps,
@@ -4782,10 +4622,8 @@ import {
     Modal,
     Table,
 } from 'antd';
-// import { useNavigate } from 'react-router-dom';  
 import { Card } from '../..';
 import { useState } from 'react';
-// navigate: ReturnType<typeof useNavigate>
 const USER_COLUMNS = () => [
     {
       title: 'ID',
@@ -6048,7 +5886,6 @@ export const PATH_USER_PROFILE = {
   root: ROOTS_PROFILE,
   personalInformation: path(ROOTS_PROFILE, '/personal-information'),
   security: path(ROOTS_PROFILE, '/security'),
-  feedback: path(ROOTS_PROFILE, '/feedback'),
 };
 
 export const PATH_SOCIAL = {
@@ -6452,7 +6289,7 @@ export default useFetchParticipatedEventsData;
 src\hooks\useFetchTopClients.tsx:
 // src\hooks\useFetchTopClients.tsx
 // src\hooks\useFetchTopClients.tsx
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import authService from '../services/authService';
 import { User } from '../types';
 
@@ -6476,33 +6313,6 @@ const useFetchTopClients = (limit?: number) => {
     const [error, setError] = useState<any>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const accessToken = localStorage.getItem('accessToken');
-            if (!accessToken) {
-                throw new Error("No access token found. Please login again.");
-            }
-
-            const response = await authService.getUsers(accessToken);
-            const apiResponse = response as UserApiResponse;
-
-            if (apiResponse.statusCode === 200 && apiResponse.data.users) {
-                let users = apiResponse.data.users;
-                if (limit) {
-                    users = users.slice(0, limit);
-                }
-                setData(users);
-            } else {
-                throw new Error(apiResponse.message || "Failed to fetch users");
-            }
-        } catch (error: any) {
-            setError(error);
-        } finally {
-            setLoading(false);
-        }
-    }, [limit]);
 
     useEffect(() => {
         const fetchTopClientsData = async () => {
@@ -6594,10 +6404,10 @@ src\hooks\useFetchUserProfile.tsx:
 import useFetchData from './useFetchData';
 
 const useFetchUserProfile = () => {
-    return useFetchData(
-        'http://localhost:8080/api/v1/users/profile',
-        localStorage.getItem('accessToken') || undefined
-    );
+  return useFetchData(
+    'http://localhost:8080/api/v1/users/profile',
+    localStorage.getItem('accessToken') || undefined
+  );
 };
 
 export default useFetchUserProfile;
@@ -6614,16 +6424,14 @@ export function usePageContext() {
 
 
 src\layouts\index.ts:
-import { EventDetailLayout } from './eventDetails/index.tsx';
-
 export { AppLayout } from './app';
 export { DashboardLayout } from './dashboards';
-// export { GuestLayout } from './guest/Guest.tsx';
 export { UserAccountLayout } from './userAccount';
 export {EventDetailLayout} from './eventDetails';
 
 
 src\layouts\app\App.tsx:
+// src\layouts\app\App.tsx
 import {
   Button,
   Dropdown,
@@ -6661,7 +6469,7 @@ import SideNav from './SideNav.tsx';
 import HeaderNav from './HeaderNav.tsx';
 import FooterNav from './FooterNav.tsx';
 import { NProgress } from '../../components';
-import { PATH_LANDING, PATH_AUTH } from '../../constants';
+import { PATH_AUTH } from '../../constants';
 import { useSelector, useDispatch } from 'react-redux';
 import { toggleTheme } from '../../redux/theme/themeSlice.ts';
 import { RootState } from '../../redux/store.ts';
@@ -6780,7 +6588,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             border: 'none',
             transition: 'all .2s',
           }}
-        />
+          onCollapseSideNav={() => setCollapsed(true)}  
+          />
         <Layout
           style={
             {
@@ -6908,6 +6717,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   );
 };
 
+
 src\layouts\app\FooterNav.tsx:
 import { Layout } from 'antd';
 
@@ -6951,29 +6761,14 @@ src\layouts\app\SideNav.tsx:
 import React, { useEffect, useRef, useState } from 'react';
 import { ConfigProvider, Layout, Menu, MenuProps, SiderProps } from 'antd';
 import {
-  AppstoreAddOutlined,
-  BranchesOutlined,
-  BugOutlined,
-  GithubOutlined,
-  IdcardOutlined,
-  InfoCircleOutlined,
   PieChartOutlined,
-  ProductOutlined,
-  SecurityScanOutlined,
-  SnippetsOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { Logo } from '../../components';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  PATH_ABOUT,
-  PATH_AUTH,
   PATH_DASHBOARD,
-  PATH_DOCS,
-  PATH_ERROR,
-  PATH_GITHUB,
   PATH_LANDING,
-  PATH_SITEMAP,
   PATH_USER_PROFILE,
 } from '../../constants';
 import { COLOR } from '../../App.tsx';
@@ -7048,11 +6843,13 @@ const items: MenuProps['items'] = [
   ]),
 ];
 
-const rootSubmenuKeys = ['dashboards', 'corporate', 'user-profile'];
+const rootSubmenuKeys = ['dashboards', 'user-profile'];
 
-type SideNavProps = SiderProps;
+type SideNavProps = SiderProps & {
+  onCollapseSideNav: () => void; // Thêm type cho prop onCollapseSideNav
+};
 
-const SideNav = ({ ...others }: SideNavProps) => {
+const SideNav = ({ onCollapseSideNav, ...others }: SideNavProps) => { // Nhận prop onCollapseSideNav
   const nodeRef = useRef(null);
   const { pathname } = useLocation();
   const [openKeys, setOpenKeys] = useState(['']);
@@ -7060,6 +6857,9 @@ const SideNav = ({ ...others }: SideNavProps) => {
 
   const onClick: MenuProps['onClick'] = (e) => {
     console.log('click ', e);
+    if (!others.collapsed) { // Kiểm tra nếu sidebar đang expanded
+      onCollapseSideNav(); // Gọi function collapse sidebar
+    }
   };
 
   const onOpenChange: MenuProps['onOpenChange'] = (keys) => {
@@ -7101,7 +6901,7 @@ const SideNav = ({ ...others }: SideNavProps) => {
         <Menu
           mode="inline"
           items={items}
-          onClick={onClick}
+          onClick={onClick} // Sử dụng onClick đã chỉnh sửa
           openKeys={openKeys}
           onOpenChange={onOpenChange}
           selectedKeys={[current]}
@@ -7113,111 +6913,6 @@ const SideNav = ({ ...others }: SideNavProps) => {
 };
 
 export default SideNav;
-
-
-src\layouts\corporate\index.tsx:
-import { AppLayout } from '../index.ts';
-import { Button, Col, Row, Typography } from 'antd';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import {
-  BlogsListCard,
-  Card,
-  PageHeader,
-  SocialMediaCard,
-} from '../../components';
-import { HomeOutlined, IdcardOutlined } from '@ant-design/icons';
-import { useStylesContext } from '../../context';
-
-const { Text, Title } = Typography;
-
-const BLOGS_DATA = Array.from({ length: 23 }).map((_, i) => ({
-  href: 'https://ant.design',
-  title: `Lorem ipsum ${i}`,
-  avatar: `https://xsgames.co/randomusers/avatar.php?g=pixel&key=${i}`,
-  description:
-    'Ant Design, a design language for background applications, is refined by Ant UED Team.',
-  content:
-    'We supply a series of design principles, practical patterns and high quality design resources (Sketch and Axure), to help people create their product prototypes beautifully and efficiently.',
-}));
-
-export const CorporateLayout = () => {
-  const { pathname } = useLocation();
-  const stylesContext = useStylesContext();
-
-  return (
-    <>
-      {/*@ts-ignore*/}
-      <AppLayout>
-        <PageHeader
-          title="corporate"
-          breadcrumbs={[
-            {
-              title: (
-                <>
-                  <HomeOutlined />
-                  <span>home</span>
-                </>
-              ),
-              path: '/',
-            },
-            {
-              title: (
-                <>
-                  <IdcardOutlined />
-                  <span>corporate</span>
-                </>
-              ),
-            },
-            {
-              title: pathname.split('/')[pathname.split('/').length - 1] || '',
-            },
-          ]}
-        />
-        <Row {...stylesContext?.rowProps}>
-          <Col xs={24} md={16} xl={18}>
-            <Outlet />
-          </Col>
-          <Col xs={24} md={8} xl={6}>
-            <Row {...stylesContext?.rowProps}>
-              <Col span={24}>
-                <Card title="Careers" actions={[<Button>Explore more</Button>]}>
-                  <Text>
-                    Tortor id aliquet lectus proin nibh nisl condimentum. Semper
-                    quis lectus nulla at volutpat. Faucibus nisl tincidunt eget
-                    nullam non. Malesuada nunc vel risus commodo viverra. Lectus
-                    vestibulum mattis ullamcorper velit sed ullamcorper morbi
-                    tincidunt ornare.
-                  </Text>
-                  <Title level={5}>Requirements</Title>
-                  <ul>
-                    <li>Experience with JavaScript</li>
-                    <li>Good time-management skills</li>
-                    <li>Experience with React & Nextjs</li>
-                    <li>Experience with HTML / CSS</li>
-                  </ul>
-                  <Title level={5}>Our Achievements</Title>
-                  <ul>
-                    <li>ISO Certified</li>
-                    <li>Atlassian Partner</li>
-                    <li>Amazon Partner</li>
-                    <li>Google Partner</li>
-                    <li>Microsoft Partner</li>
-                  </ul>
-                </Card>
-              </Col>
-              <Col span={24}>
-                <BlogsListCard data={BLOGS_DATA} />
-              </Col>
-              <Col span={24}>
-                <SocialMediaCard />
-              </Col>
-            </Row>
-          </Col>
-        </Row>
-      </AppLayout>
-    </>
-  );
-};
 
 
 src\layouts\dashboards\index.tsx:
@@ -7253,24 +6948,18 @@ import {
 } from 'antd';
 import { useLocation, useParams, Outlet } from 'react-router-dom';
 import { CiLocationOn, CiUser, CiCalendar } from 'react-icons/ci';
-import { HomeOutlined, PieChartOutlined, IdcardOutlined, SendOutlined } from '@ant-design/icons';
+import { HomeOutlined, IdcardOutlined, SendOutlined } from '@ant-design/icons';
 import { PageHeader, BackBtn } from '../../components';
-import { useStylesContext } from '../../context';
 import authService from '../../services/authService';
 import dayjs from 'dayjs';
-import { RootState } from '../../redux/store';
-import { useSelector } from 'react-redux';
 import { Helmet } from 'react-helmet-async';
 import TicketDetailsModal from '../../components/TicketDetailsModal';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const EventDetailLayout: React.FC = () => {
   const { pathname } = useLocation();
   const { id: eventId } = useParams<{ id: string }>();
-  const stylesContext = useStylesContext();
-  const user = useSelector((state: RootState) => state.user);
-
   const [eventDetail, setEventDetail] = useState<any>(null);
   const [loadingEvent, setLoadingEvent] = useState(true);
   const [feedback, setFeedback] = useState<any | null>(null);
@@ -7279,7 +6968,7 @@ export const EventDetailLayout: React.FC = () => {
   const [ratingValue, setRatingValue] = useState<number | undefined>(undefined);
   const [commentValue, setCommentValue] = useState<string>('');
   const [form] = Form.useForm();
-  const [ticketData, setTicketData] = useState<any>(null);
+  const [ticketData] = useState<any>(null);
   const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
   const [isParticipant, setIsParticipant] = useState<boolean | null>(null);
 
@@ -7346,72 +7035,6 @@ export const EventDetailLayout: React.FC = () => {
       fetchUserFeedback();
     }
   }, [eventId, form]);
-
-  const handleDownloadPdf = async () => {
-    try {
-      setLoadingEvent(true);
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error("No access token found. Please login again.");
-        return;
-      }
-      const response = await authService.getEventParticipants(eventId, accessToken) as any;
-      const participants = response.data || [];
-      if (!participants || participants.length === 0) {
-        message.error("No participants data available.");
-        return;
-      }
-      const jsPDF = (await import('jspdf')).default;
-      const doc = new jsPDF();
-      doc.setFontSize(16);
-      doc.text("Participants Check-in/Check-out List", 14, 20);
-      const columns = ["No", "Name", "Email", "Check-In", "Check-Out"];
-      const rows = participants.map((p: any, index: number) => [
-        index + 1,
-        p.name,
-        p.email,
-        p.checkInAt ? dayjs(p.checkInAt).format("YYYY-MM-DD HH:mm:ss") : "",
-        p.checkOutAt ? dayjs(p.checkOutAt).format("YYYY-MM-DD HH:mm:ss") : ""
-      ]);
-      (doc as any).autoTable({
-        head: [columns],
-        body: rows,
-        startY: 30,
-        theme: 'grid'
-      });
-      doc.save("participants.pdf");
-    } catch (error: any) {
-      console.error("Error generating PDF:", error);
-      message.error("List check-in/check-out is empty.");
-    } finally {
-      setLoadingEvent(false);
-    }
-  };
-
-  const scheduleColumns = [
-    {
-      title: 'Title',
-      dataIndex: 'title',
-      key: 'title',
-    },
-    {
-      title: 'Start Time',
-      dataIndex: 'startTime',
-      key: 'startTime',
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
-    },
-    {
-      title: 'End Time',
-      dataIndex: 'endTime',
-      key: 'endTime',
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-    },
-  ];
 
   const hideTicketModal = () => {
     setIsTicketModalVisible(false);
@@ -7489,7 +7112,7 @@ export const EventDetailLayout: React.FC = () => {
           btnBack={<BackBtn />}
         />
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={16} xl={18}>
+           <Col xs={24} md={16} xl={18}>
             <Outlet context={{ eventId, eventDetail }} />
           </Col>
           <Col xs={24} md={8} xl={6}>
@@ -7911,22 +7534,12 @@ import {
 } from '../constants';
 import { Link } from 'react-router-dom';
 import {
-  AntDesignOutlined,
-  AppstoreOutlined,
-  BorderOutlined,
-  CalendarOutlined,
-  EditOutlined,
-  FileOutlined,
-  FormatPainterOutlined,
   GithubOutlined,
   LoginOutlined,
-  MergeCellsOutlined,
-  PieChartOutlined,
   RocketFilled,
-  TableOutlined,
 } from '@ant-design/icons';
 import { Card, Container } from '../components';
-import { createElement, CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 
 const { Title, Text } = Typography;
 
@@ -8340,10 +7953,10 @@ const QRScannerPage: React.FC = () => {
               constraints={{ facingMode: 'environment' }}
               scanDelay={300}
               onResult={(result, error) => {
-                if (!!result) {
+                if (result) {
                   handleScan(result);
                 }
-                if (!!error) {
+                if (error) {
                   handleError(error);
                 }
               }}
@@ -8399,63 +8012,6 @@ const QRScannerPage: React.FC = () => {
 export default QRScannerPage;
 
 
-src\pages\authentication\AccountDeactivate.tsx:
-// src/pages/authentication/AccountDeactivate.tsx
-import { Button, Flex, Typography, message } from 'antd';
-import { Logo } from '../../components';
-import { Link, useNavigate } from 'react-router-dom';
-import { PATH_DASHBOARD } from '../../constants';
-import { useState } from 'react';
-
-const { Title, Text } = Typography;
-
-export const AccountDeactivePage = () => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-
-  const handleDeactivate = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_APP_API_URL}/auth/account-delete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!response.ok) {
-        throw new Error("Account deactivation failed");
-      }
-      message.success("Account deactivated successfully");
-      navigate(PATH_DASHBOARD.default);
-    } catch (error: any) {
-      message.error(error.message || "Deactivation error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Flex vertical gap="large" align="center" justify="center" style={{ height: '80vh' }}>
-      <Logo color="blue" />
-      <Title level={2} className="m-0">Deactivated Account</Title>
-      <Text style={{ fontSize: 18 }}>
-        Your account has been deactivated.
-      </Text>
-      <Button type="primary" onClick={handleDeactivate} loading={loading}>
-        Reactivate Account
-      </Button>
-      <Link to={PATH_DASHBOARD.default}>
-        <Button type="default">Go to Homepage</Button>
-      </Link>
-    </Flex>
-  );
-};
-
-
-src\pages\authentication\ChangePassword.tsx:
-
-
-src\pages\authentication\ForgotPassword.tsx:
-
-
 src\pages\authentication\GoogleCallbackPage.tsx:
 // src\pages\authentication\GoogleCallbackPage.tsx
 import React, { useEffect, useCallback } from 'react'; // Import useCallback
@@ -8477,7 +8033,6 @@ interface GoogleCallbackPageProps {
 const GoogleCallbackPage: React.FC<GoogleCallbackPageProps> = ({
     clientId,
     redirectUri,
-    scope,
     backendTokenEndpoint,
     onLoginSuccess,
     onLoginFailure,
@@ -8547,15 +8102,12 @@ src\pages\authentication\index.ts:
 // src/pages/authentication/index.ts
 export { SignUpPage } from './SignUp';
 export { SignInPage } from './SignIn';
-export { WelcomePage } from './Welcome';
-export { VerifyEmailPage } from './VerifyEmail';
 export { PasswordResetPage } from './PasswordReset';
-export { AccountDeactivePage } from './AccountDeactivate';
 
 
 src\pages\authentication\PasswordReset.tsx:
 // src\pages\authentication\PasswordReset.tsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Button,
   Col,
@@ -8678,10 +8230,11 @@ export const PasswordResetPage = () => {
   );
 };
 
+
 src\pages\authentication\SignIn.tsx:
 // src\pages\authentication\SignIn.tsx
 // src\pages\authentication\SignInPage.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Button,
   Col,
@@ -8871,7 +8424,7 @@ export const SignInPage = () => {
 
 
 src\pages\authentication\SignUp.tsx:
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Button,
   Col,
@@ -8891,9 +8444,8 @@ import {
 } from '@ant-design/icons';
 import { Logo } from '../../components';
 import { useMediaQuery } from 'react-responsive';
-import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
+import { PATH_AUTH } from '../../constants';
 import { useNavigate } from 'react-router-dom';
-import authService from '../../services/authService'; // Import service
 
 const { Title, Text, Link } = Typography;
 
@@ -8912,11 +8464,9 @@ export const SignUpPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = async (values: FieldType) => {
+  const onFinish = async (_values: FieldType) => {
     setLoading(true);
     try {
-      const response = await authService.register(values);
-
       message.success('Registration successful, please login.');
       setTimeout(() => {
         navigate(PATH_AUTH.signin);
@@ -9043,109 +8593,15 @@ export const SignUpPage = () => {
 };
 
 
-src\pages\authentication\VerifyEmail.tsx:
-// src/pages/authentication/VerifyEmail.tsx
-import { Button, Flex, Typography, message } from 'antd';
-import { Logo } from '../../components';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { PATH_DASHBOARD } from '../../constants';
-import { useState, useEffect } from 'react';
-
-const { Title, Text } = Typography;
-
-export const VerifyEmailPage = () => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
-
-  const handleVerify = async () => {
-    if (!token) {
-      message.error("Missing verification token");
-      return;
-    }
-    setLoading(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_APP_API_URL}/auth/verify-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
-      if (!response.ok) {
-        throw new Error("Email verification failed");
-      }
-      message.success("Email verified successfully");
-      navigate(PATH_DASHBOARD.default);
-    } catch (error: any) {
-      message.error(error.message || "Verification error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // Optionally auto-trigger verification on load
-    // handleVerify();
-  }, [token]);
-
-  return (
-    <Flex vertical gap="large" align="center" justify="center" style={{ height: '80vh' }}>
-      <Logo color="blue" />
-      <Title level={2} className="m-0">Verify Your Email</Title>
-      <Text style={{ fontSize: 18 }}>
-        Click the button below to verify your email.
-      </Text>
-      <Button type="primary" onClick={handleVerify} loading={loading}>
-        Verify Email
-      </Button>
-      <Flex gap={2}>
-        <Text>Didn't receive an email?</Text>
-        <Link onClick={handleVerify} to={''}>Resend</Link>
-      </Flex>
-    </Flex>
-  );
-};
-
-
-src\pages\authentication\Welcome.tsx:
-// src/pages/authentication/Welcome.tsx
-import { Button, Flex, Typography } from 'antd';
-import { Logo } from '../../components';
-import { Link } from 'react-router-dom';
-import { PATH_DASHBOARD } from '../../constants';
-
-const { Title, Text } = Typography;
-
-export const WelcomePage = () => {
-  return (
-    <Flex vertical gap="large" align="center" justify="center" style={{ height: '80vh' }}>
-      <Logo color="blue" />
-      <Title level={2} className="m-0">Welcome to Our App</Title>
-      <Text style={{ fontSize: 18 }}>
-        Your account has been created successfully.
-      </Text>
-      <Link to={PATH_DASHBOARD.default}>
-        <Button type="primary" size="middle">
-          Go to Homepage
-        </Button>
-      </Link>
-    </Flex>
-  );
-};
-
-
 src\pages\create\Events.tsx:
 // src\pages\create\Events.tsx
-import { Button, Col, DatePicker, Form, Input, InputNumber, message, Modal, Row, Select, Typography, Checkbox, Alert } from 'antd';
-import { Card, Loader } from '../../components';
+import { Button, Col, DatePicker, Form, Input, InputNumber, message, Modal, Row, Select, Alert } from 'antd';
+import { Card } from '../../components';
 import { SaveOutlined } from '@ant-design/icons';
-import { Events } from '../../types';
 import { useState, useEffect } from 'react';
-import { useFetchData } from '../../hooks';
 import { useNavigate } from 'react-router-dom';
 import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
 import authService from '../../services/authService'; // Import authService
-import dayjs from 'dayjs';
 
 type FieldType = {
     name: string;
@@ -9162,10 +8618,8 @@ type FieldType = {
 };
 
 export const CreateEventPage = () => {
-    const { data: users } = useFetchData('../mocks/Users.json');
 
     const [loading, setLoading] = useState(false);
-    // Modal State for create event type
     const [isCreateTypeModalOpen, setIsCreateTypeModalOpen] = useState<any>(false);
     const [types, setTypes] = useState<any>([]); // Initialize types as empty array
     const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -9267,9 +8721,6 @@ export const CreateEventPage = () => {
     // Modal State for create user
     const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState<any>(false);
 
-    const showCreateUserModal = () => {
-        setIsCreateUserModalOpen(true);
-    };
 
     const handleOkCreateUser = () => {
         setIsCreateUserModalOpen(false);
@@ -9493,156 +8944,83 @@ import { useFetchData } from '../../hooks';
 import { Participants } from '../../types';
 
 interface EventParticipantsTableProps extends TableProps<Participants> {
-    eventId: string | undefined; // EventId can be undefined
+  eventId: string | undefined; // EventId can be undefined
 }
 
 const PARTICIPANTS_COLUMNS = [
-    {
-        title: 'ID',
-        dataIndex: 'id',
-        key: 'id',
-    },
-    {
-        title: 'Name',
-        dataIndex: 'name',
-        key: 'name',
-    },
-    {
-        title: 'Email',
-        dataIndex: 'email',
-        key: 'email',
-    },
-    {
-        title: 'Check-in Time',
-        dataIndex: 'checkInAt',
-        key: 'checkInAt',
-        render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
-    },
-    {
-        title: 'Check-out Time',
-        dataIndex: 'checkOutAt',
-        key: 'checkOutAt',
-        render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
-    },
+  {
+    title: 'ID',
+    dataIndex: 'id',
+    key: 'id',
+  },
+  {
+    title: 'Name',
+    dataIndex: 'name',
+    key: 'name',
+  },
+  {
+    title: 'Email',
+    dataIndex: 'email',
+    key: 'email',
+  },
+  {
+    title: 'Check-in Time',
+    dataIndex: 'checkInAt',
+    key: 'checkInAt',
+    render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+  },
+  {
+    title: 'Check-out Time',
+    dataIndex: 'checkOutAt',
+    key: 'checkOutAt',
+    render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+  },
 ];
 
 const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId }) => {
-    const { data: participantsData, error: participantsError, loading: participantsLoading } = useFetchData(
-        eventId ? `http://localhost:8080/api/v1/events/${eventId}/participants` : "", // Correct API URL
-        localStorage.getItem('accessToken') || undefined
-    );
+  const { data: participantsData, error: participantsError, loading: participantsLoading } = useFetchData(
+    eventId ? `http://localhost:8080/api/v1/events/${eventId}/participants` : "", // Correct API URL
+    localStorage.getItem('accessToken') || undefined
+  );
 
-    if (!eventId) {
-        return <Alert message="Event ID is missing." type="warning" showIcon />;
-    }
+  if (!eventId) {
+    return <Alert message="Event ID is missing." type="warning" showIcon />;
+  }
 
-    if (participantsLoading) {
-        return <Loader />;
-    }
+  if (participantsLoading) {
+    return <Loader />;
+  }
 
-    if (participantsError) {
-        return <Alert message="Error loading participants" description={participantsError.toString()} type="error" showIcon />;
-    }
+  if (participantsError) {
+    return <Alert message="Error loading participants" description={participantsError.toString()} type="error" showIcon />;
+  }
 
-    // Check if data.data exists and is an array before accessing its length
-    if (!participantsData?.data || !Array.isArray(participantsData.data) || participantsData.data.length === 0) {
-        return <Alert message="No participants found for this event." type="info" showIcon />;
-    }
+  // Check if data.data exists and is an array before accessing its length
+  if (!participantsData?.data || !Array.isArray(participantsData.data) || participantsData.data.length === 0) {
+    return <Alert message="No participants found for this event." type="info" showIcon />;
+  }
 
 
-    return (
-        <div>
-            <Table
-                dataSource={participantsData.data}
-                columns={PARTICIPANTS_COLUMNS}
-                loading={participantsLoading} // Use hook's loading state
-                pagination={{ pageSize: 5 }}
-                rowKey="id"
-            />
-        </div>
-    );
+  return (
+    <div>
+      <Table
+        dataSource={participantsData.data}
+        columns={PARTICIPANTS_COLUMNS}
+        loading={participantsLoading} // Use hook's loading state
+        pagination={{ pageSize: 5 }}
+        rowKey="id"
+      />
+    </div>
+  );
 };
 
 export { EventParticipantsTable };
 
 
-src\pages\dashboards\Events.tsx:
-import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
-import { useStylesContext } from '../../context';
-import { Helmet } from 'react-helmet-async';
-import { DASHBOARD_ITEMS } from '../../constants';
-import { Link } from 'react-router-dom';
-import {
-    Col,
-    Row,
-} from 'antd';
-  import {
-    PageHeader,
-} from '../../components';
-import {
-  EventTable
-} from '../../components/dashboard';
-import { useFetchData } from '../../hooks';
-
-
-const EventsDashboardPage = () => {
-    const stylesContext = useStylesContext();
-    const {
-        data: events,
-        error: eventsError,
-        loading: eventsLoading,
-      } = useFetchData('../mocks/Events.json');
-  return (
-    <div>
-      <Helmet>
-        <title>Incomming Events | Antd Dashboard</title>
-      </Helmet>
-      <PageHeader
-        title="incomming events dashboard"
-        breadcrumbs={[
-          {
-            title: (
-              <>
-                <HomeOutlined />
-                <span>home</span>
-              </>
-            ),
-            path: '/',
-          },
-          {
-            title: (
-              <>
-                <PieChartOutlined />
-                <span>dashboards</span>
-              </>
-            ),
-            menu: {
-              items: DASHBOARD_ITEMS.map((d) => ({
-                key: d.title,
-                title: <Link to={d.path}>{d.title}</Link>,
-              })),
-            },
-          },
-          {
-            title: 'events',
-          },
-        ]}
-      />
-      <Row {...stylesContext?.rowProps}>
-      <Col span={24}>
-          <EventTable data={events} loading={eventsLoading} error={eventsError} />
-        </Col>
-      </Row>
-    </div>
-  )
-}
-
-export default EventsDashboardPage
-
 src\pages\dashboards\EventsList.tsx:
 // src/pages/dashboards/EventsList.tsx
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Card, Space, Table, Tag, Select, message, Spin, Input } from 'antd';
+import { Alert, Button, Card, Space, Table, Tag, Select, Spin, Input, Flex, Typography } from 'antd'; // Import Flex and Typography
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
@@ -9654,18 +9032,6 @@ import { Events } from '../../types';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
 
-interface EventsListResponse {
-  data: {
-    events: Events[];
-    meta: {
-      totalItems: number;
-      // ... other meta properties if any ...
-    };
-  };
-  statusCode: number;
-  message: string;
-}
-
 const EVENT_STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },
   { value: 'SCHEDULED', label: 'Scheduled' },
@@ -9676,18 +9042,17 @@ const EVENT_STATUS_OPTIONS = [
 const EventsListPage = () => {
   const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({});
   const [categoryLoading, setCategoryLoading] = useState(false);
-  // Use '' (empty string) to represent "All" filters.
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [categoryFilter, setCategoryFilter] = useState<string>(''); // '' means All Categories
-  const [searchQuery, setSearchQuery] = useState<string>(''); // State for search query
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const {
     data: eventsListResponse,
     error: eventsError,
     loading: eventsLoading,
-  } = useFetchData( 
+  } = useFetchData(
     `http://localhost:8080/api/v1/events?page=${currentPage}&limit=${pageSize}` +
     `${statusFilter ? `&status=${statusFilter}` : ''}` +
     `${categoryFilter ? `&categoryId=${categoryFilter}` : ''}` +
@@ -9703,16 +9068,12 @@ const EventsListPage = () => {
         const response = await authService.getCategories(accessToken || '') as { statusCode: number; data: { categories?: any[] }; message?: string };
         if (response.statusCode === 200 && response.data.categories) {
           const categoryMap: Record<string, string> = {};
-          categoryMap[''] = 'All Categories'; // Add "All Categories" option with empty string key
+          categoryMap[''] = 'All Categories';
           response.data.categories.forEach((category: any) => {
             categoryMap[category.id] = category.name;
           });
           setCategoryNamesMap(categoryMap);
-        } else {
-          // message.error(response.message);
         }
-      } catch (error: any) {
-        // message.error(error.message);
       } finally {
         setCategoryLoading(false);
       }
@@ -9745,24 +9106,27 @@ const EventsListPage = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text, record) => <Link to={`/details/events/${record.id}`}>{text}</Link>,
+      render: (text, record) => <Typography.Paragraph ellipsis><Link to={`/details/events/${record.id}`}>{text}</Link></Typography.Paragraph>, 
     },
     {
       title: 'Location',
       dataIndex: 'location',
       key: 'location',
+      responsive: ['md'], // Hide on smaller screens
     },
     {
       title: 'Start Date',
       dataIndex: 'startDate',
       key: 'startDate',
       render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      responsive: ['sm'], // Hide on xs screens
     },
     {
       title: 'End Date',
       dataIndex: 'endDate',
       key: 'endDate',
       render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      responsive: ['sm'], // Hide on xs screens
     },
     {
       title: 'Category',
@@ -9770,13 +9134,10 @@ const EventsListPage = () => {
       key: 'event_category',
       render: (categoryId: string) => (
         <Space>
-          {categoryLoading ? (
-            <Spin />
-          ) : (
-            <Tag color="blue">{categoryNamesMap[categoryId] || 'N/A'}</Tag>
-          )}
+          {categoryLoading ? <Spin /> : <Tag color="blue">{categoryNamesMap[categoryId] || 'N/A'}</Tag>}
         </Space>
       ),
+      responsive: ['md'], // Hide on smaller screens
     },
     {
       title: 'Status',
@@ -9802,7 +9163,7 @@ const EventsListPage = () => {
   ];
 
   const categoryOptions = Object.entries(categoryNamesMap).map(([key, label]) => ({
-    value: key, // key is '' for "All Categories"
+    value: key,
     label: label,
   }));
 
@@ -9846,11 +9207,11 @@ const EventsListPage = () => {
       <Card
         title="Events"
         extra={
-          <Space>
+          <Flex wrap="wrap" gap="small" align="center" style={{marginTop: '10px' }}> {/* Use Flex for responsive filters */}
             <Select
               placeholder="Filter by Category"
               allowClear
-              style={{ width: 200 }}
+              style={{ minWidth: 150, width: 'auto'}} // Adjust width for responsiveness
               onChange={onCategoryFilterChange}
               options={categoryOptions}
               value={categoryFilter}
@@ -9858,7 +9219,7 @@ const EventsListPage = () => {
             <Select
               placeholder="Filter by Status"
               allowClear
-              style={{ width: 200 }}
+              style={{ minWidth: 150, width: 'auto' }} // Adjust width for responsiveness
               onChange={onStatusFilterChange}
               options={EVENT_STATUS_OPTIONS}
               value={statusFilter}
@@ -9866,12 +9227,12 @@ const EventsListPage = () => {
             <Input.Search
               placeholder="Search by event name"
               onSearch={handleSearch}
-              style={{ width: 300 }}
+              style={{ minWidth: 200, width: 'auto' }} // Adjust width for responsiveness
               allowClear
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </Space>
+          </Flex>
         }
       >
         {eventsError && (
@@ -9884,20 +9245,23 @@ const EventsListPage = () => {
           />
         )}
 
-        <Table
-          columns={columns}
-          dataSource={eventsListResponse?.data?.events || []}
-          loading={eventsLoading}
-          pagination={{
-            current: currentPage,
-            pageSize: pageSize,
-            total: eventsListResponse?.data?.meta?.totalItems,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            showSizeChanger: true,
-            onChange: handlePaginationChange,
-          }}
-        />
+        <div className="table-responsive"> {/* Add a wrapper for horizontal scroll */}
+          <Table
+            columns={columns}
+            dataSource={eventsListResponse?.data?.events || []}
+            loading={eventsLoading}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: eventsListResponse?.data?.meta?.totalItems,
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showSizeChanger: true,
+              onChange: handlePaginationChange,
+            }}
+            scroll={{ x: 'max-content' }} // Enable horizontal scroll for table
+          />
+        </div>
       </Card>
     </div>
   );
@@ -9908,50 +9272,29 @@ export default EventsListPage;
 
 src\pages\dashboards\General.tsx:
 import {
-  Alert,
   Button,
   ButtonProps,
   Col,
-  Flex,
-  Image,
   Popover,
-  Progress,
   Row,
-  Space,
-  Table,
-  Tag,
-  TagProps,
-  Typography,
 } from 'antd';
 import {
   Card,
   CustomerReviewsCard,
   PageHeader,
   RevenueCard,
-  UserAvatar,
 } from '../../components';
-import { Area, Bullet, Pie } from '@ant-design/charts';
 import {
-  ArrowDownOutlined,
-  ArrowUpOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  ExclamationCircleOutlined,
   HomeOutlined,
   PieChartOutlined,
   QuestionOutlined,
-  StarFilled,
-  SyncOutlined,
 } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useStylesContext } from '../../context';
-import { createElement, CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 import { useFetchData } from '../../hooks';
-import { blue, green, red, yellow } from '@ant-design/colors';
-import CountUp from 'react-countup';
-import { numberWithCommas } from '../../utils';
 import { CategoriesChart, EventsOverTimeChart } from '../../components/dashboard/default';
 
 const POPOVER_BUTTON_PROPS: ButtonProps = {
@@ -9964,8 +9307,8 @@ const cardStyles: CSSProperties = {
 
 export const GeneralDashboardPage = () => {
   const stylesContext = useStylesContext();
-  
-  const { data: dashboardStats, error: dashboardStatsError, loading: dashboardStatsLoading } = useFetchData(
+
+  const { data: dashboardStats, loading: dashboardStatsLoading } = useFetchData(
     'http://localhost:8080/api/v1/events/dashboard-stats', // API URL
     localStorage.getItem('accessToken') || undefined // Access token
   );
@@ -10084,12 +9427,11 @@ src\pages\dashboards\index.ts:
 export { ProjectsDashboardPage } from './Projects.tsx';
 export { GeneralDashboardPage } from './General.tsx';
 export {MyEventDashboardPage} from './MyEvents.tsx';
-export {UserDashboardPage} from './Users.tsx';
 
 
 src\pages\dashboards\MyEvents.tsx:
 // src\pages\dashboards\MyEvents.tsx
-import { Alert, Button, Col, Row, Space, Spin } from 'antd';
+import { Alert, Button, Col, Row, Space } from 'antd';
 import {
     Card,
     Loader,
@@ -10098,7 +9440,6 @@ import {
 import { Events } from '../../types';
 import { useState } from 'react';
 import {
-    CloudUploadOutlined,
     HomeOutlined,
     PieChartOutlined,
     PlusOutlined,
@@ -10180,7 +9521,7 @@ export const MyEventDashboardPage = () => {
     return (
         <div>
             <Helmet>
-                <title>My Events | Antd Dashboard</title>
+                <title>My Events | Dashboard</title>
             </Helmet>
             <PageHeader
                 title="your event dashboard"
@@ -10273,8 +9614,8 @@ export default MyEventDashboardPage
 
 
 src\pages\dashboards\ParticipatedEvents.tsx:
-// src/pages/dashboards/ParticipatedEventsPage.tsx
-import React, { useState, useEffect } from 'react';
+// src\pages\dashboards\ParticipatedEventsPage.tsx
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
@@ -10286,6 +9627,8 @@ import {
   message,
   Popconfirm,
   Spin,
+  Flex, // Import Flex
+  Typography, // Import Typography
 } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
@@ -10309,12 +9652,9 @@ const ParticipatedEventsPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } =
+  const { data: eventsData, loading: eventsLoading, fetchData } =
     useFetchParticipatedEventsData(statusFilter === 'all' ? undefined : statusFilter);
-  // loading dành cho thao tác update/delete
   const [actionLoading, setActionLoading] = useState(false);
-
-  // --- State để lưu mapping từ categoryId -> categoryName ---
   const [categories, setCategories] = useState<Record<string, string>>({});
   const [loadingCategories, setLoadingCategories] = useState(false);
 
@@ -10330,28 +9670,18 @@ const ParticipatedEventsPage = () => {
 
   const isEmptyData = eventsData?.events === undefined || eventsData?.events?.length === 0;
 
-  // Khi eventsData thay đổi, duyệt qua các event và nếu chưa có category name thì fetch từ API
   useEffect(() => {
     const fetchCategoryName = async (event: Events) => {
       if (!event?.categoryId) return;
-      // Nếu đã có category name trong mapping thì bỏ qua
       if (categories[event.categoryId]) return;
       setLoadingCategories(true);
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getCategoryById(event.categoryId, accessToken || '');
-        // Giả sử response trả về dạng: { data: { category: { name: string } } }
         const categoryResponse = response as { data: { category: { name: string } } };
         setCategories((prev) => ({
           ...prev,
           [event.categoryId]: categoryResponse.data.category.name,
-        }));
-      } catch (error: any) {
-        console.error('Error fetching category name for event', event.id, error);
-        message.error('Failed to load category name');
-        setCategories((prev) => ({
-          ...prev,
-          [event.categoryId]: 'N/A',
         }));
       } finally {
         setLoadingCategories(false);
@@ -10365,7 +9695,6 @@ const ParticipatedEventsPage = () => {
     }
   }, [eventsData, categories]);
 
-  // Hàm xử lý Unregister (delete) event
   const handleLeaveEvent = async (eventId: string) => {
     setActionLoading(true);
     try {
@@ -10375,11 +9704,9 @@ const ParticipatedEventsPage = () => {
         return;
       }
 
-      // 1. Get Participant ID
       const participantIdResponse = await authService.getParticipantIdByEventId(eventId, accessToken) as any;
       const participantId = participantIdResponse.data.participantId;
 
-      // 2. Unregister Event using participantId
       const response = (await authService.unregisterEvent(
         participantId,
         accessToken
@@ -10387,7 +9714,6 @@ const ParticipatedEventsPage = () => {
 
       if (response.statusCode === 200) {
         message.success(response.message);
-        // Refresh dữ liệu sau khi delete
         fetchData(statusFilter === 'all' ? undefined : statusFilter);
       } else {
         message.error(response.error || 'Failed to unregister from event');
@@ -10400,32 +9726,32 @@ const ParticipatedEventsPage = () => {
     }
   };
 
-  // Định nghĩa các cột của bảng bên trong component để có thể sử dụng các biến state
   const columns: ColumnsType<Events> = [
     {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text, record) => (
-        <Link to={`/details/participated-events/${record.id}`}>{text}</Link>
-      ),
+      render: (text, record) => <Typography.Paragraph ellipsis><Link to={`/details/participated-events/${record.id}`}>{text}</Link></Typography.Paragraph>, // Added ellipsis
     },
     {
       title: 'Location',
       dataIndex: 'location',
       key: 'location',
+      responsive: ['md'], // Hide on smaller screens
     },
     {
       title: 'Start Date',
       dataIndex: 'startDate',
       key: 'startDate',
       render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      responsive: ['sm'], // Hide on xs
     },
     {
       title: 'End Date',
       dataIndex: 'endDate',
       key: 'endDate',
       render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      responsive: ['sm'], // Hide on xs
     },
     {
       title: 'Category',
@@ -10433,13 +9759,10 @@ const ParticipatedEventsPage = () => {
       key: 'categoryId',
       render: (categoryId: string) => (
         <Space>
-          {loadingCategories ? (
-            <Spin size="small" />
-          ) : (
-            <Tag color="blue">{categories[categoryId] || 'N/A'}</Tag>
-          )}
+          {loadingCategories ? <Spin /> : <Tag color="blue">{categories[categoryId] || 'N/A'}</Tag>}
         </Space>
       ),
+      responsive: ['md'], // Hide on smaller screens
     },
     {
       title: 'Status',
@@ -10516,31 +9839,36 @@ const ParticipatedEventsPage = () => {
       <Card
         title="List of Participated Events"
         extra={
-          <Select
-            defaultValue="all"
-            style={{ width: 200 }}
-            onChange={onStatusFilterChange}
-            options={EVENT_STATUS_OPTIONS}
-          />
+          <Flex wrap="wrap" gap="small" align="center"> {/* Use Flex for responsive filters */}
+            <Select
+              defaultValue="all"
+              style={{ minWidth: 150, width: 'auto' }} // Responsive width
+              onChange={onStatusFilterChange}
+              options={EVENT_STATUS_OPTIONS}
+            />
+          </Flex>
         }
       >
         {isEmptyData ? (
           <Alert message="No events participated yet." type="info" showIcon />
         ) : (
-          <Table
-            columns={columns}
-            dataSource={eventsData?.events || []}
-            loading={eventsLoading || actionLoading}
-            pagination={{
-              current: currentPage,
-              pageSize: pageSize,
-              total: eventsData?.meta?.totalItems || 0,
-              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-              pageSizeOptions: ['10', '20', '50', '100'],
-              showSizeChanger: true,
-              onChange: handlePaginationChange,
-            }}
-          />
+          <div className="table-responsive"> {/* Responsive table wrapper */}
+            <Table
+              columns={columns}
+              dataSource={eventsData?.events || []}
+              loading={eventsLoading || actionLoading}
+              pagination={{
+                current: currentPage,
+                pageSize: pageSize,
+                total: eventsData?.meta?.totalItems || 0,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showSizeChanger: true,
+                onChange: handlePaginationChange,
+              }}
+              scroll={{ x: 'max-content' }} // Enable horizontal scroll
+            />
+          </div>
         )}
       </Card>
     </div>
@@ -10560,12 +9888,6 @@ import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import axiosInstance from '../../api/axiosInstance';
-
-interface TimelineData {
-  timeSlot: string;
-  checkInCount: number;
-  checkOutCount: number;
-}
 
 interface ParticipationData {
     eventId: string;
@@ -10681,6 +10003,7 @@ export const ParticipationStatsPage: React.FC = () => {
   );
 };
 
+
 src\pages\dashboards\Projects.tsx:
 // src\pages\dashboards\Projects.tsx
 import {
@@ -10688,17 +10011,13 @@ import {
   ClientsTable,
   Loader,
   PageHeader,
-  ProjectsCard,
-  ProjectsTable,
   RevenueCard,
 } from '../../components';
 import { Column } from '@ant-design/charts';
-import { Events, Projects, User } from '../../types';
+import { Events } from '../../types';
 import {
-  CloudUploadOutlined,
   HomeOutlined,
   PieChartOutlined,
-  PlusOutlined,
 } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
@@ -10707,7 +10026,7 @@ import { useFetchData } from '../../hooks';
 import { EventsCard } from '../../components/dashboard/shared';
 import useFetchOrganizedEventsData from '../../hooks/useFetchOrganizedEventsData';
 import useFetchTopClients from '../../hooks/useFetchTopClients'; // Import useFetchTopClients
-import { Row, Col, Segmented, Spin, Alert } from 'antd';
+import { Row, Col, Spin, Alert } from 'antd';
 import { useState, useEffect } from 'react';
 
 const RevenueColumnChart = () => {
@@ -10773,21 +10092,6 @@ const RevenueColumnChart = () => {
   );
 };
 
-const PROJECT_TABS = [
-  {
-    key: 'all',
-    label: 'All projects',
-  },
-  {
-    key: 'inProgress',
-    label: 'Active',
-  },
-  {
-    key: 'onHold',
-    label: 'On Hold',
-  },
-];
-
 const formatTime = (milliseconds: number): string => {
   const seconds = Math.floor((milliseconds / 1000) % 60);
   const minutes = Math.floor((milliseconds / (1000 * 60)) % 60);
@@ -10797,57 +10101,32 @@ const formatTime = (milliseconds: number): string => {
 
 
 const useFetchUserProfile = () => {
-    const { data, error, loading } = useFetchData(
-        'http://localhost:8080/api/v1/users/profile',
-        localStorage.getItem('accessToken') || undefined
-    );
-    return { userData: data?.data?.user, userError: error, userLoading: loading };
+  const { data, error, loading } = useFetchData(
+    'http://localhost:8080/api/v1/users/profile',
+    localStorage.getItem('accessToken') || undefined
+  );
+  return { userData: data?.data?.user, userError: error, userLoading: loading };
 };
 
 
 export const ProjectsDashboardPage = () => {
   const {
-    data: projectsData,
-    error: projectsDataError,
-    loading: projectsDataLoading,
-  } = useFetchData('../mocks/Projects.json');
-  const {
     data: clientsData,
     error: topClientsError,
     loading: topClientsLoading,
   } = useFetchTopClients(5);
-  const [projectTabsKey, setProjectsTabKey] = useState<string>('all');
-  const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } = useFetchOrganizedEventsData();
+  const { data: eventsData, error: eventsError, loading: eventsLoading } = useFetchOrganizedEventsData();
   const getFilteredEvents = (status?: string) => {
     return (eventsData || []).filter((event: Events) => status ? event.status === status : true);
   };
 
-  const PROJECT_TABS_CONTENT: Record<string, React.ReactNode> = {
-    all: <ProjectsTable key="all-projects-table" data={projectsData} />,
-    inProgress: (
-      <ProjectsTable
-        key="in-progress-projects-table"
-        data={projectsData.filter((_: Projects) => _.status === 'in progress')}
-      />
-    ),
-    onHold: (
-      <ProjectsTable
-        key="on-hold-projects-table"
-        data={projectsData.filter((_: Projects) => _.status === 'on hold')}
-      />
-    ),
-  };
 
-  const onProjectsTabChange = (key: string) => {
-    setProjectsTabKey(key);
-  };
-
-  const { data: dashboardStats, error: dashboardStatsError, loading: dashboardStatsLoading } = useFetchData(
+  const { data: dashboardStats, loading: dashboardStatsLoading } = useFetchData(
     'http://localhost:8080/api/v1/events/dashboard-stats',
     localStorage.getItem('accessToken') || undefined
   );
 
-  const { userData, userError, userLoading: profileLoading } = useFetchUserProfile();
+  const { userData, userLoading: profileLoading } = useFetchUserProfile();
   const [onlineTime, setOnlineTime] = useState<string>('00:00:00');
 
   useEffect(() => {
@@ -11005,429 +10284,232 @@ src\pages\dashboards\SpeakerManagementPage.tsx:
 // src\pages\dashboards\SpeakerGuestManagementPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    Button,
-    Card,
-    message,
-    Popconfirm,
-    Space,
-    Table,
-    Modal,
-    Form,
-    Input,
-    Typography,
-    Alert,
-    Tabs,
+  Button,
+  Card,
+  message,
+  Space,
+  Table,
+  Modal,
+  Form,
+  Input,
+  Alert,
+  Flex, // Import Flex
+  Typography, // Import Typography
 } from 'antd';
 import {
-    HomeOutlined,
-    PieChartOutlined,
-    EditOutlined,
-    PlusOutlined,
-    SaveOutlined,
-    DeleteOutlined,
-    CloseOutlined
+  HomeOutlined,
+  PieChartOutlined,
+  EditOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { PageHeader, Loader } from '../../components';
+import { PageHeader } from '../../components';
 import { ColumnsType } from 'antd/es/table';
 import { Speaker, Guest, SpeakerGuestData } from '../../types';
 import axiosInstance from '../../api/axiosInstance';
 
-
 const SpeakerGuestManagementPage: React.FC = () => {
-    const [speakers, setSpeakers] = useState<Speaker[]>([]);
-    const [guests, setGuests] = useState<Guest[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [form] = Form.useForm();
-    const [editingItemId, setEditingItemId] = useState<string | null>(null);
-    const [activeTabKey, setActiveTabKey] = useState<'speakers' | 'guests'>('speakers');
-    const [noSpeakersData, setNoSpeakersData] = useState<boolean>(false);
-    const [noGuestsData, setNoGuestsData] = useState<boolean>(false);
+  const [speakers, setSpeakers] = useState<Speaker[]>([]);
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [activeTabKey, setActiveTabKey] = useState<'speakers' | 'guests'>('speakers');
+  const [noSpeakersData, setNoSpeakersData] = useState<boolean>(false);
+  const [noGuestsData, setNoGuestsData] = useState<boolean>(false);
 
+  const fetchSpeakers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setNoSpeakersData(false);
+    try {
+      const response = await axiosInstance.get('/speakers');
+      const speakerData = (response.data as { data: { speakers: Speaker[]; meta: { totalItems: number } } }).data;
+      setSpeakers(speakerData.speakers);
+      if (speakerData.meta.totalItems === 0) {
+        setNoSpeakersData(true);
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to load speakers');
+      message.error(error.message || 'Failed to load speakers');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    const fetchSpeakers = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        setNoSpeakersData(false);
-        try {
-            const response = await axiosInstance.get('/speakers');
-            const speakerData = (response.data as { data: { speakers: Speaker[], meta: { totalItems: number } } }).data;
-            setSpeakers(speakerData.speakers);
-            if (speakerData.meta.totalItems === 0) {
-                setNoSpeakersData(true);
-            }
-        } catch (error: any) {
-            setError(error.message || 'Failed to load speakers');
-            message.error(error.message || 'Failed to load speakers');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+  const fetchGuests = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setNoGuestsData(false);
+    try {
+      const response = await axiosInstance.get('/guests');
+      const guestData = (response.data as { data: { guests: Guest[]; meta: { totalItems: number } } }).data;
+      setGuests(guestData.guests);
+      if (guestData.meta.totalItems === 0) {
+        setNoGuestsData(true);
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to load guests');
+      message.error(error.message || 'Failed to load guests');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    const fetchGuests = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        setNoGuestsData(false);
-        try {
-            const response = await axiosInstance.get('/guests');
-            const guestData = (response.data as { data: { guests: Guest[], meta: { totalItems: number } } }).data;
-            setGuests(guestData.guests);
-            if (guestData.meta.totalItems === 0) {
-                setNoGuestsData(true);
-            }
-        } catch (error: any) {
-            setError(error.message || 'Failed to load guests');
-            message.error(error.message || 'Failed to load guests');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+  useEffect(() => {
+    fetchSpeakers();
+    fetchGuests();
+  }, [fetchSpeakers, fetchGuests]);
 
-    useEffect(() => {
+  const handleCreateItem = () => {
+    setEditingItemId(null);
+    form.resetFields();
+    setIsModalOpen(true);
+  };
+
+  const handleEditItem = (id: string, entityType: 'speaker' | 'guest') => {
+    setEditingItemId(id);
+    const itemToEdit = entityType === 'speaker'
+      ? speakers.find(speaker => speaker.id === id)
+      : guests.find(guest => guest.id === id);
+
+    if (itemToEdit) {
+      form.setFieldsValue({ ...itemToEdit, entityType, ...itemToEdit });
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleModalOk = () => {
+    form.submit();
+  };
+
+  const handleModalCancel = () => {
+    setIsModalOpen(false);
+  };
+
+  const onTabChange = (key: string) => {
+    setActiveTabKey(key as 'speakers' | 'guests');
+  };
+
+  const onFinish = async (values: any) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const isSpeaker = values.entityType === 'speaker';
+      const idToEdit = editingItemId;
+
+      if (idToEdit) {
+        message.success(`${isSpeaker ? 'Speaker' : 'Guest'} updated successfully`);
+      } else {
+        message.success(`${isSpeaker ? 'Speaker' : 'Guest'} created successfully`);
+      }
+
+      if (isSpeaker) {
         fetchSpeakers();
+      } else {
         fetchGuests();
-    }, [fetchSpeakers, fetchGuests]);
+      }
+      setIsModalOpen(false);
+      form.resetFields();
+    } catch (error: any) {
+      setError(error.message || `Failed to save ${values.entityType}`);
+      message.error(error.message || `Failed to save  ${values.entityType}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleCreateItem = () => {
-        setEditingItemId(null);
-        form.resetFields();
-        setIsModalOpen(true);
-    };
+  const onFinishFailed = (errorInfo: any) => {
+    console.log('Failed:', errorInfo);
+  };
 
-    const handleEditItem = (id: string, entityType: 'speaker' | 'guest') => {
-        setEditingItemId(id);
-        const itemToEdit = entityType === 'speaker'
-            ? speakers.find(speaker => speaker.id === id)
-            : guests.find(guest => guest.id === id);
+  const speakerColumns: ColumnsType<SpeakerGuestData> = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text) => <Typography.Paragraph ellipsis>{text}</Typography.Paragraph>, // Added ellipsis
+    },
+    {
+      title: 'Job Title',
+      dataIndex: 'jobTitle',
+      key: 'jobTitle',
+      responsive: ['md'], // Hide on smaller screens
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      responsive: ['md'], // Hide on smaller screens
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space size="middle">
+          <Button icon={<EditOutlined />} size="small" onClick={() => handleEditItem(record.id!, 'speaker')}>
+            Edit
+          </Button>
+        </Space>
+      ),
+    },
+  ];
 
-        if (itemToEdit) {
-            form.setFieldsValue({ ...itemToEdit, entityType, ...itemToEdit }); // ** giữ lại itemToEdit để set giá trị đúng **
-            setIsModalOpen(true);
-        }
-    };
+  const guestColumns: ColumnsType<SpeakerGuestData> = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text) => <Typography.Paragraph ellipsis>{text}</Typography.Paragraph>, // Added ellipsis
+    },
+    {
+      title: 'Job Title',
+      dataIndex: 'jobTitle',
+      key: 'jobTitle',
+      responsive: ['md'], // Hide on smaller screens
+    },
+    {
+      title: 'Organization',
+      dataIndex: 'organization',
+      key: 'organization',
+      responsive: ['md'], // Hide on smaller screens
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      responsive: ['md'], // Hide on smaller screens
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space size="middle">
+          <Button icon={<EditOutlined />} size="small" onClick={() => handleEditItem(record.id!, 'guest')}>
+            Edit
+          </Button>
+        </Space>
+      ),
+    },
+  ];
 
-
-    const handleModalOk = () => {
-        form.submit();
-    };
-
-    const handleModalCancel = () => {
-        setIsModalOpen(false);
-    };
-
-    const onTabChange = (key: string) => {
-        setActiveTabKey(key as 'speakers' | 'guests');
-    };
-
-
-    const onFinish = async (values: any) => {
-        setLoading(true);
-        setError(null);
-        try {
-            let response;
-            const isSpeaker = values.entityType === 'speaker';
-            const endpoint = isSpeaker ? '/speakers' : '/guests';
-            const idToEdit = editingItemId;
-
-            const payload = { // ** Tạo payload theo đúng format backend yêu cầu **
-                name: values.name,
-                jobTitle: values.jobTitle,
-                email: values.email,
-                ...(isSpeaker ? { bio: values.bio } : { organization: values.organization, linkSocial: values.linkSocial }) // ** Conditional payload cho speaker và guest **
-            };
-
-
-            if (idToEdit) {
-                response = await axiosInstance.patch(`${endpoint}/${idToEdit}`, payload); // ** Gửi payload đã format **
-                message.success(`${isSpeaker ? 'Speaker' : 'Guest'} updated successfully`);
-            } else {
-                response = await axiosInstance.post(endpoint, payload); // ** Gửi payload đã format **
-                message.success(`${isSpeaker ? 'Speaker' : 'Guest'} created successfully`);
-            }
-
-            if (isSpeaker) {
-                fetchSpeakers();
-            } else {
-                fetchGuests();
-            }
-            setIsModalOpen(false);
-            form.resetFields();
-        } catch (error: any) {
-            setError(error.message || `Failed to save ${values.entityType}`);
-            message.error(error.message || `Failed to save  ${values.entityType}`);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const onFinishFailed = (errorInfo: any) => {
-        console.log('Failed:', errorInfo);
-    };
-
-
-    const speakerColumns: ColumnsType<SpeakerGuestData> = [
-        {
-            title: 'Name',
-            dataIndex: 'name',
-            key: 'name',
-        },
-        {
-            title: 'Job Title',
-            dataIndex: 'jobTitle',
-            key: 'jobTitle',
-        },
-        {
-            title: 'Email',
-            dataIndex: 'email',
-            key: 'email',
-        },
-        {
-            title: 'Actions',
-            key: 'actions',
-            render: (_, record) => (
-                <Space size="middle">
-                    <Button icon={<EditOutlined />} size="small" onClick={() => handleEditItem(record.id!, 'speaker')}>
-                        Edit
-                    </Button>
-                </Space>
-            ),
-        },
-    ];
-
-    const guestColumns: ColumnsType<SpeakerGuestData> = [
-        {
-            title: 'Name',
-            dataIndex: 'name',
-            key: 'name',
-        },
-        {
-            title: 'Job Title',
-            dataIndex: 'jobTitle',
-            key: 'jobTitle',
-        },
-        {
-            title: 'Organization',
-            dataIndex: 'organization',
-            key: 'organization',
-        },
-        {
-            title: 'Email',
-            dataIndex: 'email',
-            key: 'email',
-        },
-        {
-            title: 'Actions',
-            key: 'actions',
-            render: (_, record) => (
-                <Space size="middle">
-                    <Button icon={<EditOutlined />} size="small" onClick={() => handleEditItem(record.id!, 'guest')}>
-                        Edit
-                    </Button>
-                </Space>
-            ),
-        },
-    ];
-
-
-    return (
-        <div>
-            <Helmet>
-                <title>Speaker & Guest Management | Antd Dashboard</title>
-            </Helmet>
-            <PageHeader
-                title="Speaker & Guest Management"
-                breadcrumbs={[
-                    {
-                        title: (
-                            <>
-                                <HomeOutlined />
-                                <span>Home</span>
-                            </>
-                        ),
-                        path: '/',
-                    },
-                    {
-                        title: (
-                            <>
-                                <PieChartOutlined />
-                                <span>Dashboards</span>
-                            </>
-                        ),
-                        menu: {
-                            items: DASHBOARD_ITEMS.map((d) => ({
-                                key: d.title,
-                                title: <Link to={d.path}>{d.title}</Link>,
-                            })),
-                        },
-                    },
-                    {
-                        title: 'Speaker & Guest Management',
-                    },
-                ]}
-            />
-
-            <Card
-                title="Speaker & Guest List"
-                extra={
-                    <Button icon={<PlusOutlined />} type="primary" onClick={handleCreateItem}>
-                        Create
-                    </Button>
-                }
-                tabList={[ // Tabs for Speakers and Guests
-                    { key: 'speakers', tab: 'Speakers' },
-                    { key: 'guests', tab: 'Guests' },
-                ]}
-                activeTabKey={activeTabKey}
-                onTabChange={onTabChange}
-            >
-                {error && (
-                    <Alert
-                        message="Error"
-                        description={error}
-                        type="error"
-                        showIcon
-                        closable
-                        onClose={() => setError(null)}
-                        style={{ marginBottom: 16 }}
-                    />
-                )}
-                {activeTabKey === 'speakers' && noSpeakersData && !loading ? (
-                    <Alert message="No speakers available." type="info" showIcon />
-                ) : activeTabKey === 'guests' && noGuestsData && !loading ? (
-                    <Alert message="No guests available." type="info" showIcon />
-                ) : (
-                    <Table
-                        columns={activeTabKey === 'speakers' ? speakerColumns : guestColumns}
-                        dataSource={activeTabKey === 'speakers'
-                            ? speakers.map(speaker => ({ ...speaker, entityType: 'speaker' }))
-                            : guests.map(guest => ({ ...guest, entityType: 'guest' }))}
-                        loading={loading}
-                        rowKey="id"
-                        pagination={{ pageSize: 5 }}
-                    />
-                )}
-            </Card>
-
-            <Modal
-                title={editingItemId ? `Edit ${form.getFieldValue('entityType') === 'speaker' ? 'Speaker' : 'Guest'}` : "Create New Speaker/Guest"}
-                open={isModalOpen}
-                onOk={handleModalOk}
-                onCancel={handleModalCancel}
-                confirmLoading={loading}
-                destroyOnClose
-            >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    name="speaker-guest-form"
-                    onFinish={onFinish}
-                    onFinishFailed={onFinishFailed}
-                    autoComplete="off"
-                    initialValues={{ entityType: 'speaker' }}
-                    requiredMark={false}
-                >
-                    <Form.Item name="entityType" hidden>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item
-                        label="Name"
-                        name="name"
-                        rules={[{ required: true, message: 'Please input name!' }]}
-                    >
-                        <Input placeholder="Name" />
-                    </Form.Item>
-                    <Form.Item
-                        label="Job Title"
-                        name="jobTitle"
-                        rules={[{ required: true, message: 'Please input job title!' }]}
-                    >
-                        <Input placeholder="Job Title" />
-                    </Form.Item>
-                    <Form.Item
-                        label="Email"
-                        name="email"
-                        rules={[
-                            { required: true, message: 'Please input Email!' },
-                            { type: 'email', message: 'Please enter a valid email!' },
-                        ]}
-                    >
-                        <Input placeholder="Email" />
-                    </Form.Item>
-                    {form.getFieldValue('entityType') === 'guest' && (
-                        <Form.Item
-                            label="Organization"
-                            name="organization"
-                            rules={[{ required: true, message: 'Please input organization!' }]}
-                        >
-                            <Input placeholder="Organization" />
-                        </Form.Item>
-                    )}
-                    {form.getFieldValue('entityType') === 'guest' && (
-                        <Form.Item
-                            label="Social Link"
-                            name="linkSocial"
-                        >
-                            <Input placeholder="Social Link" />
-                        </Form.Item>
-                    )}
-                    {form.getFieldValue('entityType') === 'speaker' && (
-                        <Form.Item
-                            label="Bio"
-                            name="bio"
-                        >
-                            <Input.TextArea rows={4} placeholder="Bio" />
-                        </Form.Item>
-                    )}
-                </Form>
-            </Modal>
-        </div>
-    );
-};
-
-export default SpeakerGuestManagementPage;
-
-src\pages\dashboards\Users.tsx:
-import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
-import { useStylesContext } from '../../context';
-import { Helmet } from 'react-helmet-async';
-import { DASHBOARD_ITEMS } from '../../constants';
-import { Link } from 'react-router-dom';
-import {
-    Col,
-    Row,
-} from 'antd';
-  import {
-    PageHeader,
-} from '../../components';
-import {
-  UserTable
-} from '../../components/dashboard';
-import { useFetchData } from '../../hooks';
-
-export const UserDashboardPage = () => {
-    const stylesContext = useStylesContext();
-    const {
-        data: users,
-        error: usersError,
-        loading: usersLoading,
-      } = useFetchData('../mocks/MyUsers.json');
   return (
     <div>
       <Helmet>
-        <title>Incomming Events | Antd Dashboard</title>
+        <title>Speaker & Guest Management | Antd Dashboard</title>
       </Helmet>
       <PageHeader
-        title="incomming events dashboard"
+        title="Speaker & Guest Management"
         breadcrumbs={[
           {
             title: (
               <>
                 <HomeOutlined />
-                <span>home</span>
+                <span>Home</span>
               </>
             ),
             path: '/',
@@ -11436,7 +10518,7 @@ export const UserDashboardPage = () => {
             title: (
               <>
                 <PieChartOutlined />
-                <span>dashboards</span>
+                <span>Dashboards</span>
               </>
             ),
             menu: {
@@ -11447,20 +10529,137 @@ export const UserDashboardPage = () => {
             },
           },
           {
-            title: 'users',
+            title: 'Speaker & Guest Management',
           },
         ]}
       />
-      <Row {...stylesContext?.rowProps}>
-      <Col span={24}>
-          <UserTable data={users} loading={usersLoading} error={usersError} />
-        </Col>
-      </Row>
+
+      <Card
+        title="Speaker & Guest List"
+        extra={
+          <Button icon={<PlusOutlined />} type="primary" onClick={handleCreateItem}>
+            Create
+          </Button>
+        }
+        tabList={[
+          { key: 'speakers', tab: 'Speakers' },
+          { key: 'guests', tab: 'Guests' },
+        ]}
+        activeTabKey={activeTabKey}
+        onTabChange={onTabChange}
+      >
+        {error && (
+          <Alert
+            message="Error"
+            description={error}
+            type="error"
+            showIcon
+            closable
+            onClose={() => setError(null)}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+        {activeTabKey === 'speakers' && noSpeakersData && !loading ? (
+          <Alert message="No speakers available." type="info" showIcon />
+        ) : activeTabKey === 'guests' && noGuestsData && !loading ? (
+          <Alert message="No guests available." type="info" showIcon />
+        ) : (
+          <div className="table-responsive"> {/* Responsive table wrapper */}
+            <Table
+              columns={activeTabKey === 'speakers' ? speakerColumns : guestColumns}
+              dataSource={activeTabKey === 'speakers'
+                ? speakers.map(speaker => ({ ...speaker, entityType: 'speaker' }))
+                : guests.map(guest => ({ ...guest, entityType: 'guest' }))}
+              loading={loading}
+              rowKey="id"
+              pagination={{ pageSize: 5 }}
+              scroll={{ x: 'max-content' }} // Horizontal scroll
+            />
+          </div>
+        )}
+      </Card>
+
+      <Modal
+        title={editingItemId ? `Edit ${form.getFieldValue('entityType') === 'speaker' ? 'Speaker' : 'Guest'}` : "Create New Speaker/Guest"}
+        open={isModalOpen}
+        onOk={handleModalOk}
+        onCancel={handleModalCancel}
+        confirmLoading={loading}
+        destroyOnClose
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          name="speaker-guest-form"
+          onFinish={onFinish}
+          onFinishFailed={onFinishFailed}
+          autoComplete="off"
+          initialValues={{ entityType: 'speaker' }}
+          requiredMark={false}
+        >
+          <Form.Item name="entityType" hidden>
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Name"
+            name="name"
+            rules={[{ required: true, message: 'Please input name!' }]}
+          >
+            <Input placeholder="Name" />
+          </Form.Item>
+          <Form.Item
+            label="Job Title"
+            name="jobTitle"
+            rules={[{ required: true, message: 'Please input job title!' }]}
+          >
+            <Input placeholder="Job Title" />
+          </Form.Item>
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[
+              { required: true, message: 'Please input Email!' },
+              { type: 'email', message: 'Please enter a valid email!' },
+            ]}
+          >
+            <Input placeholder="Email" />
+          </Form.Item>
+          {form.getFieldValue('entityType') === 'guest' && (
+            <Form.Item
+              label="Organization"
+              name="organization"
+              rules={[{ required: true, message: 'Please input organization!' }]}
+            >
+              <Input placeholder="Organization" />
+            </Form.Item>
+          )}
+          {form.getFieldValue('entityType') === 'guest' && (
+            <Form.Item
+              label="Social Link"
+              name="linkSocial"
+            >
+              <Input placeholder="Social Link" />
+            </Form.Item>
+          )}
+          {form.getFieldValue('entityType') === 'speaker' && (
+            <Form.Item
+              label="Bio"
+              name="bio"
+            >
+              <Input.TextArea rows={4} placeholder="Bio" />
+            </Form.Item>
+          )}
+        </Form>
+      </Modal>
     </div>
-  )
-}
+  );
+};
+
+export default SpeakerGuestManagementPage;
+
 
 src\pages\details\EventAnalysisPage.tsx:
+// src\pages\details\EventAnalysisPage.tsx
 import React, { useEffect, useState } from 'react';
 import { Card, Col, Row, Typography, Spin, Alert, message } from 'antd';
 import { PageHeader, BackBtn, Loader } from '../../components';
@@ -11484,8 +10683,8 @@ const EventAnalysisPage: React.FC = () => {
   const [eventComparisonData, setEventComparisonData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [comparisonError, setComparisonError] = useState<string | null>(null);
-  const [comparisonLoading, setComparisonLoading] = useState(false);
+  const [comparisonError] = useState<string | null>(null);
+  const [comparisonLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -11568,7 +10767,7 @@ const EventAnalysisPage: React.FC = () => {
       <Card>
         <Title level={4}>Event Analysis Dashboard</Title>
         <Row gutter={[24, 24]}>
-          <Col span={12}>
+          <Col xs={24} md={12}> {/* Cột cho Invitation Summary Chart */}
             <Card title="Invitation Summary">
               {invitationData ? (
                 <InvitationSummaryChart invitationSummary={invitationData.invitationSummary} />
@@ -11577,7 +10776,7 @@ const EventAnalysisPage: React.FC = () => {
               )}
             </Card>
           </Col>
-          <Col span={12}>
+          <Col xs={24} md={12}> {/* Cột cho Check-in/Check-out Stats Chart */}
             <Card title="Check-in/Check-out Stats">
               {checkInOutStats ? (
                 <CheckInOutStatsChart checkInOutStats={checkInOutStats} />
@@ -11586,7 +10785,7 @@ const EventAnalysisPage: React.FC = () => {
               )}
             </Card>
           </Col>
-          <Col span={24}>
+          <Col xs={24}> {/* Cột cho Detailed Participants Table - Chiếm toàn bộ chiều rộng trên mọi thiết bị */}
             <Card title="Detailed Participants List">
               {loading ? (
                 <Spin tip="Loading participants data..." />
@@ -11602,7 +10801,7 @@ const EventAnalysisPage: React.FC = () => {
               )}
             </Card>
           </Col>
-          <Col span={24}>
+          <Col xs={24}> {/* Cột cho Event Comparison Chart - Chiếm toàn bộ chiều rộng trên mọi thiết bị */}
             <Card title="Event Comparison">
               <EventComparisonChart
                 eventComparisonDataList={eventComparisonData}
@@ -11630,7 +10829,6 @@ import {
   Card,
   Col,
   Flex,
-  Image,
   List,
   message,
   Rate,
@@ -11638,7 +10836,6 @@ import {
   Spin,
   Table,
   Typography,
-  Checkbox,
 } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
@@ -11651,7 +10848,7 @@ import { Helmet } from 'react-helmet-async';
 import EventDiscussion from '../../components/EventDiscussion';
 import jsPDF from 'jspdf';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const EventDetailsPage: React.FC = () => {
   // Lấy eventId từ outlet context (hoặc từ useParams nếu cần)
@@ -11722,7 +10919,6 @@ export const EventDetailsPage: React.FC = () => {
     fetchEventFeedbackSummary();
   }, [eventId, navigate]);
 
-  // Nếu URL có token, gọi API accept (chỉ gọi 1 lần)
   useEffect(() => {
     const token = searchParams.get('token');
     if (token && eventDetails && !hasAccepted) {
@@ -11730,14 +10926,14 @@ export const EventDetailsPage: React.FC = () => {
         try {
           const response = await authService.acceptEvent(eventDetails.id, token) as { statusCode: number; message: string; error?: string };
           if (response && response.statusCode === 200) {
-            message.success(response.message || 'Bạn đã xác nhận tham gia sự kiện thành công.');
+            message.success(response.message || 'You have successfully accepted the invitation.');
             setHasAccepted(true);
           } else {
-            message.error(response.error || 'Xác nhận tham gia thất bại.');
+            message.error(response.error || 'Failed to accept invitation.');
           }
         } catch (error: any) {
           console.error('Error accepting event:', error);
-          message.error(error.message || 'Có lỗi xảy ra khi xác nhận tham gia.');
+          message.error(error.message || 'Failed to accept invitation.');
         }
       };
       acceptEvent();
@@ -11828,6 +11024,55 @@ export const EventDetailsPage: React.FC = () => {
     setSelectedSessionIds(selectedKeys as string[]);
   };
 
+  const getScheduleColumns = () => {
+    return [
+      {
+        title: 'Title',
+        dataIndex: 'title',
+        key: 'title',
+        width: '25%', // Chiếm 25% chiều rộng (MỚI)
+      },
+      {
+        title: 'Start Time',
+        dataIndex: 'startTime',
+        key: 'startTime',
+        responsive: ['sm'], // Ẩn cột Start Time trên màn hình nhỏ hơn sm
+        width: '20%', // Chiếm 20% chiều rộng (MỚI)
+        render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+      },
+      {
+        title: 'End Time',
+        dataIndex: 'endTime',
+        key: 'endTime',
+        responsive: ['sm'], // Ẩn cột End Time trên màn hình nhỏ hơn sm
+        width: '20%', // Chiếm 20% chiều rộng (MỚI)
+        render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+      },
+      {
+        title: 'Description',
+        dataIndex: 'description',
+        key: 'description',
+        responsive: ['md'], // Ẩn cột Description trên màn hình nhỏ hơn md
+        width: '35%', // Chiếm 35% chiều rộng (MỚI)
+      },
+    ];
+  };
+
+  const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) => {
+    return eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
+      <Table
+        rowKey="id"
+        dataSource={eventDetails.schedule}
+        columns={scheduleColumns}
+        pagination={false}
+        scroll={{ x: 'max-content' }} // Thêm scroll ngang
+        size="small" // Sử dụng size small để giảm padding và tăng độ thoáng
+      />
+    ) : (
+      <Alert message="No schedule available for this event." type="info" showIcon />
+    );
+  };
+
   const scheduleColumns = [
     {
       title: 'Title',
@@ -11849,7 +11094,8 @@ export const EventDetailsPage: React.FC = () => {
     {
       title: 'Description',
       dataIndex: 'description',
-      key: 'description'
+      key: 'description',
+      responsive: ['md'],
     },
   ];
 
@@ -11906,7 +11152,18 @@ export const EventDetailsPage: React.FC = () => {
 
       <Card
         title={<Typography.Title level={3}>{eventDetails.name}</Typography.Title>}
-        extra={<Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>Register Event</Button>}
+        extra={
+          <Flex
+            wrap="wrap"
+            align="center"
+            justify="flex-end"
+            gap="small"
+          >
+            <Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>
+              Register Event
+            </Button>
+          </Flex>
+        }
       >
         <Row gutter={[16, 16]}>
           <Col span={24}>
@@ -11944,22 +11201,9 @@ export const EventDetailsPage: React.FC = () => {
               </Card>
             )}
           </Col>
-          <Col span={24}>
+          <Col xs={24} sm={24} md={24} lg={24}>
             <Card title="Schedule">
-              {eventDetails.schedule && eventDetails.schedule.length > 0 ? (
-                <Table
-                  rowKey="id"
-                  dataSource={eventDetails.schedule}
-                  columns={scheduleColumns}
-                  pagination={false}
-                  rowSelection={{
-                    columnWidth: 80,
-                    onChange: onSessionSelectChange,
-                  }}
-                />
-              ) : (
-                <Alert message="No schedule available for this event." type="info" showIcon />
-              )}
+              {renderScheduleTable(eventDetails, scheduleColumns)}
             </Card>
           </Col>
           {eventDetails.documents && eventDetails.documents.length > 0 && (
@@ -12008,6 +11252,7 @@ export const EventDetailsPage: React.FC = () => {
                       <Flex justify="space-between">
                         <Text>2 stars:</Text>
                         <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+
                       </Flex>
                       <Flex justify="space-between">
                         <Text>1 star:</Text>
@@ -12054,14 +11299,13 @@ export default EventDetailsPage;
 
 src\pages\details\MyEventPage.tsx:
 // src\pages\details\MyEventPage.tsx
-import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link, useOutletContext, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Alert,
   Button,
   Card,
   Col,
-  Descriptions,
   Flex,
   Image,
   List,
@@ -12069,30 +11313,25 @@ import {
   Row,
   Space,
   Table,
-  Tag,
   Typography,
-  Checkbox,
   Rate,
   Spin,
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined, QuestionOutlined, BarChartOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined, BarChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { PageHeader, Loader, UserAvatar, BackBtn } from '../../components';
-import { useFetchData } from '../../hooks';
+import { PageHeader, BackBtn } from '../../components';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
-import { Events, TicketType, User } from '../../types';
+import { Events, TicketType } from '../../types';
 import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Helmet } from 'react-helmet-async';
-import { EventScheduleItem } from '../../types/schedule';
 import TicketDetailsModal from '../../components/TicketDetailsModal';
 import InviteUsersModal from '../../components/InviteUsersModal';
-import { useDispatch } from 'react-redux';
 import EventDiscussion from '../../components/EventDiscussion';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 export interface ParticipantData {
   id: string;
@@ -12108,13 +11347,11 @@ const DetailMyEventPage: React.FC = () => {
   const { id: eventId } = useParams<{ id: string }>();
   const [eventDetails, setEventDetails] = useState<Events | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
-  const [ticketData, setTicketData] = useState<TicketType | null>(null); // Declare ticketData here
+  const [ticketData] = useState<TicketType | null>(null); // Declare ticketData here
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
-  const dispatch = useDispatch();
   const [questions, setQuestions] = useState<any[]>([]);
   const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
   const [feedbackSummary, setFeedbackSummary] = useState<{
@@ -12163,15 +11400,12 @@ const DetailMyEventPage: React.FC = () => {
     };
 
     fetchEventDetails();
-    eventDetails?.status === 'FINISHED' && fetchEventFeedbackSummary(); // Fetch feedback only if event finished
+    eventDetails?.status === 'FINISHED' && fetchEventFeedbackSummary(); // Fetch feedback summary only if event finished
   }, [eventId, navigate, eventDetails?.status]); // Fetch feedback summary when event status changes to finished
 
 
   const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
 
-  const onSessionSelectChange = (selectedKeys: React.Key[]) => {
-    setSelectedSessionIds(selectedKeys as string[]);
-  };
 
   const scheduleColumns = getScheduleColumns();
 
@@ -12185,10 +11419,6 @@ const DetailMyEventPage: React.FC = () => {
   const hideInviteModal = () => {
     setIsInviteModalVisible(false);
   };
-
-
-  const handleUpdateSessionsForTicket = handleUpdateSessionsForTicketFunction(setLoading, message, navigate, localStorage, authService, setIsTicketModalVisible, setTicketData, ticketData);
-
 
   return (
     <div>
@@ -12329,30 +11559,6 @@ const handleDownloadPdfFunction = (setLoading: React.Dispatch<React.SetStateActi
   }
 };
 
-const handleUpdateSessionsForTicketFunction = (setLoading: React.Dispatch<React.SetStateAction<boolean>>, message: any, navigate: any, localStorage: any, authService: any, setIsTicketModalVisible: React.Dispatch<React.SetStateAction<boolean>>, setTicketData: React.Dispatch<React.SetStateAction<TicketType | null>>, ticketData: TicketType | null) => async (sessionIds: string[]) => {
-  setLoading(true);
-  try {
-    const accessToken = localStorage.getItem('accessToken');
-    if (!accessToken) {
-      message.error("No access token found. Please login again.");
-      navigate('/auth/signin');
-      return;
-    }
-
-    const response = await authService.updateParticipantSessions(ticketData?.participantId, { sessionIds }, accessToken) as any;
-    if (response && response.statusCode === 200) {
-      message.success(response.message || 'Sessions updated successfully');
-      setIsTicketModalVisible(false);
-    } else {
-      message.error(response.message || 'Failed to update sessions');
-    }
-  } catch (error: any) {
-    console.error('Error updating sessions:', error);
-    message.error(error.message || 'Failed to update sessions');
-  } finally {
-    setLoading(false);
-  }
-};
 
 const renderEventIntroduction = (eventDetails: Events | null) => {
   if (eventDetails?.videoIntro) {
@@ -12403,6 +11609,7 @@ const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) 
       dataSource={eventDetails.schedule}
       columns={scheduleColumns}
       pagination={false}
+      scroll={{ x: 'max-content' }} // Thêm scroll ngang
     />
   ) : (
     <Alert message="No schedule available for this event." type="info" showIcon />
@@ -12513,24 +11720,27 @@ const getScheduleColumns = () => {
     {
       title: 'Title',
       dataIndex: 'title',
-      key: 'title'
+      key: 'title',
     },
     {
       title: 'Start Time',
       dataIndex: 'startTime',
       key: 'startTime',
+      // responsive: ['sm'], // Ẩn cột Start Time trên màn hình nhỏ hơn sm
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
     },
     {
       title: 'End Time',
       dataIndex: 'endTime',
       key: 'endTime',
+      // responsive: ['sm'], // Ẩn cột End Time trên màn hình nhỏ hơn sm
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
     },
     {
       title: 'Description',
       dataIndex: 'description',
-      key: 'description'
+      key: 'description',
+      responsive: ['md'], // Ẩn cột Description trên màn hình nhỏ hơn md
     },
   ];
 };
@@ -12538,31 +11748,27 @@ const getScheduleColumns = () => {
 
 src\pages\details\ParticipatedEventDetailsPage.tsx:
 // src\pages\details\ParticipatedEventDetailsPage.tsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link, useOutletContext } from 'react-router-dom';
 import {
   Alert,
   Button,
   Card,
   Col,
-  Descriptions,
   Flex,
-  Image,
   List,
   message,
   Row,
   Space,
   Table,
-  Tag,
   Typography,
   Checkbox,
   Spin,
   Rate,
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { PageHeader, Loader, BackBtn } from '../../components';
-import { useFetchData } from '../../hooks';
+import { PageHeader, BackBtn } from '../../components';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
 import { Events, TicketType } from '../../types';
@@ -12570,17 +11776,16 @@ import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import { Helmet } from 'react-helmet-async';
 import { EventScheduleItem } from '../../types/schedule';
 import jsPDF from 'jspdf';
-import { CheckboxValueType } from 'antd/es/checkbox/Group';
 import TicketDetailsModal from '../../components/TicketDetailsModal';
 import EventDiscussion from '../../components/EventDiscussion';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const ParticipatedEventDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [eventDetails, setEventDetails] = useState<Events | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [] = useState<string | null>(null);
   const navigate = useNavigate();
   const [ticketData, setTicketData] = useState<TicketType | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -12589,8 +11794,8 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const [updatingSessions, setUpdatingSessions] = useState<boolean>(false); // State loading cho update session
   const [isTicketModalVisible, setIsTicketModalVisible] = useState<boolean>(false); // State for ticket modal visibility
   const { eventId } = useOutletContext<{ eventId: string }>();
-  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
-  const [feedbackSummary, setFeedbackSummary] = useState<{
+  const [feedbackSummaryLoading] = useState(false);
+  const [feedbackSummary] = useState<{
     averageRating: number;
     totalFeedbacks: number;
     ratingDistribution: Record<string, number>;
@@ -12599,7 +11804,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   useEffect(() => {
     const fetchEventDetailsAndParticipation = async () => {
       setLoading(true);
-      setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
         const eventResponse = await authService.getEventDetails(id, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
@@ -12612,12 +11816,9 @@ const ParticipatedEventDetailsPage: React.FC = () => {
             setSelectedSessionIds(participationResponse.data.participation.sessionIds || []); // Khởi tạo selectedSessionIds từ participation data
           }
         } else {
-          setError(eventResponse?.error || 'Failed to load event details');
           message.error(eventResponse?.error);
         }
       } catch (error: any) {
-        console.error('Error fetching event details and participation:', error);
-        setError(error.error);
         message.error(error.error);
       } finally {
         setLoading(false);
@@ -12719,7 +11920,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
 
   const handleUpdateSessions = async () => {
     setUpdatingSessions(true); // Set loading state cho button update session
-    setError(null);
     try {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
@@ -12754,7 +11954,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const showTicketModal = async () => {
     setIsTicketModalVisible(true);
     setLoading(true);
-    setError(null);
     try {
       if (!eventDetails?.id) {
         message.error("Missing user or event information.");
@@ -12768,13 +11967,11 @@ const ParticipatedEventDetailsPage: React.FC = () => {
       if (response && response.statusCode === 200 && response.data.ticket) {
         setTicketData(response.data.ticket);
       } else {
-        setError(response?.error || 'Failed to load ticket details');
         message.error(response?.error || 'Failed to load ticket details');
         setTicketData(null);
       }
     } catch (error: any) {
       console.error('Error fetching ticket details:', error);
-      setError(error.error || 'Failed to load ticket details');
       message.error(error.error || 'Failed to load ticket details');
       setTicketData(null);
     } finally {
@@ -13058,91 +12255,105 @@ export default CheckInOutStatsChart;
 
 
 src\pages\details\components\DetailedParticipantsTable.tsx:
+// src\pages\details\components\DetailedParticipantsTable.tsx
 import React from 'react';
-import { Alert } from 'antd';
-import { Scatter } from '@ant-design/plots';
+import { Table, Alert } from 'antd';
+import { ColumnsType } from 'antd/es/table';
+import dayjs from 'dayjs';
 
-// Định nghĩa kiểu dữ liệu (có thể thêm avatar nếu có)
-interface DetailedParticipant {
-  id: string;
-  userId: string;
-  email: string;
-  name: string;
-  registrationDate: string;
-  checkInAt: string;
-  checkOutAt: string;
-  ticketStatus: number;
-  avatar?: string; // URL avatar, nếu có
+interface DetailedParticipantsTableProps {
+    detailedParticipants: any[];
+    meta: any;
 }
 
-interface DetailedParticipantsChartProps {
-  detailedParticipants: DetailedParticipant[];
-  meta: any;
-}
+const DetailedParticipantsTable: React.FC<DetailedParticipantsTableProps> = ({ detailedParticipants, meta }) => {
+    if (!detailedParticipants || detailedParticipants.length === 0) {
+        return <Alert message="No detailed participants data" type="info" showIcon />;
+    }
 
-const DetailedParticipantsTimeline: React.FC<DetailedParticipantsChartProps> = ({ detailedParticipants, meta }) => {
-  if (!detailedParticipants || detailedParticipants.length === 0 || (meta && meta.totalItems === 0)) {
-    return <Alert message="No detailed participants data" type="info" showIcon />;
-  }
+    const columns: ColumnsType<any> = [
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+            responsive: ['lg'], // Ẩn cột ID trên màn hình nhỏ hơn lg
+        },
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: 'Email',
+            dataIndex: 'email',
+            key: 'email',
+            // responsive: ['md'], // Ẩn cột Email trên màn hình nhỏ hơn md
+        },
+        {
+            title: 'Registration Date',
+            dataIndex: 'registrationDate',
+            key: 'registrationDate',
+            render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+            // responsive: ['sm'], // Ẩn cột Registration Date trên màn hình nhỏ hơn sm
+        },
+        {
+            title: 'Check-in Time',
+            dataIndex: 'checkInAt',
+            key: 'checkInAt',
+            render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+            // responsive: ['sm'], // Ẩn cột Check-in Time trên màn hình nhỏ hơn sm
+        },
+        {
+            title: 'Check-out Time',
+            dataIndex: 'checkOutAt',
+            key: 'checkOutAt',
+            render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+            // responsive: ['sm'], // Ẩn cột Check-out Time trên màn hình nhỏ hơn sm
+        },
+        {
+            title: 'Ticket Status',
+            dataIndex: 'ticketStatus',
+            key: 'ticketStatus',
+            render: (status: number) => {
+                let statusText = 'Unknown';
+                switch (status) {
+                    case 0: statusText = 'ACTIVE'; break;
+                    case 1: statusText = 'USED'; break;
+                    case 2: statusText = 'CHECKED_IN'; break;
+                    case 3: statusText = 'CANCELED'; break;
+                    default: statusText = 'UNKNOWN'; break;
+                }
+                return statusText;
+            },
+            // responsive: ['md'],
+        },
+    ];
 
-  // Sử dụng checkInAt làm mốc thời gian chính
-  // Nếu không có avatar, sử dụng ảnh placeholder
-  const data = detailedParticipants.map((participant, index) => ({
-    time: participant.checkInAt,
-    // Dùng index làm giá trị Y để tách biệt các điểm
-    y: index,
-    name: participant.name,
-    avatar: participant.avatar || 'https://via.placeholder.com/40', // ảnh mặc định nếu chưa có avatar
-  }));
-
-  // Cấu hình biểu đồ Scatter
-  const config = {
-    data,
-    xField: 'time',
-    yField: 'y',
-    // Thiết lập trục X kiểu thời gian
-    xAxis: {
-      type: 'time',
-      title: { text: 'Thời gian' },
-    },
-    // Ẩn trục Y vì chỉ dùng để phân chia vị trí
-    yAxis: { visible: false },
-    // Các tương tác (tooltip) hiển thị tên và thời gian
-    tooltip: {
-      fields: ['name', 'time'],
-      formatter: (datum: any) => ({
-        name: datum.name,
-        value: datum.time,
-      }),
-    },
-    // Thêm annotation để hiển thị avatar lên từng điểm
-    annotations: data.map((item) => ({
-      type: 'image',
-      src: item.avatar,
-      // Lưu ý: sử dụng start và end dưới dạng đối tượng với khóa x và y
-      start: { x: item.time, y: item.y },
-      end: { x: item.time, y: item.y },
-      style: {
-        width: 40,
-        height: 40,
-      },
-    })),
-    // Tùy chỉnh giao diện của điểm dữ liệu (có thể ẩn marker mặc định)
-    point: {
-      size: 0, // ẩn marker mặc định vì đã dùng annotation hiển thị avatar
-    },
-  };
-
-  return <Scatter {...config} />;
+    return (
+        <Table
+            columns={columns}
+            dataSource={detailedParticipants}
+            pagination={{
+                current: meta.page,
+                pageSize: meta.limit,
+                total: meta.totalItems,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showSizeChanger: true,
+            }}
+            rowKey="id"
+            scroll={{ x: 'max-content' }} // Thêm scroll ngang cho table
+        />
+    );
 };
 
-export default DetailedParticipantsTimeline;
+export default DetailedParticipantsTable;
 
 
 src\pages\details\components\EventComparisonChart.tsx:
 // src/pages/details/components/EventComparisonChart.tsx
 import React from 'react';
-import { Column } from '@ant-design/charts';
+import { Column, ColumnConfig } from '@ant-design/charts';
 import { Alert, Spin } from 'antd';
 
 interface EventComparisonChartProps {
@@ -13193,7 +12404,7 @@ const EventComparisonChart: React.FC<EventComparisonChartProps> = ({ eventCompar
         },
     ]);
 
-    const config = {
+    const config: ColumnConfig = { // Thêm type annotation ColumnConfig
         data: chartData,
         isGroup: true,
         xField: 'eventName',
@@ -13210,9 +12421,8 @@ const EventComparisonChart: React.FC<EventComparisonChartProps> = ({ eventCompar
             label: {
                 autoHide: true,
                 autoRotate: false,
-                // Giới hạn độ dài của tên nếu quá dài
                 formatter: (text: string) => {
-                    const maxLength = 10; // Số ký tự tối đa, thay đổi nếu cần
+                    const maxLength = 10;
                     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
                 },
             },
@@ -13226,6 +12436,9 @@ const EventComparisonChart: React.FC<EventComparisonChartProps> = ({ eventCompar
                 value: params.value,
             }),
         },
+        legend: {
+            position: 'bottom',
+        },
     };
 
     return <Column {...config} />;
@@ -13237,7 +12450,7 @@ export default EventComparisonChart;
 src\pages\details\components\InvitationSummaryChart.tsx:
 // src\pages\details\components\InvitationSummaryChart.tsx
 import React from 'react';
-import { Pie } from '@ant-design/charts';
+import { Pie, PieConfig } from '@ant-design/charts';
 import { Alert } from 'antd';
 
 interface InvitationSummaryChartProps {
@@ -13260,7 +12473,7 @@ const InvitationSummaryChart: React.FC<InvitationSummaryChartProps> = ({ invitat
         { type: 'Declined', value: invitationSummary.declined },
     ];
 
-    const config = {
+    const config: PieConfig = { // Đảm bảo config có kiểu PieConfig
         appendPadding: 10,
         data,
         angleField: 'value',
@@ -13271,12 +12484,16 @@ const InvitationSummaryChart: React.FC<InvitationSummaryChartProps> = ({ invitat
             offset: '-30%',
             content: ({ percent }: any) => `${(percent * 100).toFixed(0)}%`,
             style: {
-                fontSize: 14,
+                fontSize: 14, // Kích thước font chữ mặc định
                 textAlign: 'center',
             },
         },
         interactions: [{ type: 'element-active' }],
+         legend: { // Cấu hình Legend (chú thích)
+            position: 'bottom', // Hiển thị chú thích ở dưới chart
+        },
     };
+
     return <Pie {...config} />;
 };
 
@@ -13297,7 +12514,6 @@ import {
   InputNumber,
   Row,
   Select,
-  Typography,
   message,
   Space
 } from 'antd';
@@ -13806,13 +13022,12 @@ src\pages\edit\EventFileUploadForm.tsx:
 import React, { useState } from 'react';
 import { Upload, Button, message, Alert, Select } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import axiosInstance from '../../api/axiosInstance';
 
 interface EventFileUploadFormProps {
     eventId: string;
 }
 
-const EventFileUploadForm: React.FC<EventFileUploadFormProps> = ({ eventId }) => {
+const EventFileUploadForm: React.FC<EventFileUploadFormProps> = () => {
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState<boolean>(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -13840,12 +13055,6 @@ const EventFileUploadForm: React.FC<EventFileUploadFormProps> = ({ eventId }) =>
         formData.append('files', uploadedFile);
 
         try {
-            const response = await axiosInstance.post(`/events/${eventId}/files`, formData, {
-                // Loại bỏ header Content-Type
-                // headers: {
-                //     'Content-Type': 'multipart/form-data',
-                // },
-            });
             message.success(`Uploaded ${selectedField} successfully`);
         } catch (error: any) {
             message.error(`${error.response?.data?.message || error.message}`);
@@ -14075,7 +13284,7 @@ src\pages\feedbacks\EventFeedbacksPage.tsx:
 // src\pages\feedbacks\EventFeedbacksPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Alert, Button, Card, List, Spin, Typography, Rate, message, Avatar } from 'antd';
+import { Alert, Card, List, Typography, Rate, message, Avatar } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { PageHeader, BackBtn, Loader } from '../../components';
@@ -14216,12 +13425,11 @@ export { UserProfileSecurityPage } from './Security.tsx';
 
 src\pages\userAccount\Information.tsx:
 // src\pages\userAccount\Information.tsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
   Card,
-  Checkbox,
   Col,
   DatePicker,
   Flex,
@@ -14229,10 +13437,9 @@ import {
   Input,
   Row,
   Select,
-  Spin,
   message,
 } from 'antd';
-import { SaveOutlined, UploadOutlined, MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { SaveOutlined, MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import { updateUserProfile } from '../../redux/userSlice';
 import dayjs from 'dayjs';
@@ -14522,7 +13729,7 @@ import {
   message,
 } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import authService from '../../services/authService';
 
 type FieldType = {
@@ -14545,15 +13752,6 @@ export const UserProfileSecurityPage = () => {
     setLoading(true);
     setError(null);
     try {
-      // Nếu backend yêu cầu trường "id", bạn có thể lấy từ localStorage (nếu lưu dưới key "user")
-      // const user = JSON.parse(localStorage.getItem("user") || "{}");
-      // const passwordData = {
-      //   id: user.id,
-      //   currentPassword: values.currentPassword,
-      //   newPassword: values.newPassword,
-      // };
-
-      // Nếu backend lấy userId từ accessToken thì chỉ cần 2 field:
       const passwordData = {
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
@@ -14660,12 +13858,12 @@ export const UserProfileSecurityPage = () => {
   );
 };
 
+
 src\routes\routes.tsx:
 // src\routes\routes.tsx
 // src\routes\routes.tsx
-import { createBrowserRouter, useLocation, Navigate, RouteObject } from 'react-router-dom';
+import { createBrowserRouter, useLocation, Navigate } from 'react-router-dom';
 import {
-  AccountDeactivePage,
   GeneralDashboardPage,
   Error400Page,
   Error403Page,
@@ -14678,11 +13876,8 @@ import {
   SignInPage,
   SignUpPage,
   UserProfileSecurityPage,
-  VerifyEmailPage,
-  WelcomePage,
   CreateEventPage,
   MyEventDashboardPage,
-  UserDashboardPage,
 } from '../pages';
 import DetailMyEventPage from '../pages/details/MyEventPage';
 import {
@@ -14692,7 +13887,6 @@ import {
   UserAccountLayout,
 } from '../layouts';
 import React, { ReactNode, useEffect } from 'react';
-import EventsDashboardPage from '../pages/dashboards/Events.tsx';
 import EventsListPage from '../pages/dashboards/EventsList.tsx';
 import EventDetailsPage from '../pages/details/EventDetailsPage.tsx';
 import EditEventPage from '../pages/edit/EditEventPage.tsx';
@@ -14703,7 +13897,6 @@ import { UserProfileInformationPage } from '../pages/userAccount/Information.tsx
 import QRScannerPage from '../pages/QRScannerPage.tsx';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store.ts';
-import ProtectedRoute from '../components/ProtectedRoute.tsx';
 import { Helmet } from 'react-helmet-async';
 import DeclineEventPage from '../pages/DeclineEventPage.tsx';
 import EventFeedbacksPage from '../pages/feedbacks/EventFeedbacksPage.tsx';
@@ -14852,22 +14045,9 @@ const router = createBrowserRouter([
         </PrivateRoute>,
       },
       {
-        path: 'events',
-        element: <PrivateRoute>
-          <EventsDashboardPage />
-        </PrivateRoute>,
-
-      },
-      {
         path: 'my-events',
         element: <PrivateRoute>
           <MyEventDashboardPage />
-        </PrivateRoute>,
-      },
-      {
-        path: 'users',
-        element: <PrivateRoute>
-          <UserDashboardPage />
         </PrivateRoute>,
       },
       {
@@ -14910,20 +14090,8 @@ const router = createBrowserRouter([
         element: <SignInPage />,
       },
       {
-        path: 'welcome',
-        element: <WelcomePage />,
-      },
-      {
-        path: 'verify-email',
-        element: <VerifyEmailPage />,
-      },
-      {
         path: 'password-reset',
         element: <PasswordResetPage />,
-      },
-      {
-        path: 'account-delete',
-        element: <AccountDeactivePage />,
       },
     ],
   },

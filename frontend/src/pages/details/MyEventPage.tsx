@@ -100,7 +100,7 @@ const DetailMyEventPage: React.FC = () => {
     };
 
     fetchEventDetails();
-    eventDetails?.status === 'FINISHED' && fetchEventFeedbackSummary(); // Fetch feedback only if event finished
+    eventDetails?.status === 'FINISHED' && fetchEventFeedbackSummary(); // Fetch feedback summary only if event finished
   }, [eventId, navigate, eventDetails?.status]); // Fetch feedback summary when event status changes to finished
 
 
@@ -119,9 +119,6 @@ const DetailMyEventPage: React.FC = () => {
   const hideInviteModal = () => {
     setIsInviteModalVisible(false);
   };
-
-
-
 
   return (
     <div>
@@ -312,6 +309,7 @@ const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) 
       dataSource={eventDetails.schedule}
       columns={scheduleColumns}
       pagination={false}
+      scroll={{ x: 'max-content' }} // Thêm scroll ngang
     />
   ) : (
     <Alert message="No schedule available for this event." type="info" showIcon />
@@ -422,24 +420,27 @@ const getScheduleColumns = () => {
     {
       title: 'Title',
       dataIndex: 'title',
-      key: 'title'
+      key: 'title',
     },
     {
       title: 'Start Time',
       dataIndex: 'startTime',
       key: 'startTime',
+      // responsive: ['sm'], // Ẩn cột Start Time trên màn hình nhỏ hơn sm
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
     },
     {
       title: 'End Time',
       dataIndex: 'endTime',
       key: 'endTime',
+      // responsive: ['sm'], // Ẩn cột End Time trên màn hình nhỏ hơn sm
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
     },
     {
       title: 'Description',
       dataIndex: 'description',
-      key: 'description'
+      key: 'description',
+      responsive: ['md'], // Ẩn cột Description trên màn hình nhỏ hơn md
     },
   ];
 };

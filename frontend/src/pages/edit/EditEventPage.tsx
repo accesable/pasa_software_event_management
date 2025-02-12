@@ -12,20 +12,22 @@ import {
   Row,
   Select,
   message,
-  Space
+  Typography
 } from 'antd';
 import { DASHBOARD_ITEMS, PATH_DASHBOARD } from '../../constants';
-import { PageHeader, Loader } from '../../components';
+import { PageHeader, Loader, BackBtn } from '../../components';
 import { Events } from '../../types';
 import authService from '../../services/authService';
 import dayjs from 'dayjs';
 import { Helmet } from 'react-helmet-async';
 import EventFileUploadForm from './EventFileUploadForm';
-import axiosInstance from '../../api/axiosInstance';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { HomeOutlined, PieChartOutlined, ArrowLeftOutlined, CloseOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
 import CreateSpeakerModal from '../../components/CreateSpeakerModal';
 import CreateGuestModal from '../../components/CreateGuestModal';
+import axiosInstance from '../../api/axiosInstance';
+
+const { Text } = Typography;
 
 const EditEventPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -274,6 +276,7 @@ const EditEventPage: React.FC = () => {
             title: 'Edit Event',
           },
         ]}
+        btnBack={<BackBtn />}
       />
 
       <Card title={`Edit Event: ${eventDetails?.name}`} extra={<Button onClick={() => navigate(-1)} icon={<ArrowLeftOutlined />}>Back</Button>}>
@@ -417,61 +420,76 @@ const EditEventPage: React.FC = () => {
                 {(fields, { add, remove }, { errors }) => (
                   <>
                     {fields.map(({ key, name, fieldKey, ...restField }) => (
-                      <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'title']}
-                          fieldKey={[fieldKey || 0, 'title']}
-                          rules={[{ required: true, message: 'Missing session title' }]}
-                        >
-                          <Input placeholder="Title" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'startTime']}
-                          fieldKey={[fieldKey || 0, 'startTime']}
-                          rules={[{ required: true, message: 'Missing start time' }]}
-                        >
-                          <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" placeholder="Start Time" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'endTime']}
-                          fieldKey={[fieldKey || 0, 'endTime']}
-                          rules={[{ required: true, message: 'Missing end time' }]}
-                        >
-                          <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" placeholder="End Time" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'description']}
-                          fieldKey={[fieldKey || 0, 'description']}
-                        >
-                          <Input placeholder="Description" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'speakerIds']}
-                          fieldKey={[fieldKey || 0, 'speakerIds']}
-                          label="Speakers"
-                        >
-                          <Select
-                            mode="multiple"
-                            placeholder="Select Speakers"
-                            options={speakersOptions}
-                            allowClear
-                            dropdownRender={(menu) => (
-                              <div>
-                                {menu}
-                                <Button type="text" onClick={handleCreateSpeaker} icon={<PlusOutlined />} style={{width: '100%', textAlign: 'left'}}>
-                                  Create New Speaker
-                                </Button>
-                              </div>
-                            )}
-                          />
-                        </Form.Item>
-                        <Button danger icon={<CloseOutlined />} onClick={() => remove(name)} />
-                      </Space>
+                      <Card key={key} style={{ marginBottom: 16 }} title={`Session #${fields.indexOf(fields.find(f => f.key === key)!)+1}`} extra={<Button danger icon={<CloseOutlined />} onClick={() => remove(name)} />}>
+                        <Row gutter={16}>
+                          <Col xs={24} sm={24} md={12}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'title']}
+                              fieldKey={[fieldKey || 0, 'title']}
+                              label="Title"
+                              rules={[{ required: true, message: 'Missing session title' }]}
+                            >
+                              <Input placeholder="Title" />
+                            </Form.Item>
+                          </Col>
+                          <Col xs={24} sm={24} md={12}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'description']}
+                              fieldKey={[fieldKey || 0, 'description']}
+                              label="Description"
+                            >
+                              <Input placeholder="Description" />
+                            </Form.Item>
+                          </Col>
+                          <Col xs={24} sm={12} md={12}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'startTime']}
+                              fieldKey={[fieldKey || 0, 'startTime']}
+                              label="Start Time"
+                              rules={[{ required: true, message: 'Missing start time' }]}
+                            >
+                              <DatePicker style={{ width: "100%" }} showTime format="YYYY-MM-DD HH:mm:ss" placeholder="Start Time" />
+                            </Form.Item>
+                          </Col>
+                          <Col xs={24} sm={12} md={12}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'endTime']}
+                              fieldKey={[fieldKey || 0, 'endTime']}
+                              label="End Time"
+                              rules={[{ required: true, message: 'Missing end time' }]}
+                            >
+                              <DatePicker style={{ width: "100%" }} showTime format="YYYY-MM-DD HH:mm:ss" placeholder="End Time" />
+                            </Form.Item>
+                          </Col>
+                          <Col xs={24}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'speakerIds']}
+                              fieldKey={[fieldKey || 0, 'speakerIds']}
+                              label="Speakers"
+                            >
+                              <Select
+                                mode="multiple"
+                                placeholder="Select Speakers"
+                                options={speakersOptions}
+                                allowClear
+                                dropdownRender={(menu) => (
+                                  <div>
+                                    {menu}
+                                    <Button type="text" onClick={handleCreateSpeaker} icon={<PlusOutlined />} style={{width: '100%', textAlign: 'left'}}>
+                                      Create New Speaker
+                                    </Button>
+                                  </div>
+                                )}
+                              />
+                            </Form.Item>
+                          </Col>
+                        </Row>
+                      </Card>
                     ))}
                     <Form.ErrorList errors={errors} />
                     <Form.Item>

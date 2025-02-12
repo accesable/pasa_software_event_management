@@ -1,7 +1,8 @@
+// src\components\dashboard\default\CategoriesChart\CategoriesChart.tsx
 import { CardProps, Spin, Alert, Empty } from 'antd';
 import { Pie } from '@ant-design/charts';
 import { Card } from '../../../index.ts';
-import React, { useState, useEffect } from 'react'; // Import useState and useEffect
+import React, { useState, useEffect } from 'react';
 import authService from '../../../../services/authService.ts';
 
 type Props = CardProps;
@@ -10,7 +11,7 @@ const CategoriesChartComponent: React.FC<Props> = ({ ...others }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [totalEvents, setTotalEvents] = useState<number>(0); // State for total events
+  const [totalEvents, setTotalEvents] = useState<number>(0);
 
   useEffect(() => {
     const fetchCategoryData = async () => {
@@ -44,7 +45,7 @@ const CategoriesChartComponent: React.FC<Props> = ({ ...others }) => {
       content: ({ percent }: any) => `${(percent * 100).toFixed(0)}%`,
       style: {
         textAlign: 'center',
-        fontSize: 16,
+        fontSize: '1em', // Changed to relative unit
       },
     },
     interactions: [
@@ -62,15 +63,13 @@ const CategoriesChartComponent: React.FC<Props> = ({ ...others }) => {
           whiteSpace: 'pre-wrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          fontSize: 18,
+          fontSize: '1.1em', // Changed to relative unit
         },
-        // Use totalEvents in the statistic content
         content: `${totalEvents} Events\nTotal`,
       },
     },
   };
 
-  // Handle the case when there are no categories or events
   if (totalEvents === 0) {
     return (
       <Card title="Categories" {...others}>

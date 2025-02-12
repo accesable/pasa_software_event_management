@@ -4,11 +4,11 @@ import axios from 'axios';
 import { store } from '../redux/store';
 import { setUser } from '../redux/userSlice';
 
-const baseURL = 'http://47.129.247.0:8080/api/v1'; // Sử dụng biến môi trường hoặc giá trị mặc định
+const baseURL = 'http://localhost:8080/api/v1'; // Sử dụng biến môi trường hoặc giá trị mặc định
 
 const axiosInstance = axios.create({
   baseURL: baseURL,
-  withCredentials: true, 
+  withCredentials: true,
 });
 
 axiosInstance.interceptors.request.use(

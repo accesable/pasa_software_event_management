@@ -1,3 +1,4 @@
+// src\layouts\app\App.tsx
 import {
   Button,
   Dropdown,
@@ -154,7 +155,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             border: 'none',
             transition: 'all .2s',
           }}
-        />
+          onCollapseSideNav={() => setCollapsed(true)}  
+          />
         <Layout
           style={
             {

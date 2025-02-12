@@ -19,6 +19,7 @@ const DetailedParticipantsTable: React.FC<DetailedParticipantsTableProps> = ({ d
             title: 'ID',
             dataIndex: 'id',
             key: 'id',
+            responsive: ['lg'], // Ẩn cột ID trên màn hình nhỏ hơn lg
         },
         {
             title: 'Name',
@@ -29,24 +30,28 @@ const DetailedParticipantsTable: React.FC<DetailedParticipantsTableProps> = ({ d
             title: 'Email',
             dataIndex: 'email',
             key: 'email',
+            // responsive: ['md'], // Ẩn cột Email trên màn hình nhỏ hơn md
         },
         {
             title: 'Registration Date',
             dataIndex: 'registrationDate',
             key: 'registrationDate',
             render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+            // responsive: ['sm'], // Ẩn cột Registration Date trên màn hình nhỏ hơn sm
         },
         {
             title: 'Check-in Time',
             dataIndex: 'checkInAt',
             key: 'checkInAt',
             render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+            // responsive: ['sm'], // Ẩn cột Check-in Time trên màn hình nhỏ hơn sm
         },
         {
             title: 'Check-out Time',
             dataIndex: 'checkOutAt',
             key: 'checkOutAt',
             render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+            // responsive: ['sm'], // Ẩn cột Check-out Time trên màn hình nhỏ hơn sm
         },
         {
             title: 'Ticket Status',
@@ -62,7 +67,8 @@ const DetailedParticipantsTable: React.FC<DetailedParticipantsTableProps> = ({ d
                     default: statusText = 'UNKNOWN'; break;
                 }
                 return statusText;
-            }
+            },
+            // responsive: ['md'],
         },
     ];
 
@@ -79,6 +85,7 @@ const DetailedParticipantsTable: React.FC<DetailedParticipantsTableProps> = ({ d
                 showSizeChanger: true,
             }}
             rowKey="id"
+            scroll={{ x: 'max-content' }} // Thêm scroll ngang cho table
         />
     );
 };

@@ -89,7 +89,7 @@ export const MyEventDashboardPage = () => {
     return (
         <div>
             <Helmet>
-                <title>My Events | Antd Dashboard</title>
+                <title>My Events | Dashboard</title>
             </Helmet>
             <PageHeader
                 title="your event dashboard"

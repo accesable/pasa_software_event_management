@@ -5,16 +5,16 @@ import { GoogleOutlined } from '@ant-design/icons';
 
 const GoogleLoginButton: React.FC<any> = ({
 }) => {
-    const handleGoogleLogin = async () => {
-        // Chuyển hướng người dùng đến backend endpoint login google
-        window.location.href = 'http://47.129.247.0:8080/api/v1/auth/google/login';
-    };
+  const handleGoogleLogin = async () => {
+    // Chuyển hướng người dùng đến backend endpoint login google
+    window.location.href = 'http://localhost:8080/api/v1/auth/google/login';
+  };
 
-    return (
-        <Button icon={<GoogleOutlined />} onClick={handleGoogleLogin}>
-            Sign in with Google
-        </Button>
-    );
+  return (
+    <Button icon={<GoogleOutlined />} onClick={handleGoogleLogin}>
+      Sign in with Google
+    </Button>
+  );
 };
 
 export default GoogleLoginButton;

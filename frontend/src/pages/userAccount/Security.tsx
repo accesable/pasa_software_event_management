@@ -33,15 +33,6 @@ export const UserProfileSecurityPage = () => {
     setLoading(true);
     setError(null);
     try {
-      // Nếu backend yêu cầu trường "id", bạn có thể lấy từ localStorage (nếu lưu dưới key "user")
-      // const user = JSON.parse(localStorage.getItem("user") || "{}");
-      // const passwordData = {
-      //   id: user.id,
-      //   currentPassword: values.currentPassword,
-      //   newPassword: values.newPassword,
-      // };
-
-      // Nếu backend lấy userId từ accessToken thì chỉ cần 2 field:
       const passwordData = {
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,

@@ -1,5 +1,5 @@
-// src/pages/dashboards/ParticipatedEventsPage.tsx
-import { useState, useEffect } from 'react';
+// src\pages\dashboards\ParticipatedEventsPage.tsx
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
@@ -11,6 +11,8 @@ import {
   message,
   Popconfirm,
   Spin,
+  Flex, // Import Flex
+  Typography, // Import Typography
 } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
@@ -36,10 +38,7 @@ const ParticipatedEventsPage = () => {
   const [pageSize, setPageSize] = useState(10);
   const { data: eventsData, loading: eventsLoading, fetchData } =
     useFetchParticipatedEventsData(statusFilter === 'all' ? undefined : statusFilter);
-  // loading dành cho thao tác update/delete
   const [actionLoading, setActionLoading] = useState(false);
-
-  // --- State để lưu mapping từ categoryId -> categoryName ---
   const [categories, setCategories] = useState<Record<string, string>>({});
   const [loadingCategories, setLoadingCategories] = useState(false);
 
@@ -55,28 +54,18 @@ const ParticipatedEventsPage = () => {
 
   const isEmptyData = eventsData?.events === undefined || eventsData?.events?.length === 0;
 
-  // Khi eventsData thay đổi, duyệt qua các event và nếu chưa có category name thì fetch từ API
   useEffect(() => {
     const fetchCategoryName = async (event: Events) => {
       if (!event?.categoryId) return;
-      // Nếu đã có category name trong mapping thì bỏ qua
       if (categories[event.categoryId]) return;
       setLoadingCategories(true);
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getCategoryById(event.categoryId, accessToken || '');
-        // Giả sử response trả về dạng: { data: { category: { name: string } } }
         const categoryResponse = response as { data: { category: { name: string } } };
         setCategories((prev) => ({
           ...prev,
           [event.categoryId]: categoryResponse.data.category.name,
-        }));
-      } catch (error: any) {
-        console.error('Error fetching category name for event', event.id, error);
-        message.error('Failed to load category name');
-        setCategories((prev) => ({
-          ...prev,
-          [event.categoryId]: 'N/A',
         }));
       } finally {
         setLoadingCategories(false);
@@ -90,7 +79,6 @@ const ParticipatedEventsPage = () => {
     }
   }, [eventsData, categories]);
 
-  // Hàm xử lý Unregister (delete) event
   const handleLeaveEvent = async (eventId: string) => {
     setActionLoading(true);
     try {
@@ -100,11 +88,9 @@ const ParticipatedEventsPage = () => {
         return;
       }
 
-      // 1. Get Participant ID
       const participantIdResponse = await authService.getParticipantIdByEventId(eventId, accessToken) as any;
       const participantId = participantIdResponse.data.participantId;
 
-      // 2. Unregister Event using participantId
       const response = (await authService.unregisterEvent(
         participantId,
         accessToken
@@ -112,7 +98,6 @@ const ParticipatedEventsPage = () => {
 
       if (response.statusCode === 200) {
         message.success(response.message);
-        // Refresh dữ liệu sau khi delete
         fetchData(statusFilter === 'all' ? undefined : statusFilter);
       } else {
         message.error(response.error || 'Failed to unregister from event');
@@ -125,32 +110,32 @@ const ParticipatedEventsPage = () => {
     }
   };
 
-  // Định nghĩa các cột của bảng bên trong component để có thể sử dụng các biến state
   const columns: ColumnsType<Events> = [
     {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text, record) => (
-        <Link to={`/details/participated-events/${record.id}`}>{text}</Link>
-      ),
+      render: (text, record) => <Typography.Paragraph ellipsis><Link to={`/details/participated-events/${record.id}`}>{text}</Link></Typography.Paragraph>, // Added ellipsis
     },
     {
       title: 'Location',
       dataIndex: 'location',
       key: 'location',
+      responsive: ['md'], // Hide on smaller screens
     },
     {
       title: 'Start Date',
       dataIndex: 'startDate',
       key: 'startDate',
       render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      responsive: ['sm'], // Hide on xs
     },
     {
       title: 'End Date',
       dataIndex: 'endDate',
       key: 'endDate',
       render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      responsive: ['sm'], // Hide on xs
     },
     {
       title: 'Category',
@@ -158,13 +143,10 @@ const ParticipatedEventsPage = () => {
       key: 'categoryId',
       render: (categoryId: string) => (
         <Space>
-          {loadingCategories ? (
-            <Spin size="small" />
-          ) : (
-            <Tag color="blue">{categories[categoryId] || 'N/A'}</Tag>
-          )}
+          {loadingCategories ? <Spin /> : <Tag color="blue">{categories[categoryId] || 'N/A'}</Tag>}
         </Space>
       ),
+      responsive: ['md'], // Hide on smaller screens
     },
     {
       title: 'Status',
@@ -241,31 +223,36 @@ const ParticipatedEventsPage = () => {
       <Card
         title="List of Participated Events"
         extra={
-          <Select
-            defaultValue="all"
-            style={{ width: 200 }}
-            onChange={onStatusFilterChange}
-            options={EVENT_STATUS_OPTIONS}
-          />
+          <Flex wrap="wrap" gap="small" align="center"> {/* Use Flex for responsive filters */}
+            <Select
+              defaultValue="all"
+              style={{ minWidth: 150, width: 'auto' }} // Responsive width
+              onChange={onStatusFilterChange}
+              options={EVENT_STATUS_OPTIONS}
+            />
+          </Flex>
         }
       >
         {isEmptyData ? (
           <Alert message="No events participated yet." type="info" showIcon />
         ) : (
-          <Table
-            columns={columns}
-            dataSource={eventsData?.events || []}
-            loading={eventsLoading || actionLoading}
-            pagination={{
-              current: currentPage,
-              pageSize: pageSize,
-              total: eventsData?.meta?.totalItems || 0,
-              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-              pageSizeOptions: ['10', '20', '50', '100'],
-              showSizeChanger: true,
-              onChange: handlePaginationChange,
-            }}
-          />
+          <div className="table-responsive"> {/* Responsive table wrapper */}
+            <Table
+              columns={columns}
+              dataSource={eventsData?.events || []}
+              loading={eventsLoading || actionLoading}
+              pagination={{
+                current: currentPage,
+                pageSize: pageSize,
+                total: eventsData?.meta?.totalItems || 0,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showSizeChanger: true,
+                onChange: handlePaginationChange,
+              }}
+              scroll={{ x: 'max-content' }} // Enable horizontal scroll
+            />
+          </div>
         )}
       </Card>
     </div>

@@ -1,3 +1,4 @@
+// src\pages\details\EventAnalysisPage.tsx
 import React, { useEffect, useState } from 'react';
 import { Card, Col, Row, Typography, Spin, Alert, message } from 'antd';
 import { PageHeader, BackBtn, Loader } from '../../components';
@@ -105,7 +106,7 @@ const EventAnalysisPage: React.FC = () => {
       <Card>
         <Title level={4}>Event Analysis Dashboard</Title>
         <Row gutter={[24, 24]}>
-          <Col span={12}>
+          <Col xs={24} md={12}> {/* Cột cho Invitation Summary Chart */}
             <Card title="Invitation Summary">
               {invitationData ? (
                 <InvitationSummaryChart invitationSummary={invitationData.invitationSummary} />
@@ -114,7 +115,7 @@ const EventAnalysisPage: React.FC = () => {
               )}
             </Card>
           </Col>
-          <Col span={12}>
+          <Col xs={24} md={12}> {/* Cột cho Check-in/Check-out Stats Chart */}
             <Card title="Check-in/Check-out Stats">
               {checkInOutStats ? (
                 <CheckInOutStatsChart checkInOutStats={checkInOutStats} />
@@ -123,7 +124,7 @@ const EventAnalysisPage: React.FC = () => {
               )}
             </Card>
           </Col>
-          <Col span={24}>
+          <Col xs={24}> {/* Cột cho Detailed Participants Table - Chiếm toàn bộ chiều rộng trên mọi thiết bị */}
             <Card title="Detailed Participants List">
               {loading ? (
                 <Spin tip="Loading participants data..." />
@@ -139,7 +140,7 @@ const EventAnalysisPage: React.FC = () => {
               )}
             </Card>
           </Col>
-          <Col span={24}>
+          <Col xs={24}> {/* Cột cho Event Comparison Chart - Chiếm toàn bộ chiều rộng trên mọi thiết bị */}
             <Card title="Event Comparison">
               <EventComparisonChart
                 eventComparisonDataList={eventComparisonData}

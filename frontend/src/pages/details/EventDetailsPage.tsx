@@ -202,6 +202,55 @@ export const EventDetailsPage: React.FC = () => {
     setSelectedSessionIds(selectedKeys as string[]);
   };
 
+  const getScheduleColumns = () => {
+    return [
+      {
+        title: 'Title',
+        dataIndex: 'title',
+        key: 'title',
+        width: '25%', // Chiếm 25% chiều rộng (MỚI)
+      },
+      {
+        title: 'Start Time',
+        dataIndex: 'startTime',
+        key: 'startTime',
+        responsive: ['sm'], // Ẩn cột Start Time trên màn hình nhỏ hơn sm
+        width: '20%', // Chiếm 20% chiều rộng (MỚI)
+        render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+      },
+      {
+        title: 'End Time',
+        dataIndex: 'endTime',
+        key: 'endTime',
+        responsive: ['sm'], // Ẩn cột End Time trên màn hình nhỏ hơn sm
+        width: '20%', // Chiếm 20% chiều rộng (MỚI)
+        render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+      },
+      {
+        title: 'Description',
+        dataIndex: 'description',
+        key: 'description',
+        responsive: ['md'], // Ẩn cột Description trên màn hình nhỏ hơn md
+        width: '35%', // Chiếm 35% chiều rộng (MỚI)
+      },
+    ];
+  };
+
+  const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) => {
+    return eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
+      <Table
+        rowKey="id"
+        dataSource={eventDetails.schedule}
+        columns={scheduleColumns}
+        pagination={false}
+        scroll={{ x: 'max-content' }} // Thêm scroll ngang
+        size="small" // Sử dụng size small để giảm padding và tăng độ thoáng
+      />
+    ) : (
+      <Alert message="No schedule available for this event." type="info" showIcon />
+    );
+  };
+
   const scheduleColumns = [
     {
       title: 'Title',
@@ -223,7 +272,8 @@ export const EventDetailsPage: React.FC = () => {
     {
       title: 'Description',
       dataIndex: 'description',
-      key: 'description'
+      key: 'description',
+      responsive: ['md'],
     },
   ];
 
@@ -280,7 +330,18 @@ export const EventDetailsPage: React.FC = () => {
 
       <Card
         title={<Typography.Title level={3}>{eventDetails.name}</Typography.Title>}
-        extra={<Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>Register Event</Button>}
+        extra={
+          <Flex
+            wrap="wrap"
+            align="center"
+            justify="flex-end"
+            gap="small"
+          >
+            <Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>
+              Register Event
+            </Button>
+          </Flex>
+        }
       >
         <Row gutter={[16, 16]}>
           <Col span={24}>
@@ -318,22 +379,9 @@ export const EventDetailsPage: React.FC = () => {
               </Card>
             )}
           </Col>
-          <Col span={24}>
+          <Col xs={24} sm={24} md={24} lg={24}>
             <Card title="Schedule">
-              {eventDetails.schedule && eventDetails.schedule.length > 0 ? (
-                <Table
-                  rowKey="id"
-                  dataSource={eventDetails.schedule}
-                  columns={scheduleColumns}
-                  pagination={false}
-                  rowSelection={{
-                    columnWidth: 80,
-                    onChange: onSessionSelectChange,
-                  }}
-                />
-              ) : (
-                <Alert message="No schedule available for this event." type="info" showIcon />
-              )}
+              {renderScheduleTable(eventDetails, scheduleColumns)}
             </Card>
           </Col>
           {eventDetails.documents && eventDetails.documents.length > 0 && (
@@ -382,6 +430,7 @@ export const EventDetailsPage: React.FC = () => {
                       <Flex justify="space-between">
                         <Text>2 stars:</Text>
                         <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+
                       </Flex>
                       <Flex justify="space-between">
                         <Text>1 star:</Text>

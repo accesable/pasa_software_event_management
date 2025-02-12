@@ -34,9 +34,9 @@ const cardStyles: CSSProperties = {
 
 export const GeneralDashboardPage = () => {
   const stylesContext = useStylesContext();
-  
+
   const { data: dashboardStats, loading: dashboardStatsLoading } = useFetchData(
-    'http://47.129.247.0:8080/api/v1/events/dashboard-stats', // API URL
+    'http://localhost:8080/api/v1/events/dashboard-stats', // API URL
     localStorage.getItem('accessToken') || undefined // Access token
   );
 

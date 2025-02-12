@@ -1,6 +1,6 @@
 // src/pages/dashboards/EventsList.tsx
-import { useEffect, useState } from 'react';
-import { Alert, Button, Card, Space, Table, Tag, Select, Spin, Input } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Alert, Button, Card, Space, Table, Tag, Select, Spin, Input, Flex, Typography } from 'antd'; // Import Flex and Typography
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';
@@ -22,19 +22,18 @@ const EVENT_STATUS_OPTIONS = [
 const EventsListPage = () => {
   const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({});
   const [categoryLoading, setCategoryLoading] = useState(false);
-  // Use '' (empty string) to represent "All" filters.
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [categoryFilter, setCategoryFilter] = useState<string>(''); // '' means All Categories
-  const [searchQuery, setSearchQuery] = useState<string>(''); // State for search query
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const {
     data: eventsListResponse,
     error: eventsError,
     loading: eventsLoading,
-  } = useFetchData( 
-    `http://47.129.247.0:8080/api/v1/events?page=${currentPage}&limit=${pageSize}` +
+  } = useFetchData(
+    `http://localhost:8080/api/v1/events?page=${currentPage}&limit=${pageSize}` +
     `${statusFilter ? `&status=${statusFilter}` : ''}` +
     `${categoryFilter ? `&categoryId=${categoryFilter}` : ''}` +
     `${searchQuery ? `&search=${searchQuery}` : ''}`,
@@ -49,16 +48,12 @@ const EventsListPage = () => {
         const response = await authService.getCategories(accessToken || '') as { statusCode: number; data: { categories?: any[] }; message?: string };
         if (response.statusCode === 200 && response.data.categories) {
           const categoryMap: Record<string, string> = {};
-          categoryMap[''] = 'All Categories'; // Add "All Categories" option with empty string key
+          categoryMap[''] = 'All Categories';
           response.data.categories.forEach((category: any) => {
             categoryMap[category.id] = category.name;
           });
           setCategoryNamesMap(categoryMap);
-        } else {
-          // message.error(response.message);
         }
-      } catch (error: any) {
-        // message.error(error.message);
       } finally {
         setCategoryLoading(false);
       }
@@ -91,24 +86,27 @@ const EventsListPage = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text, record) => <Link to={`/details/events/${record.id}`}>{text}</Link>,
+      render: (text, record) => <Typography.Paragraph ellipsis><Link to={`/details/events/${record.id}`}>{text}</Link></Typography.Paragraph>, 
     },
     {
       title: 'Location',
       dataIndex: 'location',
       key: 'location',
+      responsive: ['md'], // Hide on smaller screens
     },
     {
       title: 'Start Date',
       dataIndex: 'startDate',
       key: 'startDate',
       render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      responsive: ['sm'], // Hide on xs screens
     },
     {
       title: 'End Date',
       dataIndex: 'endDate',
       key: 'endDate',
       render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      responsive: ['sm'], // Hide on xs screens
     },
     {
       title: 'Category',
@@ -116,13 +114,10 @@ const EventsListPage = () => {
       key: 'event_category',
       render: (categoryId: string) => (
         <Space>
-          {categoryLoading ? (
-            <Spin />
-          ) : (
-            <Tag color="blue">{categoryNamesMap[categoryId] || 'N/A'}</Tag>
-          )}
+          {categoryLoading ? <Spin /> : <Tag color="blue">{categoryNamesMap[categoryId] || 'N/A'}</Tag>}
         </Space>
       ),
+      responsive: ['md'], // Hide on smaller screens
     },
     {
       title: 'Status',
@@ -148,7 +143,7 @@ const EventsListPage = () => {
   ];
 
   const categoryOptions = Object.entries(categoryNamesMap).map(([key, label]) => ({
-    value: key, // key is '' for "All Categories"
+    value: key,
     label: label,
   }));
 
@@ -192,11 +187,11 @@ const EventsListPage = () => {
       <Card
         title="Events"
         extra={
-          <Space>
+          <Flex wrap="wrap" gap="small" align="center" style={{marginTop: '10px' }}> {/* Use Flex for responsive filters */}
             <Select
               placeholder="Filter by Category"
               allowClear
-              style={{ width: 200 }}
+              style={{ minWidth: 150, width: 'auto'}} // Adjust width for responsiveness
               onChange={onCategoryFilterChange}
               options={categoryOptions}
               value={categoryFilter}
@@ -204,7 +199,7 @@ const EventsListPage = () => {
             <Select
               placeholder="Filter by Status"
               allowClear
-              style={{ width: 200 }}
+              style={{ minWidth: 150, width: 'auto' }} // Adjust width for responsiveness
               onChange={onStatusFilterChange}
               options={EVENT_STATUS_OPTIONS}
               value={statusFilter}
@@ -212,12 +207,12 @@ const EventsListPage = () => {
             <Input.Search
               placeholder="Search by event name"
               onSearch={handleSearch}
-              style={{ width: 300 }}
+              style={{ minWidth: 200, width: 'auto' }} // Adjust width for responsiveness
               allowClear
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </Space>
+          </Flex>
         }
       >
         {eventsError && (
@@ -230,20 +225,23 @@ const EventsListPage = () => {
           />
         )}
 
-        <Table
-          columns={columns}
-          dataSource={eventsListResponse?.data?.events || []}
-          loading={eventsLoading}
-          pagination={{
-            current: currentPage,
-            pageSize: pageSize,
-            total: eventsListResponse?.data?.meta?.totalItems,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            showSizeChanger: true,
-            onChange: handlePaginationChange,
-          }}
-        />
+        <div className="table-responsive"> {/* Add a wrapper for horizontal scroll */}
+          <Table
+            columns={columns}
+            dataSource={eventsListResponse?.data?.events || []}
+            loading={eventsLoading}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: eventsListResponse?.data?.meta?.totalItems,
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showSizeChanger: true,
+              onChange: handlePaginationChange,
+            }}
+            scroll={{ x: 'max-content' }} // Enable horizontal scroll for table
+          />
+        </div>
       </Card>
     </div>
   );
