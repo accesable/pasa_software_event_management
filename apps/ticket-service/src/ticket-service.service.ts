@@ -8,7 +8,7 @@ import mongoose, { Model } from 'mongoose';
 import { UsersServiceClient, USERS_SERVICE_NAME, QueryParamsRequest } from '../../../libs/common/src';
 import { handleRpcException } from '../../../libs/common/src/filters/handleException';
 import { EVENT_SERVICE_NAME, EventServiceClient } from '../../../libs/common/src/types/event';
-import { ScanTicketResponse, CreateParticipationRequest, Participation, TicketType, GetParticipantIdByUserIdEventIdRequest } from '../../../libs/common/src/types/ticket';
+import { ScanTicketResponse, CreateParticipationRequest, Participation, TicketType, GetParticipantIdByUserIdEventIdRequest, CheckInOutStats, GetDetailedParticipantListRequest, GetParticipantByEventIdRequest } from '../../../libs/common/src/types/ticket';
 import { EVENT_SERVICE, AUTH_SERVICE } from '../../apigateway/src/constants/service.constant';
 import { Participant, ParticipantDocument } from './schemas/participant';
 import { Ticket, TicketDocument } from './schemas/ticket';
@@ -260,6 +260,94 @@ export class TicketServiceService implements OnModuleInit {
       };
     } catch (error) {
       throw handleRpcException(error, 'Failed to create participant');
+    }
+  }
+
+  async getCheckInOutStats(request: GetParticipantByEventIdRequest) { // <-- Thêm function này
+    try {
+      const eventId = request.eventId;
+      const participantsResponse = await this.getParticipantByEventId(eventId);
+      const participants = participantsResponse.participants || [];
+
+      const totalRegistered = participants.length;
+      const totalCheckedIn = participants.filter(p => p.checkInAt).length;
+      const totalCheckedOut = participants.filter(p => p.checkOutAt).length;
+
+      const checkInRate = totalRegistered > 0 ? (totalCheckedIn / totalRegistered) * 100 : 0;
+      const checkOutRate = totalCheckedIn > 0 ? (totalCheckedOut / totalCheckedIn) * 100 : 0;
+
+
+      const checkInOutStats: CheckInOutStats = {
+        totalRegistered,
+        totalCheckedIn,
+        totalCheckedOut,
+        checkInRate,
+        checkOutRate,
+      };
+
+      return { checkInOutStats };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get check-in/check-out stats');
+    }
+  }
+
+  async getDetailedParticipantList(request: GetDetailedParticipantListRequest) { // <-- Thêm function này
+    try {
+      const { eventId, query } = request;
+      const { filter = {}, limit = 10, sort = {} } = aqp(query as any || {});
+      const page = parseInt(filter.page || '1', 10);
+      delete filter.page;
+      const parsedLimit = parseInt(limit as any, 10) || 10;
+      const skip = (page - 1) * parsedLimit;
+
+      const mongoFilter: any = { eventId: eventId }; // Filter theo eventId
+      if (filter.status) { // Nếu có filter status (ví dụ: query params status=CHECKED_IN)
+        mongoFilter.status = filter.status;
+      }
+      // Thêm các filter khác nếu cần (ví dụ: search theo tên, email...)
+
+      const totalItems = await this.participantModel.countDocuments(mongoFilter);
+      const totalPages = Math.ceil(totalItems / parsedLimit);
+
+      const participants = await this.participantModel
+        .find(mongoFilter)
+        .skip(skip)
+        .limit(parsedLimit)
+        .sort(sort as any)
+        .exec();
+
+      const detailedParticipants: any[] = [];
+      for (const participant of participants) {
+        const userInfo = await this.authService.findById({ id: participant.userId }).toPromise();
+        if (userInfo) {
+          const ticket = await this.ticketModel.findOne({ participantId: participant.id });
+          detailedParticipants.push({
+            id: participant.id,
+            userId: userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name,
+            phoneNumber: userInfo.phoneNumber || null,
+            registrationDate: participant.createdAt.toISOString(),
+            checkInAt: participant.checkinAt ? participant.checkinAt.toISOString() : null,
+            checkOutAt: participant.checkoutAt ? participant.checkoutAt.toISOString() : null,
+            ticketStatus: ticket ? ticket.status : 'ACTIVE', // Lấy ticket status, default ACTIVE nếu không tìm thấy ticket
+          });
+        }
+      }
+
+
+      return {
+        detailedParticipants,
+        meta: {
+          page,
+          limit: parsedLimit,
+          totalPages,
+          totalItems,
+          count: detailedParticipants.length,
+        },
+      };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get detailed participant list');
     }
   }
 

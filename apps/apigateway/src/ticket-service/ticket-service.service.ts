@@ -3,7 +3,7 @@ import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { TICKET_SERVICE } from '../constants/service.constant';
 import { EventServiceService } from '../event-service/event-service.service';
 import { RedisCacheService } from '../redis/redis.service';
-import { CreateParticipationRequest, TICKET_SERVICE_PROTO_SERVICE_NAME, TicketServiceProtoClient } from '../../../../libs/common/src/types/ticket';
+import { CreateParticipationRequest, GetParticipantByEventIdRequest, QueryParamsRequest, TICKET_SERVICE_PROTO_SERVICE_NAME, TicketServiceProtoClient } from '../../../../libs/common/src/types/ticket';
 import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
 
 @Injectable()
@@ -21,6 +21,10 @@ export class TicketServiceService {
         this.ticketService = this.client.getService<TicketServiceProtoClient>(TICKET_SERVICE_PROTO_SERVICE_NAME);
     }
 
+    getCheckInOutStats(request: GetParticipantByEventIdRequest){ // <-- Thêm handler này
+        return this.ticketService.getCheckInOutStats(request);
+    }
+
     async getParticipantByEventId(eventId: string) {
         try {
             return await this.ticketService.getParticipantByEventId({ eventId }).toPromise();
@@ -29,7 +33,7 @@ export class TicketServiceService {
         }
     }
 
-    async getParticipantIdByUserIdEventId (request: { userId: string, eventId: string }) { // Function mới
+    async getParticipantIdByUserIdEventId(request: { userId: string, eventId: string }) { // Function mới
         try {
             return await this.ticketService.getParticipantIdByUserIdEventId(request).toPromise();
         } catch (error) {
@@ -66,6 +70,14 @@ export class TicketServiceService {
             return await this.ticketService.createParticipant(request).toPromise();
         } catch (error) {
             throw handleRpcException(error, 'Failed to create participant');
+        }
+    }
+
+    async getDetailedParticipantList(request: { eventId: string, query: QueryParamsRequest }) {
+        try {
+            return await this.ticketService.getDetailedParticipantList(request).toPromise();
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get detailed participant list');
         }
     }
 

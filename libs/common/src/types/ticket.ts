@@ -10,7 +10,53 @@ import { Observable } from "rxjs";
 
 export const protobufPackage = "ticket";
 
+/** <-- Thêm enum definition này */
+export enum TicketStatus {
+  ACTIVE = 0,
+  CANCELED = 1,
+  USED = 2,
+  CHECKED_IN = 3,
+  UNRECOGNIZED = -1,
+}
+
 export interface Empty {
+}
+
+export interface DetailedParticipant {
+  id: string;
+  userId: string;
+  email: string;
+  name: string;
+  phoneNumber?: string | undefined;
+  registrationDate: string;
+  checkInAt: string;
+  checkOutAt: string;
+  ticketStatus: TicketStatus;
+}
+
+export interface GetDetailedParticipantListResponse {
+  detailedParticipants: DetailedParticipant[];
+  meta: Meta | undefined;
+}
+
+/** Request message mới */
+export interface GetDetailedParticipantListRequest {
+  eventId: string;
+  query: QueryParamsRequest | undefined;
+}
+
+export interface CheckInOutStats {
+  totalRegistered: number;
+  totalCheckedIn: number;
+  totalCheckedOut: number;
+  /** Tỷ lệ check-in */
+  checkInRate: number;
+  /** Tỷ lệ check-out */
+  checkOutRate: number;
+}
+
+export interface GetCheckInOutStatsResponse {
+  checkInOutStats: CheckInOutStats | undefined;
 }
 
 /** Message request mới */
@@ -177,6 +223,12 @@ export interface TicketServiceProtoClient {
   ): Observable<GetParticipantIdByUserIdEventIdResponse>;
 
   getParticipantByEventAndUser(request: GetParticipantIdByUserIdEventIdRequest): Observable<ParticipationResponse>;
+
+  getCheckInOutStats(request: GetParticipantByEventIdRequest): Observable<GetCheckInOutStatsResponse>;
+
+  getDetailedParticipantList(
+    request: GetDetailedParticipantListRequest,
+  ): Observable<GetDetailedParticipantListResponse>;
 }
 
 export interface TicketServiceProtoController {
@@ -232,6 +284,17 @@ export interface TicketServiceProtoController {
   getParticipantByEventAndUser(
     request: GetParticipantIdByUserIdEventIdRequest,
   ): Promise<ParticipationResponse> | Observable<ParticipationResponse> | ParticipationResponse;
+
+  getCheckInOutStats(
+    request: GetParticipantByEventIdRequest,
+  ): Promise<GetCheckInOutStatsResponse> | Observable<GetCheckInOutStatsResponse> | GetCheckInOutStatsResponse;
+
+  getDetailedParticipantList(
+    request: GetDetailedParticipantListRequest,
+  ):
+    | Promise<GetDetailedParticipantListResponse>
+    | Observable<GetDetailedParticipantListResponse>
+    | GetDetailedParticipantListResponse;
 }
 
 export function TicketServiceProtoControllerMethods() {
@@ -249,6 +312,8 @@ export function TicketServiceProtoControllerMethods() {
       "getTicketByParticipantId",
       "getParticipantIdByUserIdEventId",
       "getParticipantByEventAndUser",
+      "getCheckInOutStats",
+      "getDetailedParticipantList",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

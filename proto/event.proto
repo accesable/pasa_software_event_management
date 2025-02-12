@@ -34,16 +34,39 @@ service EventService{
   rpc GetEventQuestions(EventByIdRequest) returns (GetEventQuestionsResponse);
 
   rpc SubmitFeedback(SubmitFeedbackRequest) returns (GetFeedbackByUserResponse);
-  rpc GetEventFeedbacks(EventByIdRequest) returns (GetEventFeedbacksResponse);
   rpc GetFeedbackAnalysis(EventByIdRequest) returns (FeedbackAnalysisResponse);
   rpc UpdateFeedback(SubmitFeedbackRequest) returns (GetFeedbackByUserResponse);
   rpc GetFeedbackByUser(GetFeedbackByUserRequest) returns (GetFeedbackByUserResponse);
   rpc GetEventRegistrationsOverTime(EventByIdRequest) returns (EventRegistrationsOverTimeResponse);
   rpc getTotalEventsOverTime(GetTotalOrganizedEventsOverTimeRequest) returns (MonthlyEventCountsResponse);
   rpc GetEventInvitedUsers(EventByIdRequest) returns (GetEventInvitedUsersResponse); 
+  rpc GetEventComparisonData(Empty) returns (GetEventComparisonDataResponse); 
+  rpc GetEventFeedbacks(GetEventFeedbacksRequest) returns (GetEventFeedbacksResponse);
 }
 
 message Empty{}
+
+message GetEventFeedbacksRequest { // Request message mới cho getEventFeedbacks
+  string eventId = 1;
+  QueryParamsRequest query = 2; // Sử dụng QueryParamsRequest để hỗ trợ filter, sort, phân trang
+}
+
+message EventComparisonData {
+    string eventId = 1;
+    string eventName = 2;
+    string categoryName = 3;
+    string startDate = 4;
+    string endDate = 5;
+    string location = 6;
+    int32 registrationCount = 7;
+    double averageRating = 8;
+    int32 feedbackCount = 9;
+    string status = 10;
+}
+
+message GetEventComparisonDataResponse {
+    repeated EventComparisonData eventComparisonDataList = 1;
+}
 
 message GetEventInvitedUsersResponse { 
   repeated InvitedUser invitedUsers = 1;

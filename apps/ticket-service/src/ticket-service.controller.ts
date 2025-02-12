@@ -2,12 +2,19 @@ import { Controller, Get } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
 import { Observable } from 'rxjs';
 import { EventPattern } from '@nestjs/microservices';
-import { TicketServiceProtoControllerMethods, TicketServiceProtoController, GetParticipantByEventIdRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, ParticipationResponse, ParticipationByIdRequest, CreateParticipationRequest, UpdateTicketRequest, QueryParamsRequest, GetUserParticipationByEventIdResponse, TicketByParticipantIdRequest, GetParticipantIdByUserIdEventIdRequest } from '../../../libs/common/src/types/ticket';
+import { TicketServiceProtoControllerMethods, TicketServiceProtoController, GetParticipantByEventIdRequest, ScanTicketRequest, TicketByIdRequest, TicketResponse, ParticipationResponse, ParticipationByIdRequest, CreateParticipationRequest, UpdateTicketRequest, QueryParamsRequest, GetUserParticipationByEventIdResponse, TicketByParticipantIdRequest, GetParticipantIdByUserIdEventIdRequest, GetDetailedParticipantListRequest, GetDetailedParticipantListResponse } from '../../../libs/common/src/types/ticket';
 
 @Controller()
 @TicketServiceProtoControllerMethods()
 export class TicketServiceController implements TicketServiceProtoController {
   constructor(private readonly ticketServiceService: TicketServiceService) {}
+  getDetailedParticipantList(request: GetDetailedParticipantListRequest) {
+    return this.ticketServiceService.getDetailedParticipantList(request);
+  }
+
+  getCheckInOutStats(request: GetParticipantByEventIdRequest){ // <-- Thêm handler này
+    return this.ticketServiceService.getCheckInOutStats(request);
+  }
 
   getParticipantByEventAndUser(request: GetParticipantIdByUserIdEventIdRequest) {
     return this.ticketServiceService.getParticipantByEventAndUser(request);

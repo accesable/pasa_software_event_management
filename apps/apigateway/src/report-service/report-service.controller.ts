@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ReportServiceService } from './report-service.service';
 import { DecodeAccessResponse } from '../../../../libs/common/src';
 import { ResponseMessage, User } from '../decorators/public.decorator';
@@ -16,11 +16,12 @@ import {
   MonthlyEventCountsResponse // Import MonthlyEventCountsResponse
 } from '../../../../libs/common/src/types/report';
 import { Observable } from 'rxjs';
+import { Types } from 'mongoose';
 
 @Controller('reports')
 @ReportServiceProtoControllerMethods()
 export class ReportServiceController {
-  constructor(private readonly reportServiceService: ReportServiceService) {}
+  constructor(private readonly reportServiceService: ReportServiceService) { }
 
   @Get('/event-category-stats')
   @ResponseMessage('Get event category stats success')
@@ -66,6 +67,9 @@ export class ReportServiceController {
   async getEventInvitationReport(
     @Param('eventId') eventId: string,
   ): Promise<EventInvitationReportResponse> {
+    if (!Types.ObjectId.isValid(eventId)) {
+      throw new BadRequestException('Invalid Event ID');
+    }
     const request: EventInvitationReportRequest = { eventId };
     return this.reportServiceService.getEventInvitationReport(request);
   }

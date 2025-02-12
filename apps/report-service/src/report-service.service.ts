@@ -198,7 +198,10 @@ export class ReportServiceService implements OnModuleInit {
 
       for (const event of organizedEvents) {
         const feedbacksResponse = await lastValueFrom(
-          this.eventService.getEventFeedbacks({ id: event.id })
+          this.eventService.getEventFeedbacks({
+            eventId: event.id,
+            query: undefined
+          })
         );
         const feedbacks = feedbacksResponse.feedbacks || [];
         feedbackCount += feedbacks.length;

@@ -5,7 +5,7 @@ import { EventCategoryService } from '../event-category/event-category.service';
 import { SpeakerService } from '../speaker/speaker.service';
 import { GuestService } from '../guest/guest.service';
 import { EventPattern, RpcException } from '@nestjs/microservices';
-import { AcceptInvitationRequest, AllEventResponse, AnswerQuestionRequest, AnswerQuestionResponse, CancelEventRequest, CategoryByIdRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateQuestionRequest, CreateQuestionResponse, CreateSpeakerRequest, DeclineInvitationRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, FeedbackAnalysisResponse, FindByIdRequest, GetAllRequest, GetEventFeedbacksResponse, GetEventInvitedUsersResponse, GetEventQuestionsResponse, getOrganizedEventsRequest, getParticipatedEventsRequest, GetTotalOrganizedEventsOverTimeRequest, GuestResponse, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, SpeakerResponse, SubmitFeedbackRequest, SubmitFeedbackResponse, UpdateCategoryRequest, UpdateEventRequest, UpdateGuestRequest, UpdateSpeakerRequest } from '../../../../libs/common/src/types/event';
+import { AcceptInvitationRequest, AllEventResponse, AnswerQuestionRequest, AnswerQuestionResponse, CancelEventRequest, CategoryByIdRequest, CheckOwnerShipRequest, CreateCategoryRequest, CreateEventRequest, CreateGuestRequest, CreateQuestionRequest, CreateQuestionResponse, CreateSpeakerRequest, DeclineInvitationRequest, Empty, EventByIdRequest, EventServiceController, EventServiceControllerMethods, FeedbackAnalysisResponse, FindByIdRequest, GetAllRequest, GetEventFeedbacksRequest, GetEventFeedbacksResponse, GetEventInvitedUsersResponse, GetEventQuestionsResponse, getOrganizedEventsRequest, getParticipatedEventsRequest, GetTotalOrganizedEventsOverTimeRequest, GuestResponse, QueryParamsRequest, SendEventInvitesRequest, SendEventInvitesResponse, SpeakerResponse, SubmitFeedbackRequest, SubmitFeedbackResponse, UpdateCategoryRequest, UpdateEventRequest, UpdateGuestRequest, UpdateSpeakerRequest } from '../../../../libs/common/src/types/event';
 
 @Controller()
 @EventServiceControllerMethods()
@@ -16,6 +16,17 @@ export class EventController implements EventServiceController {
     private readonly speakerService: SpeakerService,
     private readonly guestService: GuestService,
   ) { }
+  getEventFeedbacks(request: GetEventFeedbacksRequest) {
+    return this.eventService.getEventFeedbacks(request);
+  }
+  // getEventFeedbacksNew(request: GetEventFeedbacksRequest) {
+  //   return this.eventService.getEventFeedbacksNew(request);
+  // }
+
+  getEventComparisonData(request: Empty) {
+    return this.eventService.getEventComparisonData();
+  }
+
   getEventInvitedUsers(request: EventByIdRequest) {
     return this.eventService.getEventInvitedUsers(request.id);
   }
@@ -43,9 +54,9 @@ export class EventController implements EventServiceController {
     return this.eventService.submitFeedback(request.eventId, request.userId, request.rating, request.comment);
   }
 
-  async getEventFeedbacks(request: EventByIdRequest) {
-    return this.eventService.getEventFeedbacks(request.id);
-  }
+  // async getEventFeedbacks(request: EventByIdRequest) {
+  //   return this.eventService.getEventFeedbacks(request.id);
+  // }
 
   async getFeedbackAnalysis(request: EventByIdRequest) {
     return this.eventService.getFeedbackAnalysis(request.id);

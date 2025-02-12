@@ -7,10 +7,11 @@ import { UpdateEventDto } from './dto/update-event-service.dto';
 import { CreateSpeakerDto, UpdateSpeakerDto } from './dto/create-speaker.dto';
 import { CreateGuestDto, UpdateGuestDto } from './dto/create-guest.dto';
 import { RedisCacheService } from '../redis/redis.service';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, from } from 'rxjs';
 import { TicketServiceService } from '../ticket-service/ticket-service.service';
 import { CreatedBy, CreateEventRequest, DecodeAccessResponse, EVENT_SERVICE_NAME, EventRegistrationsOverTimeResponse, EventResponse, EventServiceClient, UpdateCategoryRequest, UpdateEventRequest } from '../../../../libs/common/src/types/event';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
+import { GetDetailedParticipantListRequest } from '../../../../libs/common/src/types/ticket';
 
 @Injectable()
 export class EventServiceService implements OnModuleInit {
@@ -26,6 +27,16 @@ export class EventServiceService implements OnModuleInit {
 
   onModuleInit() {
     this.eventService = this.client.getService<EventServiceClient>(EVENT_SERVICE_NAME);
+  }
+
+  async getEventComparisonData() { // <-- Thêm function này
+    try {
+      return await lastValueFrom(
+        this.eventService.getEventComparisonData({})
+      );
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
 
   async getEventRegistrationsOverTime(eventId: string): Promise<EventRegistrationsOverTimeResponse> {
@@ -129,7 +140,10 @@ export class EventServiceService implements OnModuleInit {
 
   async getEventFeedbacks(eventId: string) {
     try {
-      return await this.eventService.getEventFeedbacks({ id: eventId }).toPromise();
+      return await this.eventService.getEventFeedbacks({
+        eventId,
+        query: undefined
+      }).toPromise();
     } catch (error) {
       throw new RpcException(error);
     }
@@ -359,7 +373,7 @@ export class EventServiceService implements OnModuleInit {
     try {
       const cacheKey = `event:${eventId}:checkInOut`;
       const cacheData = await this.redisCacheService.get<any>(cacheKey);
-      if (cacheData) {
+      if (cacheData && cacheData.length > 0) {
         return cacheData;
       }
       const result = await this.ticketService.getParticipantByEventId(eventId);

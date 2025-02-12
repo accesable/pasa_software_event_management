@@ -9,7 +9,7 @@ import { Question, QuestionDocument } from './schemas/question.schema';
 import { Model, Types } from 'mongoose';
 import { CategoryDocument, EventCategory } from '../event-category/schemas/event-category.schema';
 import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
-import { SendEventInvitesRequest, SendEventInvitesResponse, CancelEventRequest, EventType, EventResponse, CreateEventRequest, UpdateEventRequest, UserTypeInvite, GetEventFeedbacksResponse, EventByIdRequest, RegistrationCountData, EventRegistrationsOverTimeResponse, GetTotalOrganizedEventsOverTimeRequest, MonthlyEventCount, MonthlyEventCountsResponse } from '../../../../libs/common/src/types/event';
+import { SendEventInvitesRequest, SendEventInvitesResponse, CancelEventRequest, EventType, EventResponse, CreateEventRequest, UpdateEventRequest, UserTypeInvite, GetEventFeedbacksResponse, EventByIdRequest, RegistrationCountData, EventRegistrationsOverTimeResponse, GetTotalOrganizedEventsOverTimeRequest, MonthlyEventCount, MonthlyEventCountsResponse, GetEventFeedbacksRequest } from '../../../../libs/common/src/types/event';
 import { Feedback, FeedbackDocument } from './schemas/feedback.schema';
 import { QueryParamsRequest } from '../../../../libs/common/src';
 import { lastValueFrom } from 'rxjs';
@@ -267,12 +267,63 @@ export class EventService {
         }
     }
 
-    async getEventFeedbacks(eventId: string) {
+    // async getEventFeedbacks(eventId: string) {
+    //     try {
+    //         return await this.feedbackService.getFeedbacks(eventId);
+    //     } catch (error) {
+    //         throw new RpcException(error);
+    //     }
+    // }
+
+    async getEventFeedbacks(request: GetEventFeedbacksRequest) { // <-- Sửa function, nhận GetEventFeedbacksRequest
         try {
-            return await this.feedbackService.getFeedbacks(eventId);
+            const { eventId, query } = request;
+            const { filter = {}, limit = 10, sort = {} } = aqp(query as any || {});
+            const page = parseInt(filter.page || '1', 10);
+            delete filter.page;
+            const parsedLimit = parseInt(limit as any, 10) || 10;
+            const skip = (page - 1) * parsedLimit;
+
+            const mongoFilter: any = { eventId: eventId }; // Filter theo eventId
+            // Thêm các filter khác nếu cần (ví dụ: filter theo rating, comment...)
+
+            const totalItems = await this.feedbackModel.countDocuments(mongoFilter);
+            const totalPages = Math.ceil(totalItems / parsedLimit);
+
+
+            const feedbacks = await this.feedbackModel
+                .find(mongoFilter)
+                .skip(skip)
+                .limit(parsedLimit)
+                .sort(sort as any)
+                .exec();
+
+
+            return {
+                feedbacks: feedbacks.map(fb => this.transformFeedback(fb)),
+                meta: {
+                    page,
+                    limit: parsedLimit,
+                    totalPages,
+                    totalItems,
+                    count: feedbacks.length,
+                },
+            };
         } catch (error) {
-            throw new RpcException(error);
+            throw handleRpcException(error, 'Failed to get event feedbacks');
         }
+    }
+
+    transformFeedback(feedback: FeedbackDocument) {
+        return {
+            id: feedback._id.toString(),
+            eventId: feedback.eventId.toString(),
+            userId: feedback.userId.toString(),
+            rating: feedback.rating,
+            comment: feedback.comment,
+            createdAt: feedback.createdAt ? feedback.createdAt.toISOString() : '',
+            updatedAt: feedback.updatedAt ? feedback.updatedAt.toISOString() : '',
+        };
     }
 
     // async getFeedbackAnalysis(eventId: string) {
@@ -343,6 +394,42 @@ export class EventService {
             };
         } catch (error) {
             throw new RpcException(error);
+        }
+    }
+
+    async getEventComparisonData() { // <-- Thêm function này
+        try {
+            const allEvents = await this.eventModel.find().populate('categoryId').exec(); // <-- Populate categoryId
+            const eventComparisonDataList = [];
+    
+            for (const event of allEvents) {
+                const feedbacksResponse = await this.feedbackService.getFeedbacks(event.id);
+                const feedbacks = feedbacksResponse.feedbacks || [];
+                const totalRating = feedbacks.reduce((sum, fb) => sum + fb.rating, 0);
+                const averageRating = feedbacks.length > 0 ? parseFloat((totalRating / feedbacks.length).toFixed(1)) : 0; // Sửa lỗi sumRating và totalFeedbacks
+    
+                const participantsResponse = await lastValueFrom(
+                    this.ticketService.getParticipantByEventId({ eventId: event.id })
+                );
+                const registrationCount = participantsResponse.participants?.length || 0;
+    
+                eventComparisonDataList.push({
+                    eventId: event.id,
+                    eventName: event.name,
+                    categoryName: ((event.categoryId as unknown) as CategoryDocument)?.name ?? 'Unknown Category',
+                    startDate: event.startDate.toISOString(),
+                    endDate: event.endDate.toISOString(),
+                    location: event.location,
+                    registrationCount: registrationCount,
+                    averageRating: averageRating,
+                    feedbackCount: feedbacks.length,
+                    status: event.status,
+                });
+            }
+    
+            return { eventComparisonDataList };
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get event comparison data');
         }
     }
 

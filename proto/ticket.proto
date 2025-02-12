@@ -16,9 +16,52 @@ service TicketServiceProto{
     rpc GetTicketByParticipantId(TicketByParticipantIdRequest) returns (TicketResponse);
     rpc GetParticipantIdByUserIdEventId(GetParticipantIdByUserIdEventIdRequest) returns (GetParticipantIdByUserIdEventIdResponse);
     rpc GetParticipantByEventAndUser(GetParticipantIdByUserIdEventIdRequest) returns (ParticipationResponse);
+    rpc GetCheckInOutStats(GetParticipantByEventIdRequest) returns (GetCheckInOutStatsResponse);
+    rpc GetDetailedParticipantList(GetDetailedParticipantListRequest) returns (GetDetailedParticipantListResponse);
 }
 
 message Empty{}
+
+message DetailedParticipant {
+    string id = 1;
+    string userId = 2;
+    string email = 3;
+    string name = 4;
+    optional string phoneNumber = 5;
+    string registrationDate = 6;
+    string checkInAt = 7;
+    string checkOutAt = 8;
+    TicketStatus ticketStatus = 9; 
+}
+
+enum TicketStatus { // <-- Thêm enum definition này
+  ACTIVE = 0;
+  CANCELED = 1;
+  USED = 2;
+  CHECKED_IN = 3;
+}
+
+message GetDetailedParticipantListResponse {
+    repeated DetailedParticipant detailedParticipants = 1;
+    Meta meta = 2; 
+}
+
+message GetDetailedParticipantListRequest { // Request message mới
+    string eventId = 1;
+    QueryParamsRequest query = 2; 
+}
+
+message CheckInOutStats {
+    int32 totalRegistered = 1;
+    int32 totalCheckedIn = 2;
+    int32 totalCheckedOut = 3;
+    double checkInRate = 4; // Tỷ lệ check-in
+    double checkOutRate = 5; // Tỷ lệ check-out
+}
+
+message GetCheckInOutStatsResponse {
+    CheckInOutStats checkInOutStats = 1;
+}
 
 message TicketByParticipantIdRequest{ // Message request mới
     string participantId = 1;

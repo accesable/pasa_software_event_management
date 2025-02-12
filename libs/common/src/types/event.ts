@@ -13,6 +13,30 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
+/** Request message mới cho getEventFeedbacks */
+export interface GetEventFeedbacksRequest {
+  eventId: string;
+  /** Sử dụng QueryParamsRequest để hỗ trợ filter, sort, phân trang */
+  query: QueryParamsRequest | undefined;
+}
+
+export interface EventComparisonData {
+  eventId: string;
+  eventName: string;
+  categoryName: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  registrationCount: number;
+  averageRating: number;
+  feedbackCount: number;
+  status: string;
+}
+
+export interface GetEventComparisonDataResponse {
+  eventComparisonDataList: EventComparisonData[];
+}
+
 export interface GetEventInvitedUsersResponse {
   invitedUsers: InvitedUser[];
 }
@@ -556,8 +580,6 @@ export interface EventServiceClient {
 
   submitFeedback(request: SubmitFeedbackRequest): Observable<GetFeedbackByUserResponse>;
 
-  getEventFeedbacks(request: EventByIdRequest): Observable<GetEventFeedbacksResponse>;
-
   getFeedbackAnalysis(request: EventByIdRequest): Observable<FeedbackAnalysisResponse>;
 
   updateFeedback(request: SubmitFeedbackRequest): Observable<GetFeedbackByUserResponse>;
@@ -569,6 +591,10 @@ export interface EventServiceClient {
   getTotalEventsOverTime(request: GetTotalOrganizedEventsOverTimeRequest): Observable<MonthlyEventCountsResponse>;
 
   getEventInvitedUsers(request: EventByIdRequest): Observable<GetEventInvitedUsersResponse>;
+
+  getEventComparisonData(request: Empty): Observable<GetEventComparisonDataResponse>;
+
+  getEventFeedbacks(request: GetEventFeedbacksRequest): Observable<GetEventFeedbacksResponse>;
 }
 
 export interface EventServiceController {
@@ -668,10 +694,6 @@ export interface EventServiceController {
     request: SubmitFeedbackRequest,
   ): Promise<GetFeedbackByUserResponse> | Observable<GetFeedbackByUserResponse> | GetFeedbackByUserResponse;
 
-  getEventFeedbacks(
-    request: EventByIdRequest,
-  ): Promise<GetEventFeedbacksResponse> | Observable<GetEventFeedbacksResponse> | GetEventFeedbacksResponse;
-
   getFeedbackAnalysis(
     request: EventByIdRequest,
   ): Promise<FeedbackAnalysisResponse> | Observable<FeedbackAnalysisResponse> | FeedbackAnalysisResponse;
@@ -698,6 +720,17 @@ export interface EventServiceController {
   getEventInvitedUsers(
     request: EventByIdRequest,
   ): Promise<GetEventInvitedUsersResponse> | Observable<GetEventInvitedUsersResponse> | GetEventInvitedUsersResponse;
+
+  getEventComparisonData(
+    request: Empty,
+  ):
+    | Promise<GetEventComparisonDataResponse>
+    | Observable<GetEventComparisonDataResponse>
+    | GetEventComparisonDataResponse;
+
+  getEventFeedbacks(
+    request: GetEventFeedbacksRequest,
+  ): Promise<GetEventFeedbacksResponse> | Observable<GetEventFeedbacksResponse> | GetEventFeedbacksResponse;
 }
 
 export function EventServiceControllerMethods() {
@@ -731,13 +764,14 @@ export function EventServiceControllerMethods() {
       "answerQuestion",
       "getEventQuestions",
       "submitFeedback",
-      "getEventFeedbacks",
       "getFeedbackAnalysis",
       "updateFeedback",
       "getFeedbackByUser",
       "getEventRegistrationsOverTime",
       "getTotalEventsOverTime",
       "getEventInvitedUsers",
+      "getEventComparisonData",
+      "getEventFeedbacks",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

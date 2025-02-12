@@ -22,6 +22,13 @@ export class EventServiceController {
     private readonly filesService: FileServiceService,
   ) { }
 
+  @Get('/event-comparison') // Endpoint mới
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Get event comparison data success')
+  async getEventComparisonData() {
+    return this.eventServiceService.getEventComparisonData();
+  }
+
   @Get(':id/registrations-over-time')
   @ResponseMessage('Event registrations over time fetched successfully')
   async getRegistrationsOverTime(
@@ -35,7 +42,7 @@ export class EventServiceController {
   @ResponseMessage('Total organized events over time fetched successfully')
   async getTotalEventsOverTime(
     @User() user: DecodeAccessResponse,
-  ){
+  ) {
     return this.eventServiceService.getTotalEventsOverTime(user.id);
   }
 

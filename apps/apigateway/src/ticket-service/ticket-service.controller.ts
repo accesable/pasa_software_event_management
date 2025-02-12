@@ -36,6 +36,29 @@ export class ParticipantServiceController {
     private readonly ticketServiceService: TicketServiceService,
   ) { }
 
+  @Get('event/:eventId/detailed-list') // Endpoint mới
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Get detailed participant list success')
+  async getDetailedParticipantList(
+    @Param('eventId') eventId: string,
+    @Query() query: any, // Query params cho filter, sort, phân trang
+    @User() user: DecodeAccessResponse // Có thể cần kiểm tra quyền user nếu cần
+  ) {
+    const request = {
+      eventId,
+      query
+    };
+    return this.ticketServiceService.getDetailedParticipantList(request);
+  }
+
+  @Get(':eventId/check-in-out-stats') // <-- Endpoint cho GetCheckInOutStats
+  @ResponseMessage('Get event check-in-out stats success')
+  async getCheckInOutStats(
+    @Param('eventId') eventId: string,
+  ){
+    return this.ticketServiceService.getCheckInOutStats({eventId});
+  }
+
   @Get(':participantId/tickets') // Endpoint mới
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Get ticket by participant id success')
