@@ -44,6 +44,7 @@ import ProtectedRoute from '../components/ProtectedRoute.tsx';
 import { Helmet } from 'react-helmet-async';
 import DeclineEventPage from '../pages/DeclineEventPage.tsx';
 import EventFeedbacksPage from '../pages/feedbacks/EventFeedbacksPage.tsx';
+import EventAnalysisPage from '../pages/details/EventAnalysisPage.tsx';
 
 export const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -135,7 +136,7 @@ const router = createBrowserRouter([
         path: 'my-events/:id',
         element: <PrivateRoute>
           <DetailMyEventPage />
-        </PrivateRoute>,
+        </PrivateRoute>
       },
       {
         path: 'participated-events/:id',
@@ -161,6 +162,12 @@ const router = createBrowserRouter([
         path: 'check-in-out/:id', // New route for QR scanner
         element: <PrivateRoute>
           <QRScannerPage />
+        </PrivateRoute>,
+      },
+      {
+        path: 'events/:id/analysis',
+        element: <PrivateRoute>
+          <EventAnalysisPage />
         </PrivateRoute>,
       },
       {

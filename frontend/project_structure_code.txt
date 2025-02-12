@@ -1704,7 +1704,6 @@ export const EarningsCard = ({ data, title, diff, ...others }: Props) => {
 
 
 src\components\dashboard\default\EventsOverTimeChart\EventsOverTimeChart.tsx:
-// src\components\dashboard\default\EventsOverTimeChart\EventsOverTimeChart.tsx
 import React, { useState, useEffect } from 'react';
 import { CardProps, Typography, Spin, Alert } from 'antd';
 import { Area } from '@ant-design/charts';
@@ -1751,6 +1750,8 @@ const EventsOverTimeChartComponent: React.FC<Props> = ({ ...others }) => {
     fetchEventsData();
   }, []);
 
+  const maxCount = data.length ? Math.max(...data.map(item => item.count)) : 0;
+
   const config = {
     data,
     xField: 'month',
@@ -1760,12 +1761,14 @@ const EventsOverTimeChartComponent: React.FC<Props> = ({ ...others }) => {
     xAxis: {
       label: {
         formatter: (value: string) => {
+          // Đảo vị trí tháng và năm nếu cần
           return value.split('-')[1] + '-' + value.split('-')[0];
         },
       },
     },
     yAxis: {
       min: 0,
+      max: maxCount + 2,
     },
     tooltip: {
       formatter: (params: any) => {
@@ -1776,7 +1779,6 @@ const EventsOverTimeChartComponent: React.FC<Props> = ({ ...others }) => {
       },
     },
   };
-
 
   return (
     <Card title="Total Events Over Time" {...others}>
@@ -2516,80 +2518,6 @@ export const CustomerReviewsCard = ({ ...others }: Props) => {
 export default CustomerReviewsCard;
 
 
-src\components\dashboard\events\ActivityTable.tsx:
-import {
-    Alert,
-    Button,
-    Table,
-} from 'antd';
-import { useNavigate } from 'react-router-dom';
-import { Card } from '../../';
-
-const ACTIVITY_COLUMNS = (navigate: ReturnType<typeof useNavigate>) => [
-    {
-      title: 'ID',
-      dataIndex: 'activity_id',
-      key: 'id',
-    },
-    {
-      title: 'Activity Name',
-      dataIndex: 'activity_name',
-      key: 'name',
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-    },
-    {
-      title: 'Attendees',
-      dataIndex: 'attendees',
-      key: 'Attendees',
-    },
-    {
-      title: 'Actions',
-      dataIndex: 'activity_id',
-      key: 'id',
-      render: (value,record) => (
-        <div>
-        <Button type="primary" onClick={() => navigate(`/details/events/${value}`)}>
-          Details
-        </Button>
-        </div>
-      )
-    }
-  ];
-  interface EventTableProps {
-    data: [];
-    error?: string;
-    loading: boolean;
-  }
-export const ActivityTable : React.FC<EventTableProps> = ({data,error,loading} ) => {
-  const navigate = useNavigate();
-  return (
-    <div>
-          <Card title="This Event's Activities" extra={<a href="/create/activities">Create Activities for this Event</a>}>
-            {error ? (
-              <Alert
-                message="Error"
-                description={error.toString()}
-                type="error"
-                showIcon
-              />
-            ) : (
-              <Table
-                columns={ACTIVITY_COLUMNS(navigate)}
-                dataSource={data}
-                loading={loading}
-                className="overflow-scroll"
-              />
-            )}
-          </Card>
-    </div>
-  )
-}
-
-
 src\components\dashboard\events\EventSchedule.tsx:
 import { Alert, Button, CardProps, Flex, Timeline, Typography } from 'antd';
 import {
@@ -2749,7 +2677,7 @@ src\components\dashboard\events\index.tsx:
 export {EventTable} from './EventTable.tsx';
 export {EventTimelineCard} from './EventSchedule.tsx';
 export {MyEventTimelineCard} from './MyEventTimelineCard.tsx';
-export {ActivityTable} from './ActivityTable.tsx';
+
 
 src\components\dashboard\events\MyEventTable.tsx:
 // src\components\dashboard\events\MyEventTable.tsx
@@ -7368,7 +7296,7 @@ export const EventDetailLayout: React.FC = () => {
         if (response.statusCode === 200 && response.data) {
           setEventDetail(response.data.event);
           if(eventDetail?.status === 'FINISHED') {
-            const checkParticipant = await authService.getEventParticipants(eventId, accessToken || '') as any;
+            const checkParticipant = await authService.getParticipantData(eventId, accessToken || '') as any;
             if(checkParticipant.statusCode === 200) {
               setIsParticipant(true);
             } else {
@@ -11532,6 +11460,166 @@ export const UserDashboardPage = () => {
   )
 }
 
+src\pages\details\EventAnalysisPage.tsx:
+import React, { useEffect, useState } from 'react';
+import { Card, Col, Row, Typography, Spin, Alert, message } from 'antd';
+import { PageHeader, BackBtn, Loader } from '../../components';
+import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
+import { DASHBOARD_ITEMS } from '../../constants';
+import { Link, useParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import authService from '../../services/authService';
+import InvitationSummaryChart from './components/InvitationSummaryChart'; // Import các components biểu đồ
+import DetailedParticipantsTable from './components/DetailedParticipantsTable';
+import CheckInOutStatsChart from './components/CheckInOutStatsCard';
+import EventComparisonChart from './components/EventComparisonChart';
+
+const { Title } = Typography;
+
+const EventAnalysisPage: React.FC = () => {
+  const { id: eventId } = useParams<{ id: string }>();
+  const [invitationData, setInvitationData] = useState<any>(null);
+  const [checkInOutStats, setCheckInOutStats] = useState<any>(null);
+  const [detailedParticipants, setDetailedParticipants] = useState<any>(null);
+  const [eventComparisonData, setEventComparisonData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [comparisonError, setComparisonError] = useState<string | null>(null);
+  const [comparisonLoading, setComparisonLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        console.log('eventId', eventId);
+        const invitationResponse = await authService.getEventInvitationReport(eventId, accessToken as string);
+        setInvitationData((invitationResponse as any).data);
+
+        const checkInOutResponse = await authService.getCheckInOutStats(eventId, accessToken as string);
+        setCheckInOutStats((checkInOutResponse as any).data.checkInOutStats);
+
+        const comparisonResponse = await authService.getEventComparisonData(accessToken as string);
+        setEventComparisonData((comparisonResponse as any).data.eventComparisonDataList);
+
+        const detailedParticipantsResponse = await authService.getDetailedParticipantList(eventId, accessToken as string) as any;
+        setDetailedParticipants(detailedParticipantsResponse.data);
+
+      } catch (error: any) {
+        setError(error.message || 'Failed to fetch analysis data');
+        message.error(error.message || 'Failed to fetch analysis data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [eventId]);
+
+  if (loading) {
+    return <Loader />;
+  }
+
+  if (error) {
+    return <Alert message="Error" description={error} type="error" showIcon />;
+  }
+
+
+  return (
+    <div>
+      <Helmet>
+        <title>Event Analysis</title>
+      </Helmet>
+      <PageHeader
+        title="Event Analysis"
+        breadcrumbs={[
+          {
+            title: (
+              <>
+                <HomeOutlined />
+                <span>Home</span>
+              </>
+            ),
+            path: '/',
+          },
+          {
+            title: (
+              <>
+                <PieChartOutlined />
+                <span>Dashboards</span>
+              </>
+            ),
+            menu: {
+              items: DASHBOARD_ITEMS.map((d) => ({
+                key: d.title,
+                title: <Link to={d.path}>{d.title}</Link>,
+              })),
+            },
+          },
+          {
+            title: 'Event Analysis',
+          },
+        ]}
+        btnBack={<BackBtn />}
+      />
+      <BackBtn />
+
+      <Card>
+        <Title level={4}>Event Analysis Dashboard</Title>
+        <Row gutter={[24, 24]}>
+          <Col span={12}>
+            <Card title="Invitation Summary">
+              {invitationData ? (
+                <InvitationSummaryChart invitationSummary={invitationData.invitationSummary} />
+              ) : (
+                <Alert message="No invitation data available" type="info" showIcon />
+              )}
+            </Card>
+          </Col>
+          <Col span={12}>
+            <Card title="Check-in/Check-out Stats">
+              {checkInOutStats ? (
+                <CheckInOutStatsChart checkInOutStats={checkInOutStats} />
+              ) : (
+                <Alert message="No check-in/check-out stats available" type="info" showIcon />
+              )}
+            </Card>
+          </Col>
+          <Col span={24}>
+            <Card title="Detailed Participants List">
+              {loading ? (
+                <Spin tip="Loading participants data..." />
+              ) : error ? (
+                <Alert message="Error loading participants" description={error} type="error" showIcon />
+              ) : detailedParticipants ? (
+                <DetailedParticipantsTable
+                  detailedParticipants={detailedParticipants.detailedParticipants || []}
+                  meta={detailedParticipants.meta || { totalItems: 0, page: 1, limit: 10, totalPages: 0, count: 0 }}
+                />
+              ) : (
+                <Alert message="No participants data available" type="info" showIcon />
+              )}
+            </Card>
+          </Col>
+          <Col span={24}>
+            <Card title="Event Comparison">
+              <EventComparisonChart
+                eventComparisonDataList={eventComparisonData}
+                loading={comparisonLoading}
+                error={comparisonError}
+              />
+            </Card>
+          </Col>
+        </Row>
+      </Card>
+    </div>
+  );
+};
+
+export default EventAnalysisPage;
+
+
 src\pages\details\EventDetailsPage.tsx:
 // src\pages\details\EventDetailsPage.tsx
 import React, { useEffect, useState } from 'react';
@@ -11987,7 +12075,7 @@ import {
   Rate,
   Spin,
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined, QuestionOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined, QuestionOutlined, BarChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { PageHeader, Loader, UserAvatar, BackBtn } from '../../components';
 import { useFetchData } from '../../hooks';
@@ -12017,7 +12105,7 @@ export interface ParticipantData {
 
 
 const DetailMyEventPage: React.FC = () => {
-  const { id: eventId } = useParams<{ id: string }>(); // Corrected: Use 'id' and rename to 'eventId'
+  const { id: eventId } = useParams<{ id: string }>();
   const [eventDetails, setEventDetails] = useState<Events | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -12063,6 +12151,7 @@ const DetailMyEventPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
+        console.log('Feedback summary:', response);
         if (response.statusCode === 200 && response.data) {
           setFeedbackSummary(response.data);
         }
@@ -12117,13 +12206,20 @@ const DetailMyEventPage: React.FC = () => {
         extra={
           <Space>
             {eventDetails?.status === 'SCHEDULED' && (
-            <><Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal}>Invite Users</Button><Button
+              <><Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal}>Invite Users</Button><Button
                 type="primary"
                 onClick={() => navigate(`/dashboards/check-in-out/${eventId}`)} // Navigate to QR scanner page
               >
                 Check-in/Check-out
               </Button></>
             )}
+            <Button
+              type="primary"
+              icon={<BarChartOutlined />} // Use the new icon
+              onClick={() => navigate(`/dashboards/events/${eventId}/analysis`)} // Navigate to analysis page
+            >
+              Analysis
+            </Button>
           </Space>
         }
       >
@@ -12352,25 +12448,29 @@ const renderFeedbackSummary = (feedbackSummaryLoading: boolean, feedbackSummary:
             </Flex>
             <Flex justify="space-between">
               <Text>4 stars:</Text>
-              <Text>{feedbackSummary.ratingDistribution["4"] || 0} feedbacks</Text>
+              <Text>{feedbackSummary.ratingDistribution["4.0"] || 0} feedbacks</Text>
             </Flex>
             <Flex justify="space-between">
               <Text>3 stars:</Text>
-              <Text>{feedbackSummary.ratingDistribution["3"] || 0} feedbacks</Text>
+              <Text>{feedbackSummary.ratingDistribution["3.0"] || 0} feedbacks</Text>
             </Flex>
             <Flex justify="space-between">
               <Text>2 stars:</Text>
-              <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+              <Text>{feedbackSummary.ratingDistribution["2.0"] || 0} feedbacks</Text>
             </Flex>
             <Flex justify="space-between">
               <Text>1 star:</Text>
-              <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
+              <Text>{feedbackSummary.ratingDistribution["1.0"] || 0} feedbacks</Text>
             </Flex>
           </>
         )}
       </Flex>
-      <Button type="primary" size="small" >
-        <Link to={`/feedbacks/events/${eventId}`}>View All Feedbacks</Link>
+      <Button
+        type="primary"
+        size="middle"
+        onClick={() => { window.location.href = `/feedbacks/events/${eventId}`; }}
+      >
+        View All Feedbacks
       </Button>
     </Flex>
   ) : (
@@ -12845,8 +12945,12 @@ const ParticipatedEventDetailsPage: React.FC = () => {
                         <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
                       </Flex>
                     </Flex>
-                    <Button type="primary" size="small" >
-                      <Link to={`/feedbacks/events/${eventId}`}>View All Feedbacks</Link>
+                    <Button
+                      type="primary"
+                      size="middle"
+                      onClick={() => { window.location.href = `/feedbacks/events/${eventId}`; }}
+                    >
+                      View All Feedbacks
                     </Button>
                   </Flex>
                 ) : (
@@ -12886,6 +12990,268 @@ const ParticipatedEventDetailsPage: React.FC = () => {
 };
 
 export default ParticipatedEventDetailsPage;
+
+
+src\pages\details\components\CheckInOutStatsCard.tsx:
+// src\pages\details\components\CheckInOutStatsChart.tsx
+import React from 'react';
+import { Column } from '@ant-design/charts'; // Thay đổi import từ Pie thành Column
+import { Alert } from 'antd';
+
+interface CheckInOutStatsChartProps {
+    checkInOutStats: {
+        totalRegistered: number;
+        totalCheckedIn: number;
+        totalCheckedOut: number;
+        checkInRate: number;
+        checkOutRate: number;
+    };
+}
+
+const CheckInOutStatsChart: React.FC<CheckInOutStatsChartProps> = ({ checkInOutStats }) => {
+    if (!checkInOutStats) {
+        return <Alert message="No check-in/check-out stats data" type="warning" showIcon />;
+    }
+
+    const data = [
+        { type: 'Checked-In', value: checkInOutStats.totalCheckedIn },
+        { type: 'Checked-Out', value: checkInOutStats.totalCheckedOut },
+        { type: 'Registered', value: checkInOutStats.totalRegistered }, // Registered
+    ];
+
+    const config = {
+        data,
+        xField: 'type', // Sử dụng 'type' làm trục x (tên trạng thái)
+        yField: 'value', // Sử dụng 'value' làm trục y (số lượng)
+        label: {
+            position: 'top' as const,
+            style: {
+                fill: '#000',
+                opacity: 0.6,
+            },
+        },
+        xAxis: {
+            label: {
+                autoHide: true,
+                autoRotate: false,
+            },
+        },
+        yAxis: {
+            min: 0, // Đảm bảo trục Y bắt đầu từ 0
+        },
+        seriesField: 'type', // Không cần seriesField trong trường hợp này, có thể bỏ nếu không cần thiết
+        legend: { visible: false }, // Ẩn legend vì type đã hiển thị trên cột
+        tooltip: {
+            formatter: (params: any) => {
+                return {
+                    name: params.type,
+                    value: params.value,
+                };
+            },
+        },
+    };
+
+    return <Column {...config} />; // Thay Pie bằng Column
+};
+
+export default CheckInOutStatsChart;
+
+
+src\pages\details\components\DetailedParticipantsTable.tsx:
+import React from 'react';
+import { Alert } from 'antd';
+import { Pie } from '@ant-design/plots';
+
+interface DetailedParticipantsChartProps {
+  detailedParticipants: any[];
+  meta: any;
+}
+
+const DetailedParticipantsChart: React.FC<DetailedParticipantsChartProps> = ({ detailedParticipants, meta }) => {
+  // Nếu không có dữ liệu hoặc tổng số phần tử là 0 thì hiển thị Alert
+  if (!detailedParticipants || detailedParticipants.length === 0 || (meta && meta.totalItems === 0)) {
+    return <Alert message="No detailed participants data" type="info" showIcon />;
+  }
+
+  // Mapping trạng thái vé theo các giá trị số
+  const ticketStatusMapping: { [key: number]: string } = {
+    0: 'ACTIVE',
+    1: 'USED',
+    2: 'CHECKED_IN',
+    3: 'CANCELED',
+  };
+
+  // Tính số lượng người tham gia theo trạng thái vé
+  const statusCounts: { [key: string]: number } = {};
+  detailedParticipants.forEach((participant) => {
+    const status = participant.ticketStatus;
+    const statusText = ticketStatusMapping[status] || 'UNKNOWN';
+    statusCounts[statusText] = (statusCounts[statusText] || 0) + 1;
+  });
+
+  // Chuyển đối tượng statusCounts thành mảng dữ liệu cho biểu đồ
+  const data = Object.keys(statusCounts).map((key) => ({
+    type: key,
+    value: statusCounts[key],
+  }));
+
+  // Cấu hình cho biểu đồ Pie
+  const config = {
+    appendPadding: 10,
+    data,
+    angleField: 'value',
+    colorField: 'type',
+    radius: 1,
+    label: {
+      type: 'outer',
+      content: '{name} {percentage}',
+    },
+    interactions: [
+      {
+        type: 'pie-legend-active',
+      },
+      {
+        type: 'element-active',
+      },
+    ],
+  };
+
+  return <Pie {...config} />;
+};
+
+export default DetailedParticipantsChart;
+
+
+src\pages\details\components\EventComparisonChart.tsx:
+// src\pages\details\components\EventComparisonChart.tsx
+import React from 'react';
+import { Column } from '@ant-design/charts';
+import { Alert, Spin } from 'antd';
+
+interface EventComparisonChartProps {
+    eventComparisonDataList: any[]; // Thay 'any' bằng interface/type cụ thể nếu có
+    loading: boolean;
+    error: string | null;
+}
+
+const EventComparisonChart: React.FC<EventComparisonChartProps> = ({ eventComparisonDataList, loading, error }) => {
+    if (error) {
+        return <Alert message="Error loading event comparison data" description={error} type="error" showIcon />;
+    }
+
+    if (loading) {
+        return <div style={{ textAlign: 'center', padding: '20px' }}>
+            <Spin tip="Loading event comparison data..." />
+        </div>;
+    }
+
+    if (!eventComparisonDataList || eventComparisonDataList.length === 0) {
+        return <Alert message="No event comparison data available" type="warning" showIcon />;
+    }
+
+    const chartData = eventComparisonDataList.flatMap((event: any) => [
+        {
+            eventName: event.eventName,
+            category: 'Registration Count',
+            value: event.registrationCount,
+        },
+        {
+            eventName: event.eventName,
+            category: 'Feedback Count',
+            value: event.feedbackCount,
+        },
+        {
+            eventName: event.eventName,
+            category: 'Average Rating',
+            value: event.averageRating,
+        },
+    ]);
+
+    const config = {
+        data: chartData,
+        isGroup: true,
+        xField: 'eventName',
+        yField: 'value',
+        seriesField: 'category',
+        label: {
+            position: 'top' as const,
+            style: {
+                fill: '#000',
+                opacity: 0.6,
+            },
+        },
+        xAxis: {
+            label: {
+                autoHide: true,
+                autoRotate: false,
+            },
+        },
+        yAxis: {
+            min: 0,
+        },
+        tooltip: {
+            formatter: (params: any) => {
+                return {
+                    name: params.category,
+                    value: params.value,
+                };
+            },
+        },
+    };
+
+    return <Column {...config} />;
+};
+
+export default EventComparisonChart;
+
+
+src\pages\details\components\InvitationSummaryChart.tsx:
+// src\pages\details\components\InvitationSummaryChart.tsx
+import React from 'react';
+import { Pie } from '@ant-design/charts';
+import { Alert } from 'antd';
+
+interface InvitationSummaryChartProps {
+    invitationSummary: {
+        accepted: number;
+        pending: number;
+        declined: number;
+        totalInvited: number;
+    };
+}
+
+const InvitationSummaryChart: React.FC<InvitationSummaryChartProps> = ({ invitationSummary }) => {
+    if (!invitationSummary) {
+        return <Alert message="No invitation summary data" type="warning" showIcon />;
+    }
+
+    const data = [
+        { type: 'Accepted', value: invitationSummary.accepted },
+        { type: 'Pending', value: invitationSummary.pending },
+        { type: 'Declined', value: invitationSummary.declined },
+    ];
+
+    const config = {
+        appendPadding: 10,
+        data,
+        angleField: 'value',
+        colorField: 'type',
+        radius: 0.9,
+        label: {
+            type: 'inner',
+            offset: '-30%',
+            content: ({ percent }: any) => `${(percent * 100).toFixed(0)}%`,
+            style: {
+                fontSize: 14,
+                textAlign: 'center',
+            },
+        },
+        interactions: [{ type: 'element-active' }],
+    };
+    return <Pie {...config} />;
+};
+
+export default InvitationSummaryChart;
 
 
 src\pages\edit\EditEventPage.tsx:
@@ -13727,8 +14093,9 @@ const EventFeedbacksPage: React.FC = () => {
       for (const userId of userIds) {
         try {
           const response = await authService.getUserById(userId) as any;
+          console.log('User info:', response);
           if (response.statusCode === 200 && response.data) {
-            usersInfoMap[userId] = response.data.data;
+            usersInfoMap[userId] = response.data;
           }
         } catch (error) {
           console.error(`Error fetching user info for ${userId}`, error);
@@ -13777,6 +14144,7 @@ const EventFeedbacksPage: React.FC = () => {
         ]}
         btnBack={<BackBtn />}
       />
+      <BackBtn />
 
       <Card title={<Title level={3}>User Feedbacks for Event ID: {eventId}</Title>}>
         {error && (
@@ -14310,6 +14678,7 @@ import ProtectedRoute from '../components/ProtectedRoute.tsx';
 import { Helmet } from 'react-helmet-async';
 import DeclineEventPage from '../pages/DeclineEventPage.tsx';
 import EventFeedbacksPage from '../pages/feedbacks/EventFeedbacksPage.tsx';
+import EventAnalysisPage from '../pages/details/EventAnalysisPage.tsx';
 
 export const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -14401,7 +14770,7 @@ const router = createBrowserRouter([
         path: 'my-events/:id',
         element: <PrivateRoute>
           <DetailMyEventPage />
-        </PrivateRoute>,
+        </PrivateRoute>
       },
       {
         path: 'participated-events/:id',
@@ -14427,6 +14796,12 @@ const router = createBrowserRouter([
         path: 'check-in-out/:id', // New route for QR scanner
         element: <PrivateRoute>
           <QRScannerPage />
+        </PrivateRoute>,
+      },
+      {
+        path: 'events/:id/analysis',
+        element: <PrivateRoute>
+          <EventAnalysisPage />
         </PrivateRoute>,
       },
       {
@@ -15237,6 +15612,65 @@ const authService = {
       throw error.response.data;
     }
   },
+  // getEventCategoryStats: async (accessToken?: string) => {
+  //   try {
+  //     const headers: any = {
+  //       'Content-Type': 'application/json',
+  //     };
+  //     if (accessToken) {
+  //       headers['Authorization'] = `Bearer ${accessToken}`;
+  //     }
+  //     const response = await axiosInstance.get(`${API_REPORT_BASE_URL}/event-category-stats`, { headers });
+  //     return response.data;
+  //   } catch (error: any) {
+  //     throw error.response.data;
+  //   }
+  // },
+  getEventInvitationReport: async (eventId: string | undefined, accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_REPORT_BASE_URL}/${eventId}/invitations`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  getDetailedParticipantList: async (eventId: string | undefined, accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/detailed-list`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  getCheckInOutStats: async (eventId: string | undefined, accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_PARTICIPANTS_BASE_URL}/${eventId}/check-in-out-stats`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
   getEventCategoryStats: async (accessToken?: string) => {
     try {
       const headers: any = {
@@ -15246,6 +15680,20 @@ const authService = {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
       const response = await axiosInstance.get(`${API_REPORT_BASE_URL}/event-category-stats`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getEventComparisonData: async (accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/event-comparison`, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;

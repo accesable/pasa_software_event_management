@@ -20,7 +20,7 @@ import {
   Rate,
   Spin,
 } from 'antd';
-import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined, QuestionOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined, QuestionOutlined, BarChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { PageHeader, Loader, UserAvatar, BackBtn } from '../../components';
 import { useFetchData } from '../../hooks';
@@ -50,7 +50,7 @@ export interface ParticipantData {
 
 
 const DetailMyEventPage: React.FC = () => {
-  const { id: eventId } = useParams<{ id: string }>(); // Corrected: Use 'id' and rename to 'eventId'
+  const { id: eventId } = useParams<{ id: string }>();
   const [eventDetails, setEventDetails] = useState<Events | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +96,7 @@ const DetailMyEventPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
+        console.log('Feedback summary:', response);
         if (response.statusCode === 200 && response.data) {
           setFeedbackSummary(response.data);
         }
@@ -150,13 +151,20 @@ const DetailMyEventPage: React.FC = () => {
         extra={
           <Space>
             {eventDetails?.status === 'SCHEDULED' && (
-            <><Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal}>Invite Users</Button><Button
+              <><Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal}>Invite Users</Button><Button
                 type="primary"
                 onClick={() => navigate(`/dashboards/check-in-out/${eventId}`)} // Navigate to QR scanner page
               >
                 Check-in/Check-out
               </Button></>
             )}
+            <Button
+              type="primary"
+              icon={<BarChartOutlined />} // Use the new icon
+              onClick={() => navigate(`/dashboards/events/${eventId}/analysis`)} // Navigate to analysis page
+            >
+              Analysis
+            </Button>
           </Space>
         }
       >
@@ -385,25 +393,29 @@ const renderFeedbackSummary = (feedbackSummaryLoading: boolean, feedbackSummary:
             </Flex>
             <Flex justify="space-between">
               <Text>4 stars:</Text>
-              <Text>{feedbackSummary.ratingDistribution["4"] || 0} feedbacks</Text>
+              <Text>{feedbackSummary.ratingDistribution["4.0"] || 0} feedbacks</Text>
             </Flex>
             <Flex justify="space-between">
               <Text>3 stars:</Text>
-              <Text>{feedbackSummary.ratingDistribution["3"] || 0} feedbacks</Text>
+              <Text>{feedbackSummary.ratingDistribution["3.0"] || 0} feedbacks</Text>
             </Flex>
             <Flex justify="space-between">
               <Text>2 stars:</Text>
-              <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+              <Text>{feedbackSummary.ratingDistribution["2.0"] || 0} feedbacks</Text>
             </Flex>
             <Flex justify="space-between">
               <Text>1 star:</Text>
-              <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
+              <Text>{feedbackSummary.ratingDistribution["1.0"] || 0} feedbacks</Text>
             </Flex>
           </>
         )}
       </Flex>
-      <Button type="primary" size="small" >
-        <Link to={`/feedbacks/events/${eventId}`}>View All Feedbacks</Link>
+      <Button
+        type="primary"
+        size="middle"
+        onClick={() => { window.location.href = `/feedbacks/events/${eventId}`; }}
+      >
+        View All Feedbacks
       </Button>
     </Flex>
   ) : (

@@ -48,8 +48,9 @@ const EventFeedbacksPage: React.FC = () => {
       for (const userId of userIds) {
         try {
           const response = await authService.getUserById(userId) as any;
+          console.log('User info:', response);
           if (response.statusCode === 200 && response.data) {
-            usersInfoMap[userId] = response.data.data;
+            usersInfoMap[userId] = response.data;
           }
         } catch (error) {
           console.error(`Error fetching user info for ${userId}`, error);
@@ -98,6 +99,7 @@ const EventFeedbacksPage: React.FC = () => {
         ]}
         btnBack={<BackBtn />}
       />
+      <BackBtn />
 
       <Card title={<Title level={3}>User Feedbacks for Event ID: {eventId}</Title>}>
         {error && (

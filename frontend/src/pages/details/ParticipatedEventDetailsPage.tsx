@@ -406,8 +406,12 @@ const ParticipatedEventDetailsPage: React.FC = () => {
                         <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
                       </Flex>
                     </Flex>
-                    <Button type="primary" size="small" >
-                      <Link to={`/feedbacks/events/${eventId}`}>View All Feedbacks</Link>
+                    <Button
+                      type="primary"
+                      size="middle"
+                      onClick={() => { window.location.href = `/feedbacks/events/${eventId}`; }}
+                    >
+                      View All Feedbacks
                     </Button>
                   </Flex>
                 ) : (

@@ -667,6 +667,65 @@ const authService = {
       throw error.response.data;
     }
   },
+  // getEventCategoryStats: async (accessToken?: string) => {
+  //   try {
+  //     const headers: any = {
+  //       'Content-Type': 'application/json',
+  //     };
+  //     if (accessToken) {
+  //       headers['Authorization'] = `Bearer ${accessToken}`;
+  //     }
+  //     const response = await axiosInstance.get(`${API_REPORT_BASE_URL}/event-category-stats`, { headers });
+  //     return response.data;
+  //   } catch (error: any) {
+  //     throw error.response.data;
+  //   }
+  // },
+  getEventInvitationReport: async (eventId: string | undefined, accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_REPORT_BASE_URL}/${eventId}/invitations`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  getDetailedParticipantList: async (eventId: string | undefined, accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/detailed-list`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  getCheckInOutStats: async (eventId: string | undefined, accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_PARTICIPANTS_BASE_URL}/${eventId}/check-in-out-stats`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
   getEventCategoryStats: async (accessToken?: string) => {
     try {
       const headers: any = {
@@ -676,6 +735,20 @@ const authService = {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
       const response = await axiosInstance.get(`${API_REPORT_BASE_URL}/event-category-stats`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getEventComparisonData: async (accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/event-comparison`, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;

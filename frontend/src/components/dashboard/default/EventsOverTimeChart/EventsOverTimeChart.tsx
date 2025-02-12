@@ -1,4 +1,3 @@
-// src\components\dashboard\default\EventsOverTimeChart\EventsOverTimeChart.tsx
 import React, { useState, useEffect } from 'react';
 import { CardProps, Typography, Spin, Alert } from 'antd';
 import { Area } from '@ant-design/charts';
@@ -45,6 +44,8 @@ const EventsOverTimeChartComponent: React.FC<Props> = ({ ...others }) => {
     fetchEventsData();
   }, []);
 
+  const maxCount = data.length ? Math.max(...data.map(item => item.count)) : 0;
+
   const config = {
     data,
     xField: 'month',
@@ -54,12 +55,14 @@ const EventsOverTimeChartComponent: React.FC<Props> = ({ ...others }) => {
     xAxis: {
       label: {
         formatter: (value: string) => {
+          // Đảo vị trí tháng và năm nếu cần
           return value.split('-')[1] + '-' + value.split('-')[0];
         },
       },
     },
     yAxis: {
       min: 0,
+      max: maxCount + 2,
     },
     tooltip: {
       formatter: (params: any) => {
@@ -70,7 +73,6 @@ const EventsOverTimeChartComponent: React.FC<Props> = ({ ...others }) => {
       },
     },
   };
-
 
   return (
     <Card title="Total Events Over Time" {...others}>

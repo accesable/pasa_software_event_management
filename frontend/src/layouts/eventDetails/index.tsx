@@ -60,7 +60,7 @@ export const EventDetailLayout: React.FC = () => {
         if (response.statusCode === 200 && response.data) {
           setEventDetail(response.data.event);
           if(eventDetail?.status === 'FINISHED') {
-            const checkParticipant = await authService.getEventParticipants(eventId, accessToken || '') as any;
+            const checkParticipant = await authService.getParticipantData(eventId, accessToken || '') as any;
             if(checkParticipant.statusCode === 200) {
               setIsParticipant(true);
             } else {
