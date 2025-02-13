@@ -45,12 +45,12 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const [updatingSessions, setUpdatingSessions] = useState<boolean>(false); // State loading cho update session
   const [isTicketModalVisible, setIsTicketModalVisible] = useState<boolean>(false); // State for ticket modal visibility
   const { eventId } = useOutletContext<{ eventId: string }>();
-  const [feedbackSummaryLoading] = useState(false);
-  const [feedbackSummary] = useState<{
+  const [feedbackSummary, setFeedbackSummary] = useState<{
     averageRating: number;
     totalFeedbacks: number;
     ratingDistribution: Record<string, number>;
   } | null>(null);
+  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
 
   useEffect(() => {
     const fetchEventDetailsAndParticipation = async () => {
@@ -76,7 +76,23 @@ const ParticipatedEventDetailsPage: React.FC = () => {
       }
     };
 
+    const fetchEventFeedbackSummary = async () => {
+      if (!eventId) return;
+      setFeedbackSummaryLoading(true);
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
+        if (response.statusCode === 200 && response.data) {
+          setFeedbackSummary(response.data);
+        }
+      } catch (error: any) {
+      } finally {
+        setFeedbackSummaryLoading(false);
+      }
+    };
+
     fetchEventDetailsAndParticipation();
+    fetchEventFeedbackSummary();
   }, [id, navigate]);
 
   const handleDownloadPdfFunction = (setLoading: React.Dispatch<React.SetStateAction<boolean>>, message: any, authService: any, dayjs: any, eventId: string | undefined) => async () => {
