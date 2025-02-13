@@ -36,7 +36,7 @@ import SideNav from './SideNav.tsx';
 import HeaderNav from './HeaderNav.tsx';
 import FooterNav from './FooterNav.tsx';
 import { NProgress } from '../../components';
-import { PATH_AUTH } from '../../constants';
+import { PATH_AUTH, PATH_USER_PROFILE } from '../../constants';
 import { useSelector, useDispatch } from 'react-redux';
 import { toggleTheme } from '../../redux/theme/themeSlice.ts';
 import { RootState } from '../../redux/store.ts';
@@ -94,6 +94,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       key: 'user-profile-link',
       label: 'profile',
       icon: <UserOutlined />,
+      onClick: () => navigate(PATH_USER_PROFILE.personalInformation),
     },
     {
       key: 'user-settings-link',

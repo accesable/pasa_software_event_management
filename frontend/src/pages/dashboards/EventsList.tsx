@@ -86,7 +86,11 @@ const EventsListPage = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text, record) => <Typography.Paragraph ellipsis><Link to={`/details/events/${record.id}`}>{text}</Link></Typography.Paragraph>, 
+      render: (text, record) => <Typography.Paragraph ellipsis>
+        <Link to={`/details/events/${record.id}`}>
+          {text?.length > 15 ? `${text.slice(0, 15)}...` : text}
+        </Link>
+      </Typography.Paragraph>,
     },
     {
       title: 'Location',
@@ -123,6 +127,7 @@ const EventsListPage = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      responsive: ['md'], 
       render: (status) => (
         <Tag color={status === 'SCHEDULED' ? 'blue' : status === 'CANCELED' ? 'red' : 'green'}>
           {status}
@@ -187,11 +192,11 @@ const EventsListPage = () => {
       <Card
         title="Events"
         extra={
-          <Flex wrap="wrap" gap="small" align="center" style={{marginTop: '10px' }}> {/* Use Flex for responsive filters */}
+          <Flex wrap="wrap" gap="small" align="center" style={{ marginTop: '10px' }}> {/* Use Flex for responsive filters */}
             <Select
               placeholder="Filter by Category"
               allowClear
-              style={{ minWidth: 150, width: 'auto'}} // Adjust width for responsiveness
+              style={{ minWidth: 150, width: 'auto' }} // Adjust width for responsiveness
               onChange={onCategoryFilterChange}
               options={categoryOptions}
               value={categoryFilter}

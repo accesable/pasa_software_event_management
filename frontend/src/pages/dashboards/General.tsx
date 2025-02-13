@@ -125,7 +125,7 @@ export const GeneralDashboardPage = () => {
             </Col>
           </Row>
         </Col>
-        <Col sm={24} lg={8}>
+        <Col sm={24} lg={8} xs={24}>
           <CustomerReviewsCard />
         </Col>
         <Col xs={24} lg={12}>

@@ -5,14 +5,13 @@ import {
   Button,
   Card,
   Space,
-  Table,
-  Tag,
+  Spin,
   Select,
   message,
   Popconfirm,
-  Spin,
-  Flex, // Import Flex
-  Typography, // Import Typography
+  Flex,
+  Typography,
+  Tag,
 } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
@@ -24,6 +23,7 @@ import dayjs from 'dayjs';
 import useFetchParticipatedEventsData from '../../hooks/useFetchParticipatedEventsData';
 import authService from '../../services/authService';
 import { DASHBOARD_ITEMS } from '../../constants';
+import { MyEventsTable } from '../../components/dashboard/events/MyEventTable'; // Đảm bảo import MyEventsTable
 
 const EVENT_STATUS_OPTIONS = [
   { value: 'all', label: 'All Statuses' },
@@ -110,12 +110,16 @@ const ParticipatedEventsPage = () => {
     }
   };
 
-  const columns: ColumnsType<Events> = [
+  // Định nghĩa COLUMNS_PARTICIPATED_EVENTS ở đây
+  const COLUMNS_PARTICIPATED_EVENTS: ColumnsType<Events> = [
     {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text, record) => <Typography.Paragraph ellipsis><Link to={`/details/participated-events/${record.id}`}>{text}</Link></Typography.Paragraph>, // Added ellipsis
+
+      render: (text, record) => <Typography.Paragraph ellipsis><Link to={`/details/participated-events/${record.id}`}>{
+        text?.length > 20 ? `${text.slice(0, 20)}...` : text
+      }</Link></Typography.Paragraph>, // Added ellipsis
     },
     {
       title: 'Location',
@@ -157,28 +161,29 @@ const ParticipatedEventsPage = () => {
           {status}
         </Tag>
       ),
+      responsive: ['md'],
     },
     {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <Space size="middle">
-          <Button type="primary" size="small">
+        <Flex vertical gap="small" align="center"> {/* Sử dụng Flex vertical và align center */}
+          <Button type="primary" size="small"> {/* Đảm bảo size="small" */}
             <Link to={`/details/participated-events/${record.id}`}>Details</Link>
           </Button>
           <Popconfirm
-            title="Cancel Event"
+            title="Unregister Event"
             description="Are you sure to unregister from this event?"
             onConfirm={() => handleLeaveEvent(record.id)}
             onCancel={() => message.info('Cancel')}
-            okText="Yes, Cancel"
+            okText="Yes, Unregister"
             cancelText="No"
             placement="topRight"
             overlayInnerStyle={{ width: 200 }}
           >
-            <Button danger>Unregister</Button>
+            <Button danger size="small">Cancel</Button>  {/* Đảm bảo size="small" */}
           </Popconfirm>
-        </Space>
+        </Flex>
       ),
     },
   ];
@@ -237,20 +242,23 @@ const ParticipatedEventsPage = () => {
           <Alert message="No events participated yet." type="info" showIcon />
         ) : (
           <div className="table-responsive"> {/* Responsive table wrapper */}
-            <Table
-              columns={columns}
-              dataSource={eventsData?.events || []}
+            <MyEventsTable
+              columns={COLUMNS_PARTICIPATED_EVENTS} // Pass COLUMNS_PARTICIPATED_EVENTS ở đây
+              data={eventsData?.events || []}
               loading={eventsLoading || actionLoading}
-              pagination={{
-                current: currentPage,
-                pageSize: pageSize,
-                total: eventsData?.meta?.totalItems || 0,
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-                pageSizeOptions: ['10', '20', '50', '100'],
-                showSizeChanger: true,
-                onChange: handlePaginationChange,
+              fetchData={() => fetchData(statusFilter === 'all' ? undefined : statusFilter)}
+              activeTabKey={statusFilter === 'all' ? 'all' : statusFilter}
+              {...{
+                pagination: {
+                  current: currentPage,
+                  pageSize: pageSize,
+                  total: eventsData?.meta?.totalItems || 0,
+                  showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  showSizeChanger: true,
+                  onChange: handlePaginationChange,
+                },
               }}
-              scroll={{ x: 'max-content' }} // Enable horizontal scroll
             />
           </div>
         )}

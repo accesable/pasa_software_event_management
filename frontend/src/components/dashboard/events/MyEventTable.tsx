@@ -11,8 +11,9 @@ import {
   Tag,
   Typography,
   message,
+  Flex,
 } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import authService from '../../../services/authService';
 import { Events } from '../../../types';
@@ -27,8 +28,8 @@ type Props = {
 } & TableProps<Events>;
 
 export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...others }: Props) => {
-  const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({}); // State to store category names by categoryId
-  const [categoryLoading, setCategoryLoading] = useState(false); // Loading state
+  const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({});
+  const [categoryLoading, setCategoryLoading] = useState(false);
   const navigate = useNavigate();
   const [tableLoading, setTableLoading] = useState(false);
 
@@ -79,9 +80,11 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
         <Typography.Paragraph
           ellipsis={{ rows: 1 }}
           className="text-capitalize"
-          style={{ marginBottom: 0 }}
+          style={{ marginBottom: 0, maxWidth: 150 }} // Thêm maxWidth để giới hạn chiều rộng và ellipsis
         >
-          {record.name?.substring(0, 20)}
+          <Link to={`/details/my-events/${record.id}`}> {/* Thay đổi Link ở đây */}
+            {_.length > 20 ? `${_.slice(0, 20)}...` : _}
+          </Link>
         </Typography.Paragraph>
       ),
     },
@@ -89,6 +92,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       title: 'Category',
       dataIndex: 'categoryId',
       key: 'event_category',
+      responsive: ['md'], // Ẩn trên màn hình nhỏ hơn md
       render: (categoryId: string) => { // Changed render to receive categoryId
         return (
           <Space>
@@ -105,6 +109,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       title: 'Status',
       dataIndex: 'status',
       key: 'proj_status',
+      responsive: ['md'], // Ẩn trên màn hình nhỏ hơn md
       render: (_: any) => {
         let status: BadgeProps['status'];
 
@@ -125,17 +130,20 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       title: 'Capacity',
       dataIndex: 'maxParticipants',
       key: 'event_capacity',
+      responsive: ['lg'], // Ẩn trên màn hình nhỏ hơn lg
     },
     {
       title: 'Start Date',
       dataIndex: 'startDate',
       key: 'event_start_date',
+      responsive: ['lg'], // Ẩn trên màn hình nhỏ hơn lg
       render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm:ss') : 'N/A', // Thêm định dạng DD/MM/YYYY HH:mm:ss
     },
     {
       title: 'End Date',
       dataIndex: 'endDate',
       key: 'event_end_date',
+      responsive: ['lg'], // Ẩn trên màn hình nhỏ hơn lg
       render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm:ss') : 'N/A', // Thêm định dạng DD/MM/YYYY HH:mm:ss
     },
     {
@@ -144,32 +152,30 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       key: 'event_actions',
       render: (eventId: string, record: Events) => {
         return (
-          <Space size="small">
-            <Button type="primary" onClick={() => navigate(`/details/my-events/${record.id}`)}> {/* Đã sửa URL navigate */}
+          <Flex gap="small" vertical={true} wrap="wrap" justify="center"> {/* Sử dụng Flex container */}
+            <Button type="primary" size="small" onClick={() => navigate(`/details/my-events/${record.id}`)}>
               Details
             </Button>
-            {activeTabKey !== 'CANCELED' && activeTabKey !== 'FINISHED' && (
-              <Button type="primary" onClick={() => navigate(`/edit/events/${record.id}`)}>
-                Update
+
+            <Button type="primary" size="small" onClick={() => navigate(`/edit/events/${record.id}`)}>
+              Update
+            </Button>
+
+
+            <Popconfirm
+              title="Cancel Event"
+              description="Are you sure to cancel this event?"
+              onConfirm={() => handleCancel(eventId, setTableLoading, fetchData)}
+              onCancel={() => message.info('Cancel cancel')}
+              okText="Yes, Cancel"
+              cancelText="No"
+            >
+              <Button danger size="small">
+                Cancel
               </Button>
-            )}
-            {activeTabKey !== 'CANCELED' && activeTabKey !== 'FINISHED' && (
-              <Popconfirm
-                title="Cancel Event"
-                description="Are you sure to cancel this event?"
-                onConfirm={() => handleCancel(eventId, setTableLoading, fetchData)}
-                onCancel={() => message.info('Cancel cancel')}
-                okText="Yes, Cancel"
-                cancelText="No"
-                placement="topRight" // Thử thay đổi placement
-                overlayInnerStyle={{ width: 300 }} // Thử set width
-              >
-                <Button danger>
-                  Cancel
-                </Button>
-              </Popconfirm>
-            )}
-          </Space>
+            </Popconfirm>
+
+          </Flex>
         );
       },
     },

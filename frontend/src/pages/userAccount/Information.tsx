@@ -68,9 +68,9 @@ export const UserProfileInformationPage = () => {
           form.setFieldsValue({
             name: response.data.user.name,
             phoneNumber: response.data.user.phoneNumber,
-            country: 'Kenya', // Giá trị mặc định, bạn có thể thay đổi hoặc lấy từ API nếu có
-            addressLine1: '828, 18282 ABC Drive, XYZ Rd', // Giá trị mặc định
-            city: 'Nairobi', // Giá trị mặc định
+            country: 'Vietnam', // Giá trị mặc định, bạn có thể thay đổi hoặc lấy từ API nếu có
+            addressLine1: 'Nguyen Van Linh D7', // Giá trị mặc định
+            city: 'HCM', // Giá trị mặc định
             postalCode: '00100', // Giá trị mặc định
             preferred: true, // Giá trị mặc định
             dob: dayjs('1996/04/27'), // Giá trị mặc định
