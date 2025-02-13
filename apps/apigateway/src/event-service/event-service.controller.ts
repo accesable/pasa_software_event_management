@@ -131,7 +131,6 @@ export class EventServiceController {
     @Query('status') status?: string,
     @User() user?: DecodeAccessResponse,
   ) {
-    console.log('status', status);
     return this.eventServiceService.getOrganizedEvents(user.id, status);
   }
 
