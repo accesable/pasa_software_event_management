@@ -1,0 +1,535 @@
+syntax = "proto3";
+
+package event;
+
+service EventService{
+  rpc GetAllEvent(QueryParamsRequest) returns (AllEventResponse); 
+  rpc GetEventById(EventByIdRequest) returns (EventResponse);
+  rpc GetCategoryById(CategoryByIdRequest) returns (CategoryResponse);
+  rpc GetAllCategory(Empty) returns (AllCategoryResponse);
+  rpc CreateEvent(CreateEventRequest) returns (EventResponse);
+  rpc CreateCategory(CreateCategoryRequest) returns (CategoryResponse);
+  rpc UpdateEvent(UpdateEventRequest) returns (EventResponse);
+  rpc UpdateCategory(UpdateCategoryRequest) returns (CategoryResponse);
+  rpc UpdateSpeaker(UpdateSpeakerRequest) returns (SpeakerResponse);
+  rpc UpdateGuest(UpdateGuestRequest) returns (GuestResponse);
+  rpc CreateSpeaker(CreateSpeakerRequest) returns (SpeakerResponse);
+  rpc GetAllSpeaker(GetAllRequest) returns (AllSpeakerResponse);
+  rpc getAllGuest(GetAllRequest) returns (AllGuestResponse);
+  rpc GetSpeakerById(FindByIdRequest) returns (SpeakerResponse);
+  rpc GetGuestById(FindByIdRequest) returns (GuestResponse);
+  rpc CreateGuest(CreateGuestRequest) returns (GuestResponse);
+  rpc CancelEvent(CancelEventRequest) returns (CancelEventResponse);
+  //rpc UpdateEventDocument (UpdateEventDocumentRequest) returns (UpdateEventDocumentResponse);
+  rpc CheckOwnerShip(CheckOwnerShipRequest) returns (CheckOwnerShipResponse);
+  //rpc UpdateEventVideoIntro(UpdateEventVideoIntroRequest) returns (EventResponse);
+  rpc SendEventInvites (SendEventInvitesRequest) returns (SendEventInvitesResponse);
+  rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse);
+  rpc DeclineInvitation(DeclineInvitationRequest) returns (DeclineInvitationResponse);
+  rpc IsExistEvent(EventByIdRequest) returns (IsExistEventResponse);
+  rpc getOrganizedEvents(getOrganizedEventsRequest) returns (AllEventResponse);
+  rpc getParticipatedEvents(getParticipatedEventsRequest) returns (AllEventResponse);
+  rpc CreateQuestion(CreateQuestionRequest) returns (CreateQuestionResponse);
+  rpc AnswerQuestion(AnswerQuestionRequest) returns (AnswerQuestionResponse);
+  rpc GetEventQuestions(EventByIdRequest) returns (GetEventQuestionsResponse);
+
+  rpc SubmitFeedback(SubmitFeedbackRequest) returns (GetFeedbackByUserResponse);
+  rpc GetFeedbackAnalysis(EventByIdRequest) returns (FeedbackAnalysisResponse);
+  rpc UpdateFeedback(SubmitFeedbackRequest) returns (GetFeedbackByUserResponse);
+  rpc GetFeedbackByUser(GetFeedbackByUserRequest) returns (GetFeedbackByUserResponse);
+  rpc GetEventRegistrationsOverTime(EventByIdRequest) returns (EventRegistrationsOverTimeResponse);
+  rpc getTotalEventsOverTime(GetTotalOrganizedEventsOverTimeRequest) returns (MonthlyEventCountsResponse);
+  rpc GetEventInvitedUsers(EventByIdRequest) returns (GetEventInvitedUsersResponse); 
+  rpc GetEventComparisonData(Empty) returns (GetEventComparisonDataResponse); 
+  rpc GetEventFeedbacks(GetEventFeedbacksRequest) returns (GetEventFeedbacksResponse);
+}
+
+message Empty{}
+
+message GetEventFeedbacksRequest { // Request message mới cho getEventFeedbacks
+  string eventId = 1;
+  QueryParamsRequest query = 2; // Sử dụng QueryParamsRequest để hỗ trợ filter, sort, phân trang
+}
+
+message EventComparisonData {
+    string eventId = 1;
+    string eventName = 2;
+    string categoryName = 3;
+    string startDate = 4;
+    string endDate = 5;
+    string location = 6;
+    int32 registrationCount = 7;
+    double averageRating = 8;
+    int32 feedbackCount = 9;
+    string status = 10;
+}
+
+message GetEventComparisonDataResponse {
+    repeated EventComparisonData eventComparisonDataList = 1;
+}
+
+message GetEventInvitedUsersResponse { 
+  repeated InvitedUser invitedUsers = 1;
+}
+
+message GetTotalOrganizedEventsOverTimeRequest {
+    string userId = 1;
+}
+
+message MonthlyEventCountsResponse {
+  repeated MonthlyEventCount monthlyOrganizedEvents = 1;
+  repeated MonthlyEventCount monthlyParticipatedEvents = 2;
+}
+
+message MonthlyEventCount {
+    string month = 1; // "YYYY-MM" format
+    int32 count = 2;
+}
+
+message EventRegistrationsOverTimeResponse {
+  repeated RegistrationCountData registrationCounts = 1;
+}
+
+message RegistrationCountData {
+  string date = 1; // Ngày đăng ký (YYYY-MM-DD)
+  int32 registrations = 2; // Số lượng đăng ký trong ngày
+}
+
+message GetFeedbackByUserResponse {
+  Feedback feedback = 1;
+}
+
+message GetFeedbackByUserRequest {
+  string eventId = 1;
+  string userId = 2;
+}
+
+message CreateQuestionRequest {
+  string eventId = 1;
+  string userId = 2;
+  string text = 3;
+}
+message CreateQuestionResponse {
+  Question question = 1;
+}
+
+message AnswerQuestionRequest {
+  string questionId = 1;
+  string userId = 2;
+  string text = 3;
+}
+message AnswerQuestionResponse {
+  Question question = 1;
+}
+
+message GetEventQuestionsResponse {
+  repeated Question questions = 1;
+}
+
+message Question {
+  string id = 1;
+  string eventId = 2;
+  string userId = 3;
+  string text = 4;
+  repeated Answer answers = 5;
+  string createdAt = 6;
+  string updatedAt = 7;
+}
+message Answer {
+  string userId = 1;
+  string text = 2;
+  string createdAt = 3;
+}
+
+message SubmitFeedbackRequest {
+  string eventId = 1;
+  string userId = 2;
+  float rating = 3;
+  string comment = 4;
+}
+
+message SubmitFeedbackResponse {
+  string message = 1;
+}
+
+message GetEventFeedbacksResponse {
+  repeated Feedback feedbacks = 1;
+}
+
+message Feedback {
+  string id = 1;
+  string eventId = 2;
+  string userId = 3;
+  float rating = 4;
+  string comment = 5;
+  string createdAt = 6;
+  string updatedAt = 7;
+}
+
+message FeedbackAnalysisResponse {
+  string eventId = 1;
+  float averageRating = 2;
+  int32 totalFeedbacks = 3;
+  map<string, int32> ratingDistribution = 4;
+}
+
+message UpdateGuestRequest{
+  string id = 1;
+  optional string name = 2;
+  optional string jobTitle = 3;
+  optional string organization = 4;
+  optional string linkSocial = 5;
+  optional string avatar = 6;
+  string userId = 7;
+}
+
+message UpdateSpeakerRequest{
+  string id = 1;
+  optional string name = 2;
+  optional string email = 3;
+  optional string avatar = 4;
+  optional string phone = 5;
+  optional string jobTitle = 6;
+  optional string bio = 7;
+  optional string linkFb = 8;
+  string userId = 9;
+}
+
+message GetAllRequest{
+  string userId = 1;
+}
+
+message AcceptInvitationRequest {
+  string eventId = 1;
+  string token = 2;
+}
+
+message AcceptInvitationResponse {
+  string message = 1;
+}
+
+message DeclineInvitationRequest {
+  string eventId = 1;
+  string token = 2;
+}
+
+message DeclineInvitationResponse {
+  string message = 1;
+}
+
+message getParticipatedEventsRequest{
+  string userId = 1;
+  optional string status = 2;
+}
+
+message getOrganizedEventsRequest{
+  string userId = 1;
+  optional string status = 2;
+}
+
+
+message IsExistEventResponse{
+  bool isExist = 1;
+}
+
+message SendEventInvitesRequest{
+  EventResponse event = 1;
+  repeated UserTypeInvite users = 2;
+}
+
+message UserTypeInvite{
+  string email = 1;
+  string id = 2;
+}
+
+message SendEventInvitesResponse {
+  string message = 1;
+  bool success = 2;
+}
+
+message UpdateEventVideoIntroRequest{
+  string id = 1;
+  string videoUrl = 2;
+}
+
+message CheckOwnerShipRequest{
+  string eventId = 1;
+  string userId = 2;
+}
+
+message CheckOwnerShipResponse{
+  bool isOwner = 1;
+}
+
+message UpdateEventFilesRequest {
+    string id = 1;                
+    string field = 2;             
+    repeated string fileIds = 3;  
+    string videoUrl = 4;          
+    repeated string deletedFiles = 5;             
+}
+
+message UpdateEventDocumentRequest {
+  string id = 1; 
+  int32 index = 2; 
+  string document = 3; 
+  string userId = 4;
+}
+
+message UpdateEventDocumentResponse {
+  string message = 1;
+  EventType event = 2; 
+}
+
+message CancelEventRequest{
+  string id = 1;
+  string userId = 2;
+}
+
+message CancelEventResponse{
+  string message = 1;
+}
+
+message GuestResponse{
+  Guest guest = 1;
+}
+
+message AllGuestResponse{
+  repeated Guest guests = 1;
+  Meta meta = 2;
+}
+
+message CreateGuestRequest{
+  string name = 1;
+  string jobTitle = 2;
+  optional string organization = 3;
+  optional string linkSocial = 4;
+  optional string avatar = 5;
+  string userId = 6;
+}
+
+message CreateSpeakerRequest{
+  string name = 1;
+  string email = 2;
+  optional string avatar = 3;
+  optional string phone = 4;
+  string jobTitle = 5;
+  optional string bio = 6;
+  optional string linkFb = 7;
+  string userId = 8;
+}
+
+message SpeakerResponse{
+  Speaker speaker = 1;
+}
+
+message AllSpeakerResponse{
+  repeated Speaker speakers = 1;
+  Meta meta = 2;
+}
+
+message FindByIdRequest{
+    string id = 1;
+}
+
+message DecodeAccessResponse{
+    string id = 1;
+    string email = 2;
+    string name = 3;
+    string avatar = 4;
+    string oldAvatarId = 5;
+    string phoneNumber = 6;
+    bool isActive = 7;
+    string role = 8;
+    string lastLoginAt = 9;
+    string createdAt = 10;
+    string updatedAt = 11;
+}
+
+message Meta{
+  optional int32 page = 1;
+  optional int32 limit = 2;
+  optional int32 totalPages = 3;
+  int32 totalItems = 4;
+  int32 count = 5;
+}
+
+message QueryParamsRequest{
+  map<string, string> query = 1;
+}
+
+message UpdateCategoryRequest{
+  string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+}
+
+message CreateCategoryRequest{
+  string name = 1;
+  optional string description = 2;
+}
+
+message CategoryByIdRequest{
+  string id = 1;
+}
+
+message EventByIdRequest{
+  string id = 1;
+}
+
+message AllCategoryResponse{
+  repeated Category categories = 1;
+  Meta meta = 2;
+}
+
+message EventResponse{
+  EventType event = 1;
+}
+
+message AllEventResponse{
+  repeated EventType events = 1;
+  Meta meta = 2;
+}
+
+message CategoryResponse{
+  Category category = 1;
+}
+
+message Category{
+  string id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message CreateEventRequest {
+  string name = 1;
+  string description = 2;
+  string startDate = 3;
+  string endDate = 4;
+  string location = 5;
+  repeated string guestIds = 6;
+  string categoryId = 7;
+  int32 maxParticipants = 8;
+  optional string banner = 9;
+  optional string videoIntro = 10;
+  repeated string documents = 11;
+  CreatedBy createdBy = 12;
+  repeated SponsorType sponsors = 13;
+  optional BudgetType budget = 14;
+  repeated ScheduleWithoutId schedule = 15;
+}
+
+message UpdateEventRequest {
+  string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional string startDate = 4;
+  optional string endDate = 5;
+  optional string location = 6;
+  repeated string guestIds = 7;
+  optional string categoryId = 8;
+  optional int32 maxParticipants= 9;
+  optional string banner=10;
+  optional string videoIntro = 11;
+  repeated string documents=12;
+  optional string status=13;
+  repeated SponsorType sponsors = 14;
+  optional BudgetType budget = 15;
+  repeated ScheduleWithoutId schedule = 16;
+  repeated InvitedUser invitedUsers = 17;
+}
+
+
+message EventType {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string startDate = 4;
+  string endDate = 5;
+  string location = 6;
+  repeated ScheduleType schedule = 7;
+  repeated string guestIds = 8;
+  string categoryId = 9;
+  int32 maxParticipants = 10;
+  optional string banner = 11;
+  optional string videoIntro = 12;
+  repeated string documents = 13;
+  string status = 14;
+  string createdAt = 15;
+  string updatedAt = 16;
+  CreatedBy createdBy = 17;
+  repeated SponsorType sponsors = 18;
+  optional BudgetType budget = 19;
+  repeated InvitedUser invitedUsers = 20;
+}
+
+message InvitedUser {
+    string userId = 1;
+    string email = 2;
+  optional string status = 3;
+}
+
+message Speaker{
+  string id = 1;
+  string name = 2;
+  string bio = 3;
+  string linkFb = 4;
+  string avatar = 5;
+  string email = 6;
+  optional string phone = 7;
+  string jobTitle = 8;
+  string createdAt = 9;
+  string updatedAt = 10;
+}
+
+message Guest{
+  string id = 1;
+  string name = 2;
+  string jobTitle = 3;
+  optional string organization = 4;
+  optional string linkSocial = 5;
+  string avatar = 6;
+  string createdAt = 7;
+  string updatedAt = 8;
+}
+
+message SponsorType {
+  string name = 1;
+  string logo = 2;
+  string website = 3;
+  int32 contribution = 4;
+}
+
+message ExpenseOrRevenueType {
+  string desc = 1;
+  int32 amount = 2;
+  string date = 3;
+}
+
+message BudgetType {
+  int32 totalBudget = 1;
+  repeated ExpenseOrRevenueType expenses = 2;
+  repeated ExpenseOrRevenueType revenue = 3;
+}
+
+message ScheduleWithoutId {
+  string title = 2;
+  string startTime = 3;
+  string endTime = 4;
+  string description = 5;
+  repeated string speakerIds = 6;
+}
+
+message ScheduleType{
+  string id = 1;
+  string title = 2;
+  string startTime = 3;
+  string endTime = 4;
+  string description = 5;
+  repeated string speakerIds = 6;
+}
+
+message CreatedBy{
+  string id = 1;
+  string email = 2;
+}

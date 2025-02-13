@@ -1,0 +1,161 @@
+syntax = "proto3";
+
+package auth;
+
+service UsersService{
+    rpc GetAllUser(QueryParamsRequest) returns (AllUserResponse);
+    rpc FindById(FindByIdRequest) returns (DecodeAccessResponse);
+    rpc findByEmailWithoutPassword(EmailRequest) returns (Forgot);
+    rpc Login(LoginRequest) returns (GeneralResponse);
+    rpc Register(RegisterRequest) returns (RegisterResponse);
+    rpc AccessToken(AccessTokenRequest) returns (GeneralResponse);
+    rpc HandleLogout(LogoutRequest) returns (LogoutResponse);
+    rpc HandleGoogleAuth(GoogleAuthRequest) returns (GeneralResponse);
+    rpc UpdateProfile(UpdateProfileRequest) returns (ProfileRespone);
+    rpc UpdateAvatar(UpdateAvatarRequest) returns (ProfileRespone);
+    rpc ChangePassword(ChangePasswordRequest) returns (Empty);
+    rpc ResetPassword(ResetPassRequest) returns (Empty);
+    rpc findUsersByIds(findUsersByIdsRequest) returns (findUsersByIdsResponse);
+}
+
+message Empty{}
+
+message findUsersByIdsRequest{
+    repeated string ids = 1;
+}
+
+message Forgot{
+    UserResponse user = 1;
+}
+
+message findUsersByIdsResponse{
+    repeated UserForParticipant users = 1;
+}
+
+message ResetPassRequest{
+    string id = 1;
+    string password = 2;
+}
+
+message QueryParamsRequest{
+  map<string, string> query = 1;
+}
+
+message EmailRequest{
+    string email = 1;
+}
+
+message ChangePasswordRequest{
+    string id = 1;
+    string currentPassword = 2;
+    string newPassword = 3;
+}
+
+message AllUserResponse{
+    repeated UserResponse users = 1;
+    Meta meta = 2;
+}
+
+message FindByIdRequest{
+    string id = 1;
+}
+
+message UpdateAvatarRequest{
+    string avatar = 1;
+    string oldAvatarId = 2;
+    string id = 3;
+    string previousAvatarId = 4;
+}
+
+message GoogleAuthRequest{
+    string name = 1;
+    string email = 2;
+    string picture = 3;
+    string accessToken = 4;
+}
+
+message UpdateProfileRequest{
+    string name = 1;
+    string phoneNumber = 2;
+    string password = 4;
+    string accessToken = 5;
+}
+
+message AccessTokenRequest{
+    string refreshToken = 1;
+}
+
+message GeneralResponse{
+    UserResponse user = 1;
+    string accessToken = 2;
+    string refreshToken = 3;
+}
+
+message LogoutRequest {
+    string accessToken = 1;
+}
+
+message LogoutResponse {
+    string email = 1;
+}
+
+message LoginRequest{
+    string email = 1;
+    string password = 2;
+}
+
+message RegisterRequest{
+    string name = 1;
+    string email = 2;
+    string password = 3;
+}
+
+message RegisterResponse{
+    UserResponse user = 1;
+}
+
+message ProfileRespone{
+    UserResponse user = 1;
+}
+
+message UserResponse {
+    string id = 1;
+    string email = 2;
+    string name = 3;
+    string avatar = 4;
+    string phoneNumber = 5;
+    bool isActive = 6;
+    string role = 7;
+    string lastLoginAt = 8;
+    string createdAt = 9;
+    string updatedAt = 10;
+} 
+
+message DecodeAccessResponse{
+    string id = 1;
+    string email = 2;
+    string name = 3;
+    string avatar = 4;
+    string oldAvatarId = 5;
+    string phoneNumber = 6;
+    bool isActive = 7;
+    string role = 8;
+    string lastLoginAt = 9;
+    string createdAt = 10;
+    string updatedAt = 11;
+}
+
+message Meta{
+  optional int32 page = 1;
+  optional int32 limit = 2;
+  optional int32 totalPages = 3;
+  int32 totalItems = 4;
+  int32 count = 5;
+}
+
+message UserForParticipant{
+    string id = 1;
+    string email = 2;
+    string name = 3;
+    string phoneNumber = 4;
+}

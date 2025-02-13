@@ -1,0 +1,205 @@
+version: '3.8'
+
+services:
+  #=================================================
+  #  RabbitMQ
+  #=================================================
+  rabbitmq:
+    image: rabbitmq:3.9.16-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # cổng AMQP
+      - "15672:15672" # cổng quản trị
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: 1234
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pasa-network
+
+  #=================================================
+  #  Redis
+  #=================================================
+  redis:
+    image: redis:7.0.12
+    container_name: redis
+    command: [ "redis-server", "--appendonly", "yes" ]
+    ports:
+      - "6379:6379"
+    networks:
+      - pasa-network
+
+  #=================================================
+  #  MongoDB
+  #=================================================
+  mongodb:
+    image: mongo:6.0.6
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    networks:
+      - pasa-network
+
+  #=================================================
+  #  API Gateway
+  #=================================================
+  apigateway:
+    build:
+      context: .
+      dockerfile: ./apps/apigateway/Dockerfile
+    container_name: apigateway
+    depends_on:
+      - rabbitmq
+      - redis
+      - mongodb
+    ports:
+      - "8080:8080"
+    environment:
+      # Lấy từ file .env.example: apps/apigateway/.env.example
+      PORT: 8080
+      JWT_SECRET: accessTokenKey
+      JWT_EXPIRATION: 15m
+      JWT_REFRESH_EXPIRATION: 30d
+
+      GOOGLE_CLIENT_ID: 752824572639-0nbbmbqgqj28oue1bsi2ouee2923oloj.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: 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
+      GOOGLE_CALLBACK_URL: http://localhost:8080/api/v1/auth/google/callback
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: "lli246OlSzWHv32oYdyY3g8EFYb9nVAK" # ví dụ
+    networks:
+      - pasa-network
+
+  #=================================================
+  #  Auth Service
+  #=================================================
+  auth:
+    build:
+      context: .
+      dockerfile: ./apps/auth/Dockerfile
+    container_name: auth
+    depends_on:
+      - rabbitmq
+      - mongodb
+    environment:
+      # Lấy từ file .env.example: apps/auth/.env.example
+      PORT: 50051
+      DATABASE_URL: mongodb+srv://finalflutter:0sfv2kC2p4etZjWT@cluster0.ms4wngy.mongodb.net/auth-service
+      JWT_SECRET: accessTokenKey
+      JWT_EXPIRATION: 15m
+      JWT_REFRESH_SECRET: refreshTokenKey
+      JWT_REFRESH_EXPIRATION: 30d
+    networks:
+      - pasa-network
+
+  #=================================================
+  #  Event Service
+  #=================================================
+  event-service:
+    build:
+      context: .
+      dockerfile: ./apps/event-service/Dockerfile
+    container_name: event-service
+    depends_on:
+      - rabbitmq
+      - mongodb
+    environment:
+      PORT: 50052
+      DATABASE_URL: mongodb+srv://finalflutter:0sfv2kC2p4etZjWT@cluster0.ms4wngy.mongodb.net/event-service
+      JWT_SECRET: token_password_exp_key
+    networks:
+      - pasa-network
+
+  #=================================================
+  #  File Service
+  #=================================================
+  file-service:
+    build:
+      context: .
+      dockerfile: ./apps/file-service/Dockerfile
+    container_name: file-service
+    depends_on:
+      - rabbitmq
+      - mongodb
+    environment:
+      PORT: 50056
+      DATABASE_URL: mongodb+srv://finalflutter:0sfv2kC2p4etZjWT@cluster0.ms4wngy.mongodb.net/file-service
+
+      CLOUDINARY_NAME: dbvyexitw
+      CLOUDINARY_API_KEY: "981267197617438"
+      CLOUDINARY_API_SECRET: "Lzp-zjyVmv55vR_ov3DlWTESHlo"
+    networks:
+      - pasa-network
+
+  #=================================================
+  #  Notification Service
+  #=================================================
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./apps/notification-service/Dockerfile
+    container_name: notification-service
+    depends_on:
+      - rabbitmq
+    environment:
+      PORT: 50053
+      MAIL_HOST: smtp.gmail.com
+      MAIL_PORT: 465
+      MAIL_SECURE: "true"
+      MAIL_USER: "tainguyen050403@gmail.com"
+      MAIL_PASS: "cdngugvyldvvxqro"
+      MAIL_FROM: "\"noreply\" <noreply@pasamail.com>"
+
+      JWT_SECRET: token_password_exp_key
+      TOKEN_PASSWORD_EXPIRATION: 900
+      FRONTEND_URL: http://localhost:5173
+    networks:
+      - pasa-network
+
+  #=================================================
+  #  Report Service
+  #=================================================
+  report-service:
+    build:
+      context: .
+      dockerfile: ./apps/report-service/Dockerfile
+    container_name: report-service
+    depends_on:
+      - rabbitmq
+      - mongodb
+    environment:
+      PORT: 50055
+      DATABASE_URL: mongodb+srv://finalflutter:0sfv2kC2p4etZjWT@cluster0.ms4wngy.mongodb.net/report-service
+    networks:
+      - pasa-network
+
+  #=================================================
+  #  Ticket Service
+  #=================================================
+  ticket-service:
+    build:
+      context: .
+      dockerfile: ./apps/ticket-service/Dockerfile
+    container_name: ticket-service
+    depends_on:
+      - rabbitmq
+      - mongodb
+    environment:
+      PORT: 50054
+      DATABASE_URL: mongodb+srv://finalflutter:0sfv2kC2p4etZjWT@cluster0.ms4wngy.mongodb.net/ticket-service
+      BASE_URL: http://localhost:5173
+    networks:
+      - pasa-network
+
+networks:
+  pasa-network:
+    driver: bridge

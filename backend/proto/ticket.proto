@@ -1,0 +1,190 @@
+syntax = "proto3";
+
+package ticket;
+
+service TicketServiceProto{
+    rpc GetAllTicket(QueryParamsRequest) returns (AllTicketResponse);
+    rpc CheckIn(TicketByIdRequest) returns (TicketResponse);
+    rpc ScanTicket(ScanTicketRequest) returns (ScanTicketResponse);
+
+    rpc CreateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
+    rpc GetParticipantByEventId(GetParticipantByEventIdRequest) returns (GetParticipantByEventIdResponse);
+    rpc GetParticipantById(ParticipationByIdRequest) returns (ParticipationResponse);
+    rpc UpdateParticipant(CreateParticipationRequest) returns (ParticipationResponse);
+    rpc DeleteParticipant(ParticipationByIdRequest) returns (Empty);
+    rpc GetUserParticipationByEventId(GetParticipantByEventIdRequest) returns (GetUserParticipationByEventIdResponse);
+    rpc GetTicketByParticipantId(TicketByParticipantIdRequest) returns (TicketResponse);
+    rpc GetParticipantIdByUserIdEventId(GetParticipantIdByUserIdEventIdRequest) returns (GetParticipantIdByUserIdEventIdResponse);
+    rpc GetParticipantByEventAndUser(GetParticipantIdByUserIdEventIdRequest) returns (ParticipationResponse);
+    rpc GetCheckInOutStats(GetParticipantByEventIdRequest) returns (GetCheckInOutStatsResponse);
+    rpc GetDetailedParticipantList(GetDetailedParticipantListRequest) returns (GetDetailedParticipantListResponse);
+}
+
+message Empty{}
+
+message DetailedParticipant {
+    string id = 1;
+    string userId = 2;
+    string email = 3;
+    string name = 4;
+    string avatar = 5;
+    string registrationDate = 6;
+    string checkInAt = 7;
+    string checkOutAt = 8;
+    TicketStatus ticketStatus = 9; 
+}
+
+enum TicketStatus { // <-- Thêm enum definition này
+  ACTIVE = 0;
+  CANCELED = 1;
+  USED = 2;
+  CHECKED_IN = 3;
+}
+
+message GetDetailedParticipantListResponse {
+    repeated DetailedParticipant detailedParticipants = 1;
+    Meta meta = 2; 
+}
+
+message GetDetailedParticipantListRequest { // Request message mới
+    string eventId = 1;
+    QueryParamsRequest query = 2; 
+}
+
+message CheckInOutStats {
+    int32 totalRegistered = 1;
+    int32 totalCheckedIn = 2;
+    int32 totalCheckedOut = 3;
+    double checkInRate = 4; // Tỷ lệ check-in
+    double checkOutRate = 5; // Tỷ lệ check-out
+}
+
+message GetCheckInOutStatsResponse {
+    CheckInOutStats checkInOutStats = 1;
+}
+
+message TicketByParticipantIdRequest{ // Message request mới
+    string participantId = 1;
+}
+
+message GetParticipantIdByUserIdEventIdRequest { // New request message
+    string userId = 1;
+    string eventId = 2;
+}
+
+message GetParticipantIdByUserIdEventIdResponse { // New response message
+    string participantId = 1;
+}
+
+message GetUserParticipationByEventIdResponse{
+  repeated UserParticipationResponse participants = 1;
+}
+
+message UserParticipationResponse{
+  string email = 1;
+  string name = 2;
+}
+
+message GetParticipantByEventIdRequest{
+  string eventId = 1;
+}
+
+message GetParticipantByEventIdResponse{
+  repeated DataResultCheckInOut participants = 1;
+}
+
+message ScanTicketResponse{
+  DateResponseScanTicket result = 1;
+}
+
+message DateResponseScanTicket{
+  string eventId = 7;
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  optional string phoneNumber = 4;
+  string checkInAt = 5;
+  optional string checkOutAt = 6;
+}
+
+message DataResultCheckInOut{
+  string eventId = 7;
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  optional string phoneNumber = 4;
+  string checkInAt = 5;
+  optional string checkOutAt = 6;
+  string participantId = 8;
+  string createdAt = 9; 
+}
+
+message ScanTicketRequest{
+  string code = 1;
+}
+
+message ParticipationByIdRequest{
+  string id = 1;
+}
+
+message QueryParamsRequest{
+  map<string, string> query = 1;
+}
+
+message CreateParticipationRequest{
+  string eventId = 1;
+  string userId = 2;
+  repeated string sessionIds = 3;
+}
+
+message ParticipationResponse{
+  Participation participation = 1;
+  TicketType ticket = 2;
+}
+
+message Participation{
+  string id = 1;
+  string eventId = 2;
+  string userId = 3;
+  repeated string sessionIds = 4;
+  string status = 5;
+  string createdAt = 6;
+  string updatedAt = 7;
+  optional string checkedInAt = 8;
+  optional string checkedOutAt = 9;
+}
+
+message TicketResponse{
+  TicketType ticket = 1;
+}
+
+message AllTicketResponse{
+  repeated TicketType tickets = 1;
+  Meta meta = 2;
+}
+
+message TicketByIdRequest{
+  string id = 1;
+}
+
+message UpdateTicketRequest{
+  string id = 1;
+  optional string status = 2;
+  optional string usedAt = 3;
+}
+
+message TicketType {
+  string id = 1;
+  string participantId = 2;
+  string qrCodeUrl = 3;
+  string status = 4;
+  optional string usedAt = 5;
+}
+
+message Meta{
+  optional int32 page = 1;
+  optional int32 limit = 2;
+  optional int32 totalPages = 3;
+  int32 totalItems = 4;
+  int32 count = 5;
+}
