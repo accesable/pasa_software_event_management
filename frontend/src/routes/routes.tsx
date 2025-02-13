@@ -39,6 +39,7 @@ import { Helmet } from 'react-helmet-async';
 import DeclineEventPage from '../pages/DeclineEventPage.tsx';
 import EventFeedbacksPage from '../pages/feedbacks/EventFeedbacksPage.tsx';
 import EventAnalysisPage from '../pages/details/EventAnalysisPage.tsx';
+import ResetPasswordConfirmPage from '../pages/authentication/ResetPasswordConfirmPage.tsx';
 
 export const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -137,6 +138,16 @@ const router = createBrowserRouter([
         element: <PrivateRoute>
           <ParticipatedEventDetailsPage />
         </PrivateRoute>,
+      },
+    ],
+  },
+  {
+    path: '/password',
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: 'reset-password',
+        element: <ResetPasswordConfirmPage />,
       },
     ],
   },
