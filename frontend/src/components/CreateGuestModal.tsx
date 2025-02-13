@@ -46,7 +46,6 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({ visible, onCancel, 
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   return (

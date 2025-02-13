@@ -34,10 +34,8 @@ axiosInstance.interceptors.response.use(
 
     if (error.response?.status === 401 && (error.response.data?.message === "Invalid token" || error.response.data?.error === "Unauthorized") && !originalRequest._retry) {
       originalRequest._retry = true;
-      console.log("Interceptor Response: 401 Error intercepted, attempting refresh token...");
 
       try {
-        console.log("Interceptor Response: Calling refresh token API...");
         const refreshTokenResponse = await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true });
 
         if (refreshTokenResponse.status === 200) {
@@ -49,11 +47,9 @@ axiosInstance.interceptors.response.use(
           store.dispatch(setUser(user));
 
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-          console.log("Interceptor Response: Refresh token successful, retrying original request.");
           return axiosInstance(originalRequest); // Retry request with new token
         } else {
           // Refresh token API trả về lỗi (non-200 status)
-          console.log("Interceptor Response: Refresh token failed (non-200 status), redirecting to login");
           localStorage.removeItem('accessToken');
           localStorage.removeItem('user');
           window.location.href = '/auth/signin';
@@ -61,7 +57,6 @@ axiosInstance.interceptors.response.use(
         }
       } catch (refreshError) {
         // Lỗi trong quá trình gọi refresh token API (ví dụ: network error)
-        console.error("Interceptor Response: Error during refresh token process:", refreshError);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
         window.location.href = '/auth/signin';

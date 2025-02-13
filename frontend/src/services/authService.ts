@@ -633,7 +633,6 @@ const authService = {
       }
       // ** Sử dụng endpoint chính xác, dựa trên response mẫu của bạn **
       const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/feedbacks`, { headers });
-      console.log('Event feedbacks:', response);
       return response.data;
     } catch (error: any) {
       throw error.response.data;

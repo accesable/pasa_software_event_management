@@ -74,7 +74,6 @@ const DetailMyEventPage: React.FC = () => {
           message.error(response?.error);
         }
       } catch (error: any) {
-        console.error('Error fetching event details:', error);
         setError(error.error || 'Failed to load event details');
         message.error(error.error);
       } finally {
@@ -88,7 +87,6 @@ const DetailMyEventPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
-        console.log('Feedback summary:', response);
         if (response.statusCode === 200 && response.data) {
           setFeedbackSummary(response.data);
         }
@@ -221,7 +219,7 @@ const handleDownloadPdfFunction = (setLoading: React.Dispatch<React.SetStateActi
       return;
     }
     // Gọi API lấy danh sách participant
-    const response = await authService.getEventParticipants(eventId, accessToken) as any;
+    const response = await authService.getEventParticipants(eventId, accessToken);
     const participants = response.data || [];
     if (!participants || participants.length === 0) {
       message.error("No participants data available.");

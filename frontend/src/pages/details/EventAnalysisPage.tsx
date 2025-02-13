@@ -31,7 +31,6 @@ const EventAnalysisPage: React.FC = () => {
       setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        console.log('eventId', eventId);
         const invitationResponse = await authService.getEventInvitationReport(eventId, accessToken as string);
         setInvitationData((invitationResponse as any).data);
 

@@ -141,7 +141,6 @@ const SpeakerGuestManagementPage: React.FC = () => {
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   const speakerColumns: ColumnsType<SpeakerGuestData> = [

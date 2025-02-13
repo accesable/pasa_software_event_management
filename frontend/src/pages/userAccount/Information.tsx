@@ -119,7 +119,6 @@ export const UserProfileInformationPage = () => {
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   return (

@@ -30,7 +30,6 @@ const CreateSpeakerModal: React.FC<CreateSpeakerModalProps> = ({ visible, onCanc
         return;
       }
       const response: any = await authService.createSpeaker(values, accessToken);
-      console.log('response', response);
       if (response.statusCode === 201 && response.data.speaker) {
         message.success('Speaker created successfully!');
         onCreated(response.data.speaker); // Gọi callback và truyền speaker mới
@@ -46,7 +45,6 @@ const CreateSpeakerModal: React.FC<CreateSpeakerModalProps> = ({ visible, onCanc
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   return (

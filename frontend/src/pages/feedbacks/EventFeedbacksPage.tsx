@@ -24,7 +24,6 @@ const EventFeedbacksPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbacks(eventId, accessToken || undefined) as any;
-        console.log('Event feedbacks:', response);
         if (response.statusCode === 200 && response.data.feedbacks) {
           setFeedbacks(response.data.feedbacks);
           // Fetch user info for each feedback
@@ -48,7 +47,6 @@ const EventFeedbacksPage: React.FC = () => {
       for (const userId of userIds) {
         try {
           const response = await authService.getUserById(userId) as any;
-          console.log('User info:', response);
           if (response.statusCode === 200 && response.data) {
             usersInfoMap[userId] = response.data;
           }

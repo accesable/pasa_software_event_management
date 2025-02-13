@@ -135,7 +135,6 @@ export const CreateEventPage = () => {
     };
 
     const onFinishFailed = (errorInfo: any) => {
-        console.log('Failed:', errorInfo);
     };
 
     const onFinishType = async (values: any) => {

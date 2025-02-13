@@ -13,11 +13,6 @@ interface EventParticipantsTableProps extends TableProps<Participants> {
 
 const PARTICIPANTS_COLUMNS = [
   {
-    title: 'ID',
-    dataIndex: 'id',
-    key: 'id',
-  },
-  {
     title: 'Name',
     dataIndex: 'name',
     key: 'name',
@@ -42,6 +37,7 @@ const PARTICIPANTS_COLUMNS = [
 ];
 
 const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId }) => {
+
   const { data: participantsData, error: participantsError, loading: participantsLoading } = useFetchData(
     eventId ? `http://localhost:8080/api/v1/events/${eventId}/participants` : "", // Correct API URL
     localStorage.getItem('accessToken') || undefined
@@ -60,19 +56,19 @@ const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId
   }
 
   // Check if data.data exists and is an array before accessing its length
-  if (!participantsData?.data || !Array.isArray(participantsData.data) || participantsData.data.length === 0) {
+  if (!participantsData?.data?.participants || !Array.isArray(participantsData.data.participants) || participantsData.data.participants.length === 0) {
     return <Alert message="No participants found for this event." type="info" showIcon />;
   }
-
 
   return (
     <div>
       <Table
-        dataSource={participantsData.data}
+        dataSource={participantsData.data.participants} // Sửa dataSource ở đây
         columns={PARTICIPANTS_COLUMNS}
-        loading={participantsLoading} // Use hook's loading state
+        loading={participantsLoading}
         pagination={{ pageSize: 5 }}
         rowKey="id"
+        scroll={{ x: true }}
       />
     </div>
   );

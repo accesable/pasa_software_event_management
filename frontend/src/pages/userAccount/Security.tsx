@@ -61,7 +61,6 @@ export const UserProfileSecurityPage = () => {
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   return (

@@ -77,7 +77,6 @@ const InviteUsersModal: React.FC<InviteUsersModalProps> = ({ visible, onCancel, 
             const response = await axiosInstance.post(`/events/${eventId}/invite`, { users: usersToInvite });
             const responseData = response.data as { statusCode: number; message: string };
             if (responseData.statusCode === 201) {
-                console.log("Before message.success: Invitations sent successfully!");
                 message.success((response.data as { message: string }).message);
                 onInvitationsSent();
                 onCancel();

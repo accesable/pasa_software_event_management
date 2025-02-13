@@ -53,17 +53,8 @@ export const EventDetailsPage: React.FC = () => {
   // State để đảm bảo API accept được gọi 1 lần duy nhất
   const [hasAccepted, setHasAccepted] = useState(false);
 
-  const handleSessionCheckboxChange = (checked: boolean, sessionId: string) => {
-    if (checked) {
-      setSelectedSessionIds([...selectedSessionIds, sessionId]);
-    } else {
-      setSelectedSessionIds(selectedSessionIds.filter(id => id !== sessionId));
-    }
-  };
-
   // Fetch chi tiết sự kiện (sử dụng eventId từ outlet context)
   useEffect(() => {
-    console.log("EventDetailsPage useEffect is running, eventId:", eventId);
     const fetchEventDetails = async () => {
       setLoading(true);
       setError(null);
@@ -72,14 +63,8 @@ export const EventDetailsPage: React.FC = () => {
         const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
         if (response && response.statusCode === 200) {
           setEventDetails(response.data.event);
-        } else {
-          setError(response?.message || 'Failed to load event details');
-          message.error(response?.error);
-        }
+        } 
       } catch (error: any) {
-        console.error('Error fetching event details:', error);
-        setError(error.message || 'Failed to load event details');
-        message.error(error.error);
       } finally {
         setLoading(false);
       }
@@ -92,12 +77,9 @@ export const EventDetailsPage: React.FC = () => {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
         if (response.statusCode === 200 && response.data) {
-          setFeedbackSummary(response.data.data);
-        } else {
-          console.error('Failed to fetch feedback summary:', response.message);
-        }
+          setFeedbackSummary(response.data);
+        } 
       } catch (error: any) {
-        console.error('Error fetching feedback summary:', error);
       } finally {
         setFeedbackSummaryLoading(false);
       }
@@ -120,8 +102,7 @@ export const EventDetailsPage: React.FC = () => {
             message.error(response.error || 'Failed to accept invitation.');
           }
         } catch (error: any) {
-          console.error('Error accepting event:', error);
-          message.error(error.message || 'Failed to accept invitation.');
+          message.error(error.error || 'Failed to accept invitation.');
         }
       };
       acceptEvent();
@@ -199,7 +180,6 @@ export const EventDetailsPage: React.FC = () => {
       // Lưu file PDF
       doc.save("participants.pdf");
     } catch (error: any) {
-      console.error("Error generating PDF:", error);
       message.error("List check-in/check-out is empty.");
     } finally {
       setLoading(false);
