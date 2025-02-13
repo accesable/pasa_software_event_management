@@ -219,7 +219,7 @@ export const EventDetailsPage: React.FC = () => {
         dataSource={eventDetails.schedule}
         columns={scheduleColumns}
         pagination={false}
-        scroll={{ x: 'max-content'}} 
+        // scroll={{ x: 'max-content'}} 
         rowSelection={{
           onChange: (selectedRowKeys, selectedRows) => {
             onSessionSelectChange(selectedRowKeys as string[]);
@@ -253,7 +253,8 @@ export const EventDetailsPage: React.FC = () => {
     {
       title: 'Description',
       dataIndex: 'description',
-      key: 'description'
+      key: 'description',
+      responsive: ['md'],
     },
   ];
 
