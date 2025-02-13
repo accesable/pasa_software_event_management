@@ -134,23 +134,26 @@ const DetailMyEventPage: React.FC = () => {
 
       <Card title={<Title level={3}>{eventDetails?.name}</Title>}
         extra={
-          <Space>
+          <Flex wrap="wrap" gap="small" justify="flex-end" align="center"> {/* Thay Space bằng Flex */}
             {eventDetails?.status === 'SCHEDULED' && (
-              <><Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal}>Invite Users</Button><Button
-                type="primary"
-                onClick={() => navigate(`/dashboards/check-in-out/${eventId}`)} // Navigate to QR scanner page
-              >
-                Check-in/Check-out
-              </Button></>
+              <>
+                <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal}>Invite Users</Button>
+                <Button
+                  type="primary"
+                  onClick={() => navigate(`/dashboards/check-in-out/${eventId}`)}
+                >
+                  Check-in/Check-out
+                </Button>
+              </>
             )}
             <Button
               type="primary"
-              icon={<BarChartOutlined />} // Use the new icon
-              onClick={() => navigate(`/dashboards/events/${eventId}/analysis`)} // Navigate to analysis page
+              icon={<BarChartOutlined />}
+              onClick={() => navigate(`/dashboards/events/${eventId}/analysis`)}
             >
               Analysis
             </Button>
-          </Space>
+          </Flex>
         }
       >
         <Row gutter={[16, 16]}>
@@ -309,7 +312,7 @@ const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) 
       dataSource={eventDetails.schedule}
       columns={scheduleColumns}
       pagination={false}
-      scroll={{ x: 'max-content' }} // Thêm scroll ngang
+      size='small'
     />
   ) : (
     <Alert message="No schedule available for this event." type="info" showIcon />

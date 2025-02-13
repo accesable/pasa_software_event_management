@@ -5,6 +5,7 @@ import {
   Alert,
   Button,
   Card,
+  Checkbox,
   Col,
   Flex,
   List,
@@ -25,6 +26,7 @@ import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import { Helmet } from 'react-helmet-async';
 import EventDiscussion from '../../components/EventDiscussion';
 import jsPDF from 'jspdf';
+import { EventScheduleItem } from '../../types/schedule';
 
 const { Text } = Typography;
 
@@ -50,6 +52,14 @@ export const EventDetailsPage: React.FC = () => {
 
   // State để đảm bảo API accept được gọi 1 lần duy nhất
   const [hasAccepted, setHasAccepted] = useState(false);
+
+  const handleSessionCheckboxChange = (checked: boolean, sessionId: string) => {
+    if (checked) {
+      setSelectedSessionIds([...selectedSessionIds, sessionId]);
+    } else {
+      setSelectedSessionIds(selectedSessionIds.filter(id => id !== sessionId));
+    }
+  };
 
   // Fetch chi tiết sự kiện (sử dụng eventId từ outlet context)
   useEffect(() => {
@@ -196,45 +206,11 @@ export const EventDetailsPage: React.FC = () => {
     }
   };
 
-  const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
-
   const onSessionSelectChange = (selectedKeys: React.Key[]) => {
     setSelectedSessionIds(selectedKeys as string[]);
   };
 
-  const getScheduleColumns = () => {
-    return [
-      {
-        title: 'Title',
-        dataIndex: 'title',
-        key: 'title',
-        width: '25%', // Chiếm 25% chiều rộng (MỚI)
-      },
-      {
-        title: 'Start Time',
-        dataIndex: 'startTime',
-        key: 'startTime',
-        responsive: ['sm'], // Ẩn cột Start Time trên màn hình nhỏ hơn sm
-        width: '20%', // Chiếm 20% chiều rộng (MỚI)
-        render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
-      },
-      {
-        title: 'End Time',
-        dataIndex: 'endTime',
-        key: 'endTime',
-        responsive: ['sm'], // Ẩn cột End Time trên màn hình nhỏ hơn sm
-        width: '20%', // Chiếm 20% chiều rộng (MỚI)
-        render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
-      },
-      {
-        title: 'Description',
-        dataIndex: 'description',
-        key: 'description',
-        responsive: ['md'], // Ẩn cột Description trên màn hình nhỏ hơn md
-        width: '35%', // Chiếm 35% chiều rộng (MỚI)
-      },
-    ];
-  };
+  const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
 
   const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) => {
     return eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
@@ -243,8 +219,13 @@ export const EventDetailsPage: React.FC = () => {
         dataSource={eventDetails.schedule}
         columns={scheduleColumns}
         pagination={false}
-        scroll={{ x: 'max-content' }} // Thêm scroll ngang
-        size="small" // Sử dụng size small để giảm padding và tăng độ thoáng
+        scroll={{ x: 'max-content'}} 
+        rowSelection={{
+          onChange: (selectedRowKeys, selectedRows) => {
+            onSessionSelectChange(selectedRowKeys as string[]);
+          },
+        }}
+        size="small"
       />
     ) : (
       <Alert message="No schedule available for this event." type="info" showIcon />
@@ -272,8 +253,7 @@ export const EventDetailsPage: React.FC = () => {
     {
       title: 'Description',
       dataIndex: 'description',
-      key: 'description',
-      responsive: ['md'],
+      key: 'description'
     },
   ];
 
@@ -337,9 +317,13 @@ export const EventDetailsPage: React.FC = () => {
             justify="flex-end"
             gap="small"
           >
-            <Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>
-              Register Event
-            </Button>
+            {
+              eventDetails?.status === 'SCHEDULED' && (
+                <Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>
+                  Register
+                </Button>
+              )
+            }
           </Flex>
         }
       >

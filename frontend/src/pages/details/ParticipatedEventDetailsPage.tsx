@@ -242,7 +242,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         dataSource={eventDetails.schedule}
         columns={scheduleColumns}
         pagination={false}
-        scroll={{ x: 'max-content' }} // Thêm scroll ngang
+        scroll={{ x: 'max-content'}} // Thêm scroll ngang
       />
     ) : (
       <Alert message="No schedule available for this event." type="info" showIcon />
