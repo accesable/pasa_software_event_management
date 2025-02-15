@@ -28,8 +28,11 @@
     "antd": "^5.10.1",
     "appwrite": "^17.0.0",
     "axios": "^1.6.7",
+    "browserify": "^17.0.1",
+    "buffer": "^6.0.3",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.9",
+    "face-api.js": "^0.22.2",
     "firebase": "^10.8.0",
     "interactjs": "^1.10.18",
     "jspdf": "^2.5.2",
@@ -48,7 +51,8 @@
     "react-router-dom": "^6.15.0",
     "react-transition-group": "^4.4.5",
     "recharts": "^2.15.1",
-    "redux-persist": "^6.0.0"
+    "redux-persist": "^6.0.0",
+    "util": "^0.12.5"
   },
   "devDependencies": {
     "@commitlint/cli": "^18.4.3",

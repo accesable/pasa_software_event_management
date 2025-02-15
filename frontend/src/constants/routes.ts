@@ -65,6 +65,7 @@ export const PATH_USER_PROFILE = {
   root: ROOTS_PROFILE,
   personalInformation: path(ROOTS_PROFILE, '/personal-information'),
   security: path(ROOTS_PROFILE, '/security'),
+  faceCapture: path(ROOTS_PROFILE, '/face-capture'),
 };
 
 export const PATH_SOCIAL = {

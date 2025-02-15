@@ -274,10 +274,8 @@ axiosInstance.interceptors.response.use(
 
     if (error.response?.status === 401 && (error.response.data?.message === "Invalid token" || error.response.data?.error === "Unauthorized") && !originalRequest._retry) {
       originalRequest._retry = true;
-      console.log("Interceptor Response: 401 Error intercepted, attempting refresh token...");
 
       try {
-        console.log("Interceptor Response: Calling refresh token API...");
         const refreshTokenResponse = await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true });
 
         if (refreshTokenResponse.status === 200) {
@@ -289,11 +287,9 @@ axiosInstance.interceptors.response.use(
           store.dispatch(setUser(user));
 
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-          console.log("Interceptor Response: Refresh token successful, retrying original request.");
           return axiosInstance(originalRequest); // Retry request with new token
         } else {
           // Refresh token API trả về lỗi (non-200 status)
-          console.log("Interceptor Response: Refresh token failed (non-200 status), redirecting to login");
           localStorage.removeItem('accessToken');
           localStorage.removeItem('user');
           window.location.href = '/auth/signin';
@@ -301,7 +297,6 @@ axiosInstance.interceptors.response.use(
         }
       } catch (refreshError) {
         // Lỗi trong quá trình gọi refresh token API (ví dụ: network error)
-        console.error("Interceptor Response: Error during refresh token process:", refreshError);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
         window.location.href = '/auth/signin';
@@ -366,7 +361,6 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({ visible, onCancel, 
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   return (
@@ -455,7 +449,6 @@ const CreateSpeakerModal: React.FC<CreateSpeakerModalProps> = ({ visible, onCanc
         return;
       }
       const response: any = await authService.createSpeaker(values, accessToken);
-      console.log('response', response);
       if (response.statusCode === 201 && response.data.speaker) {
         message.success('Speaker created successfully!');
         onCreated(response.data.speaker); // Gọi callback và truyền speaker mới
@@ -471,7 +464,6 @@ const CreateSpeakerModal: React.FC<CreateSpeakerModalProps> = ({ visible, onCanc
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   return (
@@ -946,7 +938,6 @@ const InviteUsersModal: React.FC<InviteUsersModalProps> = ({ visible, onCancel, 
             const response = await axiosInstance.post(`/events/${eventId}/invite`, { users: usersToInvite });
             const responseData = response.data as { statusCode: number; message: string };
             if (responseData.statusCode === 201) {
-                console.log("Before message.success: Invitations sent successfully!");
                 message.success((response.data as { message: string }).message);
                 onInvitationsSent();
                 onCancel();
@@ -1008,6 +999,7 @@ const InviteUsersModal: React.FC<InviteUsersModalProps> = ({ visible, onCancel, 
 };
 
 export default InviteUsersModal;
+
 
 src\components\oauth2-pkce.ts:
 // src\components\oauth2-pkce.ts
@@ -2643,8 +2635,9 @@ import {
   Tag,
   Typography,
   message,
+  Flex,
 } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import authService from '../../../services/authService';
 import { Events } from '../../../types';
@@ -2659,8 +2652,8 @@ type Props = {
 } & TableProps<Events>;
 
 export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...others }: Props) => {
-  const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({}); // State to store category names by categoryId
-  const [categoryLoading, setCategoryLoading] = useState(false); // Loading state
+  const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({});
+  const [categoryLoading, setCategoryLoading] = useState(false);
   const navigate = useNavigate();
   const [tableLoading, setTableLoading] = useState(false);
 
@@ -2711,9 +2704,11 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
         <Typography.Paragraph
           ellipsis={{ rows: 1 }}
           className="text-capitalize"
-          style={{ marginBottom: 0 }}
+          style={{ marginBottom: 0, maxWidth: 150 }} // Thêm maxWidth để giới hạn chiều rộng và ellipsis
         >
-          {record.name?.substring(0, 20)}
+          <Link to={`/details/my-events/${record.id}`}> {/* Thay đổi Link ở đây */}
+            {_.length > 20 ? `${_.slice(0, 20)}...` : _}
+          </Link>
         </Typography.Paragraph>
       ),
     },
@@ -2721,6 +2716,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       title: 'Category',
       dataIndex: 'categoryId',
       key: 'event_category',
+      responsive: ['md'], // Ẩn trên màn hình nhỏ hơn md
       render: (categoryId: string) => { // Changed render to receive categoryId
         return (
           <Space>
@@ -2737,6 +2733,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       title: 'Status',
       dataIndex: 'status',
       key: 'proj_status',
+      responsive: ['md'], // Ẩn trên màn hình nhỏ hơn md
       render: (_: any) => {
         let status: BadgeProps['status'];
 
@@ -2757,17 +2754,20 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       title: 'Capacity',
       dataIndex: 'maxParticipants',
       key: 'event_capacity',
+      responsive: ['lg'], // Ẩn trên màn hình nhỏ hơn lg
     },
     {
       title: 'Start Date',
       dataIndex: 'startDate',
       key: 'event_start_date',
+      responsive: ['lg'], // Ẩn trên màn hình nhỏ hơn lg
       render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm:ss') : 'N/A', // Thêm định dạng DD/MM/YYYY HH:mm:ss
     },
     {
       title: 'End Date',
       dataIndex: 'endDate',
       key: 'event_end_date',
+      responsive: ['lg'], // Ẩn trên màn hình nhỏ hơn lg
       render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm:ss') : 'N/A', // Thêm định dạng DD/MM/YYYY HH:mm:ss
     },
     {
@@ -2776,32 +2776,30 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
       key: 'event_actions',
       render: (eventId: string, record: Events) => {
         return (
-          <Space size="small">
-            <Button type="primary" onClick={() => navigate(`/details/my-events/${record.id}`)}> {/* Đã sửa URL navigate */}
+          <Flex gap="small" vertical={true} wrap="wrap" justify="center"> {/* Sử dụng Flex container */}
+            <Button type="primary" size="small" onClick={() => navigate(`/details/my-events/${record.id}`)}>
               Details
             </Button>
-            {activeTabKey !== 'CANCELED' && activeTabKey !== 'FINISHED' && (
-              <Button type="primary" onClick={() => navigate(`/edit/events/${record.id}`)}>
-                Update
+
+            <Button type="primary" size="small" onClick={() => navigate(`/edit/events/${record.id}`)}>
+              Update
+            </Button>
+
+
+            <Popconfirm
+              title="Cancel Event"
+              description="Are you sure to cancel this event?"
+              onConfirm={() => handleCancel(eventId, setTableLoading, fetchData)}
+              onCancel={() => message.info('Cancel cancel')}
+              okText="Yes, Cancel"
+              cancelText="No"
+            >
+              <Button danger size="small">
+                Cancel
               </Button>
-            )}
-            {activeTabKey !== 'CANCELED' && activeTabKey !== 'FINISHED' && (
-              <Popconfirm
-                title="Cancel Event"
-                description="Are you sure to cancel this event?"
-                onConfirm={() => handleCancel(eventId, setTableLoading, fetchData)}
-                onCancel={() => message.info('Cancel cancel')}
-                okText="Yes, Cancel"
-                cancelText="No"
-                placement="topRight" // Thử thay đổi placement
-                overlayInnerStyle={{ width: 300 }} // Thử set width
-              >
-                <Button danger>
-                  Cancel
-                </Button>
-              </Popconfirm>
-            )}
-          </Space>
+            </Popconfirm>
+
+          </Flex>
         );
       },
     },
@@ -3130,9 +3128,9 @@ import {
   Flex,
   Tooltip,
   Typography,
-  Spin, // Import Spin
-  Tag, // Import Tag
-  message, // Import message
+  Spin,
+  Tag,
+  message,
 } from 'antd';
 import {
   CalendarOutlined,
@@ -3141,9 +3139,10 @@ import {
 
 import './styles.css';
 import { Events } from '../../../../types';
-import { useState, useEffect } from 'react'; // Import useState and useEffect
+import { useState, useEffect } from 'react';
 import authService from '../../../../services/authService';
 import dayjs from 'dayjs';
+import { Link } from 'react-router-dom'; // Đảm bảo import Link
 
 const { Text, Title } = Typography;
 
@@ -3154,118 +3153,120 @@ type Props = {
 
 export const EventsCard = (props: Props) => {
   const {
-    size,
-    event, // Event can be potentially undefined
-    ...others
+      size,
+      event, // Event can be potentially undefined
+      ...others
   } = props;
 
   const [categoryName, setCategoryName] = useState<string | null>(null); // State for category name
   const [categoryLoading, setCategoryLoading] = useState(false); // Loading state
 
   useEffect(() => {
-    const fetchCategoryName = async () => {
-      if (!event?.categoryId) return; // Exit if categoryId is missing
-      setCategoryLoading(true);
-      try {
-        const accessToken = localStorage.getItem('accessToken');
-        const response = await authService.getCategoryById(event.categoryId, accessToken || '');
-        const categoryResponse = response as { data: { category: { name: string } } };
-        setCategoryName(categoryResponse.data.category.name);
-      } catch (error: any) {
-        console.error('Error fetching category name:', error);
-        message.error('Failed to load category name');
-        setCategoryName('N/A'); // Set to N/A in case of error
-      } finally {
-        setCategoryLoading(false);
-      }
-    };
+      const fetchCategoryName = async () => {
+          if (!event?.categoryId) return; // Exit if categoryId is missing
+          setCategoryLoading(true);
+          try {
+              const accessToken = localStorage.getItem('accessToken');
+              const response = await authService.getCategoryById(event.categoryId, accessToken || '');
+              const categoryResponse = response as { data: { category: { name: string } } };
+              setCategoryName(categoryResponse.data.category.name);
+          } catch (error: any) {
+              console.error('Error fetching category name:', error);
+              message.error('Failed to load category name');
+              setCategoryName('N/A'); // Set to N/A in case of error
+          } finally {
+              setCategoryLoading(false);
+          }
+      };
 
-    if (event) {
-      fetchCategoryName();
-    }
+      if (event) {
+          fetchCategoryName();
+      }
   }, [event]);
 
 
   const items: DescriptionsProps['items'] = event ? [
-    {
-      key: 'event_name',
-      label: 'Title',
-      children: (
-        <span className="text-capitalize">{event.name?.slice(0, 36)}...</span>
-      ),
-      span: 24,
-    },
-    {
-      key: 'event_id',
-      label: 'ID',
-      children: event.id,
-      span: 24,
-    },
-    {
-      key: 'event_type',
-      label: 'Category',
-      children: categoryLoading ? <Spin size="small" /> : <Tag color="blue">{categoryName || 'Loading...'}</Tag>, // Display category name or loader
-      span: 24,
-    },
-    {
-      key: 'project_location',
-      label: 'Location',
-      children: event.location,
-      span: 24,
-    },
-    {
-      key: 'project_status',
-      label: 'Status',
-      children: <span className="text-capitalize">{event.status}</span>,
-    },
-    {
-      key: 'team_size',
-      label: <UsergroupAddOutlined />,
-      children: (
-        <Tooltip title="Team size">
-          <Typography.Text>{event.maxParticipants}</Typography.Text>
-        </Tooltip>
-      ),
-    },
-    {
-      key: 'start_date',
-      label: <CalendarOutlined />,
-      children: (
-        <Tooltip title="Project date">
-          <Typography.Text>{event.startDate ? dayjs(event.startDate).format('DD/MM/YYYY HH:mm') : 'N/A'} - {event.endDate ? dayjs(event.endDate).format('DD/MM/YYYY HH:mm') : 'N/A'}</Typography.Text>
-        </Tooltip>
-      ),
-    },
+      {
+          key: 'event_name',
+          label: 'Title',
+          children: (
+              <span className="text-capitalize">{event.name?.slice(0, 36)}...</span>
+          ),
+          span: 24,
+      },
+      {
+          key: 'event_id',
+          label: 'ID',
+          children: event.id,
+          span: 24,
+      },
+      {
+          key: 'event_type',
+          label: 'Category',
+          children: categoryLoading ? <Spin size="small" /> : <Tag color="blue">{categoryName || 'Loading...'}</Tag>, // Display category name or loader
+          span: 24,
+      },
+      {
+          key: 'project_location',
+          label: 'Location',
+          children: event.location,
+          span: 24,
+      },
+      {
+          key: 'project_status',
+          label: 'Status',
+          children: <span className="text-capitalize">{event.status}</span>,
+      },
+      {
+          key: 'team_size',
+          label: <UsergroupAddOutlined />,
+          children: (
+              <Tooltip title="Team size">
+                  <Typography.Text>{event.maxParticipants}</Typography.Text>
+              </Tooltip>
+          ),
+      },
+      {
+          key: 'start_date',
+          label: <CalendarOutlined />,
+          children: (
+              <Tooltip title="Project date">
+                  <Typography.Text>{event.startDate ? dayjs(event.startDate).format('DD/MM/YYYY HH:mm') : 'N/A'} - {event.endDate ? dayjs(event.endDate).format('DD/MM/YYYY HH:mm') : 'N/A'}</Typography.Text>
+              </Tooltip>
+          ),
+      },
   ] : [];
 
 
   return size === 'small' ? (
-    <AntdCard
-      bordered
-      hoverable={true}
-      className="project-small-card"
-      {...others}
-    >
-      <Title level={5} className="text-capitalize m-0">
-        {event?.name?.slice(0, 15)}
-      </Title>
-      <br />
-      <Flex wrap="wrap" gap="small" className="text-capitalize">
-        <Text>
-          Category: <b>{categoryLoading ? <Spin size="small" /> : <Tag color="blue">{categoryName || 'Loading...'}</Tag>}</b>,
-        </Text>
-        <Text>
-          Location: <b>{event?.location}</b>
-        </Text>
-      </Flex>
-    </AntdCard>
+      <Link to={`/details/my-events/${event?.id}`}> {/* Đảm bảo có Link ở đây */}
+          <AntdCard
+              bordered
+              hoverable={true}
+              className="project-small-card"
+              {...others}
+          >
+              <Title level={5} className="text-capitalize m-0">
+                  {event?.name?.slice(0, 15)}
+              </Title>
+              <br />
+              <Flex wrap="wrap" gap="small" className="text-capitalize">
+                  <Text>
+                      Category: <b>{categoryLoading ? <Spin size="small" /> : <Tag color="blue">{categoryName || 'Loading...'}</Tag>}</b>,
+                  </Text>
+                  <Text>
+                      Location: <b>{event?.location}</b>
+                  </Text>
+              </Flex>
+          </AntdCard>
+      </Link>
   ) : (
-    <AntdCard bordered hoverable={true} {...others}>
-      <Descriptions
-        items={items}
-        column={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
-      />
-    </AntdCard>
+      <AntdCard bordered hoverable={true} {...others}>
+          <Descriptions
+              items={items}
+              column={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
+          />
+      </AntdCard>
   );
 };
 
@@ -5767,6 +5768,7 @@ const DASHBOARD_ITEMS = [
 const USER_PROFILE_ITEMS = [
   { title: 'information', path: PATH_USER_PROFILE.personalInformation },
   { title: 'security', path: PATH_USER_PROFILE.security },
+  { title: 'face-capture', path: PATH_USER_PROFILE.faceCapture },
 ];
 
 const AUTHENTICATION_ITEMS = [
@@ -5887,6 +5889,7 @@ export const PATH_USER_PROFILE = {
   root: ROOTS_PROFILE,
   personalInformation: path(ROOTS_PROFILE, '/personal-information'),
   security: path(ROOTS_PROFILE, '/security'),
+  faceCapture: path(ROOTS_PROFILE, '/face-capture'),
 };
 
 export const PATH_SOCIAL = {
@@ -6842,6 +6845,11 @@ const items: MenuProps['items'] = [
       PATH_USER_PROFILE.security, // key = pathname
       null
     ),
+    getItem(
+      <Link to={PATH_USER_PROFILE.faceCapture}>Face-capture</Link>,
+      PATH_USER_PROFILE.faceCapture, // key = pathname
+      null
+    ),
   ]),
 ];
 
@@ -6956,6 +6964,7 @@ import authService from '../../services/authService';
 import dayjs from 'dayjs';
 import { Helmet } from 'react-helmet-async';
 import TicketDetailsModal from '../../components/TicketDetailsModal';
+import RegisteredParticipantsTable from '../../pages/details/components/RegisteredParticipantsTable';
 
 const { Text } = Typography;
 
@@ -6986,9 +6995,9 @@ export const EventDetailLayout: React.FC = () => {
         };
         if (response.statusCode === 200 && response.data) {
           setEventDetail(response.data.event);
-          if(eventDetail?.status === 'FINISHED') {
+          if (eventDetail?.status === 'FINISHED') {
             const checkParticipant = await authService.getParticipantData(eventId, accessToken || '') as any;
-            if(checkParticipant.statusCode === 200) {
+            if (checkParticipant.statusCode === 200) {
               setIsParticipant(true);
             } else {
               setIsParticipant(false);
@@ -7114,7 +7123,7 @@ export const EventDetailLayout: React.FC = () => {
           btnBack={<BackBtn />}
         />
         <Row gutter={[16, 16]}>
-           <Col xs={24} md={16} xl={18}>
+          <Col xs={24} md={16} xl={18}>
             <Outlet context={{ eventId, eventDetail }} />
           </Col>
           <Col xs={24} md={8} xl={6}>
@@ -7223,7 +7232,15 @@ export const EventDetailLayout: React.FC = () => {
                     )}
                   </Card>
                 </Col>
+
               )}
+              <Row gutter={[16, 16]}>
+                <Col span={24} style={{ marginTop: "24px" }}>
+                  <Card title="Registered Participants">
+                    <RegisteredParticipantsTable eventId={eventId || ''} />
+                  </Card>
+                </Col>
+              </Row>
             </Row>
           </Col>
         </Row>
@@ -7776,16 +7793,17 @@ export * from './create';
 
 
 src\pages\QRScannerPage.tsx:
-// src/pages/QRScannerPage.tsx
-import React, { useState, useRef } from 'react';
+// src\pages\QRScannerPage.tsx
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { QrReader } from 'react-qr-reader';
-import { Input, Button, message, Typography, Card, Spin } from 'antd';
+import { Input, Button, message, Typography, Card, Spin, Alert } from 'antd';
 import { BackBtn, PageHeader } from '../components';
 import { Helmet } from 'react-helmet-async';
-import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../constants';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import authService from '../services/authService';
+import * as faceapi from 'face-api.js';
 
 const { Title, Text } = Typography;
 
@@ -7794,18 +7812,140 @@ const QRScannerPage: React.FC = () => {
   const [manualCode, setManualCode] = useState<string>('');
   const [isCameraActive, setIsCameraActive] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null); // State to store recognized userId
   const navigate = useNavigate();
   const { id: eventId } = useParams<{ id: string }>();
-  const isProcessingScan = useRef(false); // Theo dõi trạng thái xử lý scan
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const isProcessingScan = useRef(false);
+  const isProcessingFace = useRef(false); // Track face recognition processing
+  const [faceDetectionError, setFaceDetectionError] = useState<string | null>(null);
+  const [labeledFaceDescriptors, setLabeledFaceDescriptors] = useState<faceapi.LabeledFaceDescriptors[]>([]);
+  const [faceDetectionLoading, setFaceDetectionLoading] = useState<boolean>(false);
+  const [faceMatchName, setFaceMatchName] = useState<string | null>(null);
 
-  // Thêm tham số manual để phân biệt quét tự động (manual = false) và submit thủ công (manual = true)
+
+  // Load face-api.js models
+  const loadModels = useCallback(async () => {
+    setFaceDetectionLoading(true);
+    try {
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+        faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+        faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+      ]);
+      console.log('All models loaded');
+    } catch (error: any) {
+      console.error('Error loading models:', error);
+      setFaceDetectionError('Failed to load face recognition models.');
+      message.error('Failed to load face recognition models.');
+    } finally {
+      setFaceDetectionLoading(false);
+    }
+  }, []);
+
+  const loadLabeledImages = useCallback(async () => {
+    if (!eventId) return []; // Exit if eventId is not available
+
+    setFaceDetectionLoading(true);
+    try {
+      const response = await authService.getEventParticipantsWithFaces(eventId) as any;
+      if (response.statusCode !== 200) {
+        throw new Error(response.message || 'Failed to fetch participants faces.');
+      }
+      const participants = response.data.participants;
+      if (!participants || participants.length === 0) {
+        message.warning('No participants with face images found for this event.');
+        return [];
+      }
+
+      return Promise.all(
+        participants.map(async (participant: any) => {
+          const descriptions: Float32Array[] = [];
+          const label = participant.userId; // Use userId as label
+          const faceImages = participant.faceImages || []; // Ensure faceImages is an array
+
+          for (let i = 0; i < faceImages.length; i++) {
+            const imgUrl = faceImages[i];
+            try {
+              const img = await faceapi.fetchImage(imgUrl);
+              const detection = await faceapi
+                .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+              if (detection) {
+                descriptions.push(detection.descriptor);
+              }
+            } catch (error) {
+              console.error(`Failed to load image for user ${label}, image URL ${imgUrl}:`, error);
+            }
+          }
+          return new faceapi.LabeledFaceDescriptors(label, descriptions);
+        })
+      );
+    } catch (apiError: any) {
+      console.error('Error fetching labeled faces:', apiError);
+      setFaceDetectionError(apiError.message || 'Failed to load participant face data.');
+      message.error(apiError.message || 'Failed to load participant face data.');
+      return []; // Return empty array on error to prevent further issues
+    } finally {
+      setFaceDetectionLoading(false);
+    }
+  }, [eventId]);
+
+
+  useEffect(() => {
+    loadModels();
+    loadLabeledImages()
+      .then(setLabeledFaceDescriptors)
+      .catch(e => {
+        setFaceDetectionError("Failed to load face recognition data.");
+      });
+
+    navigator.mediaDevices.getUserMedia({ video: {} }).then((stream) => {
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    });
+
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop());
+      }
+    };
+  }, [loadModels, loadLabeledImages, eventId]);
+
+  const handleFaceRecognition = useCallback(async () => {
+    if (!videoRef.current) return;
+    const detections = await faceapi
+      .detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptors();
+    if (detections && detections.length > 0) {
+      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors);
+      const bestMatch = faceMatcher.findBestMatch(detections[0].descriptor);
+      setFaceMatchName(bestMatch.toString());
+    } else {
+      setFaceMatchName(null);
+    }
+  }, [labeledFaceDescriptors]);
+
+  useEffect(() => {
+    if (!faceDetectionLoading && labeledFaceDescriptors.length > 0 && videoRef.current) {
+      const intervalId = setInterval(() => handleFaceRecognition(), 100);
+      return () => clearInterval(intervalId);
+    }
+  }, [faceDetectionLoading, labeledFaceDescriptors, handleFaceRecognition, videoRef]);
+
   const handleScanTicket = async (code: string, manual: boolean = false) => {
     if (isProcessingScan.current) {
       return;
     }
     isProcessingScan.current = true;
     setIsCameraActive(false);
-    // Nếu không phải submit thủ công thì bật loading
     if (!manual) {
       setIsLoading(true);
       message.loading({ content: 'Checking ticket...', key: 'scanMessage', duration: 0 });
@@ -7819,7 +7959,6 @@ const QRScannerPage: React.FC = () => {
       response = { statusCode: 500, error: error.error || 'Scan failed.' };
     }
 
-    // Nếu submit tự động, đảm bảo hiển thị loading ít nhất 3s
     if (!manual) {
       const elapsed = Date.now() - startTime;
       const remainingTime = 3000 - elapsed;
@@ -7832,7 +7971,6 @@ const QRScannerPage: React.FC = () => {
       setIsLoading(false);
     }
 
-    // Hiển thị thông báo kết quả
     if (response.statusCode === 200) {
       message.success({
         content: `Ticket scanned: ${response.data && response.data[0]?.name ? response.data[0].name : ''}. Ready for next scan.`,
@@ -7848,35 +7986,30 @@ const QRScannerPage: React.FC = () => {
     isProcessingScan.current = false;
   };
 
-  // Hàm xử lý khi mã QR được quét tự động (chỉ xử lý khi manualCode trống)
   const handleScan = (result: any) => {
     if (result && isCameraActive && manualCode.trim() === '') {
       const code = result.getText();
       if (code && code !== lastScannedCode) {
         setLastScannedCode(code);
-        handleScanTicket(code); // Gọi với manual = false (mặc định)
+        handleScanTicket(code);
       }
     }
   };
 
-  // Hàm xử lý lỗi camera
   const handleError = (error: any) => {
     setIsCameraActive(false);
-    console.error(error);
+    setFaceDetectionError("");
   };
 
-  // Khi submit thủ công, gọi handleScanTicket với manual = true để bỏ qua delay
   const handleManualSubmit = async () => {
     if (manualCode.trim() === '') {
       message.warning('Please enter a code manually.');
       return;
     }
-    // Gọi hàm xử lý mà không chờ delay
     handleScanTicket(manualCode.trim(), true);
     setManualCode('');
   };
 
-  // Hàm xử lý hoàn thành sự kiện (giữ nguyên)
   const handleFinish = async () => {
     setIsCameraActive(false);
     try {
@@ -7905,7 +8038,7 @@ const QRScannerPage: React.FC = () => {
         <title>QR Scanner | Event Check-in/Check-out</title>
       </Helmet>
       <PageHeader
-        title="QR Code Scanner"
+        title="QR Code & Face Scanner"
         breadcrumbs={[
           {
             title: (
@@ -7930,7 +8063,7 @@ const QRScannerPage: React.FC = () => {
               })),
             },
           },
-          { title: 'QR Scanner' },
+          { title: 'QR & Face Scanner' },
         ]}
         btnBack={<BackBtn />}
       />
@@ -7951,11 +8084,40 @@ const QRScannerPage: React.FC = () => {
               position: 'relative',
             }}
           >
+            <video ref={videoRef} width="100%" height="100%" autoPlay muted />
+            {faceDetectionLoading && (
+              <div style={loadingOverlayStyle}>
+                <Spin size="large" tip="Loading Face Recognition Models..." />
+              </div>
+            )}
+            {faceDetectionError && (
+              <div style={loadingOverlayStyle}>
+                <Alert message={faceDetectionError} type="error" />
+              </div>
+            )}
+            {isLoading && (
+              <div style={loadingOverlayStyle}>
+                <Spin size="large" tip="Checking Ticket..." />
+              </div>
+            )}
+            {faceMatchName && faceMatchName !== 'Unknown Face' && (
+              <div style={faceMatchOverlayStyle}>
+                <CheckCircleOutlined style={{ color: 'green', fontSize: 24, marginBottom: 8 }} />
+                <Typography.Text style={{ color: 'white', fontWeight: 'bold' }}>
+                  Face Matched: User {faceMatchName}
+                </Typography.Text>
+              </div>
+            )}
+            {faceMatchName === 'Unknown Face' && (
+              <div style={faceMatchOverlayStyle}>
+                <Alert message="Unknown Face Detected" type="warning" showIcon />
+              </div>
+            )}
             <QrReader
               constraints={{ facingMode: 'environment' }}
               scanDelay={300}
               onResult={(result, error) => {
-                if (result) {
+                if (result && !faceMatchName) { // Only scan QR if face is not matched or not processing face
                   handleScan(result);
                 }
                 if (error) {
@@ -7966,28 +8128,13 @@ const QRScannerPage: React.FC = () => {
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
+                position: 'absolute', // Position QR reader video over the video element
+                top: 0,
+                left: 0,
               }}
             />
-            {isLoading && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  borderRadius: '8px',
-                }}
-              >
-                <Spin size="large" tip="Checking Ticket..." />
-              </div>
-            )}
           </div>
-          <Text>Scanning for QR codes...</Text>
+          <Text>Scanning for QR codes and Faces...</Text>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
             <Text>Manual Code Entry:</Text>
@@ -8002,7 +8149,7 @@ const QRScannerPage: React.FC = () => {
             </Button>
           </div>
 
-          <Button type="primary" onClick={handleFinish} style={{ marginTop: 20 }} disabled={isLoading}>
+          <Button type="primary" onClick={handleFinish} style={{ marginTop: '20px' }} disabled={isLoading}>
             Finish Event
           </Button>
         </div>
@@ -8010,6 +8157,34 @@ const QRScannerPage: React.FC = () => {
     </div>
   );
 };
+
+const loadingOverlayStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  backgroundColor: 'rgba(255, 255, 255, 0.7)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderRadius: '8px',
+  zIndex: 10,
+};
+
+const faceMatchOverlayStyle: React.CSSProperties = {
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  width: '100%',
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  color: 'white',
+  padding: '10px',
+  textAlign: 'center',
+  borderRadius: '0 0 8px 8px',
+  zIndex: 10,
+};
+
 
 export default QRScannerPage;
 
@@ -8333,7 +8508,6 @@ const ResetPasswordConfirmPage: React.FC = () => {
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   if (loading) {
@@ -8562,7 +8736,6 @@ export const SignInPage = () => {
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
 
@@ -8720,7 +8893,6 @@ export const SignUpPage = () => {
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   return (
@@ -8969,7 +9141,6 @@ export const CreateEventPage = () => {
     };
 
     const onFinishFailed = (errorInfo: any) => {
-        console.log('Failed:', errorInfo);
     };
 
     const onFinishType = async (values: any) => {
@@ -9187,11 +9358,6 @@ interface EventParticipantsTableProps extends TableProps<Participants> {
 
 const PARTICIPANTS_COLUMNS = [
   {
-    title: 'ID',
-    dataIndex: 'id',
-    key: 'id',
-  },
-  {
     title: 'Name',
     dataIndex: 'name',
     key: 'name',
@@ -9216,6 +9382,7 @@ const PARTICIPANTS_COLUMNS = [
 ];
 
 const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId }) => {
+
   const { data: participantsData, error: participantsError, loading: participantsLoading } = useFetchData(
     eventId ? `http://localhost:8080/api/v1/events/${eventId}/participants` : "", // Correct API URL
     localStorage.getItem('accessToken') || undefined
@@ -9234,19 +9401,19 @@ const EventParticipantsTable: React.FC<EventParticipantsTableProps> = ({ eventId
   }
 
   // Check if data.data exists and is an array before accessing its length
-  if (!participantsData?.data || !Array.isArray(participantsData.data) || participantsData.data.length === 0) {
+  if (!participantsData?.data?.participants || !Array.isArray(participantsData.data.participants) || participantsData.data.participants.length === 0) {
     return <Alert message="No participants found for this event." type="info" showIcon />;
   }
-
 
   return (
     <div>
       <Table
-        dataSource={participantsData.data}
+        dataSource={participantsData.data.participants} // Sửa dataSource ở đây
         columns={PARTICIPANTS_COLUMNS}
-        loading={participantsLoading} // Use hook's loading state
+        loading={participantsLoading}
         pagination={{ pageSize: 5 }}
         rowKey="id"
+        scroll={{ x: true }}
       />
     </div>
   );
@@ -9344,7 +9511,11 @@ const EventsListPage = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text, record) => <Typography.Paragraph ellipsis><Link to={`/details/events/${record.id}`}>{text}</Link></Typography.Paragraph>,
+      render: (text, record) => <Typography.Paragraph ellipsis>
+        <Link to={`/details/events/${record.id}`}>
+          {text?.length > 15 ? `${text.slice(0, 15)}...` : text}
+        </Link>
+      </Typography.Paragraph>,
     },
     {
       title: 'Location',
@@ -9381,6 +9552,7 @@ const EventsListPage = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      responsive: ['md'], 
       render: (status) => (
         <Tag color={status === 'SCHEDULED' ? 'blue' : status === 'CANCELED' ? 'red' : 'green'}>
           {status}
@@ -9636,7 +9808,7 @@ export const GeneralDashboardPage = () => {
             </Col>
           </Row>
         </Col>
-        <Col sm={24} lg={8}>
+        <Col sm={24} lg={8} xs={24}>
           <CustomerReviewsCard />
         </Col>
         <Col xs={24} lg={12}>
@@ -9671,16 +9843,16 @@ src\pages\dashboards\MyEvents.tsx:
 // src\pages\dashboards\MyEvents.tsx
 import { Alert, Button, Col, Row, Space } from 'antd';
 import {
-    Card,
-    Loader,
-    PageHeader,
+  Card,
+  Loader,
+  PageHeader,
 } from '../../components';
 import { Events } from '../../types';
 import { useState } from 'react';
 import {
-    HomeOutlined,
-    PieChartOutlined,
-    PlusOutlined,
+  HomeOutlined,
+  PieChartOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link, useNavigate } from 'react-router-dom';
@@ -9690,165 +9862,166 @@ import { EventsCard } from '../../components/dashboard/shared';
 import { MyEventsTable } from '../../components/dashboard/events/MyEventTable'; // Corrected import here (Named import)
 
 const EVENT_TABS = [
-    {
-        key: 'all',
-        label: 'All events',
-    },
-    {
-        key: 'SCHEDULED',
-        label: 'Scheduled',
-    },
-    {
-        key: 'CANCELED',
-        label: 'Canceled',
-    },
-    {
-        key: 'FINISHED',
-        label: 'Finished',
-    },
+  {
+    key: 'all',
+    label: 'All events',
+  },
+  {
+    key: 'SCHEDULED',
+    label: 'Scheduled',
+  },
+  {
+    key: 'CANCELED',
+    label: 'Canceled',
+  },
+  {
+    key: 'FINISHED',
+    label: 'Finished',
+  },
 ];
 
 export const MyEventDashboardPage = () => {
 
-    const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } = useFetchOrganizedEventsData();
-    const [eventTabKey, setEventTabKey] = useState<string>('all');
-    const navigate = useNavigate();
+  const { data: eventsData, error: eventsError, loading: eventsLoading, fetchData } = useFetchOrganizedEventsData();
+  const [eventTabKey, setEventTabKey] = useState<string>('all');
+  const navigate = useNavigate();
 
-    const getFilteredEvents = (status?: string) => {
-        return (eventsData || []).filter((event: Events) => status ? event.status === status : true);
-    };
+  const getFilteredEvents = (status?: string) => {
+    return (eventsData || []).filter((event: Events) => status ? event.status === status : true);
+  };
 
-    const EVENT_TABS_CONTENT: Record<string, React.ReactNode> = {
-        all: <MyEventsTable key="all-events-table" data={getFilteredEvents()} loading={eventsLoading} fetchData={fetchData} activeTabKey={eventTabKey} />,
-        SCHEDULED: (
-            <MyEventsTable
-                key="scheduled-events-table"
-                data={getFilteredEvents('SCHEDULED')}
-                loading={eventsLoading}
-                fetchData={() => fetchData('SCHEDULED')}
-                activeTabKey={eventTabKey}
-            />
-        ),
-        CANCELED: (
-            <MyEventsTable
-                key="canceled-events-table"
-                data={getFilteredEvents('CANCELED')}
-                loading={eventsLoading}
-                fetchData={() => fetchData('CANCELED')}
-                activeTabKey={eventTabKey}
-            />
-        ),
-        FINISHED: (
-            <MyEventsTable
-                key="finished-events-table"
-                data={getFilteredEvents('FINISHED')}
-                loading={eventsLoading}
-                fetchData={() => fetchData('FINISHED')}
-                activeTabKey={eventTabKey}
-            />
-        ),
-    };
-
-
-    const onEventTabChange = (key: string) => {
-        setEventTabKey(key);
-        fetchData(key === 'all' ? undefined : key);
-    };
+  const EVENT_TABS_CONTENT: Record<string, React.ReactNode> = {
+    all: <MyEventsTable key="all-events-table" data={getFilteredEvents()} loading={eventsLoading} fetchData={fetchData} activeTabKey={eventTabKey} />,
+    SCHEDULED: (
+      <MyEventsTable
+        key="scheduled-events-table"
+        data={getFilteredEvents('SCHEDULED')}
+        loading={eventsLoading}
+        fetchData={() => fetchData('SCHEDULED')}
+        activeTabKey={eventTabKey}
+      />
+    ),
+    CANCELED: (
+      <MyEventsTable
+        key="canceled-events-table"
+        data={getFilteredEvents('CANCELED')}
+        loading={eventsLoading}
+        fetchData={() => fetchData('CANCELED')}
+        activeTabKey={eventTabKey}
+      />
+    ),
+    FINISHED: (
+      <MyEventsTable
+        key="finished-events-table"
+        data={getFilteredEvents('FINISHED')}
+        loading={eventsLoading}
+        fetchData={() => fetchData('FINISHED')}
+        activeTabKey={eventTabKey}
+      />
+    ),
+  };
 
 
-    return (
-        <div>
-            <Helmet>
-                <title>My Events | Dashboard</title>
-            </Helmet>
-            <PageHeader
-                title="your event dashboard"
-                breadcrumbs={[
-                    {
-                        title: (
-                            <>
-                                <HomeOutlined />
-                                <span>home</span>
-                            </>
-                        ),
-                        path: '/',
-                    },
-                    {
-                        title: (
-                            <>
-                                <PieChartOutlined />
-                                <span>dashboards</span>
-                            </>
-                        ),
-                        menu: {
-                            items: DASHBOARD_ITEMS.map((d) => ({
-                                key: d.title,
-                                title: <Link to={d.path}>{d.title}</Link>,
-                            })),
-                        },
-                    },
-                    {
-                        title: 'my events',
-                    },
-                ]}
-            />
-            <Row
-                gutter={[
-                    { xs: 8, sm: 16, md: 24, lg: 32 },
-                    { xs: 8, sm: 16, md: 24, lg: 32 },
-                ]}
-            >
-                <Col span={24}>
-                    <Card
-                        title="Recently added events"
-                    >
-                        {eventsError && (
-                            <Alert
-                                message="No events participated yet."
-                                type="info"
-                                showIcon
-                            />
-                        )}
-                        {eventsLoading ? (
-                            <Loader />
-                        ) : (
-                            <Row gutter={[16, 16]}>
-                                {getFilteredEvents().slice(0, 4).map((o: Events) => {
-                                    return (
-                                        <Col xs={24} sm={12} xl={6} key={o.id}>
-                                            <EventsCard
-                                                event={o}
-                                                type="inner"
-                                                style={{ height: '100%' }}
-                                            />
-                                        </Col>
-                                    );
-                                })}
-                            </Row>
-                        )}
-                    </Card>
-                </Col>
-                <Col span={24}>
-                    <Card
-                        title="Your Events"
-                        extra={
-                            <Space>
-                                <Button onClick={() => navigate("/create/events")} icon={<PlusOutlined />}>New Event</Button>
-                            </Space>
-                        }
-                        tabList={EVENT_TABS}
-                        activeTabKey={eventTabKey}
-                        onTabChange={onEventTabChange}
-                    >
-                        {eventsLoading ? <Loader /> : EVENT_TABS_CONTENT[eventTabKey]}
-                    </Card>
-                </Col>
-            </Row>
-        </div>
-    );
+  const onEventTabChange = (key: string) => {
+    setEventTabKey(key);
+    fetchData(key === 'all' ? undefined : key);
+  };
+
+
+  return (
+    <div>
+      <Helmet>
+        <title>My Events | Dashboard</title>
+      </Helmet>
+      <PageHeader
+        title="your event dashboard"
+        breadcrumbs={[
+          {
+            title: (
+              <>
+                <HomeOutlined />
+                <span>home</span>
+              </>
+            ),
+            path: '/',
+          },
+          {
+            title: (
+              <>
+                <PieChartOutlined />
+                <span>dashboards</span>
+              </>
+            ),
+            menu: {
+              items: DASHBOARD_ITEMS.map((d) => ({
+                key: d.title,
+                title: <Link to={d.path}>{d.title}</Link>,
+              })),
+            },
+          },
+          {
+            title: 'my events',
+          },
+        ]}
+      />
+      <Row
+        gutter={[
+          { xs: 8, sm: 16, md: 24, lg: 32 },
+          { xs: 8, sm: 16, md: 24, lg: 32 },
+        ]}
+      >
+        <Col span={24}>
+          <Card
+            title="Recently added events"
+          >
+            {eventsError && (
+              <Alert
+                message="No events participated yet."
+                type="info"
+                showIcon
+              />
+            )}
+            {eventsLoading ? (
+              <Loader />
+            ) : (
+              <Row gutter={[16, 16]}>
+                {getFilteredEvents().slice(0, 4).map((o: Events) => {
+                  return (
+                    <Col xs={24} sm={12} xl={6} key={o.id}>
+                      <EventsCard
+                        event={o}
+                        type="inner"
+                        style={{ height: '100%' }}
+                      />
+                    </Col>
+                  );
+                })}
+              </Row>
+            )}
+          </Card>
+        </Col>
+        <Col span={24}>
+          <Card
+            title="Your Events"
+            extra={
+              <Space>
+                <Button onClick={() => navigate("/create/events")} icon={<PlusOutlined />}>New Event</Button>
+              </Space>
+            }
+            tabList={EVENT_TABS}
+            activeTabKey={eventTabKey}
+            onTabChange={onEventTabChange}
+          >
+            {eventsLoading ? <Loader /> : EVENT_TABS_CONTENT[eventTabKey]}
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
 };
 
 export default MyEventDashboardPage
+
 
 
 src\pages\dashboards\ParticipatedEvents.tsx:
@@ -9859,14 +10032,13 @@ import {
   Button,
   Card,
   Space,
-  Table,
-  Tag,
+  Spin,
   Select,
   message,
   Popconfirm,
-  Spin,
-  Flex, // Import Flex
-  Typography, // Import Typography
+  Flex,
+  Typography,
+  Tag,
 } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
@@ -9878,6 +10050,7 @@ import dayjs from 'dayjs';
 import useFetchParticipatedEventsData from '../../hooks/useFetchParticipatedEventsData';
 import authService from '../../services/authService';
 import { DASHBOARD_ITEMS } from '../../constants';
+import { MyEventsTable } from '../../components/dashboard/events/MyEventTable'; // Đảm bảo import MyEventsTable
 
 const EVENT_STATUS_OPTIONS = [
   { value: 'all', label: 'All Statuses' },
@@ -9964,12 +10137,16 @@ const ParticipatedEventsPage = () => {
     }
   };
 
-  const columns: ColumnsType<Events> = [
+  // Định nghĩa COLUMNS_PARTICIPATED_EVENTS ở đây
+  const COLUMNS_PARTICIPATED_EVENTS: ColumnsType<Events> = [
     {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text, record) => <Typography.Paragraph ellipsis><Link to={`/details/participated-events/${record.id}`}>{text}</Link></Typography.Paragraph>, // Added ellipsis
+
+      render: (text, record) => <Typography.Paragraph ellipsis><Link to={`/details/participated-events/${record.id}`}>{
+        text?.length > 20 ? `${text.slice(0, 20)}...` : text
+      }</Link></Typography.Paragraph>, // Added ellipsis
     },
     {
       title: 'Location',
@@ -10011,28 +10188,29 @@ const ParticipatedEventsPage = () => {
           {status}
         </Tag>
       ),
+      responsive: ['md'],
     },
     {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <Space size="middle">
-          <Button type="primary" size="small">
+        <Flex vertical gap="small" align="center"> {/* Sử dụng Flex vertical và align center */}
+          <Button type="primary" size="small"> {/* Đảm bảo size="small" */}
             <Link to={`/details/participated-events/${record.id}`}>Details</Link>
           </Button>
           <Popconfirm
-            title="Cancel Event"
+            title="Unregister Event"
             description="Are you sure to unregister from this event?"
             onConfirm={() => handleLeaveEvent(record.id)}
             onCancel={() => message.info('Cancel')}
-            okText="Yes, Cancel"
+            okText="Yes, Unregister"
             cancelText="No"
             placement="topRight"
             overlayInnerStyle={{ width: 200 }}
           >
-            <Button danger>Unregister</Button>
+            <Button danger size="small">Cancel</Button>  {/* Đảm bảo size="small" */}
           </Popconfirm>
-        </Space>
+        </Flex>
       ),
     },
   ];
@@ -10091,20 +10269,23 @@ const ParticipatedEventsPage = () => {
           <Alert message="No events participated yet." type="info" showIcon />
         ) : (
           <div className="table-responsive"> {/* Responsive table wrapper */}
-            <Table
-              columns={columns}
-              dataSource={eventsData?.events || []}
+            <MyEventsTable
+              columns={COLUMNS_PARTICIPATED_EVENTS} // Pass COLUMNS_PARTICIPATED_EVENTS ở đây
+              data={eventsData?.events || []}
               loading={eventsLoading || actionLoading}
-              pagination={{
-                current: currentPage,
-                pageSize: pageSize,
-                total: eventsData?.meta?.totalItems || 0,
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-                pageSizeOptions: ['10', '20', '50', '100'],
-                showSizeChanger: true,
-                onChange: handlePaginationChange,
+              fetchData={() => fetchData(statusFilter === 'all' ? undefined : statusFilter)}
+              activeTabKey={statusFilter === 'all' ? 'all' : statusFilter}
+              {...{
+                pagination: {
+                  current: currentPage,
+                  pageSize: pageSize,
+                  total: eventsData?.meta?.totalItems || 0,
+                  showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  showSizeChanger: true,
+                  onChange: handlePaginationChange,
+                },
               }}
-              scroll={{ x: 'max-content' }} // Enable horizontal scroll
             />
           </div>
         )}
@@ -10662,7 +10843,6 @@ const SpeakerGuestManagementPage: React.FC = () => {
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   const speakerColumns: ColumnsType<SpeakerGuestData> = [
@@ -10930,7 +11110,6 @@ const EventAnalysisPage: React.FC = () => {
       setError(null);
       try {
         const accessToken = localStorage.getItem('accessToken');
-        console.log('eventId', eventId);
         const invitationResponse = await authService.getEventInvitationReport(eventId, accessToken as string);
         setInvitationData((invitationResponse as any).data);
 
@@ -11065,6 +11244,7 @@ import {
   Alert,
   Button,
   Card,
+  Checkbox,
   Col,
   Flex,
   List,
@@ -11085,6 +11265,7 @@ import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import { Helmet } from 'react-helmet-async';
 import EventDiscussion from '../../components/EventDiscussion';
 import jsPDF from 'jspdf';
+import { EventScheduleItem } from '../../types/schedule';
 
 const { Text } = Typography;
 
@@ -11113,7 +11294,6 @@ export const EventDetailsPage: React.FC = () => {
 
   // Fetch chi tiết sự kiện (sử dụng eventId từ outlet context)
   useEffect(() => {
-    console.log("EventDetailsPage useEffect is running, eventId:", eventId);
     const fetchEventDetails = async () => {
       setLoading(true);
       setError(null);
@@ -11122,14 +11302,8 @@ export const EventDetailsPage: React.FC = () => {
         const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
         if (response && response.statusCode === 200) {
           setEventDetails(response.data.event);
-        } else {
-          setError(response?.message || 'Failed to load event details');
-          message.error(response?.error);
-        }
+        } 
       } catch (error: any) {
-        console.error('Error fetching event details:', error);
-        setError(error.message || 'Failed to load event details');
-        message.error(error.error);
       } finally {
         setLoading(false);
       }
@@ -11142,12 +11316,9 @@ export const EventDetailsPage: React.FC = () => {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
         if (response.statusCode === 200 && response.data) {
-          setFeedbackSummary(response.data.data);
-        } else {
-          console.error('Failed to fetch feedback summary:', response.message);
-        }
+          setFeedbackSummary(response.data);
+        } 
       } catch (error: any) {
-        console.error('Error fetching feedback summary:', error);
       } finally {
         setFeedbackSummaryLoading(false);
       }
@@ -11170,8 +11341,7 @@ export const EventDetailsPage: React.FC = () => {
             message.error(response.error || 'Failed to accept invitation.');
           }
         } catch (error: any) {
-          console.error('Error accepting event:', error);
-          message.error(error.message || 'Failed to accept invitation.');
+          message.error(error.error || 'Failed to accept invitation.');
         }
       };
       acceptEvent();
@@ -11249,52 +11419,17 @@ export const EventDetailsPage: React.FC = () => {
       // Lưu file PDF
       doc.save("participants.pdf");
     } catch (error: any) {
-      console.error("Error generating PDF:", error);
       message.error("List check-in/check-out is empty.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
-
   const onSessionSelectChange = (selectedKeys: React.Key[]) => {
     setSelectedSessionIds(selectedKeys as string[]);
   };
 
-  const getScheduleColumns = () => {
-    return [
-      {
-        title: 'Title',
-        dataIndex: 'title',
-        key: 'title',
-        width: '25%', // Chiếm 25% chiều rộng (MỚI)
-      },
-      {
-        title: 'Start Time',
-        dataIndex: 'startTime',
-        key: 'startTime',
-        responsive: ['sm'], // Ẩn cột Start Time trên màn hình nhỏ hơn sm
-        width: '20%', // Chiếm 20% chiều rộng (MỚI)
-        render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
-      },
-      {
-        title: 'End Time',
-        dataIndex: 'endTime',
-        key: 'endTime',
-        responsive: ['sm'], // Ẩn cột End Time trên màn hình nhỏ hơn sm
-        width: '20%', // Chiếm 20% chiều rộng (MỚI)
-        render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
-      },
-      {
-        title: 'Description',
-        dataIndex: 'description',
-        key: 'description',
-        responsive: ['md'], // Ẩn cột Description trên màn hình nhỏ hơn md
-        width: '35%', // Chiếm 35% chiều rộng (MỚI)
-      },
-    ];
-  };
+  const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
 
   const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) => {
     return eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
@@ -11303,8 +11438,13 @@ export const EventDetailsPage: React.FC = () => {
         dataSource={eventDetails.schedule}
         columns={scheduleColumns}
         pagination={false}
-        scroll={{ x: 'max-content' }} // Thêm scroll ngang
-        size="small" // Sử dụng size small để giảm padding và tăng độ thoáng
+        // scroll={{ x: 'max-content'}} 
+        rowSelection={{
+          onChange: (selectedRowKeys, selectedRows) => {
+            onSessionSelectChange(selectedRowKeys as string[]);
+          },
+        }}
+        size="small"
       />
     ) : (
       <Alert message="No schedule available for this event." type="info" showIcon />
@@ -11397,9 +11537,13 @@ export const EventDetailsPage: React.FC = () => {
             justify="flex-end"
             gap="small"
           >
-            <Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>
-              Register Event
-            </Button>
+            {
+              eventDetails?.status === 'SCHEDULED' && (
+                <Button type="primary" icon={<UserAddOutlined />} onClick={handleRegisterEvent} loading={loading}>
+                  Register
+                </Button>
+              )
+            }
           </Flex>
         }
       >
@@ -11612,7 +11756,6 @@ const DetailMyEventPage: React.FC = () => {
           message.error(response?.error);
         }
       } catch (error: any) {
-        console.error('Error fetching event details:', error);
         setError(error.error || 'Failed to load event details');
         message.error(error.error);
       } finally {
@@ -11626,7 +11769,6 @@ const DetailMyEventPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
-        console.log('Feedback summary:', response);
         if (response.statusCode === 200 && response.data) {
           setFeedbackSummary(response.data);
         }
@@ -11672,23 +11814,26 @@ const DetailMyEventPage: React.FC = () => {
 
       <Card title={<Title level={3}>{eventDetails?.name}</Title>}
         extra={
-          <Space>
+          <Flex wrap="wrap" gap="small" justify="flex-end" align="center"> {/* Thay Space bằng Flex */}
             {eventDetails?.status === 'SCHEDULED' && (
-              <><Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal}>Invite Users</Button><Button
-                type="primary"
-                onClick={() => navigate(`/dashboards/check-in-out/${eventId}`)} // Navigate to QR scanner page
-              >
-                Check-in/Check-out
-              </Button></>
+              <>
+                <Button type="primary" icon={<UserAddOutlined />} onClick={showInviteModal}>Invite Users</Button>
+                <Button
+                  type="primary"
+                  onClick={() => navigate(`/dashboards/check-in-out/${eventId}`)}
+                >
+                  Check-in/Check-out
+                </Button>
+              </>
             )}
             <Button
               type="primary"
-              icon={<BarChartOutlined />} // Use the new icon
-              onClick={() => navigate(`/dashboards/events/${eventId}/analysis`)} // Navigate to analysis page
+              icon={<BarChartOutlined />}
+              onClick={() => navigate(`/dashboards/events/${eventId}/analysis`)}
             >
               Analysis
             </Button>
-          </Space>
+          </Flex>
         }
       >
         <Row gutter={[16, 16]}>
@@ -11756,7 +11901,7 @@ const handleDownloadPdfFunction = (setLoading: React.Dispatch<React.SetStateActi
       return;
     }
     // Gọi API lấy danh sách participant
-    const response = await authService.getEventParticipants(eventId, accessToken) as any;
+    const response = await authService.getEventParticipants(eventId, accessToken);
     const participants = response.data || [];
     if (!participants || participants.length === 0) {
       message.error("No participants data available.");
@@ -11847,7 +11992,7 @@ const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) 
       dataSource={eventDetails.schedule}
       columns={scheduleColumns}
       pagination={false}
-      scroll={{ x: 'max-content' }} // Thêm scroll ngang
+      size='small'
     />
   ) : (
     <Alert message="No schedule available for this event." type="info" showIcon />
@@ -12032,12 +12177,12 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   const [updatingSessions, setUpdatingSessions] = useState<boolean>(false); // State loading cho update session
   const [isTicketModalVisible, setIsTicketModalVisible] = useState<boolean>(false); // State for ticket modal visibility
   const { eventId } = useOutletContext<{ eventId: string }>();
-  const [feedbackSummaryLoading] = useState(false);
-  const [feedbackSummary] = useState<{
+  const [feedbackSummary, setFeedbackSummary] = useState<{
     averageRating: number;
     totalFeedbacks: number;
     ratingDistribution: Record<string, number>;
   } | null>(null);
+  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
 
   useEffect(() => {
     const fetchEventDetailsAndParticipation = async () => {
@@ -12063,7 +12208,23 @@ const ParticipatedEventDetailsPage: React.FC = () => {
       }
     };
 
+    const fetchEventFeedbackSummary = async () => {
+      if (!eventId) return;
+      setFeedbackSummaryLoading(true);
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
+        if (response.statusCode === 200 && response.data) {
+          setFeedbackSummary(response.data);
+        }
+      } catch (error: any) {
+      } finally {
+        setFeedbackSummaryLoading(false);
+      }
+    };
+
     fetchEventDetailsAndParticipation();
+    fetchEventFeedbackSummary();
   }, [id, navigate]);
 
   const handleDownloadPdfFunction = (setLoading: React.Dispatch<React.SetStateAction<boolean>>, message: any, authService: any, dayjs: any, eventId: string | undefined) => async () => {
@@ -12229,7 +12390,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         dataSource={eventDetails.schedule}
         columns={scheduleColumns}
         pagination={false}
-        scroll={{ x: 'max-content' }} // Thêm scroll ngang
+        scroll={{ x: true }}
       />
     ) : (
       <Alert message="No schedule available for this event." type="info" showIcon />
@@ -12742,6 +12903,87 @@ const InvitationSummaryChart: React.FC<InvitationSummaryChartProps> = ({ invitat
 export default InvitationSummaryChart;
 
 
+src\pages\details\components\RegisteredParticipantsTable.tsx:
+// src\pages\details\components\RegisteredParticipantsTable.tsx
+import React, { useEffect, useState } from 'react';
+import { Table, Alert, Spin } from 'antd';
+import { ColumnsType } from 'antd/es/table';
+import axiosInstance from '../../../api/axiosInstance';
+import { ParticipantData } from '../MyEventPage';
+
+interface RegisteredParticipantsTableProps {
+  eventId: string;
+}
+
+const RegisteredParticipantsTable: React.FC<RegisteredParticipantsTableProps> = ({ eventId }) => {
+  const [participants, setParticipants] = useState<ParticipantData[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchParticipants = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axiosInstance.get(`/events/${eventId}/registered-participants`);
+        const data = response.data as any;
+        if (data.statusCode === 200 && data.data.participants) {
+          setParticipants(data.data.participants);
+        } else {
+          setError(data.message || 'Failed to load registered participants');
+        }
+      } catch (error: any) {
+        setError(error.message || 'Failed to load registered participants');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchParticipants();
+  }, [eventId]);
+
+  const columns: ColumnsType<ParticipantData> = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+    },
+  ];
+
+  if (loading) {
+    return <Spin tip="Loading participants..." />;
+  }
+
+  if (error) {
+    return <Alert message="No participants register." type="info" showIcon />
+  }
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <Table
+        dataSource={participants}
+        columns={columns}
+        rowKey="participantId"
+        pagination={false}
+        scroll={{ x: 'max-content' }}
+      />
+    </div>
+  );
+};
+
+export default RegisteredParticipantsTable;
+
+
 src\pages\edit\EditEventPage.tsx:
 // src\pages\edit\EditEventPage.tsx
 import React, { useEffect, useState, useCallback } from 'react';
@@ -12947,7 +13189,6 @@ const EditEventPage: React.FC = () => {
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   const handleCreateSpeaker = () => {
@@ -13567,7 +13808,6 @@ const EventFeedbacksPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbacks(eventId, accessToken || undefined) as any;
-        console.log('Event feedbacks:', response);
         if (response.statusCode === 200 && response.data.feedbacks) {
           setFeedbacks(response.data.feedbacks);
           // Fetch user info for each feedback
@@ -13591,7 +13831,6 @@ const EventFeedbacksPage: React.FC = () => {
       for (const userId of userIds) {
         try {
           const response = await authService.getUserById(userId) as any;
-          console.log('User info:', response);
           if (response.statusCode === 200 && response.data) {
             usersInfoMap[userId] = response.data;
           }
@@ -13677,6 +13916,296 @@ const EventFeedbacksPage: React.FC = () => {
 };
 
 export default EventFeedbacksPage;
+
+
+src\pages\userAccount\FaceCapturePage.tsx:
+// src\pages\userAccount\FaceCapturePage.tsx
+import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
+import { Button, message, Typography, Card, Spin, Alert, Space } from 'antd';
+import { CameraOutlined, UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import authService from '../../services/authService';
+import axiosInstance from '../../api/axiosInstance';
+
+const { Title, Text } = Typography;
+
+// Helper function to convert data URL to File object (giữ nguyên)
+function dataURLtoFile(dataurl: string, filename: string): File {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)![1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+}
+
+const FaceCaptureTab: React.FC = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [images, setImages] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [cameraStarted, setCameraStarted] = useState<boolean>(false);
+
+  // Start camera on component mount
+  useEffect(() => {
+    const startCamera = async () => {
+      console.log("FaceCaptureTab: startCamera function called"); // Debug log
+
+      setLoading(true);
+      setError(null);
+      try {
+        console.log("FaceCaptureTab: Requesting user media..."); // Debug log trước getUserMedia
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        console.log("FaceCaptureTab: getUserMedia success - stream:", stream); // Debug log sau getUserMedia success
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          setCameraStarted(true);
+          console.log("FaceCaptureTab: videoRef.current.srcObject set - videoRef:", videoRef.current); // Debug log sau khi set srcObject
+        } else {
+          console.error("FaceCaptureTab: videoRef.current is null after getUserMedia success"); // Debug log nếu videoRef.current null
+          setError("Lỗi: videoRef không tồn tại.");
+          message.error("Lỗi: Component video không được khởi tạo đúng cách.");
+        }
+      } catch (err: any) {
+        console.error('FaceCaptureTab: Error accessing camera:', err); // In ra toàn bộ lỗi
+        setError(`Không thể truy cập camera: ${err.message}. Vui lòng kiểm tra quyền trình duyệt.`);
+        message.error(`Không thể truy cập camera: Vui lòng kiểm tra quyền trình duyệt và console để biết thêm chi tiết.`);
+      } finally {
+        setLoading(false);
+        console.log("FaceCaptureTab: startCamera finally block - loading:", loading, "cameraStarted:", cameraStarted, "error:", error); // Debug log finally block
+      }
+    };
+
+    startCamera();
+
+    // Stop stream on unmount (giữ nguyên)
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        console.log("FaceCaptureTab: Camera stream stopped on unmount"); // Debug log khi stream stop
+      }
+    };
+  }, []);
+
+  // Capture image from video (giữ nguyên)
+  const captureImage = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      console.error('Unable to get canvas context');
+      return;
+    }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataURL = canvas.toDataURL('image/png');
+    setImages(prev => [...prev, dataURL]);
+  };
+
+  // Handle file upload from device (giữ nguyên)
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          setImages(prev => [...prev, result]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        message.error('Only image files are allowed.');
+      }
+    });
+    e.target.value = "";
+  };
+
+  // Delete image by index (giữ nguyên)
+  const deleteImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Handle submit (API call to /users/upload/faces) (giữ nguyên)
+  const handleSubmit = async () => {
+    if (images.length === 0) {
+      message.error('Please capture or upload at least one image.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      images.forEach((imageDataUrl, index) => {
+        const file = dataURLtoFile(imageDataUrl, `faceImage${index + 1}.png`);
+        formData.append('files', file);
+      });
+
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Bạn chưa đăng nhập.');
+        return;
+      }
+
+      console.log("Calling API /users/upload/faces with data:", formData);
+
+      const response = await axiosInstance.post('/users/upload/faces', formData, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log("API Response:", response.data);
+
+      if (response.status === 201) {
+        message.success('Face registered successfully!');
+        setImages([]);
+      } else {
+        setError('Failed to register face.');
+        message.error('Failed to register face.');
+      }
+    } catch (error: any) {
+      console.error('Error registering face:', error);
+      setError(error.message || 'Failed to register face.');
+      message.error(error.message || 'Failed to register face.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <Card>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '24px',
+          }}
+        >
+          <Title level={4}>Capture Face</Title>
+
+          {error && (
+            <Alert
+              message="Camera Access Error"
+              description={error}
+              type="error"
+              showIcon
+              closable
+              onClose={() => setError(null)}
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
+          <div
+            style={{
+              border: '1px solid #ccc',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              position: 'relative',
+              width: '100%',
+              maxWidth: '500px',
+              height: '400px',
+              backgroundColor: '#f0f0f0',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+             <video
+              ref={videoRef} // <-- Gán ref cho thẻ <video> ở đây
+              autoPlay
+              playsInline
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+          </div>
+
+          <Space>
+            <Button
+              type="primary"
+              onClick={captureImage}
+              disabled={loading || !cameraStarted}
+              icon={<CameraOutlined />}
+            >
+              Capture Image
+            </Button>
+            <Button icon={<UploadOutlined />}>
+              <label htmlFor="uploadInput" style={{ cursor: 'pointer', margin: 0 }}>
+                Upload Image
+              </label>
+            </Button>
+            <input
+              id="uploadInput"
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: 'none' }}
+              onChange={handleFileUpload}
+            />
+          </Space>
+
+          {images.length > 0 && (
+            <Card
+              title="Captured / Uploaded Images"
+              style={{ width: '100%', maxWidth: '500px', marginTop: '20px' }}
+            >
+              <Space direction="horizontal" style={{ width: '100%', overflowX: 'auto' }}>
+                {images.map((img, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      position: 'relative',
+                      display: 'inline-block',
+                      marginRight: '8px',
+                    }}
+                  >
+                    <img
+                      src={img}
+                      alt={`Image ${index + 1}`}
+                      style={{
+                        maxWidth: '150px',
+                        height: 'auto',
+                        objectFit: 'contain',
+                        display: 'block',
+                      }}
+                    />
+                    <Button
+                      type="primary"
+                      danger
+                      icon={<DeleteOutlined />}
+                      size="small"
+                      style={{ position: 'absolute', top: 8, right: 8 }}
+                      onClick={() => deleteImage(index)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                ))}
+              </Space>
+            </Card>
+          )}
+
+          <Button type="primary" onClick={handleSubmit} loading={loading}>
+            Register Face
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export default FaceCaptureTab;
 
 
 src\pages\userAccount\index.ts:
@@ -13805,7 +14334,6 @@ export const UserProfileInformationPage = () => {
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   return (
@@ -14040,7 +14568,6 @@ export const UserProfileSecurityPage = () => {
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
   };
 
   return (
@@ -14162,6 +14689,7 @@ import DeclineEventPage from '../pages/DeclineEventPage.tsx';
 import EventFeedbacksPage from '../pages/feedbacks/EventFeedbacksPage.tsx';
 import EventAnalysisPage from '../pages/details/EventAnalysisPage.tsx';
 import ResetPasswordConfirmPage from '../pages/authentication/ResetPasswordConfirmPage.tsx';
+import FaceCaptureTab from '../pages/userAccount/FaceCapturePage.tsx';
 
 export const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -14344,6 +14872,12 @@ const router = createBrowserRouter([
         path: 'security',
         element: <PrivateRoute>
           <UserProfileSecurityPage />
+        </PrivateRoute>,
+      },
+      {
+        path: 'face-capture',
+        element: <PrivateRoute>
+          <FaceCaptureTab />
         </PrivateRoute>,
       },
     ],
@@ -15046,7 +15580,6 @@ const authService = {
       }
       // ** Sử dụng endpoint chính xác, dựa trên response mẫu của bạn **
       const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/feedbacks`, { headers });
-      console.log('Event feedbacks:', response);
       return response.data;
     } catch (error: any) {
       throw error.response.data;
@@ -15162,6 +15695,20 @@ const authService = {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
       const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/event-comparison`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getEventParticipantsWithFaces: async (eventId: string | undefined, accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/participants-with-faces`, { headers });
       return response.data;
     } catch (error: any) {
       throw error.response.data;

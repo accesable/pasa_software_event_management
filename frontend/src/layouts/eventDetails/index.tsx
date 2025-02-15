@@ -23,6 +23,7 @@ import authService from '../../services/authService';
 import dayjs from 'dayjs';
 import { Helmet } from 'react-helmet-async';
 import TicketDetailsModal from '../../components/TicketDetailsModal';
+import RegisteredParticipantsTable from '../../pages/details/components/RegisteredParticipantsTable';
 
 const { Text } = Typography;
 
@@ -53,9 +54,9 @@ export const EventDetailLayout: React.FC = () => {
         };
         if (response.statusCode === 200 && response.data) {
           setEventDetail(response.data.event);
-          if(eventDetail?.status === 'FINISHED') {
+          if (eventDetail?.status === 'FINISHED') {
             const checkParticipant = await authService.getParticipantData(eventId, accessToken || '') as any;
-            if(checkParticipant.statusCode === 200) {
+            if (checkParticipant.statusCode === 200) {
               setIsParticipant(true);
             } else {
               setIsParticipant(false);
@@ -181,7 +182,7 @@ export const EventDetailLayout: React.FC = () => {
           btnBack={<BackBtn />}
         />
         <Row gutter={[16, 16]}>
-           <Col xs={24} md={16} xl={18}>
+          <Col xs={24} md={16} xl={18}>
             <Outlet context={{ eventId, eventDetail }} />
           </Col>
           <Col xs={24} md={8} xl={6}>
@@ -290,7 +291,15 @@ export const EventDetailLayout: React.FC = () => {
                     )}
                   </Card>
                 </Col>
+
               )}
+              <Row gutter={[16, 16]}>
+                <Col span={24} style={{ marginTop: "24px" }}>
+                  <Card title="Registered Participants">
+                    <RegisteredParticipantsTable eventId={eventId || ''} />
+                  </Card>
+                </Col>
+              </Row>
             </Row>
           </Col>
         </Row>

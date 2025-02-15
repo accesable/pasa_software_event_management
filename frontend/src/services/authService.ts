@@ -753,6 +753,36 @@ const authService = {
       throw error.response.data;
     }
   },
+  getEventParticipantsWithFaces: async (eventId: string | undefined, accessToken?: string) => { // Added function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/participants-with-faces`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  checkIn: async (eventId: string , userId: string) => {
+    try {
+      const response = await axiosInstance.post(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/user/${userId}/check-in`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  checkOut: async (eventId: string , userId: string) => {
+    try {
+      const response = await axiosInstance.post(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/user/${userId}/check-out`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default authService;

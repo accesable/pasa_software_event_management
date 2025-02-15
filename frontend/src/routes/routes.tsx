@@ -40,6 +40,7 @@ import DeclineEventPage from '../pages/DeclineEventPage.tsx';
 import EventFeedbacksPage from '../pages/feedbacks/EventFeedbacksPage.tsx';
 import EventAnalysisPage from '../pages/details/EventAnalysisPage.tsx';
 import ResetPasswordConfirmPage from '../pages/authentication/ResetPasswordConfirmPage.tsx';
+import FaceCaptureTab from '../pages/userAccount/FaceCapturePage.tsx';
 
 export const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -222,6 +223,12 @@ const router = createBrowserRouter([
         path: 'security',
         element: <PrivateRoute>
           <UserProfileSecurityPage />
+        </PrivateRoute>,
+      },
+      {
+        path: 'face-capture',
+        element: <PrivateRoute>
+          <FaceCaptureTab />
         </PrivateRoute>,
       },
     ],
