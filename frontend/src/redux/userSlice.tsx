@@ -22,21 +22,21 @@ const userSlice = createSlice({
             state.phoneNumber = action.payload.phoneNumber;
         },
         clearUser: (state) => {
-            state.id = '';
+            state.id = ''; 
             state.email = '';
             state.name = '';
             state.avatar = '';
             state.phoneNumber = '';
         },
-        updateUserAvatar: (state, action: PayloadAction<string>) => { // Action mới
+        updateUserAvatar: (state, action: PayloadAction<string>) => { 
             state.avatar = action.payload;
         },
-        updateUserProfile: (state, action: PayloadAction<{ name: string, phoneNumber: string }>) => { // Action mới update name và phoneNumber
+        updateUserProfile: (state, action: PayloadAction<{ name: string, phoneNumber: string }>) => { 
             state.name = action.payload.name;
             state.phoneNumber = action.payload.phoneNumber;
         },
     },
 });
 
-export const { setUser, clearUser, updateUserAvatar, updateUserProfile } = userSlice.actions; // Export action mới
+export const { setUser, clearUser, updateUserAvatar, updateUserProfile } = userSlice.actions;
 export default userSlice.reducer;
