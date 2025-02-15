@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package report;
+
+service ReportServiceProto {
+  rpc GetEventCategoryDistribution (Empty) returns (EventCategoryDistributionResponse) {}
+  rpc GetUserEventsByDate(UserEventsByDateRequest) returns (MonthlyEventCountsResponse); // Thay đổi response type
+
+  rpc GetOrganizerEventFeedbackSummary(OrganizerEventFeedbackSummaryRequest) returns (OrganizerEventFeedbackSummaryResponse) {}
+
+  rpc GetEventInvitationReport(EventInvitationReportRequest) returns (EventInvitationReportResponse) {}
+  rpc GetEventCategoryStats (Empty) returns (EventCategoryStatsResponse) {}
+}
+
+message CategoryEventStats {
+    string categoryName = 1;
+    int32 eventCount = 2;
+    int32 participantCount = 3;
+}
+
+message EventCategoryStatsResponse {
+    repeated CategoryEventStats categoryStats = 1;
+}
+
+message UserEventsByDateRequest {
+  string userId = 1;
+  int32 year = 2;
+  optional int32 month = 3;
+}
+
+message MonthlyEventCountsResponse {
+  repeated MonthlyEventCount monthlyOrganizedEvents = 1;
+  repeated MonthlyEventCount monthlyParticipatedEvents = 2;
+}
+
+message MonthlyEventCount {
+  int32 month = 1;
+  int32 count = 2;
+}
+
+
+message EventInfo { 
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string startDate = 4;
+  string endDate = 5;
+  string location = 6;
+  string status = 7;
+  string categoryId = 8;
+}
+
+message Empty {
+}
+
+message EventCategoryDistributionResponse {
+  repeated CategoryDistribution categoryDistribution = 1;
+  int32 totalEvents = 2;
+}
+
+message CategoryDistribution {
+  string type = 1;
+  double value = 2;
+}
+
+message OrganizerEventFeedbackSummaryRequest {
+  string userId = 1;
+}
+
+message OrganizerEventFeedbackSummaryResponse {
+  double averageRating = 1;
+  map<string, int32> ratingDistribution = 2;
+  int32 totalFeedbacks = 3;
+}
+
+message EventInvitationReportRequest {
+  string eventId = 1;
+}
+
+message EventInvitationReportResponse {
+  string eventId = 1;
+  repeated InvitedUserStatus invitedUsers = 2;
+  InvitationSummary invitationSummary = 3;
+}
+
+message InvitedUserStatus {
+  string email = 1;
+  string status = 2;
+}
+
+message InvitationSummary {
+  int32 accepted = 1;
+  int32 pending = 2;
+  int32 declined = 3;
+  int32 totalInvited = 4;
+}

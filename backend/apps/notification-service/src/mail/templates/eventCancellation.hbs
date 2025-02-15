@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Event Cancelled: {{eventName}}</title>
+  <style>
+    body { 
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background-color: #f8d7da; 
+      margin: 0; 
+      padding: 0; 
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 40px auto; 
+      background: #fff; 
+      border: 1px solid #f5c6cb; 
+      border-radius: 8px; 
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+    .header { 
+      background-color: #dc3545; 
+      color: #fff; 
+      padding: 20px; 
+      text-align: center; 
+    }
+    .header h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: normal;
+    }
+    .content { 
+      padding: 30px 20px;
+      font-size: 16px; 
+      line-height: 1.6;
+      color: #333;
+      text-align: center;
+    }
+    .button-container {
+      margin: 30px 0;
+      text-align: center;
+    }
+    .btn {
+      background-color: #dc3545;
+      color: #fff;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 16px;
+      display: inline-block;
+      transition: background-color 0.2s ease-in-out;
+    }
+    .btn:hover {
+      background-color: #c82333;
+    }
+    .footer { 
+      background-color: #f1f1f1;
+      padding: 15px 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #721c24;
+      border-top: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Event Cancelled</h2>
+    </div>
+    <div class="content">
+      <p>Hello <strong>{{name}}</strong>,</p>
+      <p>We regret to inform you that the event <strong>{{eventName}}</strong> you registered for has been cancelled.</p>
+      <p>If you have any questions, please contact the event organizers.</p>
+      <div class="button-container">
+        <a class="btn" href="{{url}}" target="_blank">View Event Details</a>
+      </div>
+      <p>If the button does not work, copy and paste the URL below into your browser:</p>
+      <p style="font-size: 14px; color: #dc3545;">{{url}}</p>
+    </div>
+    <div class="footer">
+      <p>Best regards,<br/>PASA Team</p>
+    </div>
+  </div>
+</body>
+</html>
