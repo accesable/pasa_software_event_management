@@ -12,7 +12,6 @@ import {
   Row,
   Select,
   message,
-  Typography
 } from 'antd';
 import { DASHBOARD_ITEMS, PATH_DASHBOARD } from '../../constants';
 import { PageHeader, Loader, BackBtn } from '../../components';
@@ -27,7 +26,6 @@ import CreateSpeakerModal from '../../components/CreateSpeakerModal';
 import CreateGuestModal from '../../components/CreateGuestModal';
 import axiosInstance from '../../api/axiosInstance';
 
-const { Text } = Typography;
 
 const EditEventPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -201,7 +199,7 @@ const EditEventPage: React.FC = () => {
     }
   };
 
-  const onFinishFailed = (errorInfo: any) => {
+  const onFinishFailed = () => {
   };
 
   const handleCreateSpeaker = () => {

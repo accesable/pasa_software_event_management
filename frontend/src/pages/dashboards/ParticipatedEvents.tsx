@@ -1,5 +1,5 @@
 // src\pages\dashboards\ParticipatedEventsPage.tsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Button,

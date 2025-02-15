@@ -10,7 +10,6 @@ import {
   Form,
   Input,
   Alert,
-  Flex, // Import Flex
   Typography, // Import Typography
 } from 'antd';
 import {
@@ -140,7 +139,7 @@ const SpeakerGuestManagementPage: React.FC = () => {
     }
   };
 
-  const onFinishFailed = (errorInfo: any) => {
+  const onFinishFailed = () => {
   };
 
   const speakerColumns: ColumnsType<SpeakerGuestData> = [

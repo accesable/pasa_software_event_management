@@ -93,7 +93,7 @@ const ResetPasswordConfirmPage: React.FC = () => {
     }
   };
 
-  const onFinishFailed = (errorInfo: any) => {
+  const onFinishFailed = () => {
   };
 
   if (loading) {

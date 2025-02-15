@@ -12,9 +12,7 @@ import {
   Typography,
 } from 'antd';
 import {
-  FacebookFilled,
   GoogleOutlined,
-  TwitterOutlined,
 } from '@ant-design/icons';
 import { Logo } from '../../components';
 import { useMediaQuery } from 'react-responsive';
@@ -53,7 +51,7 @@ export const SignUpPage = () => {
     }
   };
 
-  const onFinishFailed = (errorInfo: any) => {
+  const onFinishFailed = () => {
   };
 
   return (

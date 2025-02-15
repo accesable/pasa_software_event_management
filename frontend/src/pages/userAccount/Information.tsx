@@ -118,7 +118,7 @@ export const UserProfileInformationPage = () => {
     }
   };
 
-  const onFinishFailed = (errorInfo: any) => {
+  const onFinishFailed = () => {
   };
 
   return (

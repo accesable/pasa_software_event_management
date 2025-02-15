@@ -44,7 +44,7 @@ const CreateSpeakerModal: React.FC<CreateSpeakerModalProps> = ({ visible, onCanc
     }
   };
 
-  const onFinishFailed = (errorInfo: any) => {
+  const onFinishFailed = () => {
   };
 
   return (

@@ -1,11 +1,10 @@
 // src\pages\userAccount\FaceCapturePage.tsx
 import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
-import { Button, message, Typography, Card, Spin, Alert, Space } from 'antd';
+import { Button, message, Typography, Card, Alert, Space } from 'antd';
 import { CameraOutlined, UploadOutlined, DeleteOutlined } from '@ant-design/icons';
-import authService from '../../services/authService';
 import axiosInstance from '../../api/axiosInstance';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 // Helper function to convert data URL to File object (giữ nguyên)
 function dataURLtoFile(dataurl: string, filename: string): File {
@@ -31,20 +30,15 @@ const FaceCaptureTab: React.FC = () => {
   // Start camera on component mount
   useEffect(() => {
     const startCamera = async () => {
-      console.log("FaceCaptureTab: startCamera function called"); // Debug log
 
       setLoading(true);
       setError(null);
       try {
-        console.log("FaceCaptureTab: Requesting user media..."); // Debug log trước getUserMedia
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        console.log("FaceCaptureTab: getUserMedia success - stream:", stream); // Debug log sau getUserMedia success
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           setCameraStarted(true);
-          console.log("FaceCaptureTab: videoRef.current.srcObject set - videoRef:", videoRef.current); // Debug log sau khi set srcObject
         } else {
-          console.error("FaceCaptureTab: videoRef.current is null after getUserMedia success"); // Debug log nếu videoRef.current null
           setError("Lỗi: videoRef không tồn tại.");
           message.error("Lỗi: Component video không được khởi tạo đúng cách.");
         }

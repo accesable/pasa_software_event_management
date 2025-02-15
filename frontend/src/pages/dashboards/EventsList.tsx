@@ -1,6 +1,6 @@
 // src/pages/dashboards/EventsList.tsx
-import React, { useEffect, useState } from 'react';
-import { Alert, Button, Card, Space, Table, Tag, Select, Spin, Input, Flex, Typography } from 'antd'; // Import Flex and Typography
+import  { useEffect, useState } from 'react';
+import { Alert, Button, Card, Space, Table, Tag, Select, Spin, Input, Flex, Typography } from 'antd';
 import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
 import { Link } from 'react-router-dom';

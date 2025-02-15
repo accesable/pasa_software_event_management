@@ -7793,10 +7793,10 @@ export * from './create';
 
 
 src\pages\QRScannerPage.tsx:
-// src\pages\QRScannerPage.tsx
+// src/pages/QRScannerPage.tsx
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { QrReader } from 'react-qr-reader';
-import { Input, Button, message, Typography, Card, Spin, Alert } from 'antd';
+import { Input, Button, message, Typography, Card, Spin, Alert, Radio } from 'antd';
 import { BackBtn, PageHeader } from '../components';
 import { Helmet } from 'react-helmet-async';
 import { HomeOutlined, PieChartOutlined, CheckCircleOutlined } from '@ant-design/icons';
@@ -7812,19 +7812,23 @@ const QRScannerPage: React.FC = () => {
   const [manualCode, setManualCode] = useState<string>('');
   const [isCameraActive, setIsCameraActive] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null); // State to store recognized userId
+  const [userId, setUserId] = useState<string | null>(null); // Lưu userId được nhận diện
   const navigate = useNavigate();
   const { id: eventId } = useParams<{ id: string }>();
   const videoRef = useRef<HTMLVideoElement>(null);
   const isProcessingScan = useRef(false);
-  const isProcessingFace = useRef(false); // Track face recognition processing
+  const isProcessingFace = useRef(false); // Đánh dấu khi đang xử lý nhận diện khuôn mặt (bao gồm cooldown)
   const [faceDetectionError, setFaceDetectionError] = useState<string | null>(null);
   const [labeledFaceDescriptors, setLabeledFaceDescriptors] = useState<faceapi.LabeledFaceDescriptors[]>([]);
   const [faceDetectionLoading, setFaceDetectionLoading] = useState<boolean>(false);
   const [faceMatchName, setFaceMatchName] = useState<string | null>(null);
 
+  // --- Các state mới cho tính năng dùng face ---
+  const [faceEnabled, setFaceEnabled] = useState<boolean>(false);
+  const [faceAction, setFaceAction] = useState<'check-in' | 'check-out'>('check-in');
+  // -------------------------------------------------
 
-  // Load face-api.js models
+  // Load các model face-api.js
   const loadModels = useCallback(async () => {
     setFaceDetectionLoading(true);
     try {
@@ -7846,7 +7850,7 @@ const QRScannerPage: React.FC = () => {
   }, []);
 
   const loadLabeledImages = useCallback(async () => {
-    if (!eventId) return []; // Exit if eventId is not available
+    if (!eventId) return []; // Nếu chưa có eventId thì thoát
 
     setFaceDetectionLoading(true);
     try {
@@ -7863,8 +7867,8 @@ const QRScannerPage: React.FC = () => {
       return Promise.all(
         participants.map(async (participant: any) => {
           const descriptions: Float32Array[] = [];
-          const label = participant.userId; // Use userId as label
-          const faceImages = participant.faceImages || []; // Ensure faceImages is an array
+          const label = participant.userId; // Dùng userId làm label
+          const faceImages = participant.faceImages || []; // Đảm bảo faceImages là mảng
 
           for (let i = 0; i < faceImages.length; i++) {
             const imgUrl = faceImages[i];
@@ -7885,24 +7889,27 @@ const QRScannerPage: React.FC = () => {
         })
       );
     } catch (apiError: any) {
-      console.error('Error fetching labeled faces:', apiError);
       setFaceDetectionError(apiError.message || 'Failed to load participant face data.');
-      message.error(apiError.message || 'Failed to load participant face data.');
-      return []; // Return empty array on error to prevent further issues
+      return []; // Trả về mảng rỗng nếu có lỗi
     } finally {
       setFaceDetectionLoading(false);
     }
   }, [eventId]);
 
-
+  // Chỉ load model và dữ liệu khuôn mặt khi faceEnabled = true
   useEffect(() => {
-    loadModels();
-    loadLabeledImages()
-      .then(setLabeledFaceDescriptors)
-      .catch(e => {
-        setFaceDetectionError("Failed to load face recognition data.");
-      });
+    if (faceEnabled) {
+      loadModels();
+      loadLabeledImages()
+        .then(setLabeledFaceDescriptors)
+        .catch(e => {
+          setFaceDetectionError("Failed to load face recognition data.");
+        });
+    }
+  }, [faceEnabled, loadModels, loadLabeledImages, eventId]);
 
+  // Khởi tạo stream cho video (dùng cho QR & Face)
+  useEffect(() => {
     navigator.mediaDevices.getUserMedia({ video: {} }).then((stream) => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -7916,7 +7923,47 @@ const QRScannerPage: React.FC = () => {
         tracks.forEach(track => track.stop());
       }
     };
-  }, [loadModels, loadLabeledImages, eventId]);
+  }, []);
+
+  const handleFaceActionCall = async (userId: string) => {
+    if (isProcessingFace.current) return;
+    isProcessingFace.current = true;
+    setIsLoading(true);
+    message.loading({ content: `Processing ${faceAction}...`, key: 'faceActionMessage', duration: 1 });
+    // Hiển thị loading khoảng 1 giây
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      let response: any;
+      if (faceAction === 'check-in') {
+        response = await authService.checkIn(eventId!, userId); // Gọi API check-in
+      } else {
+        response = await authService.checkOut(eventId!, userId); // Gọi API check-out
+      }
+      if (response.statusCode === 200 || response.statusCode === 201) {
+        message.success({ 
+          content: `${faceAction === 'check-in' ? 'Check-in' : 'Check-out'} successful for user ${userId}`, 
+          key: 'faceActionMessage', 
+          duration: 5
+        });
+      } else {
+        message.error({ 
+          content: response.error || `${faceAction === 'check-in' ? 'Check-in' : 'Check-out'} failed`, 
+          key: 'faceActionMessage', 
+          duration: 5
+        });
+      }
+    } catch (error: any) {
+      message.error({ 
+        content: error.error || `${faceAction === 'check-in' ? 'Check-in' : 'Check-out'} failed`, 
+        key: 'faceActionMessage', 
+        duration: 2 
+      });
+    }
+    setIsLoading(false);
+    setTimeout(() => {
+      isProcessingFace.current = false;
+    }, 3000);
+  };
 
   const handleFaceRecognition = useCallback(async () => {
     if (!videoRef.current) return;
@@ -7925,20 +7972,23 @@ const QRScannerPage: React.FC = () => {
       .withFaceLandmarks()
       .withFaceDescriptors();
     if (detections && detections.length > 0) {
-      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors);
+      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
       const bestMatch = faceMatcher.findBestMatch(detections[0].descriptor);
       setFaceMatchName(bestMatch.toString());
+      if (bestMatch.label !== 'unknown' && !isProcessingFace.current) {
+        handleFaceActionCall(bestMatch.label);
+      }
     } else {
       setFaceMatchName(null);
     }
-  }, [labeledFaceDescriptors]);
+  }, [labeledFaceDescriptors, faceAction]);
 
   useEffect(() => {
-    if (!faceDetectionLoading && labeledFaceDescriptors.length > 0 && videoRef.current) {
+    if (faceEnabled && !faceDetectionLoading && labeledFaceDescriptors.length > 0 && videoRef.current) {
       const intervalId = setInterval(() => handleFaceRecognition(), 100);
       return () => clearInterval(intervalId);
     }
-  }, [faceDetectionLoading, labeledFaceDescriptors, handleFaceRecognition, videoRef]);
+  }, [faceEnabled, faceDetectionLoading, labeledFaceDescriptors, handleFaceRecognition]);
 
   const handleScanTicket = async (code: string, manual: boolean = false) => {
     if (isProcessingScan.current) {
@@ -7952,11 +8002,11 @@ const QRScannerPage: React.FC = () => {
     }
 
     const startTime = Date.now();
-    let response: { statusCode: number; data?: any[]; error?: string } | null = null;
+    let response: any = { statusCode: 0 };
     try {
-      response = await authService.scanTicket(code.trim()) as { statusCode: number; data?: any[]; error?: string };
+      response = await authService.scanTicket(code.trim()) as any;
     } catch (error: any) {
-      response = { statusCode: 500, error: error.error || 'Scan failed.' };
+      response = { statusCode: 500, data: [], error: error.error || 'Scan failed.' };
     }
 
     if (!manual) {
@@ -7986,7 +8036,7 @@ const QRScannerPage: React.FC = () => {
     isProcessingScan.current = false;
   };
 
-  const handleScan = (result: any) => {
+  const handleScan = async (result: any) => {
     if (result && isCameraActive && manualCode.trim() === '') {
       const code = result.getText();
       if (code && code !== lastScannedCode) {
@@ -8072,6 +8122,25 @@ const QRScannerPage: React.FC = () => {
       <Card>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
           <Title level={4}>Event Check-in/Check-out Scanner</Title>
+          {/* Nút bật/tắt face và lựa chọn Check In/Check Out */}
+          <div style={{ marginBottom: '16px', textAlign: 'center' }}>
+            <Button onClick={() => setFaceEnabled(!faceEnabled)}>
+              {faceEnabled ? "Disable Face Recognition" : "Enable Face Recognition"}
+            </Button>
+            {faceEnabled && (
+              <div style={{ marginTop: '8px' }}>
+                <Typography.Text>Select Action: </Typography.Text>
+                <Radio.Group
+                  value={faceAction}
+                  onChange={(e) => setFaceAction(e.target.value)}
+                  buttonStyle="solid"
+                >
+                  <Radio.Button value="check-in">Check In</Radio.Button>
+                  <Radio.Button value="check-out">Check Out</Radio.Button>
+                </Radio.Group>
+              </div>
+            )}
+          </div>
           <div
             style={{
               border: '1px solid #ccc',
@@ -8097,10 +8166,10 @@ const QRScannerPage: React.FC = () => {
             )}
             {isLoading && (
               <div style={loadingOverlayStyle}>
-                <Spin size="large" tip="Checking Ticket..." />
+                <Spin size="large" tip="Processing..." />
               </div>
             )}
-            {faceMatchName && faceMatchName !== 'Unknown Face' && (
+            {faceMatchName && faceMatchName !== 'unknown' && (
               <div style={faceMatchOverlayStyle}>
                 <CheckCircleOutlined style={{ color: 'green', fontSize: 24, marginBottom: 8 }} />
                 <Typography.Text style={{ color: 'white', fontWeight: 'bold' }}>
@@ -8108,7 +8177,7 @@ const QRScannerPage: React.FC = () => {
                 </Typography.Text>
               </div>
             )}
-            {faceMatchName === 'Unknown Face' && (
+            {faceMatchName === 'unknown' && (
               <div style={faceMatchOverlayStyle}>
                 <Alert message="Unknown Face Detected" type="warning" showIcon />
               </div>
@@ -8117,7 +8186,8 @@ const QRScannerPage: React.FC = () => {
               constraints={{ facingMode: 'environment' }}
               scanDelay={300}
               onResult={(result, error) => {
-                if (result && !faceMatchName) { // Only scan QR if face is not matched or not processing face
+                // Chỉ xử lý QR khi tính năng face bị tắt
+                if (!faceEnabled && result && isCameraActive && manualCode.trim() === '') {
                   handleScan(result);
                 }
                 if (error) {
@@ -8128,13 +8198,17 @@ const QRScannerPage: React.FC = () => {
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                position: 'absolute', // Position QR reader video over the video element
+                position: 'absolute',
                 top: 0,
                 left: 0,
               }}
             />
           </div>
-          <Text>Scanning for QR codes and Faces...</Text>
+          <Text>
+            {faceEnabled
+              ? 'Using Face Recognition for Check-in/Check-out'
+              : 'Scanning for QR codes...'}
+          </Text>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
             <Text>Manual Code Entry:</Text>
@@ -8184,7 +8258,6 @@ const faceMatchOverlayStyle: React.CSSProperties = {
   borderRadius: '0 0 8px 8px',
   zIndex: 10,
 };
-
 
 export default QRScannerPage;
 
@@ -14070,13 +14143,13 @@ const FaceCaptureTab: React.FC = () => {
         message.success('Face registered successfully!');
         setImages([]);
       } else {
-        setError('Failed to register face.');
+        const respData = response.data as { error?: string };
+        setError(respData.error || 'Failed to register face.');
         message.error('Failed to register face.');
       }
     } catch (error: any) {
-      console.error('Error registering face:', error);
-      setError(error.message || 'Failed to register face.');
-      message.error(error.message || 'Failed to register face.');
+      setError(error.error || 'Failed to register face.');
+      message.error(error.error || 'Failed to register face.');
     } finally {
       setLoading(false);
     }
@@ -15709,6 +15782,22 @@ const authService = {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
       const response = await axiosInstance.get(`${API_EVENT_BASE_URL}/${eventId}/participants-with-faces`, { headers });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  checkIn: async (eventId: string , userId: string) => {
+    try {
+      const response = await axiosInstance.post(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/user/${userId}/check-in`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  checkOut: async (eventId: string , userId: string) => {
+    try {
+      const response = await axiosInstance.post(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/user/${userId}/check-out`);
       return response.data;
     } catch (error: any) {
       throw error.response.data;

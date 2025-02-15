@@ -60,7 +60,7 @@ export const UserProfileSecurityPage = () => {
     }
   };
 
-  const onFinishFailed = (errorInfo: any) => {
+  const onFinishFailed = () => {
   };
 
   return (

@@ -17,7 +17,6 @@ const QRScannerPage: React.FC = () => {
   const [manualCode, setManualCode] = useState<string>('');
   const [isCameraActive, setIsCameraActive] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null); // Lưu userId được nhận diện
   const navigate = useNavigate();
   const { id: eventId } = useParams<{ id: string }>();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -28,12 +27,9 @@ const QRScannerPage: React.FC = () => {
   const [faceDetectionLoading, setFaceDetectionLoading] = useState<boolean>(false);
   const [faceMatchName, setFaceMatchName] = useState<string | null>(null);
 
-  // --- Các state mới cho tính năng dùng face ---
   const [faceEnabled, setFaceEnabled] = useState<boolean>(false);
   const [faceAction, setFaceAction] = useState<'check-in' | 'check-out'>('check-in');
-  // -------------------------------------------------
 
-  // Load các model face-api.js
   const loadModels = useCallback(async () => {
     setFaceDetectionLoading(true);
     try {
@@ -107,7 +103,7 @@ const QRScannerPage: React.FC = () => {
       loadModels();
       loadLabeledImages()
         .then(setLabeledFaceDescriptors)
-        .catch(e => {
+        .catch(() => {
           setFaceDetectionError("Failed to load face recognition data.");
         });
     }
@@ -145,23 +141,23 @@ const QRScannerPage: React.FC = () => {
         response = await authService.checkOut(eventId!, userId); // Gọi API check-out
       }
       if (response.statusCode === 200 || response.statusCode === 201) {
-        message.success({ 
-          content: `${faceAction === 'check-in' ? 'Check-in' : 'Check-out'} successful for user ${userId}`, 
-          key: 'faceActionMessage', 
+        message.success({
+          content: `${faceAction === 'check-in' ? 'Check-in' : 'Check-out'} successful for user ${userId}`,
+          key: 'faceActionMessage',
           duration: 5
         });
       } else {
-        message.error({ 
-          content: response.error || `${faceAction === 'check-in' ? 'Check-in' : 'Check-out'} failed`, 
-          key: 'faceActionMessage', 
+        message.error({
+          content: response.error || `${faceAction === 'check-in' ? 'Check-in' : 'Check-out'} failed`,
+          key: 'faceActionMessage',
           duration: 5
         });
       }
     } catch (error: any) {
-      message.error({ 
-        content: error.error || `${faceAction === 'check-in' ? 'Check-in' : 'Check-out'} failed`, 
-        key: 'faceActionMessage', 
-        duration: 2 
+      message.error({
+        content: error.error || `${faceAction === 'check-in' ? 'Check-in' : 'Check-out'} failed`,
+        key: 'faceActionMessage',
+        duration: 2
       });
     }
     setIsLoading(false);
@@ -251,7 +247,7 @@ const QRScannerPage: React.FC = () => {
     }
   };
 
-  const handleError = (error: any) => {
+  const handleError = () => {
     setIsCameraActive(false);
     setFaceDetectionError("");
   };
@@ -396,7 +392,7 @@ const QRScannerPage: React.FC = () => {
                   handleScan(result);
                 }
                 if (error) {
-                  handleError(error);
+                  handleError();
                 }
               }}
               videoStyle={{

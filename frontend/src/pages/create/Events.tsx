@@ -134,7 +134,7 @@ export const CreateEventPage = () => {
         setIsCreateUserModalOpen(false);
     };
 
-    const onFinishFailed = (errorInfo: any) => {
+    const onFinishFailed = () => {
     };
 
     const onFinishType = async (values: any) => {

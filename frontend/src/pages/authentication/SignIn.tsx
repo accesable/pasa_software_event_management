@@ -87,7 +87,7 @@ export const SignInPage = () => {
     }
   };
 
-  const onFinishFailed = (errorInfo: any) => {
+  const onFinishFailed = () => {
   };
 
 

@@ -5,7 +5,6 @@ import {
   Alert,
   Button,
   Card,
-  Checkbox,
   Col,
   Flex,
   List,
@@ -26,7 +25,6 @@ import { EventParticipantsTable } from '../dashboards/EventParticipantsTable';
 import { Helmet } from 'react-helmet-async';
 import EventDiscussion from '../../components/EventDiscussion';
 import jsPDF from 'jspdf';
-import { EventScheduleItem } from '../../types/schedule';
 
 const { Text } = Typography;
 
@@ -201,7 +199,7 @@ export const EventDetailsPage: React.FC = () => {
         pagination={false}
         // scroll={{ x: 'max-content'}} 
         rowSelection={{
-          onChange: (selectedRowKeys, selectedRows) => {
+          onChange: (selectedRowKeys) => {
             onSessionSelectChange(selectedRowKeys as string[]);
           },
         }}

@@ -71,7 +71,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
     fetchCategoryNames();
   }, [data]);
 
-  const COLUMNS = (navigate: ReturnType<typeof useNavigate>, _setLoading: (loading: boolean) => void, fetchData: () => void, activeTabKey: string): ColumnsType<Events> => [
+  const COLUMNS = (navigate: ReturnType<typeof useNavigate>, _setLoading: (loading: boolean) => void, fetchData: () => void): ColumnsType<Events> => [
     {
       title: 'Name',
       dataIndex: 'name',
@@ -209,7 +209,7 @@ export const MyEventsTable = ({ data, loading, fetchData, activeTabKey, ...other
     <Table
       rowKey="id"
       dataSource={data}
-      columns={COLUMNS(navigate, setTableLoading, fetchData, activeTabKey)}
+      columns={COLUMNS(navigate, setTableLoading, fetchData)}
       className="overflow-scroll"
       loading={loading || tableLoading || categoryLoading} // Include categoryLoading in table loading
       {...others}
