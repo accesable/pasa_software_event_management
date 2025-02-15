@@ -10,13 +10,25 @@ import { ProfileDto } from './dto/profile';
 import { NotificationService } from '../notification/notification.service';
 import { RedisCacheService } from '../redis/redis.service';
 import { FileServiceService } from '../file-service/file-service.service';
-import { AllUserResponse, ChangePasswordRequest, GoogleAuthRequest, QueryParamsRequest, UpdateAvatarRequest, UpdateProfileRequest, USERS_SERVICE_NAME, UsersServiceClient } from '../../../../libs/common/src';
+import { AllUserResponse, ChangePasswordRequest, GoogleAuthRequest, QueryParamsRequest, UpdateAvatarRequest, UpdateProfileRequest, UpdateUserFaceImagesRequest, USERS_SERVICE_NAME, UsersServiceClient } from '../../../../libs/common/src';
 import { EventServiceService } from '../event-service/event-service.service';
 import { DashboardStatsDto } from '../event-service/dto/dashboard-stats.dto';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
   private usersService: UsersServiceClient;
+
+  async updateUserFaceImages(userId: string, faceImagePaths: string[]) {
+    try {
+      const request: UpdateUserFaceImagesRequest = {
+        id: userId,
+        faceImages: faceImagePaths,
+      };
+      return await this.usersService.updateUserFaceImages(request).toPromise();
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
 
   constructor(
     @Inject(AUTH_SERVICE) private client: ClientGrpc,

@@ -16,9 +16,21 @@ service UsersService{
     rpc ChangePassword(ChangePasswordRequest) returns (Empty);
     rpc ResetPassword(ResetPassRequest) returns (Empty);
     rpc findUsersByIds(findUsersByIdsRequest) returns (findUsersByIdsResponse);
+    rpc UpdateUserFaceImages(UpdateUserFaceImagesRequest) returns (ProfileRespone); 
+    rpc GetUserWithFaceImages(FindByIdRequest) returns (GetUserWithFaceImagesResponse);
 }
 
 message Empty{}
+
+message GetUserWithFaceImagesResponse{
+    string userId = 1;
+    repeated string faceImages = 2;
+}
+
+message UpdateUserFaceImagesRequest { // Thêm message mới
+    string id = 1;
+    repeated string faceImages = 2;
+}
 
 message findUsersByIdsRequest{
     repeated string ids = 1;

@@ -22,6 +22,27 @@ export enum TicketStatus {
 export interface Empty {
 }
 
+export interface CheckInCheckOutRequest {
+  eventId: string;
+  userId: string;
+}
+
+export interface getParticipantRegisteredForEventResponse {
+  participants: objParticipantRegistered[];
+}
+
+export interface objParticipantRegistered {
+  eventId: string;
+  id: string;
+  email: string;
+  name: string;
+  phoneNumber?: string | undefined;
+  status: string;
+  sessionIds: string[];
+  participantId: string;
+  createdAt: string;
+}
+
 export interface DetailedParticipant {
   id: string;
   userId: string;
@@ -229,6 +250,14 @@ export interface TicketServiceProtoClient {
   getDetailedParticipantList(
     request: GetDetailedParticipantListRequest,
   ): Observable<GetDetailedParticipantListResponse>;
+
+  getParticipantRegisteredForEvent(
+    request: GetParticipantByEventIdRequest,
+  ): Observable<getParticipantRegisteredForEventResponse>;
+
+  checkInByEventAndUser(request: CheckInCheckOutRequest): Observable<ScanTicketResponse>;
+
+  checkOutByEventAndUser(request: CheckInCheckOutRequest): Observable<ScanTicketResponse>;
 }
 
 export interface TicketServiceProtoController {
@@ -295,6 +324,21 @@ export interface TicketServiceProtoController {
     | Promise<GetDetailedParticipantListResponse>
     | Observable<GetDetailedParticipantListResponse>
     | GetDetailedParticipantListResponse;
+
+  getParticipantRegisteredForEvent(
+    request: GetParticipantByEventIdRequest,
+  ):
+    | Promise<getParticipantRegisteredForEventResponse>
+    | Observable<getParticipantRegisteredForEventResponse>
+    | getParticipantRegisteredForEventResponse;
+
+  checkInByEventAndUser(
+    request: CheckInCheckOutRequest,
+  ): Promise<ScanTicketResponse> | Observable<ScanTicketResponse> | ScanTicketResponse;
+
+  checkOutByEventAndUser(
+    request: CheckInCheckOutRequest,
+  ): Promise<ScanTicketResponse> | Observable<ScanTicketResponse> | ScanTicketResponse;
 }
 
 export function TicketServiceProtoControllerMethods() {
@@ -314,6 +358,9 @@ export function TicketServiceProtoControllerMethods() {
       "getParticipantByEventAndUser",
       "getCheckInOutStats",
       "getDetailedParticipantList",
+      "getParticipantRegisteredForEvent",
+      "checkInByEventAndUser",
+      "checkOutByEventAndUser",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

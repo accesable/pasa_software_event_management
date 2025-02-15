@@ -25,7 +25,6 @@ export class RpcExceptionInterceptor implements NestInterceptor {
             message: error.details || error.message,
             code: error.code,
           });
-          
           const errorResponse = rpcError.getError() as { message?: string; code?: number; details?: string };
           const { message, code, details } = errorResponse;
           const finalMessage = message || 'An error occurred';

@@ -1,12 +1,18 @@
 import { Controller, Body } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Observable } from 'rxjs';
-import { UsersServiceControllerMethods, UsersServiceController, GoogleAuthRequest, GeneralResponse, LogoutRequest, ChangePasswordRequest, EmailRequest, FindByIdRequest, findUsersByIdsRequest, LoginRequest, QueryParamsRequest, RegisterRequest, ResetPassRequest, UpdateAvatarRequest, UpdateProfileRequest, Forgot } from '../../../../libs/common/src';
+import { UsersServiceControllerMethods, UsersServiceController, GoogleAuthRequest, GeneralResponse, LogoutRequest, ChangePasswordRequest, EmailRequest, FindByIdRequest, findUsersByIdsRequest, LoginRequest, QueryParamsRequest, RegisterRequest, ResetPassRequest, UpdateAvatarRequest, UpdateProfileRequest, Forgot, UpdateUserFaceImagesRequest, GetUserWithFaceImagesResponse } from '../../../../libs/common/src';
 
 @Controller()
 @UsersServiceControllerMethods()
 export class UsersController implements UsersServiceController {
   constructor(private readonly usersService: UsersService) { }
+  getUserWithFaceImages(request: FindByIdRequest){
+    return this.usersService.getUserWithFaceImages(request);
+  }
+  updateUserFaceImages(request: UpdateUserFaceImagesRequest) {
+    return this.usersService.updateUserFaceImages(request);
+  }
 
   findUsersByIds(request: findUsersByIdsRequest) {
     return this.usersService.findUsersByIds(request.ids);

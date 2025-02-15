@@ -8,7 +8,7 @@ import mongoose, { Model } from 'mongoose';
 import { UsersServiceClient, USERS_SERVICE_NAME, QueryParamsRequest } from '../../../libs/common/src';
 import { handleRpcException } from '../../../libs/common/src/filters/handleException';
 import { EVENT_SERVICE_NAME, EventServiceClient } from '../../../libs/common/src/types/event';
-import { ScanTicketResponse, CreateParticipationRequest, Participation, TicketType, GetParticipantIdByUserIdEventIdRequest, CheckInOutStats, GetDetailedParticipantListRequest, GetParticipantByEventIdRequest } from '../../../libs/common/src/types/ticket';
+import { ScanTicketResponse, CreateParticipationRequest, Participation, TicketType, GetParticipantIdByUserIdEventIdRequest, CheckInOutStats, GetDetailedParticipantListRequest, GetParticipantByEventIdRequest, getParticipantRegisteredForEventResponse, CheckInCheckOutRequest } from '../../../libs/common/src/types/ticket';
 import { EVENT_SERVICE, AUTH_SERVICE } from '../../apigateway/src/constants/service.constant';
 import { Participant, ParticipantDocument } from './schemas/participant';
 import { Ticket, TicketDocument } from './schemas/ticket';
@@ -33,6 +33,69 @@ export class TicketServiceService implements OnModuleInit {
     this.authService = this.clientAuth.getService<UsersServiceClient>(USERS_SERVICE_NAME);
   }
 
+  async checkInByEventAndUser(request: CheckInCheckOutRequest): Promise<ScanTicketResponse> {
+    return this.processCheckInOut(request.eventId, request.userId, false); // false for check-in
+  }
+
+  async checkOutByEventAndUser(request: CheckInCheckOutRequest): Promise<ScanTicketResponse> {
+    return this.processCheckInOut(request.eventId, request.userId, true); // true for check-out
+  }
+
+  private async processCheckInOut(eventId: string, userId: string, isCheckOut: boolean): Promise<ScanTicketResponse> {
+    try {
+      const participant = await this.participantModel.findOne({ eventId, userId });
+      if (!participant) {
+        throw new RpcException({ message: 'Participant not found', code: HttpStatus.NOT_FOUND });
+      }
+
+      if (isCheckOut) { 
+        if (!participant.checkinAt) {
+          throw new RpcException({ message: 'Cannot check-out before check-in', code: HttpStatus.BAD_REQUEST });
+        }
+        participant.checkoutAt = new Date();
+      } else { 
+        if (participant.checkinAt) {
+          throw new RpcException({ message: 'Already checked-in', code: HttpStatus.BAD_REQUEST });
+        }
+        participant.checkinAt = new Date();
+      }
+      await participant.save();
+
+      const ticket = await this.ticketModel.findOne({ participantId: participant._id });
+      if (!ticket) {
+        throw new RpcException({ message: 'Ticket not found', code: HttpStatus.NOT_FOUND });
+      }
+      ticket.status = isCheckOut ? 'USED' : 'CHECKED_IN';
+      if (isCheckOut) ticket.usedAt = new Date();
+      await ticket.save();
+
+      const userInfo = await this.authService.findById({ id: participant.userId }).toPromise();
+      if (!userInfo) {
+        throw new RpcException({
+          message: 'User information not found',
+          code: HttpStatus.NOT_FOUND,
+        });
+      }
+
+      const result = {
+        eventId: participant.eventId,
+        id: userInfo.id,
+        email: userInfo.email,
+        name: userInfo.name,
+        phoneNumber: userInfo.phoneNumber || '',
+        checkInAt: participant.checkinAt ? participant.checkinAt.toISOString() : null,
+        checkOutAt: participant.checkoutAt ? participant.checkoutAt.toISOString() : null
+      };
+      return { result };
+
+    } catch (error) {
+      if (error instanceof RpcException) {
+        throw error;
+      }
+      throw handleRpcException(error, isCheckOut ? 'Failed to check-out' : 'Failed to check-in');
+    }
+  }
+
   async getParticipantOfUser(request: QueryParamsRequest) {
     try {
       const { filter = {}, limit, sort } = aqp(request.query);
@@ -45,7 +108,6 @@ export class TicketServiceService implements OnModuleInit {
         filter.userId = filter.userId.toString();
       }
 
-      // Lọc participant theo eventId và các điều kiện khác (nếu có)
       const query = {
         ...filter
       };
@@ -417,6 +479,35 @@ export class TicketServiceService implements OnModuleInit {
       return { ticket: this.transformTicket(ticket) };
     } catch (error) {
       throw handleRpcException(error, 'Failed to get ticket by participant id');
+    }
+  }
+
+  async getParticipantRegisteredForEvent(eventId: string): Promise<getParticipantRegisteredForEventResponse> {
+    try {
+      const participants = await this.participantModel.find(
+        { eventId },
+        { userId: 1, status: 1, sectionIds: 1 }
+      );
+      const userIDs = participants.map((participant) => participant.userId);
+      const usersResponse = await this.authService.findUsersByIds({ ids: userIDs }).toPromise();
+      const users = usersResponse.users;
+      const response = participants.map((participant) => {
+        const user = users.find((u) => u.id === participant.userId);
+        return {
+          eventId: participant.eventId,
+          id: participant.userId,
+          email: user?.email || '',
+          name: user?.name || '',
+          phoneNumber: user?.phoneNumber || null,
+          status: participant.status,
+          sessionIds: participant.sectionIds,
+          participantId: participant._id.toString(),
+          createdAt: participant?.createdAt ? participant.createdAt.toISOString() : null,
+        };
+      });
+      return { participants: response };
+    } catch (error) {
+      throw handleRpcException(error, 'Failed to get participant by event ID');
     }
   }
 

@@ -42,13 +42,44 @@ service EventService{
   rpc GetEventInvitedUsers(EventByIdRequest) returns (GetEventInvitedUsersResponse); 
   rpc GetEventComparisonData(Empty) returns (GetEventComparisonDataResponse); 
   rpc GetEventFeedbacks(GetEventFeedbacksRequest) returns (GetEventFeedbacksResponse);
+  rpc GetParticipantsWithFaces(EventByIdRequest) returns (ParticipantsWithFacesResponse);
+  rpc GetRegisteredParticipants(EventByIdRequest) returns (GetRegisteredParticipantsResponse);
 }
 
 message Empty{}
 
-message GetEventFeedbacksRequest { // Request message mới cho getEventFeedbacks
+message GetRegisteredParticipantsResponse {
+  repeated RegisteredParticipant participants = 1;
+  Meta meta = 2;
+}
+
+message RegisteredParticipant {
+  string eventId = 7;
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  optional string phoneNumber = 4;
+  string status = 5;
+  repeated string sessionIds = 6;
+  string participantId = 8;
+  string createdAt = 9; 
+}
+
+message ParticipantsWithFacesResponse {
+  repeated ParticipantWithFaces participants = 1;
+}
+
+message ParticipantWithFaces {
+  string participantId = 1;
+  string userId = 2; 
+  string email = 3;
+  string name = 4;
+  repeated string faceImages = 5; 
+}
+
+message GetEventFeedbacksRequest { 
   string eventId = 1;
-  QueryParamsRequest query = 2; // Sử dụng QueryParamsRequest để hỗ trợ filter, sort, phân trang
+  QueryParamsRequest query = 2; 
 }
 
 message EventComparisonData {

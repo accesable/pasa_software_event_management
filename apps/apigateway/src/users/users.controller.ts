@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, HttpCode, Req, Res, Headers, UnauthorizedException, UseGuards, HttpStatus, Put, Patch, UseInterceptors, BadRequestException, UploadedFile, Param, Query, ParseFilePipe, FileTypeValidator, MaxFileSizeValidator, } from '@nestjs/common';
+import { Controller, Get, Post, Body, HttpCode, Req, Res, Headers, UnauthorizedException, UseGuards, HttpStatus, Put, Patch, UseInterceptors, BadRequestException, UploadedFile, Param, Query, ParseFilePipe, FileTypeValidator, MaxFileSizeValidator, UploadedFiles, } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { RegisterDto } from './dto/register';
 import { LoginDto } from './dto/login';
@@ -7,7 +7,7 @@ import { ProfileDto } from './dto/profile';
 import { GoogleAuthGuard } from '../guards/google-auth/google-auth.guard';
 import { ResponseMessage, User } from '../decorators/public.decorator';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ChangePasswordDto } from '../users/dto/change-password';
 import { FileServiceService } from '../file-service/file-service.service';
 import { DecodeAccessResponse, UpdateAvatarRequest, UserResponse } from '../../../../libs/common/src';
@@ -103,6 +103,57 @@ export class GeneralUsersController {
     private readonly usersService: UsersService,
     private readonly filesService: FileServiceService,
   ) { }
+
+  @Post('upload/faces')
+  @UseGuards(JwtAuthGuard) 
+  @UseInterceptors(FilesInterceptor('files', 10, {
+    fileFilter: (req, file, callback) => {
+      if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
+        return callback(new BadRequestException('Only image files are allowed!'), false);
+      }
+      callback(null, true);
+    },
+    limits: {
+      fileSize: 1024 * 1024 * 500, 
+    },
+  }))
+  @ResponseMessage('Face images uploaded successfully')
+  async uploadFaces(
+    @User() user: DecodeAccessResponse,
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }), 
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    files: Express.Multer.File[],
+  ): Promise<any> {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No face images uploaded');
+    }
+
+    const userIdToUpload = user.id; 
+
+    const uploadedFaces = await this.filesService.uploadFiles(
+      files.map((file, index) => ({ 
+        ...file,
+        originalname: `img${index + 1}`, 
+      })),
+      {
+        entityId: userIdToUpload,
+        entityType: 'face-recognition/users',
+        type: 'image',
+        field: `${userIdToUpload}`,
+      },
+    );
+
+    const faceImagePaths = uploadedFaces.map(fileInfo => fileInfo.path);
+
+    return this.usersService.updateUserFaceImages(userIdToUpload, faceImagePaths);
+  }
 
   @Post('upload/avatar')
   @UseGuards(JwtAuthGuard)

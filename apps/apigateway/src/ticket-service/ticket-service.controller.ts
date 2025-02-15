@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { TicketServiceService } from './ticket-service.service';
-import { CreateParticipationRequest, QueryParamsRequest } from '../../../../libs/common/src/types/ticket';
+import { CheckInCheckOutRequest, CreateParticipationRequest, QueryParamsRequest } from '../../../../libs/common/src/types/ticket';
 import { DecodeAccessResponse } from '../../../../libs/common/src';
 import { ResponseMessage, User } from '../decorators/public.decorator';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
@@ -36,13 +36,33 @@ export class ParticipantServiceController {
     private readonly ticketServiceService: TicketServiceService,
   ) { }
 
+  @Post('event/:eventId/user/:userId/check-in')
+  @ResponseMessage('Check-in success')
+  async checkInByEventAndUser(
+    @Param('eventId') eventId: string,
+    @Param('userId') userId: string,
+  ) {
+    const request: CheckInCheckOutRequest = { eventId, userId };
+    return this.ticketServiceService.checkInByEventAndUser(request);
+  }
+
+  @Post('event/:eventId/user/:userId/check-out')
+  @ResponseMessage('Check-out success')
+  async checkOutByEventAndUser(
+    @Param('eventId') eventId: string,
+    @Param('userId') userId: string,
+  ) {
+    const request: CheckInCheckOutRequest = { eventId, userId };
+    return this.ticketServiceService.checkOutByEventAndUser(request);
+  }
+
   @Get('event/:eventId/detailed-list') // Endpoint mới
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Get detailed participant list success')
   async getDetailedParticipantList(
     @Param('eventId') eventId: string,
-    @Query() query: any, // Query params cho filter, sort, phân trang
-    @User() user: DecodeAccessResponse // Có thể cần kiểm tra quyền user nếu cần
+    @Query() query: any,
+    @User() user: DecodeAccessResponse
   ) {
     const request = {
       eventId,
@@ -51,20 +71,20 @@ export class ParticipantServiceController {
     return this.ticketServiceService.getDetailedParticipantList(request);
   }
 
-  @Get(':eventId/check-in-out-stats') // <-- Endpoint cho GetCheckInOutStats
+  @Get(':eventId/check-in-out-stats')
   @ResponseMessage('Get event check-in-out stats success')
   async getCheckInOutStats(
     @Param('eventId') eventId: string,
-  ){
-    return this.ticketServiceService.getCheckInOutStats({eventId});
+  ) {
+    return this.ticketServiceService.getCheckInOutStats({ eventId });
   }
 
-  @Get(':participantId/tickets') // Endpoint mới
+  @Get(':participantId/tickets')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Get ticket by participant id success')
   async getTicketByParticipantId(
     @Param('participantId') participantId: string,
-    @User() user: DecodeAccessResponse // Có thể cần kiểm tra quyền user nếu cần
+    @User() user: DecodeAccessResponse
   ) {
     return this.ticketServiceService.getTicketByParticipantId(participantId);
   }
@@ -73,7 +93,7 @@ export class ParticipantServiceController {
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Create participant success')
   async createParticipant(@Body() request: CreateParticipationRequest, @User() user: DecodeAccessResponse) {
-    return this.ticketServiceService.createParticipant({...request, userId: user.id});
+    return this.ticketServiceService.createParticipant({ ...request, userId: user.id });
   }
 
   @Delete(':id')
@@ -87,7 +107,7 @@ export class ParticipantServiceController {
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Update participant success')
   async updateParticipant(@Param('id') id: string, @Body() request: any, @User() user: DecodeAccessResponse) {
-    return this.ticketServiceService.updateParticipant({eventId: id, ...request, userId: user.id});
+    return this.ticketServiceService.updateParticipant({ eventId: id, ...request, userId: user.id });
   }
 
   @Get('event/:eventId/participant-id') // Updated Endpoint - Removed userId from path
@@ -97,6 +117,6 @@ export class ParticipantServiceController {
     @Param('eventId') eventId: string,
     @User() user: DecodeAccessResponse // Updated User object
   ) {
-    return this.ticketServiceService.getParticipantIdByUserIdEventId({userId: user.id, eventId}); // Pass eventId and User object
+    return this.ticketServiceService.getParticipantIdByUserIdEventId({ userId: user.id, eventId }); // Pass eventId and User object
   }
 }

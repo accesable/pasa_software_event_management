@@ -13,6 +13,17 @@ export const protobufPackage = "auth";
 export interface Empty {
 }
 
+export interface GetUserWithFaceImagesResponse {
+  userId: string;
+  faceImages: string[];
+}
+
+/** Thêm message mới */
+export interface UpdateUserFaceImagesRequest {
+  id: string;
+  faceImages: string[];
+}
+
 export interface findUsersByIdsRequest {
   ids: string[];
 }
@@ -186,6 +197,10 @@ export interface UsersServiceClient {
   resetPassword(request: ResetPassRequest): Observable<Empty>;
 
   findUsersByIds(request: findUsersByIdsRequest): Observable<findUsersByIdsResponse>;
+
+  updateUserFaceImages(request: UpdateUserFaceImagesRequest): Observable<ProfileRespone>;
+
+  getUserWithFaceImages(request: FindByIdRequest): Observable<GetUserWithFaceImagesResponse>;
 }
 
 export interface UsersServiceController {
@@ -220,6 +235,14 @@ export interface UsersServiceController {
   findUsersByIds(
     request: findUsersByIdsRequest,
   ): Promise<findUsersByIdsResponse> | Observable<findUsersByIdsResponse> | findUsersByIdsResponse;
+
+  updateUserFaceImages(
+    request: UpdateUserFaceImagesRequest,
+  ): Promise<ProfileRespone> | Observable<ProfileRespone> | ProfileRespone;
+
+  getUserWithFaceImages(
+    request: FindByIdRequest,
+  ): Promise<GetUserWithFaceImagesResponse> | Observable<GetUserWithFaceImagesResponse> | GetUserWithFaceImagesResponse;
 }
 
 export function UsersServiceControllerMethods() {
@@ -238,6 +261,8 @@ export function UsersServiceControllerMethods() {
       "changePassword",
       "resetPassword",
       "findUsersByIds",
+      "updateUserFaceImages",
+      "getUserWithFaceImages",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

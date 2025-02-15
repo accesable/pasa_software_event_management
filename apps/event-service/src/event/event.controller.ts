@@ -16,6 +16,15 @@ export class EventController implements EventServiceController {
     private readonly speakerService: SpeakerService,
     private readonly guestService: GuestService,
   ) { }
+
+  getParticipantsWithFaces(request: EventByIdRequest) { // Implement gRPC method
+    return this.eventService.getParticipantsWithFaces(request.id);
+  }
+
+  getRegisteredParticipants(request: EventByIdRequest){ 
+    return this.eventService.getRegisteredParticipants(request.id);
+  }
+
   getEventFeedbacks(request: GetEventFeedbacksRequest) {
     return this.eventService.getEventFeedbacks(request);
   }

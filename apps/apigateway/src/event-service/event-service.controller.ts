@@ -22,6 +22,26 @@ export class EventServiceController {
     private readonly filesService: FileServiceService,
   ) { }
 
+  @Get(':id/registered-participants') // Endpoint mới
+  @UseGuards(JwtAuthGuard) // Optional: Thêm JwtAuthGuard nếu cần bảo vệ endpoint
+  @ResponseMessage('Get registered participants success')
+  async getRegisteredParticipants(
+    @Param('id') eventId: string,
+    @User() user: DecodeAccessResponse, // Optional: Thêm User decorator nếu cần quyền admin/organizer
+  ) {
+    return this.eventServiceService.getRegisteredParticipants(eventId);
+  }
+
+  @Get(':id/participants-with-faces')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Get participants with faces success')
+  async getParticipantsWithFaces(
+    @Param('id') eventId: string,
+    @User() user: DecodeAccessResponse,
+  ) {
+    return this.eventServiceService.getParticipantsWithFaces(eventId);
+  }
+
   @Get('/event-comparison') // Endpoint mới
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Get event comparison data success')

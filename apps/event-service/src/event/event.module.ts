@@ -16,6 +16,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { validateEnv } from '../config/env.validation';
 import { FeedbackModule } from '../feedback/feedback.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { join } from 'path';
+import { AUTH_PACKAGE_NAME } from '../../../../libs/common/src';
+import { AUTH_SERVICE } from '../../../apigateway/src/constants/service.constant';
 
 @Module({
   imports: [
@@ -40,6 +44,18 @@ import { ScheduleModule } from '@nestjs/schedule';
         secret: configService.get<string>('JWT_SECRET'),
       }),
     }),
+
+    ClientsModule.register([
+      {
+        name: AUTH_SERVICE,
+        transport: Transport.GRPC,
+        options: {
+          package: AUTH_PACKAGE_NAME,
+          protoPath: join(__dirname, '../auth.proto'),
+          url: '0.0.0.0:50051'
+        },
+      }
+    ]),
   ],
   controllers: [EventController],
   providers: [EventService],

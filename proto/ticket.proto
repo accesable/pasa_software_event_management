@@ -18,9 +18,33 @@ service TicketServiceProto{
     rpc GetParticipantByEventAndUser(GetParticipantIdByUserIdEventIdRequest) returns (ParticipationResponse);
     rpc GetCheckInOutStats(GetParticipantByEventIdRequest) returns (GetCheckInOutStatsResponse);
     rpc GetDetailedParticipantList(GetDetailedParticipantListRequest) returns (GetDetailedParticipantListResponse);
+    rpc getParticipantRegisteredForEvent(GetParticipantByEventIdRequest) returns (getParticipantRegisteredForEventResponse);
+    rpc CheckInByEventAndUser(CheckInCheckOutRequest) returns (ScanTicketResponse);
+    rpc CheckOutByEventAndUser(CheckInCheckOutRequest) returns (ScanTicketResponse);
 }
 
 message Empty{}
+
+message CheckInCheckOutRequest {
+    string eventId = 1;
+    string userId = 2;
+}
+
+message getParticipantRegisteredForEventResponse{
+  repeated objParticipantRegistered participants = 1;
+}
+
+message objParticipantRegistered{
+  string eventId = 7;
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  optional string phoneNumber = 4;
+  string status = 5;
+  repeated string sessionIds = 6;
+  string participantId = 8;
+  string createdAt = 9; 
+}
 
 message DetailedParticipant {
     string id = 1;

@@ -13,10 +13,37 @@ export const protobufPackage = "event";
 export interface Empty {
 }
 
-/** Request message mới cho getEventFeedbacks */
+export interface GetRegisteredParticipantsResponse {
+  participants: RegisteredParticipant[];
+  meta: Meta | undefined;
+}
+
+export interface RegisteredParticipant {
+  eventId: string;
+  id: string;
+  email: string;
+  name: string;
+  phoneNumber?: string | undefined;
+  status: string;
+  sessionIds: string[];
+  participantId: string;
+  createdAt: string;
+}
+
+export interface ParticipantsWithFacesResponse {
+  participants: ParticipantWithFaces[];
+}
+
+export interface ParticipantWithFaces {
+  participantId: string;
+  userId: string;
+  email: string;
+  name: string;
+  faceImages: string[];
+}
+
 export interface GetEventFeedbacksRequest {
   eventId: string;
-  /** Sử dụng QueryParamsRequest để hỗ trợ filter, sort, phân trang */
   query: QueryParamsRequest | undefined;
 }
 
@@ -595,6 +622,10 @@ export interface EventServiceClient {
   getEventComparisonData(request: Empty): Observable<GetEventComparisonDataResponse>;
 
   getEventFeedbacks(request: GetEventFeedbacksRequest): Observable<GetEventFeedbacksResponse>;
+
+  getParticipantsWithFaces(request: EventByIdRequest): Observable<ParticipantsWithFacesResponse>;
+
+  getRegisteredParticipants(request: EventByIdRequest): Observable<GetRegisteredParticipantsResponse>;
 }
 
 export interface EventServiceController {
@@ -731,6 +762,17 @@ export interface EventServiceController {
   getEventFeedbacks(
     request: GetEventFeedbacksRequest,
   ): Promise<GetEventFeedbacksResponse> | Observable<GetEventFeedbacksResponse> | GetEventFeedbacksResponse;
+
+  getParticipantsWithFaces(
+    request: EventByIdRequest,
+  ): Promise<ParticipantsWithFacesResponse> | Observable<ParticipantsWithFacesResponse> | ParticipantsWithFacesResponse;
+
+  getRegisteredParticipants(
+    request: EventByIdRequest,
+  ):
+    | Promise<GetRegisteredParticipantsResponse>
+    | Observable<GetRegisteredParticipantsResponse>
+    | GetRegisteredParticipantsResponse;
 }
 
 export function EventServiceControllerMethods() {
@@ -772,6 +814,8 @@ export function EventServiceControllerMethods() {
       "getEventInvitedUsers",
       "getEventComparisonData",
       "getEventFeedbacks",
+      "getParticipantsWithFaces",
+      "getRegisteredParticipants",
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);

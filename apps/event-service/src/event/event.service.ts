@@ -9,11 +9,11 @@ import { Question, QuestionDocument } from './schemas/question.schema';
 import { Model, Types } from 'mongoose';
 import { CategoryDocument, EventCategory } from '../event-category/schemas/event-category.schema';
 import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
-import { SendEventInvitesRequest, SendEventInvitesResponse, CancelEventRequest, EventType, EventResponse, CreateEventRequest, UpdateEventRequest, UserTypeInvite, GetEventFeedbacksResponse, EventByIdRequest, RegistrationCountData, EventRegistrationsOverTimeResponse, GetTotalOrganizedEventsOverTimeRequest, MonthlyEventCount, MonthlyEventCountsResponse, GetEventFeedbacksRequest } from '../../../../libs/common/src/types/event';
+import { SendEventInvitesRequest, SendEventInvitesResponse, CancelEventRequest, EventType, EventResponse, CreateEventRequest, UpdateEventRequest, UserTypeInvite, GetEventFeedbacksResponse, EventByIdRequest, RegistrationCountData, EventRegistrationsOverTimeResponse, GetTotalOrganizedEventsOverTimeRequest, MonthlyEventCount, MonthlyEventCountsResponse, GetEventFeedbacksRequest, GetRegisteredParticipantsResponse } from '../../../../libs/common/src/types/event';
 import { Feedback, FeedbackDocument } from './schemas/feedback.schema';
-import { QueryParamsRequest } from '../../../../libs/common/src';
+import { QueryParamsRequest, USERS_SERVICE_NAME, UsersServiceClient } from '../../../../libs/common/src';
 import { lastValueFrom } from 'rxjs';
-import { TICKET_SERVICE } from '../../../apigateway/src/constants/service.constant';
+import { AUTH_SERVICE, TICKET_SERVICE } from '../../../apigateway/src/constants/service.constant';
 import { GetParticipantByEventIdRequest, TICKET_SERVICE_PROTO_SERVICE_NAME, TicketServiceProtoClient } from '../../../../libs/common/src/types/ticket';
 import { JwtService } from '@nestjs/jwt';
 import { FeedbackService } from '../feedback/feedback.service';
@@ -25,9 +25,10 @@ import { of } from 'rxjs';
 export class EventService {
     private readonly logger = new Logger(EventService.name);
     private ticketService: TicketServiceProtoClient;
-
+    private authService: UsersServiceClient;
     constructor(
         @InjectModel(Event.name) private eventModel: Model<EventDocument>,
+        @Inject(AUTH_SERVICE) private clientAuth: ClientGrpc,
         @InjectModel(EventCategory.name) private categoryModel: Model<CategoryDocument>,
         @InjectModel(InvitedUser.name) private invitedUserModel: Model<InvitedUserDocument>,
         @InjectModel(Question.name) private questionModel: Model<QuestionDocument>,
@@ -38,10 +39,12 @@ export class EventService {
         @Inject(TICKET_SERVICE) private ticketServiceClient: ClientGrpc,
         private jwtService: JwtService,
         private readonly feedbackService: FeedbackService,
+
     ) { }
 
     onModuleInit() {
         this.ticketService = this.ticketServiceClient.getService<TicketServiceProtoClient>(TICKET_SERVICE_PROTO_SERVICE_NAME);
+        this.authService = this.clientAuth.getService<UsersServiceClient>(USERS_SERVICE_NAME);
     }
 
 
@@ -110,6 +113,63 @@ export class EventService {
     //         this.logger.error('Error in sendReminders', error);
     //     }
     // }
+
+    async getParticipantsWithFaces(eventId: string) {
+        try {
+            const participantsResponse = await this.getRegisteredParticipants(eventId);
+            const participants = participantsResponse.participants || [];
+
+            const participantsWithFaces = [];
+            for (const participant of participants) {
+                const userResponse = await lastValueFrom(
+                    await this.authService.getUserWithFaceImages({ id: participant.id })
+                );
+                const userData = userResponse as { userId: string; faceImages?: string[] };
+                if (userData && userData.userId && userData.faceImages && userData.faceImages.length > 0) {
+                    participantsWithFaces.push({
+                        participantId: participant.participantId,
+                        userId: userData.userId,
+                        faceImages: userData.faceImages || [],
+                    });
+                }
+            }
+
+            return { participants: participantsWithFaces };
+        } catch (error) {
+            throw handleRpcException(error, 'No participants found with faces');
+        }
+    }
+
+    async getUserById(request: { id: string }) {
+        try {
+            return await this.getEventById(request) as any;
+        } catch (error) {
+            throw new RpcException(error);
+        }
+    }
+
+    async getRegisteredParticipants(eventId: string): Promise<GetRegisteredParticipantsResponse> {
+        try {
+            const participantsResponse = await lastValueFrom(
+                this.ticketService.getParticipantRegisteredForEvent({ eventId })
+            );
+
+            const meta = {
+                page: 1,
+                limit: null,
+                totalPages: 1,
+                totalItems: participantsResponse.participants?.length || 0,
+                count: participantsResponse.participants?.length || 0,
+            };
+
+            return {
+                participants: participantsResponse.participants || [],
+                meta,
+            };
+        } catch (error) {
+            throw handleRpcException(error, 'Failed to get registered participants');
+        }
+    }
 
     async sendEventInvites(request: SendEventInvitesRequest): Promise<SendEventInvitesResponse> {
         try {
@@ -401,18 +461,18 @@ export class EventService {
         try {
             const allEvents = await this.eventModel.find().populate('categoryId').exec(); // <-- Populate categoryId
             const eventComparisonDataList = [];
-    
+
             for (const event of allEvents) {
                 const feedbacksResponse = await this.feedbackService.getFeedbacks(event.id);
                 const feedbacks = feedbacksResponse.feedbacks || [];
                 const totalRating = feedbacks.reduce((sum, fb) => sum + fb.rating, 0);
                 const averageRating = feedbacks.length > 0 ? parseFloat((totalRating / feedbacks.length).toFixed(1)) : 0; // Sửa lỗi sumRating và totalFeedbacks
-    
+
                 const participantsResponse = await lastValueFrom(
                     this.ticketService.getParticipantByEventId({ eventId: event.id })
                 );
                 const registrationCount = participantsResponse.participants?.length || 0;
-    
+
                 eventComparisonDataList.push({
                     eventId: event.id,
                     eventName: event.name,
@@ -426,7 +486,7 @@ export class EventService {
                     status: event.status,
                 });
             }
-    
+
             return { eventComparisonDataList };
         } catch (error) {
             throw handleRpcException(error, 'Failed to get event comparison data');

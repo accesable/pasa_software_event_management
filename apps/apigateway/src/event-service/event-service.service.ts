@@ -29,6 +29,26 @@ export class EventServiceService implements OnModuleInit {
     this.eventService = this.client.getService<EventServiceClient>(EVENT_SERVICE_NAME);
   }
 
+  async getRegisteredParticipants(eventId: string) {
+    try {
+      return await lastValueFrom(
+        this.eventService.getRegisteredParticipants({ id: eventId })
+      );
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  async getParticipantsWithFaces(eventId: string) {
+    try {
+      return await lastValueFrom(
+        this.eventService.getParticipantsWithFaces({ id: eventId })
+      );
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
   async getEventComparisonData() { // <-- Thêm function này
     const cacheKey = 'eventComparisonData';
     try {
@@ -227,135 +247,6 @@ export class EventServiceService implements OnModuleInit {
       throw new RpcException(error);
     }
   }
-
-  // async createQuestion(
-  //   eventId: string,
-  //   question: string,
-  //   user: DecodeAccessResponse,
-  // ) {
-  //   try {
-  //     // Fetch the user data based on the user's ID
-  //     const userResponse = await lastValueFrom(
-  //       this.usersService.findById({ id: user.id }),
-  //     );
-
-  //     // If user data is not found or the ID is missing, throw an exception
-  //     if (!userResponse || !userResponse.id) {
-  //       throw new RpcException('User not found or invalid user data');
-  //     }
-  //     // Make a request to the event service to create a question
-  //     const result = await lastValueFrom(
-  //       this.eventService.createQuestion({
-  //         eventId,
-  //         question,
-  //         userId: userResponse.id, // Pass the user ID from the authenticated user
-  //       }),
-  //     );
-
-  //     return result;
-  //   } catch (error) {
-  //     // Throw any errors that occur during the process
-  //     throw new RpcException(error);
-  //   }
-  // }
-
-  // async getEventQuestions(eventId: string) {
-  //   try {
-  //     // Make a request to the event service to get all questions for the event
-  //     const result = await lastValueFrom(
-  //       this.eventService.getEventQuestions({
-  //         eventId,
-  //       }),
-  //     );
-
-  //     return result;
-  //   } catch (error) {
-  //     throw new RpcException(error);
-  //   }
-  // }
-
-  // async updateQuestion(
-  //   eventId: string,
-  //   questionId: string,
-  //   answered: boolean,
-  //   user: DecodeAccessResponse,
-  // ) {
-  //   try {
-  //     const userResponse = await lastValueFrom(
-  //       this.usersService.findById({ id: user.id }),
-  //     );
-
-  //     if (!userResponse || !userResponse.id) {
-  //       throw new RpcException('User not found or invalid user data');
-  //     }
-  //     const event = await this.eventService.getEventById({ id: eventId }).toPromise();
-
-  //     // Check if the user is authorized to update this question
-  //     if (event.createdBy.id !== userResponse.id) {
-  //       throw new RpcException(
-  //         'You are not authorized to update questions for this event',
-  //       );
-  //     }
-  //     const result = await lastValueFrom(
-  //       this.eventService.updateQuestion({
-  //         questionId,
-  //         answered,
-  //       }),
-  //     );
-  //     return result;
-  //   } catch (error) {
-  //     throw new RpcException(error);
-  //   }
-  // }
-
-  // async getEventParticipationReport(eventId: string) {
-  //   try {
-  //     // Assuming you have a method in your event service to fetch the participation report
-  //     const report = await lastValueFrom(
-  //       this.eventService.getEventParticipationReport({ eventId }),
-  //     );
-  //     return report;
-  //   } catch (error) {
-  //     console.error('Failed to fetch event participation report:', error);
-  //     throw new RpcException({
-  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
-  //       message: 'Failed to fetch participation report',
-  //     });
-  //   }
-  // }
-
-  // async getEventAttendanceList(eventId: string) {
-  //   try {
-  //     // Assuming you have a method in your event service to fetch the attendance list
-  //     const attendanceList = await lastValueFrom(
-  //       this.eventService.getEventAttendanceList({ eventId }),
-  //     );
-  //     return attendanceList;
-  //   } catch (error) {
-  //     console.error('Failed to fetch event attendance list:', error);
-  //     throw new RpcException({
-  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
-  //       message: 'Failed to fetch attendance list',
-  //     });
-  //   }
-  // }
-  // async getUserParticipation(userId: string) {
-  //   try {
-  //     const user = await lastValueFrom(
-  //       this.usersService.findById({
-  //         id: userId,
-  //       }),
-  //     );
-
-  //     // Ensure that the user exists and has the necessary properties
-  //     if (!user || !user.id) {
-  //       throw new NotFoundException('User not found or user ID missing');
-  //     }
-  //     return lastValueFrom(this.eventService.getUserParticipation({ userId }));
-  //   } catch (error) {
-  //     throw new RpcException(error);
-  //   }
-  // }
 
   async getOrganizedEvents(userId: string, status?: string) {
     try {

@@ -37,6 +37,12 @@ export class User {
 
   @Prop()
   lastLoginAt: Date;
+
+  @Prop({ type: [String], default: [] })
+  faceImages: string[];
+
+  @Prop({ default: false })
+  hasFace: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -1,4 +1,4 @@
-import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, GoogleAuthRequest, LoginRequest, LogoutRequest, ProfileRespone, RegisterRequest, UpdateAvatarRequest, UpdateProfileRequest, UserForParticipant, UserResponse } from './../../../../libs/common/src/types/auth';
+import { ChangePasswordRequest, DecodeAccessResponse, EmailRequest, FindByIdRequest, GetUserWithFaceImagesResponse, GoogleAuthRequest, LoginRequest, LogoutRequest, ProfileRespone, RegisterRequest, UpdateAvatarRequest, UpdateProfileRequest, UpdateUserFaceImagesRequest, UserForParticipant, UserResponse } from './../../../../libs/common/src/types/auth';
 import { Injectable, HttpStatus, Inject } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
@@ -19,6 +19,38 @@ export class UsersService {
     @Inject('NOTIFICATION_SERVICE') private readonly rabbitNotification: ClientProxy,
     @Inject('FILE_SERVICE') private readonly rabbitFile: ClientProxy
   ) { }
+
+  async getUserWithFaceImages(request: FindByIdRequest): Promise<GetUserWithFaceImagesResponse> {
+    try {
+      const user = await this.userModel.findById(request.id);
+      if (!user) {
+        throw new RpcException({ message: 'User not found', code: HttpStatus.NOT_FOUND });
+      }
+      return {
+        userId: user._id.toString(),
+        faceImages: user.faceImages,
+      };
+    } catch (error) {
+      throw handleRpcException(error, 'Error finding user with face images');
+    }
+  }
+
+  async updateUserFaceImages(request: UpdateUserFaceImagesRequest): Promise<ProfileRespone> {
+    try {
+      const user = await this.userModel.findByIdAndUpdate(
+        request.id,
+        { faceImages: request.faceImages, hasFace: true },
+        { new: true },
+      );
+      if (!user) {
+        throw new RpcException({ message: 'User not found', code: HttpStatus.NOT_FOUND });
+      }
+      const userResponse = this.transformUserDataResponse(user);
+      return { user: userResponse };
+    } catch (error) {
+      throw handleRpcException(error, 'Error during update user face images');
+    }
+  }
 
   async findUsersByIds(ids: string[]) {
     try {

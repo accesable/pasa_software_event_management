@@ -3,8 +3,9 @@ import { ClientGrpc, RpcException } from '@nestjs/microservices';
 import { TICKET_SERVICE } from '../constants/service.constant';
 import { EventServiceService } from '../event-service/event-service.service';
 import { RedisCacheService } from '../redis/redis.service';
-import { CreateParticipationRequest, GetParticipantByEventIdRequest, QueryParamsRequest, TICKET_SERVICE_PROTO_SERVICE_NAME, TicketServiceProtoClient } from '../../../../libs/common/src/types/ticket';
+import { CheckInCheckOutRequest, CreateParticipationRequest, GetParticipantByEventIdRequest, QueryParamsRequest, TICKET_SERVICE_PROTO_SERVICE_NAME, TicketServiceProtoClient } from '../../../../libs/common/src/types/ticket';
 import { handleRpcException } from '../../../../libs/common/src/filters/handleException';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class TicketServiceService {
@@ -19,6 +20,69 @@ export class TicketServiceService {
 
     onModuleInit() {
         this.ticketService = this.client.getService<TicketServiceProtoClient>(TICKET_SERVICE_PROTO_SERVICE_NAME);
+    }
+
+    async checkInByEventAndUser(request: CheckInCheckOutRequest) {
+        try {
+            const result = await lastValueFrom(this.ticketService.checkInByEventAndUser(request));
+            if (result && result.result) {
+                const cacheKey = `event:${result.result.eventId}:checkInOut`;
+                const cacheData = await this.redisCacheService.get<any>(cacheKey) || [];
+                console.log('cacheData', cacheData);
+                if (!result.result.checkOutAt) {
+                    if (cacheData) {
+                        cacheData.push(result.result);
+                        await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
+                    }
+                    else {
+                        await this.redisCacheService.set(cacheKey, JSON.stringify([result.result]));
+                    }
+                }
+                else {
+                    if (cacheData) {
+                        const index = cacheData.findIndex((item: any) => item.id === result.result.id);
+                        if (index !== -1) {
+                            cacheData[index].checkOutAt = result.result.checkOutAt;
+                            await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
+                        }
+                    }
+                }
+            }
+            return result;
+        } catch (error) {
+            throw new RpcException(error);
+        }
+    }
+
+    async checkOutByEventAndUser(request: CheckInCheckOutRequest) {
+        try {
+            const result = await lastValueFrom(this.ticketService.checkOutByEventAndUser(request));
+            if (result && result.result) {
+                const cacheKey = `event:${result.result.eventId}:checkInOut`;
+                const cacheData = await this.redisCacheService.get<any>(cacheKey) || [];
+                if (!result.result.checkOutAt) {
+                    if (cacheData) {
+                        cacheData.push(result.result);
+                        await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
+                    }
+                    else {
+                        await this.redisCacheService.set(cacheKey, JSON.stringify([result.result]));
+                    }
+                }
+                else {
+                    if (cacheData) {
+                        const index = cacheData.findIndex((item: any) => item.id === result.result.id);
+                        if (index !== -1) {
+                            cacheData[index].checkOutAt = result.result.checkOutAt;
+                            await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
+                        }
+                    }
+                }
+            }
+            return result;
+        } catch (error) {
+            throw new RpcException(error);
+        }
     }
 
     async getCheckInOutStats(request: GetParticipantByEventIdRequest) {
@@ -140,7 +204,7 @@ export class TicketServiceService {
         try {
             const result = await this.ticketService.scanTicket({ code }).toPromise();
             const cacheKey = `event:${result.result.eventId}:checkInOut`;
-            const cacheData = await this.redisCacheService.get<any>(cacheKey);
+            const cacheData = await this.redisCacheService.get<any>(cacheKey) || [];
             if (!result.result.checkOutAt) {
                 if (cacheData) {
                     cacheData.push(result.result);
