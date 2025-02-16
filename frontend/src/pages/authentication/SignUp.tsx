@@ -10,6 +10,7 @@ import {
   Row,
   theme,
   Typography,
+  Alert, // Import Alert component
 } from 'antd';
 import {
   GoogleOutlined,
@@ -18,6 +19,7 @@ import { Logo } from '../../components';
 import { useMediaQuery } from 'react-responsive';
 import { PATH_AUTH } from '../../constants';
 import { useNavigate } from 'react-router-dom';
+import authService from '../../services/authService'; // Import authService
 
 const { Title, Text, Link } = Typography;
 
@@ -35,23 +37,30 @@ export const SignUpPage = () => {
   const isMobile = useMediaQuery({ maxWidth: 769 });
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); 
 
-  const onFinish = async (_values: FieldType) => {
+  const onFinish = async (values: FieldType) => {
     setLoading(true);
+    setError(null); 
     try {
-      message.success('Registration successful, please login.');
-      setTimeout(() => {
-        navigate(PATH_AUTH.signin);
-      }, 1000); // chuyển hướng đến trang đăng nhập sau 1s
+      const response = await authService.register(values) as any;
+      if (response.statusCode === 201) {
+        message.success(response.message);
+        setTimeout(() => {
+          navigate(PATH_AUTH.signin);
+        }, 1000); 
+      } else {
+        setError(response.error || 'Registration failed'); 
+      }
     } catch (error: any) {
-      console.error('Registration failed:', error);
-      message.error(error.message || 'Registration failed');
+      setError(error.error || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const onFinishFailed = () => {
+  const onFinishFailed = (errorInfo: any) => {
+    console.log('Failed:', errorInfo);
   };
 
   return (
@@ -82,6 +91,7 @@ export const SignUpPage = () => {
           style={{ height: '100%', padding: '2rem' }}
         >
           <Title className="m-0">Create an account</Title>
+          {error && <Alert message="Error" description={error} type="error" showIcon closable onClose={() => setError(null)} />} {/* Alert hiển thị lỗi */}
           <Flex gap={4}>
             <Text>Already have an account?</Text>
             <Link href={PATH_AUTH.signin}>Sign in here</Link>
@@ -127,6 +137,7 @@ export const SignUpPage = () => {
                   name="email"
                   rules={[
                     { required: true, message: 'Please input your email' },
+                    { type: 'email', message: 'Please enter a valid email' }, // Thêm validation email
                   ]}
                 >
                   <Input />
@@ -138,6 +149,7 @@ export const SignUpPage = () => {
                   name="password"
                   rules={[
                     { required: true, message: 'Please input your password!' },
+                    { min: 6, message: 'Password must be at least 6 characters long!' }, // Thêm validation password
                   ]}
                 >
                   <Input.Password />
