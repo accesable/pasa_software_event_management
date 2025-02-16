@@ -86,7 +86,7 @@ const DetailMyEventPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
-        if (response.statusCode === 200 && response.data) {
+        if (response.statusCode === 200 && response.data.ratingDistribution) {
           setFeedbackSummary(response.data);
         }
       } catch (error: any) {
@@ -219,7 +219,7 @@ const handleDownloadPdfFunction = (setLoading: React.Dispatch<React.SetStateActi
     }
     // Gọi API lấy danh sách participant
     const response = await authService.getEventParticipants(eventId, accessToken);
-    const participants = response.data || [];
+    const participants = response.data.participants || [];
     if (!participants || participants.length === 0) {
       message.error("No participants data available.");
       return;

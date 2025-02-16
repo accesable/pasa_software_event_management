@@ -29,12 +29,9 @@ import jsPDF from 'jspdf';
 const { Text } = Typography;
 
 export const EventDetailsPage: React.FC = () => {
-  // Lấy eventId từ outlet context (hoặc từ useParams nếu cần)
   const { id } = useParams<{ id: string }>();
   const { eventId } = useOutletContext<{ eventId: string }>();
-  // Lấy token từ query string (nếu có)
   const [searchParams] = useSearchParams();
-
   const [eventDetails, setEventDetails] = useState<Events | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +71,7 @@ export const EventDetailsPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
-        if (response.statusCode === 200 && response.data) {
+        if (response.statusCode === 200 && response.data.ratingDistribution) {
           setFeedbackSummary(response.data);
         } 
       } catch (error: any) {
@@ -144,8 +141,8 @@ export const EventDetailsPage: React.FC = () => {
         return;
       }
       // Gọi API lấy danh sách participant
-      const response = await authService.getEventParticipants(eventId, accessToken) as any;
-      const participants = response.data || [];
+      const response = await authService.getEventParticipants(eventId, accessToken);
+      const participants = response.data.participants || [];
       if (!participants || participants.length === 0) {
         message.error("No participants data available.");
         return;
@@ -178,6 +175,7 @@ export const EventDetailsPage: React.FC = () => {
       // Lưu file PDF
       doc.save("participants.pdf");
     } catch (error: any) {
+      console.error(error);
       message.error("List check-in/check-out is empty.");
     } finally {
       setLoading(false);
@@ -380,24 +378,24 @@ export const EventDetailsPage: React.FC = () => {
                       {/* Hiển thị rating distribution */}
                       <Flex justify="space-between">
                         <Text>5 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["5"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["5.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>4 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["4"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["4.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>3 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["3"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["3.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>2 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["2.0"] || 0} feedbacks</Text>
 
                       </Flex>
                       <Flex justify="space-between">
                         <Text>1 star:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["1.0"] || 0} feedbacks</Text>
                       </Flex>
                     </Flex>
                     <Button type="primary" size="small" >

@@ -73,7 +73,6 @@ const EditEventPage: React.FC = () => {
         message.error(response?.error);
       }
     } catch (error: any) {
-      console.error('Error fetching event details:', error);
       setError(error.error);
       message.error(error.error);
     } finally {

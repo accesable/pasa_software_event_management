@@ -54,7 +54,7 @@ export const EventDetailLayout: React.FC = () => {
         };
         if (response.statusCode === 200 && response.data) {
           setEventDetail(response.data.event);
-          if (eventDetail?.status === 'FINISHED') {
+          if (response.data.event?.status === 'FINISHED') {
             const checkParticipant = await authService.getParticipantData(eventId, accessToken || '') as any;
             if (checkParticipant.statusCode === 200) {
               setIsParticipant(true);
@@ -62,11 +62,8 @@ export const EventDetailLayout: React.FC = () => {
               setIsParticipant(false);
             }
           }
-        } else {
-          message.error(response.message || 'Failed to load event details');
-        }
+        } 
       } catch (error: any) {
-        message.error(error.message || 'Error fetching event details');
       } finally {
         setLoadingEvent(false);
       }
@@ -124,10 +121,8 @@ export const EventDetailLayout: React.FC = () => {
       };
       let response: any;
       if (feedback) {
-        // Update feedback
         response = await authService.patchEventFeedback(eventId!, feedbackData, accessToken);
       } else {
-        // Submit new feedback
         response = await authService.postEventFeedback(eventId!, feedbackData, accessToken);
       }
       if (response.statusCode === 200 || response.statusCode === 201) {

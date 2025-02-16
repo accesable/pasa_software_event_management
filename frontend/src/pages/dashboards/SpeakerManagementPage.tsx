@@ -1,4 +1,4 @@
-// src\pages\dashboards\SpeakerGuestManagementPage.tsx
+// src/pages/dashboards/SpeakerGuestManagementPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Button,
@@ -10,7 +10,6 @@ import {
   Form,
   Input,
   Alert,
-  Typography, // Import Typography
 } from 'antd';
 import {
   HomeOutlined,
@@ -31,9 +30,10 @@ const SpeakerGuestManagementPage: React.FC = () => {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [form] = Form.useForm();
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  // Tab keys vẫn dùng dạng số nhiều để hiển thị giao diện, nhưng form sẽ nhận dạng bằng dạng số ít.
   const [activeTabKey, setActiveTabKey] = useState<'speakers' | 'guests'>('speakers');
   const [noSpeakersData, setNoSpeakersData] = useState<boolean>(false);
   const [noGuestsData, setNoGuestsData] = useState<boolean>(false);
@@ -84,6 +84,8 @@ const SpeakerGuestManagementPage: React.FC = () => {
   const handleCreateItem = () => {
     setEditingItemId(null);
     form.resetFields();
+    // Đảm bảo entityType được set theo tab hiện tại (sử dụng dạng số ít)
+    form.setFieldsValue({ entityType: activeTabKey === 'speakers' ? 'speaker' : 'guest' });
     setIsModalOpen(true);
   };
 
@@ -94,7 +96,8 @@ const SpeakerGuestManagementPage: React.FC = () => {
       : guests.find(guest => guest.id === id);
 
     if (itemToEdit) {
-      form.setFieldsValue({ ...itemToEdit, entityType, ...itemToEdit });
+      // Set entityType theo dạng số ít
+      form.setFieldsValue({ ...itemToEdit, entityType });
       setIsModalOpen(true);
     }
   };
@@ -109,37 +112,73 @@ const SpeakerGuestManagementPage: React.FC = () => {
 
   const onTabChange = (key: string) => {
     setActiveTabKey(key as 'speakers' | 'guests');
+    // Khi chuyển tab, cập nhật entityType trong form theo dạng số ít
+    form.setFieldsValue({ entityType: key === 'speakers' ? 'speaker' : 'guest' });
   };
 
   const onFinish = async (values: any) => {
     setLoading(true);
     setError(null);
     try {
+      let response;
+      // Sử dụng dạng số ít để kiểm tra loại entity
       const isSpeaker = values.entityType === 'speaker';
+      const endpoint = isSpeaker ? '/speakers' : '/guests';
       const idToEdit = editingItemId;
 
+      // Tạo payload theo đúng format backend yêu cầu
+      const payload = isSpeaker
+        ? {
+            name: values.name,
+            jobTitle: values.jobTitle,
+            email: values.email,
+            bio: values.bio,
+          }
+        : {
+            name: values.name,
+            jobTitle: values.jobTitle,
+            organization: values.organization,
+            linkSocial: values.linkSocial,
+          };
+
       if (idToEdit) {
+        response = await axiosInstance.patch(`${endpoint}/${idToEdit}`, payload);
         message.success(`${isSpeaker ? 'Speaker' : 'Guest'} updated successfully`);
       } else {
+        response = await axiosInstance.post(endpoint, payload);
         message.success(`${isSpeaker ? 'Speaker' : 'Guest'} created successfully`);
       }
 
-      if (isSpeaker) {
-        fetchSpeakers();
+      if (response.status === 201 || response.status === 200) {
+        if (isSpeaker) {
+          fetchSpeakers();
+        } else {
+          fetchGuests();
+        }
+        setIsModalOpen(false);
+        form.resetFields();
+        setEditingItemId(null);
       } else {
-        fetchGuests();
+        const respData = response.data as any;
+        if (respData.message && Array.isArray(respData.message)) {
+          respData.message.forEach((msg: string) => message.error(msg));
+        } else {
+          message.error(
+            respData.error ||
+              respData.message ||
+              `Failed to ${idToEdit ? 'update' : 'create'} ${isSpeaker ? 'speaker' : 'guest'}`
+          );
+        }
       }
-      setIsModalOpen(false);
-      form.resetFields();
     } catch (error: any) {
-      setError(error.message || `Failed to save ${values.entityType}`);
-      message.error(error.message || `Failed to save  ${values.entityType}`);
+      message.error(error.message || `Failed to ${editingItemId ? 'update' : 'create'} ${values.entityType}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const onFinishFailed = () => {
+  const onFinishFailed = (errorInfo: any) => {
+    console.log('Failed:', errorInfo);
   };
 
   const speakerColumns: ColumnsType<SpeakerGuestData> = [
@@ -147,19 +186,18 @@ const SpeakerGuestManagementPage: React.FC = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text) => <Typography.Paragraph ellipsis>{text}</Typography.Paragraph>, // Added ellipsis
     },
     {
       title: 'Job Title',
       dataIndex: 'jobTitle',
       key: 'jobTitle',
-      responsive: ['md'], // Hide on smaller screens
+      responsive: ['md'],
     },
     {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
-      responsive: ['md'], // Hide on smaller screens
+      responsive: ['lg'],
     },
     {
       title: 'Actions',
@@ -179,25 +217,18 @@ const SpeakerGuestManagementPage: React.FC = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text) => <Typography.Paragraph ellipsis>{text}</Typography.Paragraph>, // Added ellipsis
     },
     {
       title: 'Job Title',
       dataIndex: 'jobTitle',
       key: 'jobTitle',
-      responsive: ['md'], // Hide on smaller screens
+      responsive: ['md'],
     },
     {
       title: 'Organization',
       dataIndex: 'organization',
       key: 'organization',
-      responsive: ['md'], // Hide on smaller screens
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-      responsive: ['md'], // Hide on smaller screens
+      responsive: ['md'],
     },
     {
       title: 'Actions',
@@ -279,23 +310,29 @@ const SpeakerGuestManagementPage: React.FC = () => {
         ) : activeTabKey === 'guests' && noGuestsData && !loading ? (
           <Alert message="No guests available." type="info" showIcon />
         ) : (
-          <div className="table-responsive"> {/* Responsive table wrapper */}
+          <div className="table-responsive">
             <Table
               columns={activeTabKey === 'speakers' ? speakerColumns : guestColumns}
-              dataSource={activeTabKey === 'speakers'
-                ? speakers.map(speaker => ({ ...speaker, entityType: 'speaker' }))
-                : guests.map(guest => ({ ...guest, entityType: 'guest' }))}
+              dataSource={
+                activeTabKey === 'speakers'
+                  ? speakers.map(speaker => ({ ...speaker, entityType: 'speaker' }))
+                  : guests.map(guest => ({ ...guest, entityType: 'guest' }))
+              }
               loading={loading}
               rowKey="id"
               pagination={{ pageSize: 5 }}
-              scroll={{ x: 'max-content' }} // Horizontal scroll
+              scroll={{ x: 'scroll' }}
             />
           </div>
         )}
       </Card>
 
       <Modal
-        title={editingItemId ? `Edit ${form.getFieldValue('entityType') === 'speaker' ? 'Speaker' : 'Guest'}` : "Create New Speaker/Guest"}
+        title={
+          editingItemId
+            ? `Edit ${form.getFieldValue('entityType') === 'speaker' ? 'Speaker' : 'Guest'}`
+            : `Create New ${activeTabKey === 'speakers' ? 'Speaker' : 'Guest'}`
+        }
         open={isModalOpen}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
@@ -309,7 +346,8 @@ const SpeakerGuestManagementPage: React.FC = () => {
           onFinish={onFinish}
           onFinishFailed={onFinishFailed}
           autoComplete="off"
-          initialValues={{ entityType: 'speaker' }}
+          // Thiết lập initialValues entityType theo dạng số ít dựa vào tab hiện tại
+          initialValues={{ entityType: activeTabKey === 'speakers' ? 'speaker' : 'guest' }}
           requiredMark={false}
         >
           <Form.Item name="entityType" hidden>
@@ -329,40 +367,42 @@ const SpeakerGuestManagementPage: React.FC = () => {
           >
             <Input placeholder="Job Title" />
           </Form.Item>
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              { required: true, message: 'Please input Email!' },
-              { type: 'email', message: 'Please enter a valid email!' },
-            ]}
-          >
-            <Input placeholder="Email" />
-          </Form.Item>
-          {form.getFieldValue('entityType') === 'guest' && (
-            <Form.Item
-              label="Organization"
-              name="organization"
-              rules={[{ required: true, message: 'Please input organization!' }]}
-            >
-              <Input placeholder="Organization" />
-            </Form.Item>
-          )}
-          {form.getFieldValue('entityType') === 'guest' && (
-            <Form.Item
-              label="Social Link"
-              name="linkSocial"
-            >
-              <Input placeholder="Social Link" />
-            </Form.Item>
-          )}
           {form.getFieldValue('entityType') === 'speaker' && (
-            <Form.Item
-              label="Bio"
-              name="bio"
-            >
-              <Input.TextArea rows={4} placeholder="Bio" />
-            </Form.Item>
+            <>
+              <Form.Item
+                label="Email"
+                name="email"
+                rules={[
+                  { required: true, message: 'Please input Email!' },
+                  { type: 'email', message: 'Please enter a valid email!' },
+                ]}
+              >
+                <Input placeholder="Email" />
+              </Form.Item>
+              <Form.Item
+                label="Bio"
+                name="bio"
+              >
+                <Input.TextArea rows={4} placeholder="Bio" />
+              </Form.Item>
+            </>
+          )}
+          {form.getFieldValue('entityType') === 'guest' && (
+            <>
+              <Form.Item
+                label="Organization"
+                name="organization"
+                rules={[{ required: true, message: 'Please input organization!' }]}
+              >
+                <Input placeholder="Organization" />
+              </Form.Item>
+              <Form.Item
+                label="Social Link"
+                name="linkSocial"
+              >
+                <Input placeholder="Social Link" />
+              </Form.Item>
+            </>
           )}
         </Form>
       </Modal>

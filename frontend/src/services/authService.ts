@@ -565,6 +565,19 @@ const authService = {
     }
   },
 
+  updateSpeaker: async (speakerId: string, speakerData: any, accessToken: string) => { // Hàm updateSpeaker mới
+    try {
+      const response = await axiosInstance.patch(`${BASE_URL}/speakers/${speakerId}`, speakerData, { // Sử dụng API_SPEAKERS_BASE_URL
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
   createGuest: async (guestData: any, accessToken: string) => { // Hàm createGuest mới
     try {
       const response = await axiosInstance.post(`${BASE_URL}/guests`, guestData, {
@@ -577,6 +590,20 @@ const authService = {
       throw error.response.data;
     }
   },
+
+  updateGuest: async (guestId: string, guestData: any, accessToken: string) => {
+    try {
+      const response = await axiosInstance.patch(`${BASE_URL}/guests/${guestId}`, guestData, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
   getOrganizerEventFeedbackSummary: async (accessToken: string) => {
     try {
       const headers: any = {
@@ -767,7 +794,7 @@ const authService = {
       throw error.response.data;
     }
   },
-  checkIn: async (eventId: string , userId: string) => {
+  checkIn: async (eventId: string, userId: string) => {
     try {
       const response = await axiosInstance.post(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/user/${userId}/check-in`);
       return response.data;
@@ -775,7 +802,7 @@ const authService = {
       throw error.response.data;
     }
   },
-  checkOut: async (eventId: string , userId: string) => {
+  checkOut: async (eventId: string, userId: string) => {
     try {
       const response = await axiosInstance.post(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/user/${userId}/check-out`);
       return response.data;

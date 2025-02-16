@@ -82,7 +82,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
-        if (response.statusCode === 200 && response.data) {
+        if (response.statusCode === 200 && response.data.ratingDistribution) {
           setFeedbackSummary(response.data);
         }
       } catch (error: any) {
@@ -103,21 +103,17 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         message.error("No access token found. Please login again.");
         return;
       }
-      // Gọi API lấy danh sách participant
-      const response = await authService.getEventParticipants(eventId, accessToken) as any;
-      const participants = response.data || [];
+      const response = await authService.getEventParticipants(eventId, accessToken);
+      const participants = response.data.participants || [];
       if (!participants || participants.length === 0) {
         message.error("No participants data available.");
         return;
       }
 
-      // Khởi tạo jsPDF
       const doc = new jsPDF();
-      // Tiêu đề của PDF
       doc.setFontSize(16);
       doc.text("Participants Check-in/Check-out List", 14, 20);
 
-      // Định nghĩa cột và dữ liệu của bảng
       const columns = ["No", "Name", "Email", "Check-In", "Check-Out"];
       const rows = participants.map((p: any, index: number) => [
         index + 1,
@@ -127,7 +123,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         p.checkOutAt ? dayjs(p.checkOutAt).format("YYYY-MM-DD HH:mm:ss") : ""
       ]);
 
-      // Dùng autoTable để tạo bảng
       (doc as any).autoTable({
         head: [columns],
         body: rows,
@@ -135,7 +130,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         theme: 'grid'
       });
 
-      // Lưu file PDF
       doc.save("participants.pdf");
     } catch (error: any) {
       console.error("Error generating PDF:", error);
@@ -394,23 +388,23 @@ const ParticipatedEventDetailsPage: React.FC = () => {
                       {/* Hiển thị rating distribution */}
                       <Flex justify="space-between">
                         <Text>5 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["5"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["5.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>4 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["4"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["4.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>3 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["3"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["3.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>2 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["2.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>1 star:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["1.0"] || 0} feedbacks</Text>
                       </Flex>
                     </Flex>
                     <Button
