@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 import { Upload, Button, message, Alert, Select } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
+import axiosInstance from '../../api/axiosInstance'; // Import axiosInstance
 
 interface EventFileUploadFormProps {
     eventId: string;
 }
 
-const EventFileUploadForm: React.FC<EventFileUploadFormProps> = () => {
+const EventFileUploadForm: React.FC<EventFileUploadFormProps> = ({ eventId }) => {
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState<boolean>(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -27,18 +28,43 @@ const EventFileUploadForm: React.FC<EventFileUploadFormProps> = () => {
             return;
         }
 
+        if (!eventId) {
+            message.error('Event ID is missing. Please ensure you are editing an event.');
+            return;
+        }
+
         setUploading(true);
         setUploadError(null);
 
         const formData = new FormData();
-        formData.append('field', selectedField); // append field trước
+        formData.append('field', selectedField);
         formData.append('files', uploadedFile);
 
         try {
-            message.success(`Uploaded ${selectedField} successfully`);
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                message.error('Bạn chưa đăng nhập.');
+                return;
+            }
+
+            const response = await axiosInstance.post(`/events/${eventId}/files`, formData, { // Sử dụng eventId từ props trong URL
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: `Bearer ${accessToken}`, // Đảm bảo có Authorization header
+                },
+            });
+
+            if (response.status === 201) {
+                message.success(`Uploaded ${selectedField} successfully`);
+                setUploadedFile(null); // Reset uploadedFile state sau khi upload thành công
+            } else {
+                message.error(`Upload ${selectedField} failed: ${(response.data as any)?.error || 'Unknown error'}`);
+                setUploadError(`Upload ${selectedField} failed: ${(response.data as any)?.error || 'Unknown error'}`);
+            }
+
         } catch (error: any) {
-            message.error(`${error.response?.data?.message || error.message}`);
-            setUploadError(`Upload ${selectedField} failed: ${error.response?.data?.message || error.message}`);
+            message.error(`${error.response?.data?.message || error.message || 'Upload failed'}`);
+            setUploadError(`Upload ${selectedField} failed: ${error.response?.data?.message || error.message || 'Unknown error'}`);
         } finally {
             setUploading(false);
         }
@@ -77,13 +103,13 @@ const EventFileUploadForm: React.FC<EventFileUploadFormProps> = () => {
             <Upload
                 beforeUpload={() => false}
                 onChange={handleFileChange}
-                maxCount={currentFieldOption?.multiple ? undefined : 1} // Allow multiple for documents
+                maxCount={currentFieldOption?.multiple ? undefined : 1}
                 accept={currentFieldOption?.accept}
                 fileList={uploadedFile ? [{
                     uid: '1',
                     name: uploadedFile.name,
                     status: 'done',
-                    url: URL.createObjectURL(uploadedFile), // Or a URL if you have one
+                    url: URL.createObjectURL(uploadedFile),
                 }] : []}
             >
                 <Button icon={<UploadOutlined />} disabled={!selectedField} loading={uploading}>
@@ -94,7 +120,7 @@ const EventFileUploadForm: React.FC<EventFileUploadFormProps> = () => {
             <Button
                 type="primary"
                 onClick={handleUpload}
-                disabled={uploading || !uploadedFile || !selectedField}
+                disabled={uploading || !uploadedFile || !selectedField || !eventId} // Disable if eventId is missing
                 loading={uploading}
                 style={{ marginTop: 24 }}
             >
