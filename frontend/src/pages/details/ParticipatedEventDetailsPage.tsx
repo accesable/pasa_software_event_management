@@ -141,7 +141,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
 
   const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
 
-
   const scheduleColumns = [
     {
       title: 'Title',

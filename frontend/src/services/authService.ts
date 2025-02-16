@@ -810,6 +810,35 @@ const authService = {
       throw error.response.data;
     }
   },
+  getSpeakerById: async (speakerId: string, accessToken?: string) => { // getSpeakerById function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${BASE_URL}/speakers/${speakerId}`, { headers }); // API_SPEAKERS_BASE_URL
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  getGuestById: async (guestId: string, accessToken?: string) => { // getGuestById function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${BASE_URL}/guests/${guestId}`, { headers }); // API_GUESTS_BASE_URL
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default authService;
