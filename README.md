@@ -7,6 +7,11 @@
   - ReactJS (Vite Build Tool)
 - Backend
   - FastAPI By Python
+- Account
+  - user1: user8@gmail.com
+    password: password123
+  - user2: user1@example.com
+    password: password123
 ## Desigining System Business Logic & Materials
 Overall Use Cases
 ![use-cases](imgs/general-use-case.jpg)

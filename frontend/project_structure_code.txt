@@ -6995,7 +6995,7 @@ export const EventDetailLayout: React.FC = () => {
         };
         if (response.statusCode === 200 && response.data) {
           setEventDetail(response.data.event);
-          if (eventDetail?.status === 'FINISHED') {
+          if (response.data.event?.status === 'FINISHED') {
             const checkParticipant = await authService.getParticipantData(eventId, accessToken || '') as any;
             if (checkParticipant.statusCode === 200) {
               setIsParticipant(true);
@@ -7003,11 +7003,8 @@ export const EventDetailLayout: React.FC = () => {
               setIsParticipant(false);
             }
           }
-        } else {
-          message.error(response.message || 'Failed to load event details');
-        }
+        } 
       } catch (error: any) {
-        message.error(error.message || 'Error fetching event details');
       } finally {
         setLoadingEvent(false);
       }
@@ -7065,10 +7062,8 @@ export const EventDetailLayout: React.FC = () => {
       };
       let response: any;
       if (feedback) {
-        // Update feedback
         response = await authService.patchEventFeedback(eventId!, feedbackData, accessToken);
       } else {
-        // Submit new feedback
         response = await authService.postEventFeedback(eventId!, feedbackData, accessToken);
       }
       if (response.statusCode === 200 || response.statusCode === 201) {
@@ -8918,6 +8913,7 @@ import {
   Row,
   theme,
   Typography,
+  Alert, // Import Alert component
 } from 'antd';
 import {
   GoogleOutlined,
@@ -8926,6 +8922,7 @@ import { Logo } from '../../components';
 import { useMediaQuery } from 'react-responsive';
 import { PATH_AUTH } from '../../constants';
 import { useNavigate } from 'react-router-dom';
+import authService from '../../services/authService'; // Import authService
 
 const { Title, Text, Link } = Typography;
 
@@ -8943,23 +8940,30 @@ export const SignUpPage = () => {
   const isMobile = useMediaQuery({ maxWidth: 769 });
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); 
 
-  const onFinish = async (_values: FieldType) => {
+  const onFinish = async (values: FieldType) => {
     setLoading(true);
+    setError(null); 
     try {
-      message.success('Registration successful, please login.');
-      setTimeout(() => {
-        navigate(PATH_AUTH.signin);
-      }, 1000); // chuyển hướng đến trang đăng nhập sau 1s
+      const response = await authService.register(values) as any;
+      if (response.statusCode === 201) {
+        message.success(response.message);
+        setTimeout(() => {
+          navigate(PATH_AUTH.signin);
+        }, 1000); 
+      } else {
+        setError(response.error || 'Registration failed'); 
+      }
     } catch (error: any) {
-      console.error('Registration failed:', error);
-      message.error(error.message || 'Registration failed');
+      setError(error.error || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const onFinishFailed = () => {
+  const onFinishFailed = (errorInfo: any) => {
+    console.log('Failed:', errorInfo);
   };
 
   return (
@@ -8990,6 +8994,7 @@ export const SignUpPage = () => {
           style={{ height: '100%', padding: '2rem' }}
         >
           <Title className="m-0">Create an account</Title>
+          {error && <Alert message="Error" description={error} type="error" showIcon closable onClose={() => setError(null)} />} {/* Alert hiển thị lỗi */}
           <Flex gap={4}>
             <Text>Already have an account?</Text>
             <Link href={PATH_AUTH.signin}>Sign in here</Link>
@@ -9035,6 +9040,7 @@ export const SignUpPage = () => {
                   name="email"
                   rules={[
                     { required: true, message: 'Please input your email' },
+                    { type: 'email', message: 'Please enter a valid email' }, // Thêm validation email
                   ]}
                 >
                   <Input />
@@ -9046,6 +9052,7 @@ export const SignUpPage = () => {
                   name="password"
                   rules={[
                     { required: true, message: 'Please input your password!' },
+                    { min: 6, message: 'Password must be at least 6 characters long!' }, // Thêm validation password
                   ]}
                 >
                   <Input.Password />
@@ -10767,7 +10774,7 @@ export const ProjectsDashboardPage = () => {
 
 
 src\pages\dashboards\SpeakerManagementPage.tsx:
-// src\pages\dashboards\SpeakerGuestManagementPage.tsx
+// src/pages/dashboards/SpeakerGuestManagementPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Button,
@@ -10779,7 +10786,6 @@ import {
   Form,
   Input,
   Alert,
-  Typography, // Import Typography
 } from 'antd';
 import {
   HomeOutlined,
@@ -10800,9 +10806,10 @@ const SpeakerGuestManagementPage: React.FC = () => {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [form] = Form.useForm();
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  // Tab keys vẫn dùng dạng số nhiều để hiển thị giao diện, nhưng form sẽ nhận dạng bằng dạng số ít.
   const [activeTabKey, setActiveTabKey] = useState<'speakers' | 'guests'>('speakers');
   const [noSpeakersData, setNoSpeakersData] = useState<boolean>(false);
   const [noGuestsData, setNoGuestsData] = useState<boolean>(false);
@@ -10853,6 +10860,8 @@ const SpeakerGuestManagementPage: React.FC = () => {
   const handleCreateItem = () => {
     setEditingItemId(null);
     form.resetFields();
+    // Đảm bảo entityType được set theo tab hiện tại (sử dụng dạng số ít)
+    form.setFieldsValue({ entityType: activeTabKey === 'speakers' ? 'speaker' : 'guest' });
     setIsModalOpen(true);
   };
 
@@ -10863,7 +10872,8 @@ const SpeakerGuestManagementPage: React.FC = () => {
       : guests.find(guest => guest.id === id);
 
     if (itemToEdit) {
-      form.setFieldsValue({ ...itemToEdit, entityType, ...itemToEdit });
+      // Set entityType theo dạng số ít
+      form.setFieldsValue({ ...itemToEdit, entityType });
       setIsModalOpen(true);
     }
   };
@@ -10878,37 +10888,73 @@ const SpeakerGuestManagementPage: React.FC = () => {
 
   const onTabChange = (key: string) => {
     setActiveTabKey(key as 'speakers' | 'guests');
+    // Khi chuyển tab, cập nhật entityType trong form theo dạng số ít
+    form.setFieldsValue({ entityType: key === 'speakers' ? 'speaker' : 'guest' });
   };
 
   const onFinish = async (values: any) => {
     setLoading(true);
     setError(null);
     try {
+      let response;
+      // Sử dụng dạng số ít để kiểm tra loại entity
       const isSpeaker = values.entityType === 'speaker';
+      const endpoint = isSpeaker ? '/speakers' : '/guests';
       const idToEdit = editingItemId;
 
+      // Tạo payload theo đúng format backend yêu cầu
+      const payload = isSpeaker
+        ? {
+            name: values.name,
+            jobTitle: values.jobTitle,
+            email: values.email,
+            bio: values.bio,
+          }
+        : {
+            name: values.name,
+            jobTitle: values.jobTitle,
+            organization: values.organization,
+            linkSocial: values.linkSocial,
+          };
+
       if (idToEdit) {
+        response = await axiosInstance.patch(`${endpoint}/${idToEdit}`, payload);
         message.success(`${isSpeaker ? 'Speaker' : 'Guest'} updated successfully`);
       } else {
+        response = await axiosInstance.post(endpoint, payload);
         message.success(`${isSpeaker ? 'Speaker' : 'Guest'} created successfully`);
       }
 
-      if (isSpeaker) {
-        fetchSpeakers();
+      if (response.status === 201 || response.status === 200) {
+        if (isSpeaker) {
+          fetchSpeakers();
+        } else {
+          fetchGuests();
+        }
+        setIsModalOpen(false);
+        form.resetFields();
+        setEditingItemId(null);
       } else {
-        fetchGuests();
+        const respData = response.data as any;
+        if (respData.message && Array.isArray(respData.message)) {
+          respData.message.forEach((msg: string) => message.error(msg));
+        } else {
+          message.error(
+            respData.error ||
+              respData.message ||
+              `Failed to ${idToEdit ? 'update' : 'create'} ${isSpeaker ? 'speaker' : 'guest'}`
+          );
+        }
       }
-      setIsModalOpen(false);
-      form.resetFields();
     } catch (error: any) {
-      setError(error.message || `Failed to save ${values.entityType}`);
-      message.error(error.message || `Failed to save  ${values.entityType}`);
+      message.error(error.message || `Failed to ${editingItemId ? 'update' : 'create'} ${values.entityType}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const onFinishFailed = () => {
+  const onFinishFailed = (errorInfo: any) => {
+    console.log('Failed:', errorInfo);
   };
 
   const speakerColumns: ColumnsType<SpeakerGuestData> = [
@@ -10916,19 +10962,18 @@ const SpeakerGuestManagementPage: React.FC = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text) => <Typography.Paragraph ellipsis>{text}</Typography.Paragraph>, // Added ellipsis
     },
     {
       title: 'Job Title',
       dataIndex: 'jobTitle',
       key: 'jobTitle',
-      responsive: ['md'], // Hide on smaller screens
+      responsive: ['md'],
     },
     {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
-      responsive: ['md'], // Hide on smaller screens
+      responsive: ['lg'],
     },
     {
       title: 'Actions',
@@ -10948,25 +10993,18 @@ const SpeakerGuestManagementPage: React.FC = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text) => <Typography.Paragraph ellipsis>{text}</Typography.Paragraph>, // Added ellipsis
     },
     {
       title: 'Job Title',
       dataIndex: 'jobTitle',
       key: 'jobTitle',
-      responsive: ['md'], // Hide on smaller screens
+      responsive: ['md'],
     },
     {
       title: 'Organization',
       dataIndex: 'organization',
       key: 'organization',
-      responsive: ['md'], // Hide on smaller screens
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-      responsive: ['md'], // Hide on smaller screens
+      responsive: ['md'],
     },
     {
       title: 'Actions',
@@ -11048,23 +11086,29 @@ const SpeakerGuestManagementPage: React.FC = () => {
         ) : activeTabKey === 'guests' && noGuestsData && !loading ? (
           <Alert message="No guests available." type="info" showIcon />
         ) : (
-          <div className="table-responsive"> {/* Responsive table wrapper */}
+          <div className="table-responsive">
             <Table
               columns={activeTabKey === 'speakers' ? speakerColumns : guestColumns}
-              dataSource={activeTabKey === 'speakers'
-                ? speakers.map(speaker => ({ ...speaker, entityType: 'speaker' }))
-                : guests.map(guest => ({ ...guest, entityType: 'guest' }))}
+              dataSource={
+                activeTabKey === 'speakers'
+                  ? speakers.map(speaker => ({ ...speaker, entityType: 'speaker' }))
+                  : guests.map(guest => ({ ...guest, entityType: 'guest' }))
+              }
               loading={loading}
               rowKey="id"
               pagination={{ pageSize: 5 }}
-              scroll={{ x: 'max-content' }} // Horizontal scroll
+              scroll={{ x: 'scroll' }}
             />
           </div>
         )}
       </Card>
 
       <Modal
-        title={editingItemId ? `Edit ${form.getFieldValue('entityType') === 'speaker' ? 'Speaker' : 'Guest'}` : "Create New Speaker/Guest"}
+        title={
+          editingItemId
+            ? `Edit ${form.getFieldValue('entityType') === 'speaker' ? 'Speaker' : 'Guest'}`
+            : `Create New ${activeTabKey === 'speakers' ? 'Speaker' : 'Guest'}`
+        }
         open={isModalOpen}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
@@ -11078,7 +11122,8 @@ const SpeakerGuestManagementPage: React.FC = () => {
           onFinish={onFinish}
           onFinishFailed={onFinishFailed}
           autoComplete="off"
-          initialValues={{ entityType: 'speaker' }}
+          // Thiết lập initialValues entityType theo dạng số ít dựa vào tab hiện tại
+          initialValues={{ entityType: activeTabKey === 'speakers' ? 'speaker' : 'guest' }}
           requiredMark={false}
         >
           <Form.Item name="entityType" hidden>
@@ -11098,40 +11143,42 @@ const SpeakerGuestManagementPage: React.FC = () => {
           >
             <Input placeholder="Job Title" />
           </Form.Item>
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              { required: true, message: 'Please input Email!' },
-              { type: 'email', message: 'Please enter a valid email!' },
-            ]}
-          >
-            <Input placeholder="Email" />
-          </Form.Item>
-          {form.getFieldValue('entityType') === 'guest' && (
-            <Form.Item
-              label="Organization"
-              name="organization"
-              rules={[{ required: true, message: 'Please input organization!' }]}
-            >
-              <Input placeholder="Organization" />
-            </Form.Item>
-          )}
-          {form.getFieldValue('entityType') === 'guest' && (
-            <Form.Item
-              label="Social Link"
-              name="linkSocial"
-            >
-              <Input placeholder="Social Link" />
-            </Form.Item>
-          )}
           {form.getFieldValue('entityType') === 'speaker' && (
-            <Form.Item
-              label="Bio"
-              name="bio"
-            >
-              <Input.TextArea rows={4} placeholder="Bio" />
-            </Form.Item>
+            <>
+              <Form.Item
+                label="Email"
+                name="email"
+                rules={[
+                  { required: true, message: 'Please input Email!' },
+                  { type: 'email', message: 'Please enter a valid email!' },
+                ]}
+              >
+                <Input placeholder="Email" />
+              </Form.Item>
+              <Form.Item
+                label="Bio"
+                name="bio"
+              >
+                <Input.TextArea rows={4} placeholder="Bio" />
+              </Form.Item>
+            </>
+          )}
+          {form.getFieldValue('entityType') === 'guest' && (
+            <>
+              <Form.Item
+                label="Organization"
+                name="organization"
+                rules={[{ required: true, message: 'Please input organization!' }]}
+              >
+                <Input placeholder="Organization" />
+              </Form.Item>
+              <Form.Item
+                label="Social Link"
+                name="linkSocial"
+              >
+                <Input placeholder="Social Link" />
+              </Form.Item>
+            </>
           )}
         </Form>
       </Modal>
@@ -11322,7 +11369,7 @@ import {
 } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { PageHeader, Loader, BackBtn } from '../../components';
+import { PageHeader, Loader, BackBtn, UserAvatar } from '../../components';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
 import { Events } from '../../types';
@@ -11334,12 +11381,9 @@ import jsPDF from 'jspdf';
 const { Text } = Typography;
 
 export const EventDetailsPage: React.FC = () => {
-  // Lấy eventId từ outlet context (hoặc từ useParams nếu cần)
   const { id } = useParams<{ id: string }>();
   const { eventId } = useOutletContext<{ eventId: string }>();
-  // Lấy token từ query string (nếu có)
   const [searchParams] = useSearchParams();
-
   const [eventDetails, setEventDetails] = useState<Events | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -11352,7 +11396,8 @@ export const EventDetailsPage: React.FC = () => {
     ratingDistribution: Record<string, number>;
   } | null>(null);
   const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
-
+  const [guestInfos, setGuestInfos] = useState<Record<string, any>>({});
+  const [speakerInfos, setSpeakerInfos] = useState<Record<string, any>>({});
   // State để đảm bảo API accept được gọi 1 lần duy nhất
   const [hasAccepted, setHasAccepted] = useState(false);
 
@@ -11366,7 +11411,15 @@ export const EventDetailsPage: React.FC = () => {
         const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
         if (response && response.statusCode === 200) {
           setEventDetails(response.data.event);
-        } 
+          const speakerIds = response.data.event.schedule.flatMap((session: any) => session.speakerIds);
+          if(speakerIds.length > 0) {
+            fetchSpeakerInfos(speakerIds);
+          }
+          const guestIds = response.data.event.guestIds;
+          if(guestIds.length > 0) {
+            fetchGuestInfos(guestIds);
+          }
+        }
       } catch (error: any) {
       } finally {
         setLoading(false);
@@ -11379,9 +11432,9 @@ export const EventDetailsPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
-        if (response.statusCode === 200 && response.data) {
+        if (response.statusCode === 200 && response.data.ratingDistribution) {
           setFeedbackSummary(response.data);
-        } 
+        }
       } catch (error: any) {
       } finally {
         setFeedbackSummaryLoading(false);
@@ -11391,6 +11444,36 @@ export const EventDetailsPage: React.FC = () => {
     fetchEventDetails();
     fetchEventFeedbackSummary();
   }, [eventId, navigate]);
+
+  const fetchSpeakerInfos = async (speakerIds: string[]) => {
+    const speakerInfoMap: Record<string, any> = {};
+    for (const speakerId of speakerIds) {
+      try {
+        const response = await authService.getSpeakerById(speakerId) as any;
+        if (response.statusCode === 200 && response.data) {
+          speakerInfoMap[speakerId] = response.data.speaker;
+        }
+      } catch (error: any) {
+        console.error(`Error fetching speaker info for ${speakerId}`, error);
+      }
+    }
+    setSpeakerInfos(speakerInfoMap);
+  };
+
+  const fetchGuestInfos = async (guestIds: string[]) => {
+    const guestInfoMap: Record<string, any> = {};
+    for (const guestId of guestIds) {
+      try {
+        const response = await authService.getGuestById(guestId) as any;
+        if (response.statusCode === 200 && response.data) {
+          guestInfoMap[guestId] = response.data.guest;
+        }
+      } catch (error) {
+        console.error(`Error fetching guest info for ${guestId}`, error);
+      }
+    }
+    setGuestInfos(guestInfoMap);
+  };
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -11449,8 +11532,8 @@ export const EventDetailsPage: React.FC = () => {
         return;
       }
       // Gọi API lấy danh sách participant
-      const response = await authService.getEventParticipants(eventId, accessToken) as any;
-      const participants = response.data || [];
+      const response = await authService.getEventParticipants(eventId, accessToken);
+      const participants = response.data.participants || [];
       if (!participants || participants.length === 0) {
         message.error("No participants data available.");
         return;
@@ -11483,6 +11566,7 @@ export const EventDetailsPage: React.FC = () => {
       // Lưu file PDF
       doc.save("participants.pdf");
     } catch (error: any) {
+      console.error(error);
       message.error("List check-in/check-out is empty.");
     } finally {
       setLoading(false);
@@ -11491,6 +11575,28 @@ export const EventDetailsPage: React.FC = () => {
 
   const onSessionSelectChange = (selectedKeys: React.Key[]) => {
     setSelectedSessionIds(selectedKeys as string[]);
+  };
+
+  const renderGuestList = (eventDetails: Events | null) => { // Function render Guest List
+    return eventDetails?.guestIds && eventDetails.guestIds.length > 0 ? (
+      <List
+        dataSource={eventDetails.guestIds}
+        renderItem={(guestId) => (
+          <List.Item>
+            <Flex gap="small" align="center">
+              <Flex vertical>
+                <Text strong>{guestInfos[guestId]?.name || 'Unknown Guest'}</Text>
+                <Text type="secondary">Job Title: {guestInfos[guestId]?.jobTitle || 'N/A'}</Text>
+                <Text type="secondary">Organization: {guestInfos[guestId]?.organization || 'N/A'}</Text>
+              </Flex>
+            </Flex>
+          </List.Item>
+        )}
+        loading={loading} // Thêm loading prop nếu cần
+      />
+    ) : (
+      <Alert message="No guests available for this event." type="info" showIcon />
+    );
   };
 
   const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
@@ -11502,13 +11608,46 @@ export const EventDetailsPage: React.FC = () => {
         dataSource={eventDetails.schedule}
         columns={scheduleColumns}
         pagination={false}
-        // scroll={{ x: 'max-content'}} 
+        scroll={{ x: 'true'}}
         rowSelection={{
           onChange: (selectedRowKeys) => {
             onSessionSelectChange(selectedRowKeys as string[]);
           },
         }}
         size="small"
+        expandable={{
+          expandedRowRender: (record) => (
+            <Row gutter={[16, 16]}> {/* Sử dụng Row để tạo layout grid cho speakers */}
+              {record.speakerIds.map((speakerId: string) => (
+                <Col key={speakerId} xs={24} sm={12} md={8} lg={6}> {/* Responsive columns */}
+                  <Card>
+                    <Flex vertical gap="small">
+                      <Flex gap="middle" align="center">
+                        <UserAvatar fullName={speakerInfos[speakerId]?.name || 'Unknown Speaker'} avatarUrl={speakerInfos[speakerId]?.avatar} size="large" />
+
+                      </Flex>
+                      <div>
+                        <Text type="secondary">Job Title: </Text>
+                        <Text strong>{speakerInfos[speakerId]?.jobTitle || 'N/A'}</Text>
+                      </div>
+                      <div>
+                        <Text type="secondary">Email: </Text>
+                        <Text>{speakerInfos[speakerId]?.email || 'N/A'}</Text>
+                      </div>
+                      <div>
+                        <Text type="secondary">Contact: </Text>
+                        <Typography.Link href={speakerInfos[speakerId]?.linkFb || '#'}>
+                          {speakerInfos[speakerId]?.linkFb || 'N/A'}
+                        </Typography.Link>
+                      </div>
+                    </Flex>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          ),
+          rowExpandable: (record) => record.speakerIds?.length > 0,
+        }}
       />
     ) : (
       <Alert message="No schedule available for this event." type="info" showIcon />
@@ -11647,9 +11786,14 @@ export const EventDetailsPage: React.FC = () => {
               </Card>
             )}
           </Col>
-          <Col xs={24} sm={24} md={24} lg={24}>
+          <Col span={24}>
             <Card title="Schedule">
               {renderScheduleTable(eventDetails, scheduleColumns)}
+            </Card>
+          </Col>
+          <Col span={24}>
+            <Card title="Guests"> {/* Card hiển thị Guest List */}
+              {renderGuestList(eventDetails)} {/* Gọi renderGuestList function */}
             </Card>
           </Col>
           {eventDetails.documents && eventDetails.documents.length > 0 && (
@@ -11685,24 +11829,24 @@ export const EventDetailsPage: React.FC = () => {
                       {/* Hiển thị rating distribution */}
                       <Flex justify="space-between">
                         <Text>5 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["5"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["5.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>4 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["4"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["4.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>3 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["3"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["3.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>2 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["2.0"] || 0} feedbacks</Text>
 
                       </Flex>
                       <Flex justify="space-between">
                         <Text>1 star:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["1.0"] || 0} feedbacks</Text>
                       </Flex>
                     </Flex>
                     <Button type="primary" size="small" >
@@ -11764,7 +11908,7 @@ import {
 } from 'antd';
 import { HomeOutlined, PieChartOutlined, UserAddOutlined, DownloadOutlined, BarChartOutlined } from '@ant-design/icons';
 import { DASHBOARD_ITEMS } from '../../constants';
-import { PageHeader, BackBtn } from '../../components';
+import { PageHeader, BackBtn, UserAvatar } from '../../components';
 import dayjs from 'dayjs';
 import authService from '../../services/authService';
 import { Events, TicketType } from '../../types';
@@ -11804,6 +11948,8 @@ const DetailMyEventPage: React.FC = () => {
     totalFeedbacks: number;
     ratingDistribution: Record<string, number>;
   } | null>(null);
+  const [guestInfos, setGuestInfos] = useState<Record<string, any>>({});
+  const [speakerInfos, setSpeakerInfos] = useState<Record<string, any>>({});
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -11814,6 +11960,10 @@ const DetailMyEventPage: React.FC = () => {
         const response = await authService.getEventDetails(eventId, accessToken || undefined) as { statusCode: number; data: { event: Events }; message: string; error?: string };
         if (response && response.statusCode === 200) {
           setEventDetails(response.data.event);
+          const speakerIds = response.data.event.schedule.flatMap((session: any) => session.speakerIds);
+          fetchSpeakerInfos(speakerIds);
+          const guestIds = response.data.event.guestIds;
+          fetchGuestInfos(guestIds);
         } else {
           setError(response?.error || 'Failed to load event details');
           message.error(response?.error);
@@ -11832,7 +11982,7 @@ const DetailMyEventPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
-        if (response.statusCode === 200 && response.data) {
+        if (response.statusCode === 200 && response.data.ratingDistribution) {
           setFeedbackSummary(response.data);
         }
       } catch (error: any) {
@@ -11846,11 +11996,108 @@ const DetailMyEventPage: React.FC = () => {
     eventDetails?.status === 'FINISHED' && fetchEventFeedbackSummary(); // Fetch feedback summary only if event finished
   }, [eventId, navigate, eventDetails?.status]); // Fetch feedback summary when event status changes to finished
 
+  const fetchSpeakerInfos = async (speakerIds: string[]) => {
+    const speakerInfoMap: Record<string, any> = {};
+    for (const speakerId of speakerIds) {
+      try {
+        const response = await authService.getSpeakerById(speakerId) as any;
+        if (response.statusCode === 200 && response.data) {
+          speakerInfoMap[speakerId] = response.data.speaker;
+        }
+      } catch (error: any) {
+        console.error(`Error fetching speaker info for ${speakerId}`, error);
+      }
+    }
+    setSpeakerInfos(speakerInfoMap);
+  };
+
+  const fetchGuestInfos = async (guestIds: string[]) => {
+    const guestInfoMap: Record<string, any> = {};
+    for (const guestId of guestIds) {
+      try {
+        const response = await authService.getGuestById(guestId) as any;
+        if (response.statusCode === 200 && response.data) {
+          guestInfoMap[guestId] = response.data.guest;
+        }
+      } catch (error) {
+        console.error(`Error fetching guest info for ${guestId}`, error);
+      }
+    }
+    setGuestInfos(guestInfoMap);
+  };
 
   const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
 
+  const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) => {
+    return eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
+      <Table
+        rowKey="id"
+        dataSource={eventDetails.schedule}
+        columns={scheduleColumns}
+        pagination={false}
+        size='small'
+        expandable={{
+          expandedRowRender: (record) => (
+            <Row gutter={[16, 16]}> {/* Sử dụng Row để tạo layout grid cho speakers */}
+              {record.speakerIds.map((speakerId: string) => (
+                <Col key={speakerId} xs={24} sm={12} md={8} lg={6}> {/* Responsive columns */}
+                  <Card>
+                    <Flex vertical gap="small">
+                      <Flex gap="middle" align="center">
+                        <UserAvatar fullName={speakerInfos[speakerId]?.name || 'Unknown Speaker'} avatarUrl={speakerInfos[speakerId]?.avatar} size="large" />
+
+                      </Flex>
+                      <div>
+                        <Text type="secondary">Job Title: </Text>
+                        <Text strong>{speakerInfos[speakerId]?.jobTitle || 'N/A'}</Text>
+                      </div>
+                      <div>
+                        <Text type="secondary">Email: </Text>
+                        <Text>{speakerInfos[speakerId]?.email || 'N/A'}</Text>
+                      </div>
+                      <div>
+                        <Text type="secondary">Contact: </Text>
+                        <Typography.Link href={speakerInfos[speakerId]?.linkFb || '#'}>
+                          {speakerInfos[speakerId]?.linkFb || 'N/A'}
+                        </Typography.Link>
+                      </div>
+                    </Flex>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          ),
+          rowExpandable: (record) => record.speakerIds?.length > 0,
+        }}
+      />
+    ) : (
+      <Alert message="No schedule available for this event." type="info" showIcon />
+    );
+  };
 
   const scheduleColumns = getScheduleColumns();
+
+  const renderGuestList = (eventDetails: Events | null) => { // Function render Guest List
+    return eventDetails?.guestIds && eventDetails.guestIds.length > 0 ? (
+      <List
+        dataSource={eventDetails.guestIds}
+        renderItem={(guestId) => (
+          <List.Item>
+            <Flex gap="small" align="center">
+              <Flex vertical>
+                <Text strong>{guestInfos[guestId]?.name || 'Unknown Guest'}</Text>
+                <Text type="secondary">Job Title: {guestInfos[guestId]?.jobTitle || 'N/A'}</Text>
+                <Text type="secondary">Organization: {guestInfos[guestId]?.organization || 'N/A'}</Text>
+              </Flex>
+            </Flex>
+          </List.Item>
+        )}
+        loading={loading} // Thêm loading prop nếu cần
+      />
+    ) : (
+      <Alert message="No guests available for this event." type="info" showIcon />
+    );
+  };
 
   const hideTicketModal = () => {
     setIsTicketModalVisible(false);
@@ -11906,6 +12153,11 @@ const DetailMyEventPage: React.FC = () => {
           <Col span={24}>
             <Card title="Schedule">
               {renderScheduleTable(eventDetails, scheduleColumns)}
+            </Card>
+          </Col>
+          <Col span={24}>
+            <Card title="Guests"> {/* Card hiển thị Guest List */}
+              {renderGuestList(eventDetails)} {/* Gọi renderGuestList function */}
             </Card>
           </Col>
           {renderEventDocuments(eventDetails)}
@@ -11965,7 +12217,7 @@ const handleDownloadPdfFunction = (setLoading: React.Dispatch<React.SetStateActi
     }
     // Gọi API lấy danh sách participant
     const response = await authService.getEventParticipants(eventId, accessToken);
-    const participants = response.data || [];
+    const participants = response.data.participants || [];
     if (!participants || participants.length === 0) {
       message.error("No participants data available.");
       return;
@@ -12046,20 +12298,6 @@ const renderEventIntroduction = (eventDetails: Events | null) => {
       </Card>
     );
   }
-};
-
-const renderScheduleTable = (eventDetails: Events | null, scheduleColumns: any) => {
-  return eventDetails?.schedule && eventDetails.schedule.length > 0 ? (
-    <Table
-      rowKey="id"
-      dataSource={eventDetails.schedule}
-      columns={scheduleColumns}
-      pagination={false}
-      size='small'
-    />
-  ) : (
-    <Alert message="No schedule available for this event." type="info" showIcon />
-  );
 };
 
 const renderEventDocuments = (eventDetails: Events | null) => {
@@ -12277,7 +12515,7 @@ const ParticipatedEventDetailsPage: React.FC = () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
         const response = await authService.getEventFeedbackSummary(eventId, accessToken || undefined) as any;
-        if (response.statusCode === 200 && response.data) {
+        if (response.statusCode === 200 && response.data.ratingDistribution) {
           setFeedbackSummary(response.data);
         }
       } catch (error: any) {
@@ -12298,21 +12536,17 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         message.error("No access token found. Please login again.");
         return;
       }
-      // Gọi API lấy danh sách participant
-      const response = await authService.getEventParticipants(eventId, accessToken) as any;
-      const participants = response.data || [];
+      const response = await authService.getEventParticipants(eventId, accessToken);
+      const participants = response.data.participants || [];
       if (!participants || participants.length === 0) {
         message.error("No participants data available.");
         return;
       }
 
-      // Khởi tạo jsPDF
       const doc = new jsPDF();
-      // Tiêu đề của PDF
       doc.setFontSize(16);
       doc.text("Participants Check-in/Check-out List", 14, 20);
 
-      // Định nghĩa cột và dữ liệu của bảng
       const columns = ["No", "Name", "Email", "Check-In", "Check-Out"];
       const rows = participants.map((p: any, index: number) => [
         index + 1,
@@ -12322,7 +12556,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         p.checkOutAt ? dayjs(p.checkOutAt).format("YYYY-MM-DD HH:mm:ss") : ""
       ]);
 
-      // Dùng autoTable để tạo bảng
       (doc as any).autoTable({
         head: [columns],
         body: rows,
@@ -12330,7 +12563,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
         theme: 'grid'
       });
 
-      // Lưu file PDF
       doc.save("participants.pdf");
     } catch (error: any) {
       console.error("Error generating PDF:", error);
@@ -12341,7 +12573,6 @@ const ParticipatedEventDetailsPage: React.FC = () => {
   };
 
   const handleDownloadPdf = handleDownloadPdfFunction(setLoading, message, authService, dayjs, eventId);
-
 
   const scheduleColumns = [
     {
@@ -12589,23 +12820,23 @@ const ParticipatedEventDetailsPage: React.FC = () => {
                       {/* Hiển thị rating distribution */}
                       <Flex justify="space-between">
                         <Text>5 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["5"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["5.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>4 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["4"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["4.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>3 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["3"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["3.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>2 stars:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["2"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["2.0"] || 0} feedbacks</Text>
                       </Flex>
                       <Flex justify="space-between">
                         <Text>1 star:</Text>
-                        <Text>{feedbackSummary.ratingDistribution["1"] || 0} feedbacks</Text>
+                        <Text>{feedbackSummary.ratingDistribution["1.0"] || 0} feedbacks</Text>
                       </Flex>
                     </Flex>
                     <Button
@@ -13123,7 +13354,6 @@ const EditEventPage: React.FC = () => {
         message.error(response?.error);
       }
     } catch (error: any) {
-      console.error('Error fetching event details:', error);
       setError(error.error);
       message.error(error.error);
     } finally {
@@ -15593,6 +15823,19 @@ const authService = {
     }
   },
 
+  updateSpeaker: async (speakerId: string, speakerData: any, accessToken: string) => { // Hàm updateSpeaker mới
+    try {
+      const response = await axiosInstance.patch(`${BASE_URL}/speakers/${speakerId}`, speakerData, { // Sử dụng API_SPEAKERS_BASE_URL
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
   createGuest: async (guestData: any, accessToken: string) => { // Hàm createGuest mới
     try {
       const response = await axiosInstance.post(`${BASE_URL}/guests`, guestData, {
@@ -15605,6 +15848,20 @@ const authService = {
       throw error.response.data;
     }
   },
+
+  updateGuest: async (guestId: string, guestData: any, accessToken: string) => {
+    try {
+      const response = await axiosInstance.patch(`${BASE_URL}/guests/${guestId}`, guestData, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
   getOrganizerEventFeedbackSummary: async (accessToken: string) => {
     try {
       const headers: any = {
@@ -15795,7 +16052,7 @@ const authService = {
       throw error.response.data;
     }
   },
-  checkIn: async (eventId: string , userId: string) => {
+  checkIn: async (eventId: string, userId: string) => {
     try {
       const response = await axiosInstance.post(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/user/${userId}/check-in`);
       return response.data;
@@ -15803,9 +16060,38 @@ const authService = {
       throw error.response.data;
     }
   },
-  checkOut: async (eventId: string , userId: string) => {
+  checkOut: async (eventId: string, userId: string) => {
     try {
       const response = await axiosInstance.post(`${API_PARTICIPANTS_BASE_URL}/event/${eventId}/user/${userId}/check-out`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+  getSpeakerById: async (speakerId: string, accessToken?: string) => { // getSpeakerById function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${BASE_URL}/speakers/${speakerId}`, { headers }); // API_SPEAKERS_BASE_URL
+      return response.data;
+    } catch (error: any) {
+      throw error.response.data;
+    }
+  },
+
+  getGuestById: async (guestId: string, accessToken?: string) => { // getGuestById function
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await axiosInstance.get(`${BASE_URL}/guests/${guestId}`, { headers }); // API_GUESTS_BASE_URL
       return response.data;
     } catch (error: any) {
       throw error.response.data;
