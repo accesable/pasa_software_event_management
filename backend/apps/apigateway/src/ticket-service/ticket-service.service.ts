@@ -25,29 +25,6 @@ export class TicketServiceService {
     async checkInByEventAndUser(request: CheckInCheckOutRequest) {
         try {
             const result = await lastValueFrom(this.ticketService.checkInByEventAndUser(request));
-            if (result && result.result) {
-                const cacheKey = `event:${result.result.eventId}:checkInOut`;
-                const cacheData = await this.redisCacheService.get<any>(cacheKey) || [];
-                console.log('cacheData', cacheData);
-                if (!result.result.checkOutAt) {
-                    if (cacheData) {
-                        cacheData.push(result.result);
-                        await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
-                    }
-                    else {
-                        await this.redisCacheService.set(cacheKey, JSON.stringify([result.result]));
-                    }
-                }
-                else {
-                    if (cacheData) {
-                        const index = cacheData.findIndex((item: any) => item.id === result.result.id);
-                        if (index !== -1) {
-                            cacheData[index].checkOutAt = result.result.checkOutAt;
-                            await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
-                        }
-                    }
-                }
-            }
             return result;
         } catch (error) {
             throw new RpcException(error);
@@ -57,28 +34,6 @@ export class TicketServiceService {
     async checkOutByEventAndUser(request: CheckInCheckOutRequest) {
         try {
             const result = await lastValueFrom(this.ticketService.checkOutByEventAndUser(request));
-            if (result && result.result) {
-                const cacheKey = `event:${result.result.eventId}:checkInOut`;
-                const cacheData = await this.redisCacheService.get<any>(cacheKey) || [];
-                if (!result.result.checkOutAt) {
-                    if (cacheData) {
-                        cacheData.push(result.result);
-                        await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
-                    }
-                    else {
-                        await this.redisCacheService.set(cacheKey, JSON.stringify([result.result]));
-                    }
-                }
-                else {
-                    if (cacheData) {
-                        const index = cacheData.findIndex((item: any) => item.id === result.result.id);
-                        if (index !== -1) {
-                            cacheData[index].checkOutAt = result.result.checkOutAt;
-                            await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
-                        }
-                    }
-                }
-            }
             return result;
         } catch (error) {
             throw new RpcException(error);
@@ -203,28 +158,7 @@ export class TicketServiceService {
     async scanTicket(code: string) {
         try {
             const result = await this.ticketService.scanTicket({ code }).toPromise();
-            const cacheKey = `event:${result.result.eventId}:checkInOut`;
-            const cacheData = await this.redisCacheService.get<any>(cacheKey) || [];
-            if (!result.result.checkOutAt) {
-                if (cacheData) {
-                    cacheData.push(result.result);
-                    await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
-                }
-                else {
-                    await this.redisCacheService.set(cacheKey, JSON.stringify([result.result]));
-                }
-            }
-            else {
-                if (cacheData) {
-                    const index = cacheData.findIndex((item: any) => item.id === result.result.id);
-                    if (index !== -1) {
-                        cacheData[index].checkOutAt = result.result.checkOutAt;
-                        await this.redisCacheService.set(cacheKey, JSON.stringify(cacheData));
-                    }
-                }
-            }
-            const response = await this.redisCacheService.get<string>(`event:${result.result.eventId}:checkInOut`);
-            return response;
+            return result;
         } catch (error) {
             throw new RpcException(error);
         }

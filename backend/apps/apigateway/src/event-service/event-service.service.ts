@@ -276,13 +276,7 @@ export class EventServiceService implements OnModuleInit {
   // danh sách check in check out của sự kiện
   async getParticipantsEvent(eventId: string) {
     try {
-      const cacheKey = `event:${eventId}:checkInOut`;
-      const cacheData = await this.redisCacheService.get<any>(cacheKey);
-      if (cacheData && cacheData.length > 0) {
-        return cacheData;
-      }
       const result = await this.ticketService.getParticipantByEventId(eventId);
-      await this.redisCacheService.set(cacheKey, result);
       return result;
     } catch (error) {
       throw new RpcException(error);
