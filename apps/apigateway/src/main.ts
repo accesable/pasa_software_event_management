@@ -23,7 +23,8 @@ async function bootstrap() {
   }));
   app.useGlobalInterceptors(new RpcExceptionInterceptor());
   app.enableCors({
-    origin: "http://localhost:5173",
+    // origin: ["http://localhost:5173", "https://pasasoftware.site"],
+    origin: ["https://pasasoftware.site"],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     allowedHeaders: "Content-Type, Accept, Authorization, field",
     credentials: true,
