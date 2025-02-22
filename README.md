@@ -14,6 +14,8 @@
 - link deploy BE : https://api.pasasoftware.site
 
 ## 💻 Running Locally  
+<b>🚀 Video: </b>
+youtube: https://youtu.be/WalWzaX4CMg?si=BQ6CzhLk5ZcpVbcP
 
 ### 1️⃣ System Requirements  
 - **Node.js**: v22.12.0  
@@ -44,7 +46,7 @@ origin: ["https://pasasoftware.site"]
 origin: ["http://localhost:5173"]
 ```
 
-  - Update environment variables in backend\apps\apigateway.env.example
+  - Update environment variables in backend\apps\apigateway\.env.example
 ```bash
 REDIS_HOST=redis-10701.c295.ap-southeast-1-1.ec2.redns.redis-cloud.com
 REDIS_PORT=10701
